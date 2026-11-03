@@ -36,6 +36,10 @@ var _last_p := {}          # last frame's pose (the move's over the stance or st
 var _yaw := 0.0
 var _gait := 0              # going: 0 a run, -1/1 a side-shuffle, -2/2 a backpedal (the body turned to it)
 var _step_w := 1.0          # under a move: how much his legs are his stride's (eased)
+var solid: WsgSolidProps = null   # the venue's props (Arena.solid): he goes round them, never through
+var _memo := {}             # (WsgSolidProps.move's: the side he chose round what is in his way)
+var _goal := Vector3.ZERO   # his target, out of the props
+var _target_was := Vector3.INF
 var _carry_w := 0.0        # eased: how much his arms hold the ball
 var _hold := 1.0           # eased: the ball held out in front (standing) .. by his hip (walking)
 var _crouch := 0.0         # eased: how far down into the thrower's crouch (Moves.LOW_HOLD)
@@ -206,7 +210,11 @@ func tick(dt: float, now: float) -> void:
 	var top := (2.2 + 3.6 * hurry) * (0.82 + float(data.get("agility", 70)) * 0.0028)
 	if stroll:
 		top = 1.6 + 2.0 * hurry   # a walk back to his place, a jog to fetch the ball
-	var to := target - position
+	# (Where he is going, out of any prop: a ball by the bench is played from beside it - WsgSolidProps.free_spot.)
+	if solid != null and not target.is_equal_approx(_target_was):
+		_target_was = target
+		_goal = solid.free_spot(target, BODY_R, BODY_H)
+	var to := (_goal if solid != null else target) - position
 	to.y = 0
 	var want := Vector3.ZERO
 	if to.length() > 0.03:
@@ -227,7 +235,15 @@ func tick(dt: float, now: float) -> void:
 		if c > 0.0 and ts > c and ts < c + FOLLOW_THROUGH:
 			want = Vector3.ZERO
 	vel = vel.move_toward(want, 16.0 * dt)
-	position += vel * dt
+	# Round the props and never into one (the owner: "There will NEVER be a time when a player or referee should walk
+	# through a table or bench"): the shared WsgSolidProps steers his step and pushes him out of anything he touches.
+	if solid != null:
+		var mv := solid.move(position, vel, dt, BODY_R, BODY_H, _goal, _memo)
+		position = mv[0]
+		if not airborne:
+			vel = Vector3((mv[1] as Vector3).x, 0.0, (mv[1] as Vector3).z)
+	else:
+		position += vel * dt
 	position.y = 0.0
 	# Facing: the net, turned toward the ball a little (or to what he must face: the server, for the throw).
 	var face := net_dir()
@@ -472,6 +488,8 @@ const ARRIVE_EARLY := 0.15  # s: at the spot this long before his move starts (P
 const ARRIVE_MIN := 1.0     # ... going at least this fast (m/s)
 const FOLLOW_THROUGH := 0.22   # s after the touch the move keeps its legs (the kick's follow-through)
 const STEP_EASE := 6.0         # a second: the legs handed between his stride and a move's
+const BODY_R := 0.25           # m: his body's radius among the props ...
+const BODY_H := 1.8            # ... and its height
 const MOVE_OUT := 0.15   # s to ease out of a move that has played out or been cut short
 
 

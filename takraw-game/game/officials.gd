@@ -22,6 +22,7 @@ class One:
 	var shift := 0.0              # his weight: -1 on his left foot .. 1 on his right (standing)
 	var shift_to := 0.0
 	var hands := 0.0              # sitting: 0 hands on his knees .. 1 drawn in to his lap
+	var memo := {}                # (WsgSolidProps.move's, standing: the side he chose round a prop)
 	var hands_to := 0.0
 	var lean := 0.0               # leaning in while the ball is in play
 	var bend := 0.0               # a line judge bent to watch his lines (0-1)
@@ -42,6 +43,7 @@ const REACH := 0.85        # the ball passing this near him (m, below 2.1 m) and
 const STEP_OUT := 1.25     # that far
 
 var list: Array[One] = []
+var solid: WsgSolidProps = null   # the venue's props (Arena.solid): stepping aside, he goes round them
 var _t := 0.0
 var _rng := RandomNumberGenerator.new()
 var _skip := false
@@ -144,7 +146,12 @@ func _pose(o: One, dt: float, ball: Vector3, live: bool) -> void:
 	if o.standing:
 		var want := (o.off_to - o.off) * 7.0
 		o.vel = o.vel.move_toward(want.limit_length(3.0), dt * 24.0)
-		o.off += o.vel * dt
+		# (round the props and never into one: the ball stand, a tripod - the shared WsgSolidProps)
+		if solid != null:
+			var mv := solid.move(o.home + o.off, o.vel, dt, 0.25, 1.8, o.home + o.off_to, o.memo)
+			o.off = Vector3((mv[0] as Vector3).x, 0.0, (mv[0] as Vector3).z) - Vector3(o.home.x, 0.0, o.home.z)
+		else:
+			o.off += o.vel * dt
 		o.body.position = o.home + o.off
 		speed = o.vel.length()
 		if speed > 0.05:

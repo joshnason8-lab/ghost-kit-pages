@@ -30,6 +30,7 @@ var _placed := {}             # model name (and "|flat": those casting no shadow
 var _shadows := {}            # model name -> casts shadows
 var _tints := {}              # model name -> [Color, ...], one an instance
 var _made := {}               # key -> [Mesh, [Transform3D, ...], casts shadows]: meshes made in code
+var placed: Array = []        # every model put down, [name, Transform3D] (kept after commit: Arena registers them solid)
 static var _fence_shader: Shader
 
 
@@ -51,6 +52,7 @@ func add(name: String, p: Vector3, yaw := 0.0, s := 1.0, shadows := true, tint :
 ## that cast shadows and those that don't (far off, where a shadow would only cost) are drawn apart (with no shadows at
 ## all, as on Low, together: one draw call).
 func add_xf(name: String, xf: Transform3D, shadows := true, tint := Color.WHITE) -> void:
+	placed.append([name, xf])
 	var key := name if shadows or not Game.shadows_enabled() else name + "|flat"
 	if not _placed.has(key):
 		_placed[key] = []

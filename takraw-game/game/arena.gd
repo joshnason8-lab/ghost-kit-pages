@@ -21,6 +21,12 @@ const AMBIENCE := {"beach": ["amb_beach", -8.0], "park": ["amb_park", -10.0], "m
 var fans: Array[Node3D] = []  # ceiling fans to turn (the provincial gym)
 ## The walls, boards and fences round the court as the ball meets them (x, and z in y): it comes off them.
 var bounds := Rect2(-12.0, -10.0, 24.0, 20.0)
+## The venue's props as solid shapes (the shared WsgSolidProps; the owner: "There will NEVER be a time when a player
+## or referee should walk through a table or bench etc. A ball should also bounce off these items."): the players and
+## the officials on their feet steer round them and keep out (Player, Officials: solid.move), the ball bounces off them
+## (Ball: solid.sweep/bounce). Each registered where it is built: the hand-made ones in their builders (_solid_box,
+## _solid_post), the scenery's models within reach of the play after the build (_solid_scenery).
+var solid := WsgSolidProps.new()
 var _board: Array[Label3D] = []   # the courtside scoreboard's two lines (the tournament venues)
 static var _words: Font           # the words' font (_words_font), for the language it was made for
 static var _words_lang := ""
@@ -46,6 +52,49 @@ func _init(p_venue := "national", p_women := false, p_home_colors := []) -> void
 func _ready() -> void:
 	if not deferred:
 		build()
+
+
+## A prop as a solid box: its centre C, size S, turned YAW; EXTRA: "ball"/"walk" false where only one applies.
+func _solid_box(name: String, c: Vector3, s: Vector3, material: String, yaw := 0.0, extra := {}) -> void:
+	var spec := {"name": name, "kind": "box", "xf": Transform3D(Basis(Vector3.UP, yaw), c), "size": s, "material": material}
+	spec.merge(extra, true)
+	solid.add(spec)
+
+
+## A post: an upright cylinder from BASE, HEIGHT tall, radius R.
+func _solid_post(name: String, base: Vector3, height: float, r: float, material: String, extra := {}) -> void:
+	var spec := {"name": name, "kind": "cylinder", "position": base, "height": height, "radius": r, "material": material}
+	spec.merge(extra, true)
+	solid.add(spec)
+
+
+## The scenery's models within reach of the play (the ball's bounds and 3 m round, under 2.5 m up) as solid boxes
+## round each (turned as it is); trees are their trunks (_trees), a ceiling's lights and far buildings nobody reaches.
+func _solid_scenery() -> void:
+	var reach := bounds.grow(3.0)
+	for e in _sc.placed:
+		var nm := String(e[0])
+		if nm.begins_with("trees/") or nm.begins_with("hall/fluorescent") or nm.begins_with("sky"):
+			continue
+		var xf: Transform3D = e[1]
+		var box := AABB()
+		var first := true
+		for part in Scenery.parts(nm):
+			var b: AABB = (part[1] as Transform3D) * (part[0] as Mesh).get_aabb()
+			box = b if first else box.merge(b)
+			first = false
+		if first:
+			continue
+		var w := xf * box
+		if not Rect2(w.position.x, w.position.z, w.size.x, w.size.z).intersects(reach) or w.position.y > 2.5:
+			continue
+		var mat := "wood"
+		for k in [["bleacher", "metal"], ["escalator", "metal"], ["kiosk", "metal"], ["cart", "metal"], ["lamp", "metal"],
+				["scooter", "metal"], ["tower", "wood"], ["planter", "stone"], ["lounger", "plastic"], ["boat", "wood"]]:
+			if nm.contains(k[0]):
+				mat = k[1]
+				break
+		solid.add({"name": nm.get_file(), "kind": "box", "xf": xf * Transform3D(Basis(), box.get_center()), "size": box.size, "material": mat})
 
 
 ## The venue made: its light, court, stands and surroundings, then its crowd. LD (the loading overlay, when built
@@ -105,6 +154,9 @@ func build(ld: WsgLoading = null) -> void:
 	if ld:
 		await ld.checkpoint(0.6)
 	_sc.commit()
+	_solid_scenery()
+	solid.skip("floor", "the court's floor and the sand are the Ball's own (its bounce, roll and the sand's give)")
+	solid.skip("net", "the match's own: a ball into the net is played by the rules")
 	if ld:
 		await ld.checkpoint(0.8)
 	# The spectators: the venue's seats and standing room as the shared crowd's sections (crowd_venue), placed and drawn
@@ -305,6 +357,8 @@ func _net() -> void:
 	for s: float in [-1.0, 1.0]:
 		_lit.cylinder(Vector3(0, 0, s * post_z), Vector3(0, top + Court.NET_POST_EXTRA + 0.04, s * post_z), 0.04, 0.04, Color("d8d8d8"), 10)
 		_lit.cylinder(Vector3(0, 0, s * post_z), Vector3(0, 0.06, s * post_z), 0.14, 0.12, Color("3a3a3a"), 10)
+		_solid_post("net post", Vector3(0, 0, s * post_z), top + Court.NET_POST_EXTRA + 0.04, 0.04, "metal")
+		_solid_post("net post's base", Vector3(0, 0, s * post_z), 0.06, 0.14, "metal", {"walk": false})
 	# Tapes: top and bottom 5 cm, both faces; the boundary tapes over each side line.
 	var bottom := top - Court.NET_DEPTH
 	for x: float in [-0.004, 0.004]:
@@ -368,15 +422,18 @@ func _officials_furniture(outdoor := false, gym := false) -> void:
 	_lit.box(Vector3(0, 1.22, cz), Vector3(0.6, 0.05, 0.6), chair)
 	_lit.box(Vector3(0, 1.5, cz + 0.28), Vector3(0.6, 0.55, 0.04), chair)
 	_lit.box(Vector3(0, 0.6, cz - 0.31), Vector3(0.5, 0.04, 0.04), chair)
+	_solid_box("referee's chair", Vector3(0, 0.9, cz), Vector3(0.6, 1.8, 0.6), "wood" if outdoor else "metal")
 	# The scorers' table behind the referee, and the two benches.
 	var table_z := post_z + 2.6
 	_lit.box(Vector3(0, 0.72, table_z), Vector3(2.4, 0.06, 0.7), Color("1d2a40") if not outdoor else Color("8a6a48"))
 	_lit.box(Vector3(0, 0.38, table_z + 0.33), Vector3(2.4, 0.7, 0.04), Color("19b3a3") if not outdoor else Color("8a6a48"))
+	_solid_box("scorers' table", Vector3(0, 0.375, table_z), Vector3(2.4, 0.75, 0.72), "wood" if outdoor else "plastic")
 	for s: float in [-1.0, 1.0]:
 		if gym:
 			_sc.add("seating/gym_bench", Vector3(s * 4.5, 0, post_z + 2.4), PI * 0.5)   # the hall's own benches
 			continue
 		_lit.box(Vector3(s * 4.5, 0.42, post_z + 2.4), Vector3(3.0, 0.06, 0.42), Color("2b3c55") if not outdoor else Color("6a4a32"))
+		_solid_box("team bench", Vector3(s * 4.5, 0.225, post_z + 2.4), Vector3(3.0, 0.45, 0.42), "wood")
 		for k: float in [-1.3, 1.3]:
 			_lit.box(Vector3(s * 4.5 + k, 0.2, post_z + 2.4), Vector3(0.06, 0.4, 0.4), Color("1a1a1a"))
 
@@ -391,12 +448,15 @@ func _tournament_dressing() -> void:
 	for s: float in [-1.0, 1.0]:
 		_lit.cylinder(Vector3(0, 0, s * post_z), Vector3(0, 1.5, s * post_z), 0.12, 0.05, red, 12)
 		_lit.box(Vector3(0, 0.2, s * (post_z + 0.42)), Vector3(0.42, 0.4, 0.4), red)
+		_solid_post("net post's pad", Vector3(0, 0, s * post_z), 1.5, 0.12, "padding")
+		_solid_box("net post's pad block", Vector3(0, 0.2, s * (post_z + 0.42)), Vector3(0.42, 0.4, 0.4), "padding")
 	# The ball stand: a pole with a little tray and the match balls on it.
 	var bs := Vector3(-0.9, 0, -(post_z + 0.45))
 	_lit.cylinder(bs, bs + Vector3(0, 1.15, 0), 0.025, 0.025, Color("222222"), 6)
 	_lit.cylinder(bs + Vector3(0, 1.15, 0), bs + Vector3(0, 1.19, 0), 0.16, 0.16, Color("222222"), 8)
 	for dz: float in [-0.07, 0.07]:
 		_lit.cylinder(bs + Vector3(0, 1.19, dz), bs + Vector3(0, 1.33, dz), 0.07, 0.07, Color("f2c14e"), 8)
+	_solid_post("ball stand", bs, 1.33, 0.16, "metal")
 	# TV cameras on tripods at the four corners, turned to the court.
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
@@ -407,6 +467,7 @@ func _tournament_dressing() -> void:
 			var yaw := atan2(-c.x, -c.z)
 			_lit.box(c + Vector3(0, 1.5, 0), Vector3(0.22, 0.26, 0.45), Color("1c1c1c"), yaw)
 			_lit.cylinder(c + Vector3(0, 1.52, 0), c + Vector3(0, 1.52, 0) + Vector3(-c.x, 0, -c.z).normalized() * 0.42, 0.06, 0.07, Color("111111"), 8)
+			_solid_post("TV camera on its tripod", c, 1.65, 0.36, "metal")
 	# The game's name on the floor behind each back line, to be read from behind it (as the sponsors' are), in the
 	# player's language.
 	for s: float in [-1.0, 1.0]:
@@ -427,6 +488,8 @@ func _tournament_dressing() -> void:
 	var bc := Vector3(-3.4, 0, post_z + 2.5)
 	_lit.cylinder(bc, bc + Vector3(0, 1.4, 0), 0.04, 0.04, Color("222222"), 6)
 	_lit.box(bc + Vector3(0, 1.85, 0), Vector3(1.9, 0.9, 0.12), Color("0c0c0e"))
+	_solid_post("scoreboard's stand", bc, 1.4, 0.04, "metal")
+	_solid_box("scoreboard", bc + Vector3(0, 1.85, 0), Vector3(1.9, 0.9, 0.12), "plastic")
 	for i in 2:
 		var l := Label3D.new()
 		l.font = _words_font()
@@ -448,10 +511,12 @@ func _jury_tables() -> void:
 	for s: float in [-1.0, 1.0]:
 		var x := s * JURY_X
 		_lit.box(Vector3(x, 0.38, z), Vector3(3.6, 0.76, 0.75), Color("eeeeea"))
+		_solid_box("jury table", Vector3(x, 0.38, z), Vector3(3.6, 0.76, 0.75), "plastic")
 		_lit.box(Vector3(x, 0.66, z - 0.385), Vector3(3.6, 0.1, 0.02), Color("c8202a"))
 		for k: float in [-1.1, 0.0, 1.1]:
 			_lit.box(Vector3(x + k, 0.22, z + 0.75), Vector3(0.44, 0.44, 0.44), Color("1a1a1a"))
 			_lit.box(Vector3(x + k, 0.7, z + 0.95), Vector3(0.44, 0.5, 0.05), Color("1a1a1a"))
+			_solid_box("jury chair", Vector3(x + k, 0.475, z + 0.82), Vector3(0.44, 0.95, 0.54), "plastic")
 
 
 ## The courtside scoreboard (the tournament venues): the two teams' names and points, and the sets each has won.
@@ -535,6 +600,8 @@ func _stands(concrete: Color, seat: Color) -> void:
 			var z := s * (side_z + r * step_d + step_d * 0.5)
 			var h := r * step_h
 			_lit.box(Vector3(0, h * 0.5 + 0.21, z), Vector3(len_half * 2.0, h + 0.42, step_d), concrete.lightened(0.02 * float(r % 2)))
+			if r == 0:
+				_solid_box("stand's first step", Vector3(0, 0.21, z), Vector3(len_half * 2.0, 0.42, step_d), "concrete")
 			# The seat: a pad along the front of the step (the row behind sits on it, their feet on the step below).
 			_lit.box(Vector3(0, h + step_h + PAD_H * 0.5, s * (side_z + r * step_d + PAD_D * 0.5)), Vector3(len_half * 2.0, PAD_H, PAD_D),
 				seat.darkened(0.15 * float(r % 3)))
@@ -543,6 +610,8 @@ func _stands(concrete: Color, seat: Color) -> void:
 			var x2 := s * (end_x + r * step_d + step_d * 0.5)
 			var h2 := r * step_h
 			_lit.box(Vector3(x2, h2 * 0.5 + 0.21, 0), Vector3(step_d, h2 + 0.42, side_z * 1.6), concrete)
+			if r == 0:
+				_solid_box("stand's first step", Vector3(x2, 0.21, 0), Vector3(step_d, 0.42, side_z * 1.6), "concrete")
 			_lit.box(Vector3(s * (end_x + r * step_d + PAD_D * 0.5), h2 + step_h + PAD_H * 0.5, 0), Vector3(PAD_D, PAD_H, side_z * 1.6),
 				seat.darkened(0.15 * float(r % 3)))
 	# A wall right round, behind the top rows of the sides and the ends (the corners closed), up to the roof.
@@ -587,12 +656,14 @@ func _led_boards(face: Color) -> void:
 	while x < e - 1.0:
 		var w := 3.0
 		_lit.box(Vector3(x + w * 0.5, 0.45, d), Vector3(w - 0.04, 0.9, 0.12), face)
+		_solid_box("LED board", Vector3(x + w * 0.5, 0.45, d), Vector3(w - 0.04, 0.9, 0.12), "padding")
 		_glow.wall(Vector3(x + 0.06, 0, d - 0.065), Vector3(x + w - 0.1, 0, d - 0.065), 0.15, 0.78, Color(cols[i % 4], 1.0))
 		_glow.wall(Vector3(x + 0.25, 0, d - 0.07), Vector3(x + w - 0.3, 0, d - 0.07), 0.38, 0.52, face.lightened(0.1))
 		i += 1
 		x += w
 	for s: float in [-1.0, 1.0]:
 		_lit.box(Vector3(s * e, 0.45, 0), Vector3(0.12, 0.9, 10.0), face)
+		_solid_box("LED board", Vector3(s * e, 0.45, 0), Vector3(0.12, 0.9, 10.0), "padding")
 		_glow.wall(Vector3(s * (e - 0.065), 0, -4.8 * s), Vector3(s * (e - 0.065), 0, 4.8 * s), 0.15, 0.78, Color(cols[(i + 1) % 4], 1.0))
 	# Words on the long board facing the camera, in the player's language.
 	for k in 3:
@@ -801,6 +872,7 @@ func _gym() -> void:
 		for i in 12:
 			var z := -6.0 + i * 1.0 + 0.5
 			_lit.box(Vector3(wx - s * 0.04, 1.0, z), Vector3(0.07, 1.8, 0.97), Color("2f6fd0", 0.6))
+			_solid_box("wall mat", Vector3(wx - s * 0.04, 1.0, z), Vector3(0.07, 1.8, 0.97), "padding")
 		_backboard(glass, Vector3(wx, 0, 0), Vector3(-s, 0, 0), 1.2)
 		_gym_door(Vector3(wx, 0, -13.0), Vector3(-s, 0, 0))
 		if not low and s > 0.0:
@@ -916,8 +988,10 @@ func _backboard(glass: Geo, w: Vector3, f: Vector3, off: float) -> void:
 			else:
 				_glow.wall(a0, a1, r[2], r[3], white)
 	_lit.box(c + Vector3(0, y0 - 0.03, 0), Vector3(1.84, 0.07, 0.07), Color("1f2329", 0.6), yaw)
+	_solid_box("backboard", c + Vector3(0, (y0 + top) * 0.5, 0), Vector3(1.84, top - y0, 0.06), "glass", yaw, {"walk": false})
 	# The ring on its mounting plate, and the net: white cords from the ring crossing down to a smaller ring.
 	var rc := c + f * (0.15 + 0.225) + Vector3(0, 3.05, 0)
+	solid.add_ring({"name": "basketball ring", "centre": rc, "radius": 0.235, "tube": 0.01, "material": "metal"})
 	var orange := Color("ff5a12", 0.6)
 	_lit.box(c + f * 0.08 + Vector3(0, 3.0, 0), Vector3(0.24, 0.16, 0.16), orange, yaw)
 	var seg := 16
@@ -966,7 +1040,9 @@ func _hall_bleachers(front_z: float, sections := 3) -> void:
 func _trees(names: Array, n: int, x0: float, x1: float, z0: float, z1: float, h0: float, h1: float) -> void:
 	for i in n:
 		var p := Vector3(_rng.randf_range(x0, x1), 0, _rng.randf_range(z0, z1))
-		_sc.tree(names[i % names.size()], p, _rng.randf_range(h0, h1), _rng)
+		var h := _rng.randf_range(h0, h1)
+		_sc.tree(names[i % names.size()], p, h, _rng)
+		_solid_post("tree's trunk", p, h * 0.75, 0.15, "wood")
 
 
 ## A park court in the evening under floodlights: the court painted on asphalt in the grass, a chain-link fence round
@@ -978,6 +1054,7 @@ func _park() -> void:
 		for sz: float in [-1.0, 1.0]:
 			var p := Vector3(sx * 10.6, 0, sz * 7.6)
 			_lit.cylinder(p, p + Vector3(0, 9.0, 0), 0.12, 0.09, Color("8a8f98"), 6, false)
+			_solid_post("floodlight pole", p, 9.0, 0.12, "metal")
 			_glow.box(p + Vector3(0, 9.0, 0), Vector3(1.0, 0.5, 0.2), Color("fffbe8"))
 	# The fence: the far side and both ends, people watching through it from the benches behind.
 	var fx := Court.HALF + Court.FREE_ZONE + 0.6
@@ -991,6 +1068,11 @@ func _park() -> void:
 		posts.append(Vector3(fx, 0, -fz + i * fz * 0.5))
 	for p in posts:
 		_lit.cylinder(p, p + Vector3(0, 3.05, 0), 0.03, 0.03, Color("7d8288"), 6, false)
+		_solid_post("fence post", p, 3.05, 0.03, "metal")
+	for seg in [[Vector3(-fx, 0, -fz), Vector3(-fx, 0, fz)], [Vector3(-fx, 0, fz), Vector3(fx, 0, fz)], [Vector3(fx, 0, fz), Vector3(fx, 0, -fz)]]:
+		var a: Vector3 = seg[0]
+		var b: Vector3 = seg[1]
+		_solid_box("chain-link fence", (a + b) * 0.5 + Vector3(0, 1.5, 0), Vector3((b - a).length(), 3.0, 0.04), "chainlink", atan2(-(b - a).z, (b - a).x))
 	_lit.box(Vector3(0, 3.02, fz), Vector3(fx * 2.0, 0.04, 0.04), Color("7d8288"))
 	# Benches behind the fence, a person on most; more standing behind them.
 	for x in range(-9, 10, 3):
@@ -1053,6 +1135,7 @@ func _beach() -> void:
 	# Bunting over the court, beach umbrellas, people on the sand.
 	for s: float in [-1.0, 1.0]:
 		_lit.cylinder(Vector3(s * 9.0, 0, 6.5), Vector3(s * 9.0, 5.0, 6.5), 0.05, 0.05, Color("dddddd"), 6, false)
+		_solid_post("flag pole", Vector3(s * 9.0, 0, 6.5), 5.0, 0.05, "metal")
 	var cols := [Color("ff9a1f"), Color("e8336d"), Color("ffd27a"), Color("19b3a3"), Color("f3efe6")]
 	for i in 24:
 		var x := -9.0 + i * 0.78
@@ -1061,6 +1144,8 @@ func _beach() -> void:
 	for x: float in [-12.0, -4.0, 5.0, 13.0]:
 		_lit.cylinder(Vector3(x, 0, 10.5), Vector3(x, 2.2, 10.5), 0.04, 0.04, Color("eeeeee"), 6, false)
 		_lit.cylinder(Vector3(x, 2.2, 10.5), Vector3(x, 2.7, 10.5), 1.4, 0.0, cols[int(absf(x)) % 5], 8)
+		_solid_post("umbrella's pole", Vector3(x, 0, 10.5), 2.2, 0.04, "metal")
+		_solid_post("umbrella", Vector3(x, 2.2, 10.5), 0.5, 1.4, "fabric", {"walk": false})
 	# The side that was bare: palms, a thatched beach bar, sun loungers under umbrellas, a food cart and people watching
 	# on that side too.
 	_trees(["coconut_palm"], 9, 22.0, 40.0, -12.0, 8.0, 8.0, 12.0)
@@ -1074,6 +1159,8 @@ func _beach() -> void:
 		if i % 3 != 2:
 			_lit.cylinder(Vector3(x + 1.6, 0, z), Vector3(x + 1.6, 2.2, z), 0.04, 0.04, Color("eeeeee"), 6, false)
 			_lit.cylinder(Vector3(x + 1.6, 2.2, z), Vector3(x + 1.6, 2.7, z), 1.4, 0.0, cols[(i + 2) % 5], 8)
+			_solid_post("umbrella's pole", Vector3(x + 1.6, 0, z), 2.2, 0.04, "metal")
+			_solid_post("umbrella", Vector3(x + 1.6, 2.2, z), 0.5, 1.4, "fabric", {"walk": false})
 	_sc.add("props/food_cart", Vector3(-12.5, 0, 9.6), 0.2)
 	# By the water: the lifeguards' tower, longtail boats pulled up on the sand.
 	_sc.add("props/lifeguard_tower", Vector3(-27.0, 0, 20.5), 0.0)

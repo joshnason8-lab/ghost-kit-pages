@@ -395,8 +395,9 @@ func start_match(config: Dictionary) -> void:
 ## A match from a Start button, behind the shared loading overlay (WsgLoading; the owner: "when you click start game
 ## there is a loading delay ... users might think the game has frozen"). The tap's own frame dims the screen and shows
 ## "Loading" with a bar, and BUTTONS go off; the match's script loads on the loader's thread; then the match is built
-## in steps behind the overlay, a frame drawn after each, and drawn a part at a time (Match.reveal) so the first draw
-## of its materials does not freeze the screen; then it starts. A second tap while it loads starts nothing.
+## in steps behind the overlay, a frame drawn after each, and drawn a part at a time so the first draw
+## of its materials does not freeze the screen (WsgLoading.warm), held up till its frames come smoothly (done), then
+## it starts. A second tap while it loads starts nothing.
 func play_match(config: Dictionary, buttons: Array = []) -> void:
 	if WsgLoading.busy():
 		return
@@ -416,16 +417,16 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 		built.m = m)
 	ld.step("Venue", func(): await built.m.build_venue(ld), 3.0)
 	ld.step("Players", func(): built.m.build_people(), 2.0)
-	ld.step("View", func():
-		built.m.conceal()   # (before the camera: its first frame draws nothing new but the sky)
-		built.m.build_view())
-	ld.step("Drawing", func(): await built.m.reveal(ld), 4.0)
+	ld.step("View", func(): built.m.build_view())
+	# Its looks drawn a few at a frame behind the overlay (the foundation's warm-up: each new shader made in a frame
+	# of its own, not every one in the match's first frame - 6-12 s on a first launch, before).
+	ld.warm(func(): return built.m, "Drawing", 4.0)
 	if not await ld.run():
 		return   # (the script did not load: the overlay has gone, the buttons are back)
+	await ld.done()   # (held up until the frames run smoothly: the first one he sees is the match under way)
+	last_load = ld.report
 	if is_instance_valid(built.get("m")) and built.m == current:
 		built.m.begin()
-	last_load = ld.report
-	ld.done()
 
 
 ## The loading overlay's look: the game's colours, its icon and its own word for it.

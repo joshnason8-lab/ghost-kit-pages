@@ -21,16 +21,11 @@ enum S {INTRO, SETUP, TOSS, RALLY, DEAD, BREAK, REVIEW, REPLAY, OVER}
 const SETUP_TIME := 2.2       # s for the players to take their places and the referee to call the score
 const DEAD_TIME := 2.6        # s between the ball landing and the next serve
 const BREAK_TIME := 5.0       # the interval between sets (two minutes, played quickly)
-const REVEAL_QUICK_MS := 60.0   # a frame of the reveal (Match.reveal) this quick: twice as many new shaders in the next
-const REVEAL_SLOW_MS := 150.0   # this slow: back to one new shader a frame
-const REVEAL_CUSTOM_COST := 4   # a shader of the game's own counts as this many new ones
 
 var config := {}
 var paused := false
 ## Built by Game.play_match in steps behind the loading overlay (WsgLoading), not all in _ready.
 var staged := false
-var reveal_batches := 0      # the frames the reveal showed its parts in (tests)
-var _concealed: Array[GeometryInstance3D] = []
 
 var arena: Arena
 var ball: Ball
@@ -192,6 +187,8 @@ func build_venue(ld: WsgLoading = null) -> void:
 		arena.crowd.show_teams(String(config.home), String(config.away))   # the two teams' flags in the crowd
 	ball = Ball.new()
 	ball.bounds = arena.bounds
+	ball.solid = arena.solid
+	ball.hit_prop.connect(_on_ball_prop)
 	ball.soft = arena.sand()
 	# Every bounce off the floor or a wall heard, as loud as it was hard (the rally's landing too).
 	ball.bounced.connect(func(at: Vector3, speed: float): Sfx.bounce(at, lerpf(-16.0, -2.0, clampf((speed - 1.2) / 6.0, 0.0, 1.0))))
@@ -205,7 +202,11 @@ func build_people() -> void:
 	if user_team == 0:
 		side_team = [1, 0]
 	_make_teams()
+	for side in 2:
+		for pp in players_on(side):
+			(pp as Player).solid = arena.solid
 	_make_officials()
+	_officials.solid = arena.solid
 	_make_bench()
 	if FoundationLink.enabled():
 		wsg_replay = WsgReplay.new()
@@ -231,112 +232,6 @@ func build_view() -> void:
 		# Behind the home screen: no scoreboard or buttons, the crowd quiet, no replays.
 		hud.visible = false
 		controls.visible = false
-
-
-## Behind the loading overlay, before the camera is made: everything built hidden (reveal shows it again).
-func conceal() -> void:
-	_concealed.clear()
-	for n in find_children("*", "GeometryInstance3D", true, false):
-		var g := n as GeometryInstance3D
-		if g.visible:
-			g.visible = false
-			_concealed.append(g)
-
-
-## Behind the loading overlay: what conceal hid, shown again over frames, so the first draw of each shader (made, in
-## this renderer, on the main thread the first time something is drawn with it) is spread over frames the overlay's
-## bar moves in, not one long freeze. Each frame takes the parts drawn with shaders already made, and up to BUDGET new
-## ones (a game's own shader, the crowd's or the flags', counts as REVEAL_CUSTOM_COST: the slow ones to make): one to
-## begin with, twice as many after a quick frame (they were made already: a later launch), back to one after a slow
-## one.
-func reveal(ld: WsgLoading) -> void:
-	var shown := _concealed
-	var keep := ld.slice_ms
-	ld.slice_ms = 0.0   # (every checkpoint a frame: each batch drawn on its own)
-	await ld.checkpoint(0.0)   # the sky and the light first, on their own
-	var seen := {}
-	var budget := 1
-	var i := 0
-	while i < shown.size():
-		var t := Time.get_ticks_usec()
-		var fresh := 0
-		while i < shown.size():
-			var g := shown[i]
-			var new_keys := []
-			if is_instance_valid(g):
-				for k in _shader_keys(g):
-					if not seen.has(k) and not new_keys.has(k):
-						new_keys.append(k)
-			var cost := 0
-			for k in new_keys:
-				cost += REVEAL_CUSTOM_COST if k is Shader or (k is Array and k[0] is Shader) else 1
-			if fresh > 0 and fresh + cost > budget:
-				break   # (the next frame's)
-			for k in new_keys:
-				seen[k] = true
-			fresh += cost
-			if is_instance_valid(g):
-				g.visible = true
-			i += 1
-		reveal_batches += 1
-		await ld.checkpoint(float(i) / shown.size())
-		var ms := (Time.get_ticks_usec() - t) / 1000.0
-		budget = mini(budget * 2, 64) if ms < REVEAL_QUICK_MS else (1 if ms > REVEAL_SLOW_MS else budget)
-	ld.slice_ms = keep
-	_concealed = []
-
-
-## What a part is drawn with, as far as which shaders it needs: a shader material's shader, a standard material's
-## settings that change its shader (not its colours or which texture), skinned or not; a Label3D or the like its kind.
-static func _shader_keys(g: GeometryInstance3D) -> Array:
-	var mats := []
-	var skinned := false
-	if g.material_override:
-		mats.append(g.material_override)
-	elif g is MeshInstance3D:
-		var mi := g as MeshInstance3D
-		skinned = mi.skin != null or mi.get_parent() is Skeleton3D
-		if mi.mesh:
-			for k in mi.mesh.get_surface_count():
-				mats.append(mi.get_active_material(k))
-	elif g is MultiMeshInstance3D:
-		var mm := (g as MultiMeshInstance3D).multimesh
-		if mm and mm.mesh:
-			for k in mm.mesh.get_surface_count():
-				mats.append(mm.mesh.surface_get_material(k))
-	else:
-		return [g.get_class()]
-	if g.material_overlay:
-		mats.append(g.material_overlay)
-	var out := []
-	for m in mats:
-		var key: Variant = _shader_key(m)
-		out.append([key, skinned] if skinned else key)
-	return out
-
-
-const SHADER_PROPS := ["transparency", "blend_mode", "cull_mode", "depth_draw_mode", "no_depth_test", "shading_mode",
-	"diffuse_mode", "specular_mode", "disable_ambient_light", "disable_fog", "vertex_color_use_as_albedo",
-	"albedo_texture", "metallic_texture", "roughness_texture", "orm_texture", "emission_enabled", "emission_texture",
-	"normal_enabled", "rim_enabled", "clearcoat_enabled", "anisotropy_enabled", "ao_enabled", "heightmap_enabled",
-	"subsurf_scatter_enabled", "backlight_enabled", "refraction_enabled", "detail_enabled", "uv1_triplanar",
-	"uv2_triplanar", "billboard_mode", "texture_filter", "texture_repeat", "use_point_size", "fixed_size",
-	"proximity_fade_enabled", "distance_fade_mode", "alpha_antialiasing_mode", "disable_receive_shadows",
-	"shadow_to_opacity", "grow", "albedo_texture_msdf"]
-
-
-static func _shader_key(m: Material) -> Variant:
-	if m == null:
-		return "default"
-	if m is ShaderMaterial:
-		return (m as ShaderMaterial).shader
-	if m is BaseMaterial3D:
-		var k := m.get_class()
-		for p in SHADER_PROPS:
-			var v: Variant = m.get(p)
-			k += "|" + (str(v != null) if v == null or v is Object else str(v))
-		return k
-	return m
 
 
 ## The match under way: its sounds, the introduction, the clock running.
@@ -1803,6 +1698,14 @@ func _block_at_net(attacker: Player, from: Vector3, v: Vector3, mv: String) -> v
 
 
 # ---------------------------------------------------------------- the end of a rally
+
+## The ball in play into a prop (a post, the referee's chair, the table, a bench: all off the court): out, the rally
+## over there, as the rules have it for a ball that touches anything outside the court.
+func _on_ball_prop(hit: Dictionary) -> void:
+	if state == S.RALLY and land_t > 0.0:
+		land_t = -1.0
+		_landed(hit.pos)
+
 
 func _landed(p: Vector3) -> void:
 	_whistle("long")   # the rally is over

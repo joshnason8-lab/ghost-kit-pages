@@ -156,9 +156,18 @@ func update_to(t: float, dt: float) -> void:
 		_step_loose(dt)
 		return
 	if flying:
+		var was := global_position
 		var k := t - t_launch
 		global_position = Ball.pos_at(p_launch, v_launch, k)
 		vel = v_launch + Vector3(0, -G * k, 0)
+		# Into a prop on its way (a post, the referee's chair, the table, a bench): off it, as it would, and loose from
+		# there (the match calls the rally: hit_prop).
+		if solid and bool(solid.sweep(was, global_position, RADIUS).get("hit", false)):
+			var r := solid.bounce(was, vel, RADIUS, dt, _on_prop)
+			global_position = r.pos
+			vel = r.vel
+			flying = false
+			loose = true
 		turn(dt)
 		# Down on the floor (the rally is over by now): from here it bounces and rolls by itself.
 		if global_position.y < RADIUS and vel.y < 0.0:
@@ -169,6 +178,26 @@ func update_to(t: float, dt: float) -> void:
 
 
 signal bounced(at: Vector3, speed: float)   # off the floor or a wall, after a rally: for its sound
+## Off a prop (WsgSolidProps' hit: pos, normal, material, sound, speed): the match ends a rally there (out).
+signal hit_prop(hit: Dictionary)
+
+## The venue's props (Arena.solid): the ball bounces off them, at any speed (swept), never through.
+var solid: WsgSolidProps = null
+
+
+## A step of H from P at vel through the props (off whatever it meets on the way: vel changed), or straight on.
+func _through(p: Vector3, h: float) -> Vector3:
+	if solid == null:
+		return p + vel * h
+	var r := solid.bounce(p, vel, RADIUS, h, _on_prop)
+	vel = r.vel
+	return r.pos
+
+
+func _on_prop(hit: Dictionary) -> void:
+	if float(hit.get("speed", 0.0)) > 1.0:
+		bounced.emit(hit.pos, float(hit.speed))
+	hit_prop.emit(hit)
 
 const BOUNCE := 0.5         # how much of its speed into the floor it bounces back with (sand: far less)
 const ROLL_DRAG := 1.6      # m/s each second rolling on a court (sand: far more)
@@ -183,7 +212,7 @@ func _step_loose(dt: float) -> void:
 		var p := global_position
 		if p.y > RADIUS + 0.0005 or vel.y > 0.0:
 			vel.y -= G * h
-			p += vel * h
+			p = _through(p, h)
 			if p.y <= RADIUS:
 				p.y = RADIUS
 				global_position = p
@@ -194,7 +223,7 @@ func _step_loose(dt: float) -> void:
 			var sp := maxf(0.0, flat.length() - ROLL_DRAG * (4.0 if soft else 1.0) * h)
 			flat = flat.normalized() * sp if sp > 0.0 else Vector2.ZERO
 			vel = Vector3(flat.x, 0.0, flat.y)
-			p += vel * h
+			p = _through(p, h)
 		# The walls and boards: off them, with most of its speed lost.
 		var hit := 0.0
 		if p.x < bounds.position.x + RADIUS or p.x > bounds.end.x - RADIUS:

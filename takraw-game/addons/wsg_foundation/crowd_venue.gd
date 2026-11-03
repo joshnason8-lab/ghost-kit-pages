@@ -130,7 +130,7 @@ func place(seed := 0) -> Dictionary:
 	rng.seed = seed
 	var out := {"spots": [], "facings": [], "seat": PackedFloat32Array(), "anchor_seat": [], "back": PackedFloat32Array(),
 		"section": PackedInt32Array(), "floor": PackedFloat32Array(), "dangle": [], "half_depth": PackedFloat32Array(),
-		"front": PackedFloat32Array(), "obstacles": []}
+		"front": PackedFloat32Array(), "seat_dir": PackedVector3Array(), "obstacles": []}
 	for si in sections.size():
 		var s: Dictionary = sections[si]
 		var fr := frame(s)
@@ -193,7 +193,7 @@ func place(seed := 0) -> Dictionary:
 						_spot(out, si, feet, facing_at(s, feet), 0.0, false, INF, row0.y)
 					else:
 						_spot(out, si, Vector3(mid.x, row0.y, mid.z), facing_at(s, mid), seat_top - row0.y, true, back, row0.y,
-							s.depth * 0.5, toe_room)
+							s.depth * 0.5, toe_room, -away)
 			else:
 				# One line of fans a tread, or more on a deep one (a floor): STAND_GAP from the front, 0.6 m apart,
 				# none nearer the back than a body's depth.
@@ -214,7 +214,8 @@ func place(seed := 0) -> Dictionary:
 
 
 func _spot(out: Dictionary, si: int, p: Vector3, f: Vector3, seat: float, anchor: bool, back: float, floor_y: float,
-		half_depth := 0.0, front := INF) -> void:
+		half_depth := 0.0, front := INF, seat_dir := Vector3.ZERO) -> void:
+	out.seat_dir.append(seat_dir)
 	out.half_depth.append(half_depth)
 	out.front.append(front)
 	out.spots.append(p)
@@ -316,7 +317,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 			var lp: Vector3 = oxf.affine_inverse() * xf.origin
 			var sz: Vector3 = ob.size
 			if absf(lp.x) < sz.x * 0.5 + 1.0 and absf(lp.z) < sz.z * 0.5 + 1.0 and lp.y > -sz.y * 0.5 - 2.2 and lp.y < sz.y * 0.5 + 0.3:
-				near.append([oxf.affine_inverse() * xf, sz * 0.5, ob.what])
+				near.append([oxf.affine_inverse() * xf, sz * 0.5, ob.what, oxf.origin])
 		var deepest := 0.0
 		var deep_what := ""
 		var fwd_up := float(crowd.stand_fwd.get(fan, 0.0)) if seated else 0.0
@@ -349,7 +350,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 							deepest = dd
 							deep_what = "%s (%s)" % [ob[2], pose]
 							if OS.has_environment("AUDIT_DEBUG"):
-								deep_what += " fan-local %s, obstacle-local %s" % [str(p), str(lp)]
+								deep_what += " fan-local %s, obstacle-local %s, obstacle at %s, fan at %s" % [str(p), str(lp), str(ob[3]), str(xf.origin)]
 				var fe := lowest - floor_y
 				sec.feet = [minf(sec.feet[0], fe), maxf(sec.feet[1], fe)]
 				if fe < FEET_TOL[0] or (fe > FEET_TOL[1] and not (dangle and pose != "stand")):

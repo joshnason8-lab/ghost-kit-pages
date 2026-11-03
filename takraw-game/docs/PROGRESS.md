@@ -670,6 +670,33 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Solid props, and loading v2 (0.15.4)
+
+Foundation synced to 877bcd9 (every required commit: loading v2, solid props, the warm-up fix, key hits; its new
+check_foundation.sh fails CI without them).
+- **Solid props** (the owner, for every game: "There will NEVER be a time when a player or referee should walk
+  through a table or bench etc. A ball should also bounce off these items."): measured first (an AI match at each
+  venue): players walked through the benches, the scorers' table, the referee's chair, the net posts and pads and the
+  ball stand everywhere but the beach; the ball went through the table (at the park, coming to rest inside it), the
+  benches, the tripods and the chair. Now every venue's props are the shared WsgSolidProps (`Arena.solid`),
+  registered where each is built: the referee's chair, the scorers' table, the benches, the net posts (and pads,
+  bases), the ball stand, the TV tripods, the scoreboard, the jury tables and chairs, the LED boards, the stands'
+  first steps, the gym's wall mats, backboards and rings, the park's floodlight poles and chain-link fence, the
+  beach's flag and umbrella poles, the trees' trunks, and the scenery's models within reach of the play (benches,
+  bleachers, planters, loungers, carts, the bar) as boxes round them. The players and the officials on their feet
+  step through `solid.move` (steered round, never in; a target in one moved beside it); the ball through
+  `solid.sweep`/`bounce` (at any speed); a ball in play that hits a prop ends the rally there, out. The floor and the
+  net stay the game's own (skipped, with the reason). `game/prop_runs.gd` plays a Watch-AI match at each venue for
+  the shared audit (`tools/wsg/prop_audit.gd`, now in CI): every venue PASS, 32,400 body-frames each with nobody
+  inside a prop, 2,700-2,850 ball steps each with none through one. test_runner: each venue's props, the wiring, a
+  ball at the table coming back off it.
+- **Loading v2**: the foundation's warm-up (`ld.warm`: the match's looks drawn a batch a frame from their own camera,
+  each new shader made in a frame of its own) replaces the game's own reveal, and `ld.done()` holds the overlay till
+  the frames come smoothly before the match starts. The setup screens pre-load match.gd (`WsgLoading.prewarm`).
+  Measured (load_probe, Low): a later launch, the National Arena's longest frame 108 ms (the park's 201), settled in
+  0.23 s; a first launch after an install or update, the longest 975 ms at the National Arena and 1.25 s at the park
+  (each was a single frozen frame of 6.8 and 12.2 s before the overlay), the bar moving through 20-34 warm-up frames.
+
 ## No gliding (0.15.3)
 
 The owner: "Players still gliding a lot, like when getting in position to spike or block. Still lots of gliding when

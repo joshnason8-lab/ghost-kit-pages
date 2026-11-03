@@ -15,6 +15,12 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.4: **everything round the court is solid.** Nobody walks through the referee's chair, the scorers' table,
+a bench, the net posts or anything else any more: players and the line judges go round them, and the ball bounces
+off them (a ball in play that hits one is out, as the rules have it). Starting a match now shows its loading screen
+until the first frames run smoothly, so the match begins without a stutter, and the match is loaded while you pick
+the teams.
+
 New in 0.15.3: **no more gliding.** The players' feet now stay planted on the floor as they run, shuffle along the
 net, back up and turn: a foot that is down stays where it was put down while the body moves over it, and the
 stride keeps pace with how fast he goes. Sideways, a real step-and-close shuffle (before, the legs only swung while

@@ -15,6 +15,7 @@ var _play_btn: Button
 
 
 func setup(args: Dictionary) -> void:
+	WsgLoading.prewarm([Game.MATCH_SCRIPT])   # (the match's script loading while he picks: Play finds it ready)
 	watch = bool(args.get("watch", false))
 
 

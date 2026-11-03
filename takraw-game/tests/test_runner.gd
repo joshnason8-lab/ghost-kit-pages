@@ -35,6 +35,7 @@ func _ready() -> void:
 	_officials_back_away()
 	_no_glide_between_points()
 	_no_glide_in_play()
+	_solid_props()
 	_jitter()
 	_stick_follows_screen()
 	await _watch_ai()
@@ -853,6 +854,36 @@ func _no_glide_in_play() -> void:
 		check(float(s[1]) > 3.0 and float(s[0]) < float(row[1]), "no gliding %s: %.0f%% of %.0f m slid (under %.0f%%)" % [row[2], 100.0 * float(s[0]), float(s[1]), 100.0 * float(row[1])])
 
 
+## The owner: "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball
+## should also bounce off these items." Every venue's props are solid (Arena.solid, the shared WsgSolidProps): the net
+## posts, the referee's chair, the scorers' table and the benches among them; the players, the officials on their feet
+## and the ball go by them; a ball sent at the scorers' table comes back off it. (tools/wsg/prop_audit.gd, in CI, plays
+## a match at each venue and fails on anyone inside a prop or a ball through one.)
+func _solid_props() -> void:
+	for v in DB.VENUES:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "THA", "away": "MAS", "venue": v[0], "event": "regu", "sets": 1, "points": 15, "user_team": -1,
+			"demo": true, "seed": 3, "mode": "quick"}
+		add_child(m)
+		var s: WsgSolidProps = m.arena.solid
+		var names := {}
+		for p in s.props:
+			names[String(p.name)] = int(names.get(String(p.name), 0)) + 1
+		var want := ["net post", "referee's chair", "scorers' table"]
+		var missing := want.filter(func(n): return not names.has(n))
+		check(missing.is_empty() and (names.has("team bench") or names.has("gym_bench")) and s.props.size() > 12,
+			"%s: its props solid (%d: %s), missing %s" % [v[0], s.props.size(), names.keys().slice(0, 12), missing])
+		var wired: bool = m.ball.solid == s and m.players_on(0).all(func(pl): return (pl as Player).solid == s) and m.get("_officials").solid == s
+		check(wired, "%s: the players, the officials and the ball go by the props" % v[0])
+		# A ball at the table, from the court's side: it comes back off it, never through.
+		var post_z: float = Court.HALF_W + Court.POST_OUT
+		var r: Dictionary = s.bounce(Vector3(0, 0.5, post_z + 1.4), Vector3(0, 0, 12.0), Ball.RADIUS, 0.25)
+		check(not (r.hits as Array).is_empty() and float((r.vel as Vector3).z) < 0.0 and float((r.pos as Vector3).z) < post_z + 2.25,
+			"%s: a ball sent at the scorers' table comes back off it (%s)" % [v[0], r.pos])
+		m.queue_free()
+		remove_child(m)
+
+
 ## Watch AI (on the home screen): its setup in every language (the two teams, no side of yours, no difficulty); the
 ## match it starts the computer's on both sides, from the broadcast camera, the score up and no controls; 2x and back
 ## to 1x; Back pauses and resumes; replays; played to the end, its result "Match over", the records untouched; and
@@ -958,8 +989,8 @@ func _watch_ai() -> void:
 ## The owner: "when you click start game there is a loading delay ... users might think the game has frozen." A real
 ## tap on Quick match's Play: in the tap's own frame the loading overlay (the shared WsgLoading) is up and the button
 ## off; it stays up, frame after frame, until the match has started; the bar only goes forward, moves in many frames and reaches the end; a second start and Back do nothing meanwhile; the match is built
-## in steps (no step's slice of main-thread work over the foundation's 250 ms) and drawn a part at a time (the reveal);
-## then it starts, every part of it shown, its clock running. Every Start button goes the same way (play_match).
+## in steps (no step's slice of main-thread work over the foundation's 250 ms), drawn a part at a time (the warm-up)
+## and held till its frames come smoothly (the settle); then it starts, every part of it shown, its clock running. Every Start button goes the same way (play_match).
 func _loading_overlay() -> void:
 	var qs: Node = Game.show_screen("res://ui/quick_setup.gd")
 	await frames(3)
@@ -1009,11 +1040,16 @@ func _loading_overlay() -> void:
 		"built in steps: the longest slice of main-thread work %.0f ms (%s), under %.0f %s" % [float(r.get("longest_slice_ms", -1)),
 		r.get("longest_slice", ""), WsgLoading.STALL_MS, r.get("steps", {})])
 	var shown := 0
+	var hidden := 0
 	for g in m.find_children("*", "GeometryInstance3D", true, false):
-		shown += 1 if (g as GeometryInstance3D).visible else 0
-	var hidden := (m.get("_concealed") as Array).size()
-	check(int(m.reveal_batches) >= 3 and hidden == 0 and shown > 20,
-		"drawn a part at a time: over %d frames, %d parts shown, none left hidden" % [int(m.reveal_batches), shown])
+		if (g as GeometryInstance3D).visible:
+			shown += 1
+			hidden += 1 if (g as GeometryInstance3D).layers == 0 else 0
+	var warm: Dictionary = r.get("warm", {})
+	check(int(warm.get("frames", 0)) >= 3 and int(warm.get("looks", 0)) > 5 and hidden == 0 and shown > 20,
+		"drawn a part at a time (the warm-up): %d looks over %d frames, %d parts shown, none left hidden (%d)" % [int(warm.get("looks", 0)),
+		int(warm.get("frames", 0)), shown, hidden])
+	check(r.has("settled"), "held up until its frames run smoothly (settled %s, %.0f ms)" % [str(r.get("settled")), float(r.get("settle_ms", -1))])
 	var t0 := float(m.state_t)
 	await frames(5)
 	check(m.process_mode == Node.PROCESS_MODE_INHERIT and int(m.state) == int(m.S.INTRO) and float(m.state_t) > t0,

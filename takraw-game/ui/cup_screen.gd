@@ -9,6 +9,7 @@ var _event := "regu"
 
 
 func setup(_args: Dictionary) -> void:
+	WsgLoading.prewarm([Game.MATCH_SCRIPT])   # (the match's script loading while he picks: Play finds it ready)
 	pass
 
 
