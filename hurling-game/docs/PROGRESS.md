@@ -836,3 +836,11 @@ The owner's 0.20 playtest (code 34):
   WsgCrowdCards in place of the game's own cut-outs; each fan's baked light from the probe at the old spot nearest
   it (the bake's probes are per old spot). game/crowd_venues.gd registers the grounds: tools/wsg/crowd_audit.gd PASS
   for all three (night is the county's stands), now a CI step. Tests read the venue's placement and the cards.
+
+## Done (0.22.1, 3 November 2026)
+
+- The post's clang (the owner again after 0.21: "I still do not hear the sound of a clang ... this is a regression"):
+  probed in free-taking, it did play - from the post, at +7.5 dB, 30 m off - but as a 3D sound, whose air absorption
+  (AudioStreamPlayer3D's attenuation filter) takes the highs off with distance, and a ping is all highs. Back to
+  Sfx.play, flat and full (as before the foundation's positional sound), the crowd's "ooh" 0.35 s after it. Test
+  _post_clang. Code 38.

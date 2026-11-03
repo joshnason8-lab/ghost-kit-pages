@@ -1898,12 +1898,12 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				ball.global_position = Vector3(gx - s * 0.1, c.y, c.z)
 				ball.vel = Vector3(-ball.vel.x * 0.45, ball.vel.y * 0.6 + (2.0 if hit_bar else 0.0), ball.vel.z * 0.6 + rng.randf_range(-2, 2))
 				ball.last_kind = "deflect"
-				# The clang carries the length of a ground: heard from the camera, most of the falloff with distance made
-				# up (a free's camera behind the taker is 40-65 m off, where it was lost under the crowd: the owner).
-				var view: Camera3D = get_viewport().get_camera_3d()
-				var far := c.distance_to(view.global_position) if view else 10.0
-				Sfx.play_at("post", c, clampf(20.0 * log(maxf(far, 10.0) / 10.0) / log(10.0) * 0.8, 0.0, 14.0), 1.0, 4, -2.0)
-				Sfx.react("ooh", -3.0)
+				# The clang played flat, full and clear (as it was before the foundation's positional sound): a 3D player
+				# muffles its highs with distance - Godot's air absorption - and a clang is all highs, so from a free's
+				# camera 30 to 65 m off it came out a dull thud under the crowd (the owner, 0.20 and again 0.21: "I still
+				# do not hear the sound of a clang").
+				Sfx.play("post", -1.0, randf_range(0.97, 1.03))
+				_after(0.35, func(): Sfx.react("ooh", -3.0))   # (the crowd a beat after the ping, not over it)
 				hud.call_line(tr("CALL_POST") if hit_post else tr("CALL_BAR"))
 				_say("post")
 				_chase_t = 0.0

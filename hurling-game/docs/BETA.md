@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.22.1
+
+- **The clang off the posts, properly this time**: the ping of the sliotar off the aluminium is played clear and
+  full again (0.21.0 only made it louder; it was being muffled with distance, the highs taken out, as a sound far
+  across a ground is), and the crowd's "ooh" comes a beat after it instead of over it.
+
 ## New in 0.22.0
 
 - **The crowd sits and stands properly at every ground** (the shared foundation's crowd placement): fans in the

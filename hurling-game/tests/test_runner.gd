@@ -60,6 +60,7 @@ func _ready() -> void:
 	await _commentary()
 	await _stick_camera()
 	await _half_time_and_clock()
+	await _post_clang()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -2253,5 +2254,30 @@ func _half_time_and_clock() -> void:
 				if p.visible:
 					worst = maxf(worst, maxf(absf(p.global_position.x) - Pitch.HALF_L, absf(p.global_position.z) - Pitch.HALF_W))
 	check(seen and worst < 3.0, "Half-time: every player stays on the field over the break (furthest %.1f m beyond a line)" % worst)
+	m.queue_free()
+	await frames(2)
+
+
+## The sliotar off a post in free-taking: the clang heard, flat and clear, not a 3D sound muffled by the 40-65 m to the
+## free's camera (the owner, twice: "I still do not hear the sound of a clang").
+func _post_clang() -> void:
+	var keep_sound = Game.settings.sound
+	Game.settings.sound = true
+	var m: Node = load("res://game/practice.gd").new()
+	m.config = {"home": "KIL", "away": "TIP", "venue": "county", "mode": "practice", "user_team": 0, "seed": 1}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(30)
+	var gx: float = Pitch.HALF_L * m.dir(0)
+	var z := Pitch.POST_GAP * 0.5 + Pitch.POST_W * 0.5
+	m.ball.state = Sliotar.FREE
+	m.ball.vel = Vector3(20.0 * m.dir(0), 0, 0)
+	m._check_ball(Vector3(gx - 0.5 * m.dir(0), 3.0, z), Vector3(gx + 0.5 * m.dir(0), 3.0, z))
+	var heard := false
+	for p in Sfx._pool:
+		if p.playing and p.stream and String(p.stream.resource_path).get_file().begins_with("post"):
+			heard = heard or p.volume_db > -6.0
+	check(heard, "Free-taking: the sliotar off a post is heard, the clang played flat and clear")
+	Game.settings.sound = keep_sound
 	m.queue_free()
 	await frames(2)
