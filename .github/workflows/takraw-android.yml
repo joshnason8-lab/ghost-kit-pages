@@ -270,11 +270,18 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release delete takraw-smash-beta --cleanup-tag --yes || true   # the beta under the game's old name
-          gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+          # Safely (ADOPTING 5.19): the new release, whole, under a tag of its own first - if that fails, the old one is
+          # untouched; then the swap, seconds apart: the old one goes, the new one takes the tag. (Deleting first left
+          # Floorball's tag empty for an hour when the create hit a 403.)
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$TAG"
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take: the build is still under $NEXT)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+          gh release delete takraw-smash-beta --cleanup-tag --yes || true   # the beta under the game's old name
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot

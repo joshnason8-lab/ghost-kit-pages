@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.12: **no T-pose in the replays** (Medium and High). A player or official who had not moved yet when a
+point began could show for a moment with his arms straight out in the slow-motion replay; now every body in a replay is
+as it was drawn. Behind the scenes, a new beta is now put up before the old one comes down, so this page is never left
+empty while a build is published.
+
 New in 0.15.11: **feet stay planted when players stop or turn hard** (Medium and High). Pulling up from a run, a
 player's foot could skate several centimetres across the floor in a single frame (up to 7 cm on a hard stop); now a
 foot flat on the floor stays where it landed, and a foot let go lifts over the floor to its next step. Worth watching
