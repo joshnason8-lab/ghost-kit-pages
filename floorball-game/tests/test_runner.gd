@@ -1384,8 +1384,18 @@ func _goal_replay() -> void:
 	tap = tap.duplicate()
 	tap.pressed = false
 	Input.parse_input_event(tap)
+	await frames(2)
+	# Left in a replay (a match ended by a goal, or left from the pause menu): the next match's sticks not left frozen.
+	m._goal(1, false)
+	guard = 0
+	while m.phase != "replay" and guard < 400:
+		await get_tree().physics_frame
+		guard += 1
+	var in_replay: bool = m.phase == "replay" and FoundationLink.replay_at != INF
 	m.queue_free()
 	await frames(2)
+	check(in_replay and FoundationLink.replay_at == INF, "replay: a match freed in its replay leaves no replay behind (%s)" % FoundationLink.replay_at)
+	FoundationLink.replay_at = INF
 	Game.settings.graphics = gfx
 
 

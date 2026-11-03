@@ -2294,6 +2294,10 @@ func _apply_speed() -> void:
 
 
 func _exit_tree() -> void:
+	# (A match left or freed in its goal's replay: the replay's moment is the foundation's for every body, so it is
+	# cleared here - else the next match's sticks are drawn where this one's were, frozen.)
+	if not _replay.is_empty():
+		FoundationLink.replay_at = INF
 	if fast:
 		fast = false
 		Engine.time_scale = 1.0
