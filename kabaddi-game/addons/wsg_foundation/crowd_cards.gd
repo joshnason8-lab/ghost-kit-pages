@@ -13,7 +13,8 @@ extends Node3D
 ## Seen from behind (a camera behind a stand), a card shows the fan's back (crowd/cards_back.png; your own: use_art's
 ## back and back_mask), turned toward the camera from behind.
 ## Your own card art instead of the shared fans: use_art(atlas, mask, layout[, back, back_mask]) before build() (layout as cards.json:
-## {"cols", "rows", "size": [w, h] m a cell, "poses": 3 (sit, stand, cheer), "fans": {name: {"seat": the seat's height
+## {"cols", "rows", "size": [w, h] m a cell, "poses": ["sit", "stand", "cheer"] and any of "sit_clap", "stand_clap",
+## "sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r" after them (clap() and watch_ball() then use them), "fans": {name: {"seat": the seat's height
 ## in the cell, m}}}; mask: R shirt, G skin, B hair, A legs' clothes, or a blank one).
 
 const DIR := "res://addons/wsg_foundation/crowd/"
@@ -31,6 +32,8 @@ var _mask: Texture2D
 var _back: Texture2D        # the same cells from behind (none: the front is shown from behind too)
 var _back_mask: Texture2D
 var _excite := 0.0
+## How often each fan is drawn (as WsgCrowd3D.fan_weights: its name, any not given 1), set before build().
+var fan_weights := {}
 ## How bright the cards are drawn (1: as the 3D fans; a game whose own crowd was painted brighter can match it).
 var brightness := 1.0:
 	set(v):
@@ -85,21 +88,13 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 		var fwd: Vector3 = placed.facings[i]
 		fwd = Vector3(fwd.x, 0, fwd.z).normalized()
 		var seat_h: float = placed.seat[i] if i < placed.seat.size() else 0.0
-		var fi := rng.randi() % fans.size()
+		# Which fan: at random among those whose legs fit the seat (sized within FIT_MIN..FIT_MAX), weighted by
+		# fan_weights; standing, among all. (Picking the single best fit put the same fan on every seat of a stand -
+		# Kho Kho: "nearly every card reads as the same long-haired figure".)
+		var fi := _pick(fans, seat_h, rng)
 		var h := rng.randf_range(0.93, 1.07)
 		var at := spot
 		if seat_h > 0.0:
-			# The fan whose legs fit the seat best, sized to it; the card just in front of the seat (its knees), so
-			# the seat does not cut through it.
-			var best := fi
-			var err := INF
-			for n in fans.size():
-				var want: float = seat_h / float(_layout.fans[fans[n]].seat)
-				var e := absf(want - 1.0) + rng.randf() * 0.06
-				if e < err:
-					err = e
-					best = n
-			fi = best
 			h = clampf(seat_h / float(_layout.fans[fans[fi]].seat), WsgCrowd3D.FIT_MIN, WsgCrowd3D.FIT_MAX)
 			var half: float = placed.half_depth[i] if placed.has("half_depth") and i < placed.half_depth.size() else 0.2
 			at = spot + fwd * (half + 0.12)
@@ -125,6 +120,10 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 	material.set_shader_parameter("rows", int(_layout.rows))
 	var poses: Variant = _layout.get("poses", 3)
 	material.set_shader_parameter("poses", (poses as Array).size() if poses is Array else int(poses))
+	# A game's art may add, after sit, stand and cheer: sit_clap, stand_clap, sit_look_l, sit_look_r, stand_look_l,
+	# stand_look_r (Kabaddi's clapping in time, heads after the raider).
+	for extra in ["sit_clap", "stand_clap", "sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"]:
+		material.set_shader_parameter("p_" + extra, (poses as Array).find(extra) if poses is Array else -1)
 	material.set_shader_parameter("size", Vector2(_layout.size[0], _layout.size[1]))
 	material.set_shader_parameter("turn", TURN)
 	material.set_shader_parameter("brightness", brightness)
@@ -144,6 +143,27 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 
 
 var _looks := {}
+
+
+func _pick(fans: Array, seat_h: float, rng: RandomNumberGenerator) -> int:
+	var cum := PackedFloat32Array()
+	var tot := 0.0
+	var best := 0
+	var err := INF
+	for n in fans.size():
+		var w := maxf(float(fan_weights.get(fans[n], 1.0)), 0.0)
+		if seat_h > 0.0:
+			var need: float = seat_h / float(_layout.fans[fans[n]].seat)
+			if absf(need - 1.0) < err:
+				err = absf(need - 1.0)
+				best = n
+			if need < WsgCrowd3D.FIT_MIN or need > WsgCrowd3D.FIT_MAX * 1.03:
+				w = 0.0
+		tot += w
+		cum.append(tot)
+	if tot <= 0.0:
+		return best
+	return mini(cum.bsearch(rng.randf() * tot, false), fans.size() - 1)
 
 
 ## As WsgCrowd3D.set_looks: each fan's skin, hair and legs' clothes from these lists (dark to light, up to 8).
@@ -181,6 +201,41 @@ func _process(delta: float) -> void:
 	_excite = lerpf(_excite, target, 1.0 - exp(-delta * (5.0 if target > _excite else 0.7)))
 	material.set_shader_parameter("excite", _excite)
 	material.set_shader_parameter("light", WsgCrowd3D._light)
+	_clap_time += delta
+	if _clap_left > 0.0:
+		_clap_left -= delta
+	material.set_shader_parameter("clap_on", 1.0 if _clap_left > 0.0 else 0.0)
+	material.set_shader_parameter("clap_time", _clap_time)
+	if _watching:
+		_ball = _ball.lerp(_target_ball, 1.0 - exp(-delta * 3.0))
+		material.set_shader_parameter("ball", _ball)
+
+
+var _clap_left := 0.0
+var _clap_time := 0.0
+var _ball := Vector3.ZERO
+var _target_ball := Vector3.ZERO
+var _watching := false
+
+
+## As WsgCrowd3D.clap: the rhythmic clapping is playing (claps a second, unison 0..1, for how long). Cards with clap
+## poses (a game's art) clap on its beat.
+func clap(rate: float, sync: float, seconds: float) -> void:
+	_clap_left = seconds
+	_clap_time = 0.0
+	if material:
+		material.set_shader_parameter("clap_rate", rate)
+		material.set_shader_parameter("clap_sync", sync)
+
+
+## As WsgCrowd3D.watch_ball (every frame): cards with look poses (a game's art) look to the side the ball is on.
+func watch_ball(p: Vector3) -> void:
+	if not _watching:
+		_ball = p
+	_watching = true
+	_target_ball = p
+	if material:
+		material.set_shader_parameter("watching", 1.0)
 
 
 ## One card: a quad from the foot (0) to the top (1), its middle at the origin (the shader turns and sizes it).

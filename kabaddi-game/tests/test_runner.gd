@@ -501,11 +501,14 @@ func _run() -> void:
 		"the boards' league name follows the language (%d boards)" % boards.size())
 	# Clapping heard is clapping seen: most of the crowd claps while applause plays, then stops.
 	Sfx.crowd_heard.emit("applause", 1.0)
-	await frames(30)
+	await frames(10)
+	# The cards clap too (their clap poses, on the beat of what is heard), for as long as it is heard.
+	var cards_clap: bool = ab.crowd_cards == null or float(ab.crowd_cards.material.get_shader_parameter("clap_on")) > 0.5
+	await frames(20)
 	var mid: float = ab._clap_share
 	ab._clap_t = 0.0
 	await frames(60)
-	check(mid > 0.4 and ab._clap_share < 0.05,
+	check(mid > 0.4 and ab._clap_share < 0.05 and cards_clap,
 		"the crowd claps while applause is heard, and stops after (%.2f, then %.2f)" % [mid, ab._clap_share])
 	ab.queue_free()
 	# Our crowd as the shared cards (tools/crowd/pack_cards.py): each person sitting, standing and cheering, from the
@@ -513,11 +516,13 @@ func _run() -> void:
 	# seat, not always the one whose legs fit it best), the children shorter (they stand).
 	var art := Arena.card_art()
 	var fans_seats: Array = (art.layout.fans as Dictionary).values().map(func(f): return float(f.seat))
-	check(not art.is_empty() and art.layout.poses == ["sit", "stand", "cheer"] and (art.layout.fans as Dictionary).size() >= 8
-		and int(art.layout.cols) * int(art.layout.rows) >= (art.layout.fans as Dictionary).size() * 3
+	check(not art.is_empty() and (art.layout.poses as Array).slice(0, 3) == ["sit", "stand", "cheer"]
+		and ["sit_clap", "stand_clap", "sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"].all(func(p): return (art.layout.poses as Array).has(p))
+		and (art.layout.fans as Dictionary).size() >= 8
+		and int(art.layout.cols) * int(art.layout.rows) >= (art.layout.fans as Dictionary).size() * (art.layout.poses as Array).size()
 		and fans_seats.filter(func(v): return is_equal_approx(v, 0.42)).size() >= 6 and fans_seats.all(func(v): return v > 0.2 and v <= 0.42)
 		and art.back is Texture2D and art.back != art.atlas,
-		"crowd cards: our people sitting, standing and cheering, front and back, adults seated alike %s" % str(fans_seats))
+		"crowd cards: our people sitting, standing, cheering, clapping and looking either way, front and back, adults seated alike %s" % str(fans_seats))
 	# 7d. Medium and High's extra detail (0.12.0): the sixteen-person crowd, the players' 2K albedos, the courts' 2K
 	# surfaces, each a file of its own that only they load; Low's are the files it had before, and none of the 2K ones.
 	var low_art := Arena.card_art(0)

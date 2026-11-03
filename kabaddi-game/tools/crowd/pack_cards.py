@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Our crowd's sprite sheets (tools/crowd/render_crowd.gd) repacked as the shared foundation's crowd cards
 (WsgCrowdCards.use_art, ADOPTING 5.1): a cell a pose, fan by fan - sitting, standing, cheering (arms up) - from the
-front and from behind, with a mask (R: the shirt the game recolours; G, B, A empty: skin, hair and legs keep the
+front and from behind - and clapping and looking either way, sitting and standing - with a mask (R: the shirt the game recolours; G, B, A empty: skin, hair and legs keep the
 people's own), and the layout (cards.json: cols, rows, size of a cell in m, poses, each fan's seat height in the cell).
 
     python3 tools/crowd/pack_cards.py [crowd dir] [seats json]
@@ -11,9 +11,10 @@ _hi (Medium and High: the sixteen, the eight again in other clothes). seats json
 render_crowd.gd since it records each person's "seat" (default: the crowd dir's own).
 
 The cells are moved down the 2 cm the renders leave under the feet (the card's foot is the floor). The cards seat
-each fan on a seat by the fan whose legs fit it best: so that the adults are all picked (not one of them every time),
-each adult's sitting cell is scaled about the feet to a common seat height (SEAT) - the size the cards would have
-drawn them at on a seat anyway - and the children keep theirs (too short for a stand's seat: they stand).
+a fan only where their legs fit the seat (0.86-1.14 of their size, x1.03). Our adults' seats as drawn (from above,
+foreshortened) are 0.33-0.43 m: on a 0.44-0.45 m seat most would not fit and the stands would be nearly all one man.
+So each adult's sitting cells are scaled about the feet to a common seat height (SEAT) - the size the cards would
+have drawn them at on a seat anyway - and the children keep theirs (too short for a stand's seat: they stand).
 """
 import json
 import os
@@ -24,8 +25,12 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CROWD = os.path.join(HERE, "..", "..", "assets", "crowd")
-FRAMES_USED = {"sit": 0, "stand": 3, "cheer": 6}   # rows of render_crowd's FRAMES
-POSES = ["sit", "stand", "cheer"]
+# The poses (WsgCrowdCards' names) and the rows of render_crowd's FRAMES they come from. The cards' "look_l" is the
+# fan's own left; render_crowd's "_look_l" turns the head to the sheet's left as drawn from the front - the fan's right.
+FRAMES_USED = {"sit": 0, "stand": 3, "cheer": 6, "sit_clap": 2, "stand_clap": 5, "sit_look_l": 9, "sit_look_r": 8,
+               "stand_look_l": 11, "stand_look_r": 10}
+POSES = ["sit", "stand", "cheer", "sit_clap", "stand_clap", "sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"]
+SEATED = ("sit", "sit_clap", "sit_look_l", "sit_look_r")
 SEAT = 0.42          # m: every adult's seat in the cell (a stand's seat is 0.44-0.45 m)
 UNDER_FEET = 0.02    # m under the feet in render_crowd's cells
 
@@ -53,7 +58,7 @@ def pack(dirn, info, seats, people, sources, suffix):
     cell_h = float(info["cell_height_m"])
     cell_w = cell_h * cw / ch
     n = len(people) * len(POSES)
-    cols = 6 if n <= 24 else 8
+    cols = int(np.ceil(np.sqrt(n)))
     rows = (n + cols - 1) // cols
     down = round(UNDER_FEET / cell_h * ch)
     sheets = {k: Image.new("RGBA" if not k.endswith("mask") else "L", (cols * cw, rows * ch), 0) for k in
@@ -68,7 +73,7 @@ def pack(dirn, info, seats, people, sources, suffix):
         for pi, pose in enumerate(POSES):
             k = fi * len(POSES) + pi
             at = ((k % cols) * cw, (k // cols) * ch)
-            s = scale if pose == "sit" else 1.0
+            s = scale if pose in SEATED else 1.0
             r = FRAMES_USED[pose]
             sheets["front"].paste(place(cells(src["front"], cw, ch, col, r), s, down), at)
             sheets["back"].paste(place(cells(src["back"], cw, ch, col, r), s, down), at)

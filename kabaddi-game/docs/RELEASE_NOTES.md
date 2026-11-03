@@ -1,4 +1,7 @@
-**New in 0.14.3: the crowd, seated properly on every ground.** Every spectator is now placed by the shared crowd
+**New in 0.14.4: the crowd claps and watches on Low again.** On Low graphics the fans clap in time with the clapping
+you hear and turn their heads to follow the raider, as they did before 0.14.3 (the shared crowd now has those poses).
+
+**In 0.14.3: the crowd, seated properly on every ground.** Every spectator is now placed by the shared crowd
 system all the World Stage games use: each ground's stands, chairs, stools and standing room are declared, and every
 fan sits on their seat (not in it, not floating), has their feet on the floor or the step below, faces the court, and
 stands up properly when the crowd gets to its feet. It is checked fan by fan on all five grounds.

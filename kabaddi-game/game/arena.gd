@@ -243,6 +243,8 @@ func clap(sound: String, seconds: float) -> void:
 	_clap_t = maxf(_clap_t, seconds * 0.9)
 	if crowd3d != null:
 		crowd3d.clap(float(_clap[1]), float(_clap[2]), _clap_t)
+	if crowd_cards != null:
+		crowd_cards.clap(float(_clap[1]), float(_clap[2]), _clap_t)
 
 
 func _ready() -> void:
@@ -255,8 +257,11 @@ func _process(delta: float) -> void:
 	_clap_share = move_toward(_clap_share, float(_clap[0]) if _clap_t > 0.0 else 0.0, delta * 1.5)
 	# The shared crowd (3D fans and cards) rises with the excitement and settles as it does.
 	WsgCrowd3D.set_excite(_excite)
-	if crowd3d != null and watching:
-		crowd3d.watch_ball(watch_at)
+	if watching:
+		if crowd3d != null:
+			crowd3d.watch_ball(watch_at)
+		if crowd_cards != null:
+			crowd_cards.watch_ball(watch_at)
 
 
 # ---------------------------------------------------------------- materials
@@ -573,7 +578,7 @@ func _floor_shadow(strength: float) -> void:
 ## the floor, facing the play - and checks them (tools/wsg/crowd_audit.gd). On every level our own people are drawn as
 ## cards (WsgCrowdCards with our sheets, tools/crowd/pack_cards.py), sitting, standing or cheering, their backs seen from
 ## behind, in one draw; on Medium and High the fans nearest the court are 3D (WsgCrowd3D), who clap with the clapping
-## heard and turn their heads to the raider. The chairs and stools are put where the venue's seats are.
+## heard and turn their heads to the raider, and the cards do too (their clap and look poses). The chairs and stools are put where the venue's seats are.
 const CARDS := "res://assets/crowd/cards"
 const CROWD_SEED := 7
 ## The 3D fans' skin and hair, as our people's (dark to light): WsgCrowd3D.set_looks.

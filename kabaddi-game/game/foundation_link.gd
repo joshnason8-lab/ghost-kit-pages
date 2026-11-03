@@ -29,6 +29,7 @@ var hm: HumanModel
 var gb: RiggedBody            # the game's body (posed by the game, not drawn)
 var prefix := ""
 var body: WsgBody
+var foot_flat: WsgFootFlat   # the feet turned down, if this model stands toe-up (else null)
 var loco: WsgLocomotor
 var legacy: Layer
 var reader: WsgLegacyPose
@@ -112,6 +113,9 @@ func _ready() -> void:
 	for m in [loco.look, loco.look_chest]:
 		if m:
 			m.active = false
+	# A model whose boots rest toe-up has the toes off the floor in every move: the foundation turns the feet down by
+	# its own tilt, as the skeleton's last modifier (ADOPTING 5.10; none for a model standing flat).
+	foot_flat = WsgFootFlat.attach(body)
 	gb.mesh_instance.visible = false
 	gb.mirror = material
 	body.posed.connect(_posed_cost)

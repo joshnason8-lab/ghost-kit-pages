@@ -160,12 +160,18 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		if i < _anchor.size() and _anchor[i] and not _dangle[i]:
 			# A venue's seat: a fan whose legs fit it (sized within FIT_MIN..FIT_MAX, the shins' reach to spare).
 			var seat_h := _per_spot(seated, i)
+			# (Only fans who fit, if any does: sized up past FIT_MAX, a short-legged fan's thighs went down through a
+			# tall chair's front edge as they got up - Kho Kho's fan4 in 0.45 m chairs.)
 			var cw := PackedFloat32Array()
 			var ct := 0.0
+			var any_fits := false
 			for f in fans:
 				var need := seat_h / seat_of(f).x
-				var fits := need >= FIT_MIN and need <= FIT_MAX * (1.0 + REACH / seat_of(f).x)
-				ct += maxf(float(fan_weights.get(f, 1.0)), 0.0) * (1.0 if fits else 0.02)
+				any_fits = any_fits or (need >= FIT_MIN and need <= FIT_MAX * 1.03)
+			for f in fans:
+				var need := seat_h / seat_of(f).x
+				var fits := need >= FIT_MIN and need <= FIT_MAX * 1.03
+				ct += maxf(float(fan_weights.get(f, 1.0)), 0.0) * (1.0 if fits or not any_fits else 0.0)
 				cw.append(ct)
 			if ct > 0.0:
 				pick = mini(cw.bsearch(rng.randf() * ct, false), fans.size() - 1)
@@ -224,6 +230,13 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		spot_of.append(PackedInt32Array(list))
 		placed_xf.append(xfs)
 	return used
+
+
+## What the crowd's data must have been baked with (crowd.json "version"; tools/bake_crowd.gd): 3 = every frame
+## grounded at its soles, the parts, hand vertices. A crowd baked before (a game's old local licensed bake) has its
+## seated soles up to 7 cm under the floor: WsgCrowdVenue.audit refuses it - run tools/wsg/fetch_assets.sh with
+## FORCE=1 to bake it again.
+const BAKE_VERSION := 3
 
 
 ## A fan's size fitted to a venue's seat at most this far from the model's own.

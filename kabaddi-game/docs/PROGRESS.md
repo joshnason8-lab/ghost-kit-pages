@@ -453,3 +453,17 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   card shader, the stand seat lists and the chair spots are gone (render_crowd.gd now records each person's seat).
   Lost against the old cards on Low: clapping and head-turn frames (the shared cards have sit, stand and cheer).
 - **Tests**: every ground at every level audited (cards and 3D, WsgCrowdVenue.audit); the card sheets' layout.
+
+## 0.14.4: the cards clap and look (foundation 5f9c31d)
+
+- Foundation synced to 5f9c31d: the crowd bake carries a version the audit checks (re-baked, version 3); flat rows'
+  toes no longer held on an edgeless tread; WsgCrowdCards picks at random among the fans that fit a seat, and has
+  clap and look poses.
+- tools/crowd/pack_cards.py packs nine poses a person: sit, stand, cheer, sit_clap, stand_clap and the looks either
+  way, seated and standing (the cards' "look_l" is the fan's own left: render_crowd's "_look_r" as drawn). The adults'
+  sitting cells stay scaled to a common seat height: as drawn, from above, their seats are 0.33-0.43 m, and most would
+  not fit a 0.44-0.45 m seat (FIT_MAX 1.14 x 1.03) - the stands would be nearly all one man.
+- Arena: the cards clap with the clapping heard (cards.clap) and look at the raider (cards.watch_ball), as the 3D fans.
+- WsgFootFlat.attach on every foundation body (ADOPTING 5.10): our models' soles rise 0 to 1.9 degrees at rest (player_09
+  1.9, player_03 1.8, player_08 1.2, the referee 0.1, the rest 0), under its 2 degrees: none needs turning.
+- test_runner: the cards' layout has the clap and look poses; the cards clap while applause is heard.

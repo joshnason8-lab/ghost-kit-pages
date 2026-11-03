@@ -19,6 +19,20 @@ uniform int poses = 3;                 // cells a fan: sit, stand, cheer
 uniform vec2 size = vec2(1.15, 2.3);   // a cell in the fan's own metres
 uniform float turn = 0.6;              // radians a card may turn off its fan's facing toward the camera
 uniform float excite = 0.0;
+// Optional poses in a game's own art (WsgCrowdCards: the layout's "poses" after sit, stand, cheer): each a cell index
+// within a fan's cells, -1 none. Clapping on the clapping sound's beat; looking left or right at the ball.
+uniform int p_sit_clap = -1;
+uniform int p_stand_clap = -1;
+uniform int p_sit_look_l = -1;
+uniform int p_sit_look_r = -1;
+uniform int p_stand_look_l = -1;
+uniform int p_stand_look_r = -1;
+uniform float clap_on = 0.0;
+uniform float clap_time = 0.0;
+uniform float clap_rate = 2.4;
+uniform float clap_sync = 0.6;
+uniform vec3 ball = vec3(0.0);
+uniform float watching = 0.0;
 uniform vec4 team_a : source_color = vec4(0.1, 0.45, 0.2, 1.0);
 uniform vec4 team_b : source_color = vec4(0.8, 0.15, 0.1, 1.0);
 uniform float light = 1.0;
@@ -55,6 +69,7 @@ void vertex() {
 	float h = length(MODEL_MATRIX[1].xyz);
 	vec3 f = MODEL_MATRIX[2].xyz;
 	f = normalize(vec3(f.x, 0.0, f.z));
+	vec3 facing = f;
 	vec3 to = CAMERA_POSITION_WORLD - origin;
 	to = normalize(vec3(to.x, 0.0, to.z) + f * 0.001);
 	// Seen from behind (with back art): the card shows the fan's back, turned toward the camera from behind.
@@ -78,6 +93,23 @@ void vertex() {
 	int pose = 0;
 	if (INSTANCE_CUSTOM.b < 0.0 || excite > thr) {
 		pose = keen > 0.5 && hash(id * 7.77) < 0.55 ? 2 : 1;
+	}
+	// The game's extra poses: a clap on the beat (each a little off it unless in unison), or a look to the side the
+	// ball is on (past about 20 degrees, each fan their own way).
+	bool seated_now = pose == 0;
+	if (pose != 2) {
+		int clap_cell = seated_now ? p_sit_clap : p_stand_clap;
+		vec3 tb = ball - origin;
+		float side = facing.z * tb.x - facing.x * tb.z;
+		float ang = atan(side, dot(facing, vec3(tb.x, 0.0, tb.z)));
+		float lim = 0.3 + 0.2 * hash(id * 4.4);
+		if (clap_on > 0.5 && clap_cell >= 0 && fract(clap_time * clap_rate + (1.0 - clap_sync) * hash(id * 5.13)) < 0.5) {
+			pose = clap_cell;
+		} else if (watching > 0.5 && ang > lim && (seated_now ? p_sit_look_l : p_stand_look_l) >= 0) {
+			pose = seated_now ? p_sit_look_l : p_stand_look_l;
+		} else if (watching > 0.5 && ang < -lim && (seated_now ? p_sit_look_r : p_stand_look_r) >= 0) {
+			pose = seated_now ? p_sit_look_r : p_stand_look_r;
+		}
 	}
 	int cell = fan * poses + pose;
 	cell_uv = (vec2(float(cell % cols), float(cell / cols)) + UV) / vec2(float(cols), float(rows));
@@ -118,11 +150,19 @@ void fragment() {
 	}
 	vec4 m = from_behind == 1 ? texture(back_mask, cell_uv) : texture(mask, cell_uv);
 	vec3 c = t.rgb;
+	// (The parts' mask comes from the crowd's low-poly figure: its edges are soft and a little off the drawn fan. Each
+	// part is recoloured only where the picture itself has that fan's own colour of it - skin by its hue, hair by its
+	// colour - so a face does not take the hair's colour, nor shoulders the hair - Kho Kho's "long-haired" cards.)
 	if (skin_c.x >= 0.0) {
-		c = mix(c, recolour(t.rgb, ref_skin[fan], skin_c), m.g);
+		vec3 rs = ref_skin[fan];
+		float like = 1.0 - smoothstep(0.15, 0.35, distance(t.rgb / max(luma(t.rgb), 0.02), rs / max(luma(rs), 0.02)));
+		like *= step(0.35 * luma(rs), luma(t.rgb));
+		c = mix(c, recolour(t.rgb, rs, skin_c), smoothstep(0.02, 0.25, m.g) * like);
 	}
 	if (hair_c.x >= 0.0) {
-		c = mix(c, recolour(t.rgb, ref_hair[fan], hair_c), m.b);
+		vec3 rh = ref_hair[fan];
+		float like = 1.0 - smoothstep(0.12, 0.3, distance(t.rgb, rh));
+		c = mix(c, recolour(t.rgb, rh, hair_c), smoothstep(0.02, 0.25, m.b) * like);
 	}
 	if (legs_c.x >= 0.0) {
 		c = mix(c, recolour(t.rgb, ref_legs[fan], legs_c), m.a);

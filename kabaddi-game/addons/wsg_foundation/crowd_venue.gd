@@ -171,6 +171,18 @@ func place(seed := 0) -> Dictionary:
 					back = s.depth * 0.5
 				elif s.rise > 0.0 and risers_left > 0:
 					back = riser_at - seat_front - s.depth * 0.5
+				# How far the toes may reach in front of the middle of the seat: to the step's edge (rows that rise: the
+				# feet stay on the tread), else on a flat floor to the seat (its back) of the row in front, or the barrier
+				# in front of the first row; nothing in front: no limit. (Kabaddi's chairs on flat ground had the toes
+				# held on a tread that has no edge, pushing fans forward on their seats.)
+				var toe_room: float = seat_front + s.depth * 0.5
+				if s.rise <= 0.0:
+					if r > 0:
+						toe_room = s.tread - s.depth * 0.5 - (0.04 if s.back > 0.0 else 0.0)
+					elif s.has("barrier"):
+						toe_room = seat_front + s.depth * 0.5 + float(s.barrier.get("gap", 0.35)) - 0.05
+					else:
+						toe_room = INF
 				for i in n:
 					var x: float = (i + 0.5) * length / n
 					var mid: Vector3 = row0 + along * x + away * (seat_front + s.depth * 0.5)
@@ -181,7 +193,7 @@ func place(seed := 0) -> Dictionary:
 						_spot(out, si, feet, facing_at(s, feet), 0.0, false, INF, row0.y)
 					else:
 						_spot(out, si, Vector3(mid.x, row0.y, mid.z), facing_at(s, mid), seat_top - row0.y, true, back, row0.y,
-							s.depth * 0.5, seat_front + s.depth * 0.5)
+							s.depth * 0.5, toe_room)
 			else:
 				# One line of fans a tread, or more on a deep one (a floor): STAND_GAP from the front, 0.6 m apart,
 				# none nearer the back than a body's depth.
@@ -223,7 +235,8 @@ func _box(out: Dictionary, si: int, centre: Vector3, basis: Basis, size: Vector3
 const HIPS_TOL := [-0.02, 0.03]       # the seat of the trousers over the seat surface
 const FEET_TOL := [-0.02, 0.04]       # the soles over the floor (seated: in every seated frame; standing: likewise)
 const INSIDE_TOL := 0.025             # how deep into a seat, a seat back, a step or a barrier anything may go (a hand
-                                      # resting on a bench beside the thigh goes about 2 cm into the low-poly seat)
+                                      # on a seat is not counted: a fan pushes on it getting up - crowd.json's
+                                      # hand_vertices)
 const FACING_MAX := 35.0              # a fan's body off the play's nearest part (drawn in a third)
 
 ## Measures a crowd built by WsgCrowd3D.build_venue against its venue: the fans drawn in 3D (per_section of each
@@ -235,6 +248,8 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 	var pl: Dictionary = crowd.placed
 	var md := WsgCrowd3D.meta()
 	var out := {"fans": 0, "fails": [], "sections": {}, "worst": {}}
+	if int(md.get("version", 0)) < WsgCrowd3D.BAKE_VERSION:
+		out.fails.append("the crowd's data (%s) was baked before version %d (its frames not grounded: seated soles up to 7 cm under the floor): bake it again - FORCE=1 tools/wsg/fetch_assets.sh" % [WsgCrowd3D.DIR, WsgCrowd3D.BAKE_VERSION])
 	for s in venue.sections:
 		out.sections[s.name] = {"fans": 0, "hips": [INF, -INF], "feet": [INF, -INF], "inside": 0.0, "facing": 0.0, "backwards": 0}
 	# The frames tried: the first and middle of sitting and of clapping seated; standing, clapping standing and cheering.
@@ -277,6 +292,9 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 			frames[fan] = _frames(fan, rows.sit + rows.stand + rows.rise)
 		var fr: Dictionary = frames[fan]
 		var mask := WsgCrowd3D.seat_mask(fan)
+		var hands := {}
+		for hv in md.fans[fan].get("hand_vertices", []):
+			hands[int(hv)] = true
 		var i: int = crowd.spot_of[mi][k]
 		var si: int = pl.section[i]
 		var sec: Dictionary = out.sections[venue.sections[si].name]
@@ -308,7 +326,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 				var pts: PackedVector3Array = fr[r]
 				# How far up they are (0 seated, 1 standing), and so their lift, reach and step forward.
 				var u: float = 0.0 if pose == "sit" else (1.0 if pose == "stand" else float(rise_up[ri]))
-				var l := lift * (1.0 - u)
+				var l := lift * (1.0 - smoothstep(0.5, 1.0, u))
 				var rch := 0.0 if dangle else clampf(l, 0.0, WsgCrowd3D.REACH)
 				var up := Vector3(0, l, fwd_up * smoothstep(0.0, 0.5, u))
 				var lowest := INF
@@ -322,6 +340,8 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 					if pose == "sit" and mask.size() > v and mask[v] == 1:
 						hips = minf(hips, wy)
 					for ob in near:
+						if ob[2] == "seat" and hands.has(v):
+							continue    # (a hand on a seat: pushing up from it, resting on it)
 						var lp: Vector3 = (ob[0] as Transform3D) * p
 						var h: Vector3 = ob[1]
 						var dd := minf(minf(h.x - absf(lp.x), h.y - absf(lp.y)), h.z - absf(lp.z))

@@ -1,6 +1,6 @@
 {
- "cols": 6,
- "rows": 4,
+ "cols": 9,
+ "rows": 8,
  "size": [
   1.3589,
   2.312
@@ -8,7 +8,13 @@
  "poses": [
   "sit",
   "stand",
-  "cheer"
+  "cheer",
+  "sit_clap",
+  "stand_clap",
+  "sit_look_l",
+  "sit_look_r",
+  "stand_look_l",
+  "stand_look_r"
  ],
  "fans": {
   "crowd_01_man_tshirt": {
