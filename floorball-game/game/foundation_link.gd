@@ -553,8 +553,8 @@ func _place_stick() -> void:
 		_history.append([now, hand.affine_inverse() * xf])
 		while _history.size() > 2 and float(_history[0][0]) < now - 12.0:
 			_history.pop_front()
-	if not body.full:
-		return       # (the hips and the lean as last worked out: only the bodies near the camera refine them)
+	# (Every body's hips and lean refined, light ones too: kept from an earlier pose, they left a light body's lower arm
+	# short of its fist at Low - the owner's 2026-11-02 note, the lower fist off the shaft. A few vector sums.)
 	var t_s := "r" if top == "Right" else "l"
 	var inv := body.global_transform.affine_inverse()
 	# (Nearer the stick than the game's by what this body's arm is shorter, the fists reaching the shaft: each shoulder
