@@ -849,7 +849,7 @@ func _movement_sounds(dt: float) -> void:
 
 ## A shot by the holder (GS or GA, in her circle; not from a free pass). Its chance follows the distance from the
 ## post, her shooting, and a defender's arm over the ball from 0.9 m. The ball leaves her hands 0.75 s into the
-## shot (_run_shot).
+## shot (_run_shot), counted from when she faces the post (Player.squaring: one who caught facing away pivots first).
 func shoot() -> void:
 	if holder == null or phase != "live" or shot_info.get("by") == holder:
 		return
@@ -875,6 +875,8 @@ func shoot() -> void:
 ## The shot's flight, frame by frame: released at 0.75 s, through the ring (or off it) when it arrives.
 func _run_shot(dt: float) -> void:
 	var pl: Player = shot_info.by
+	if not shot_info.released and pl.squaring:
+		return      # (she turns to the post first: Player.squaring)
 	shot_info.t = float(shot_info.t) + dt
 	if not shot_info.released:
 		if float(shot_info.t) >= 0.75:
