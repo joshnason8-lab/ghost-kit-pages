@@ -210,10 +210,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          # (Its "newer" - above the release on the tag - is about what is published: a build that publishes nothing
+          # - [no-beta], another branch, a manual run - is not held to it, and is gated against no published APK.)
+          PUBLISHES: ${{ github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-game' && !contains(github.event.head_commit.message, '[no-beta]') }}
         run: |
-          gh release download khamba-dash-beta -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          PREV=""
+          if [ "$PUBLISHES" = "true" ]; then
+            gh release download khamba-dash-beta -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+            PREV="--previous $RUNNER_TEMP/previous.apk"
+          fi
           python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk --version "$VERSION" \
-            --previous "$RUNNER_TEMP/previous.apk" --out "$RUNNER_TEMP/gate"
+            $PREV --out "$RUNNER_TEMP/gate"
       - name: Release gate report
         if: always()
         uses: actions/upload-artifact@v4
