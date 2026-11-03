@@ -245,7 +245,10 @@ func _update(delta: float) -> void:
 		if mode == "":
 			legacy.weight = w      # (a new body starts as it is asked: no blend in from nothing)
 		legacy.fade_to(w, FADE_IN if want == "full" else FADE)
-		if mode == "" or want == "move" or want == "carry":
+		# The planter starts afresh only where it was not holding the feet: a new body, or out of the game's whole pose
+		# (full). Out of the game's arms over the capture (upper, a line judge's signal) or between move and carry it was
+		# holding them, and let go mid-step they jumped to the clip's (15-24 cm in a frame; WsgSim's skid).
+		if mode == "" or mode == "full":
 			loco.planter.reset()
 		mode = want
 	body.visible = true
