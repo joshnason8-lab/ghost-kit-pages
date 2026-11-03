@@ -857,6 +857,14 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.4, 3 November 2026)
+
+- **Foundation 71269a55** (13f00e20 and on): the foot_slip measure counts the smaller of the heel's and the ball's
+  move (a heel-to-toe roll reads 0), `skid_cm` catches a flat foot moved in one frame, and the planter keeps a flat
+  foot planted and eases a let-go one across (the walker's walk-start skid 7.4 cm and stop skid 9.8 cm, now 0.2 and
+  0.1). The release gate's `newer` check: version name and code both rise every release. Suite 707/0; owner notes
+  21/21 (gliding worst 2.0 cm, mean 0.45).
+
 ## Done (0.24.3, 3 November 2026)
 
 - **Foundation 8f49aee**: WsgFootFlat's toe pin weighs in only as the toe comes within 2 cm of the floor (63b8d62's

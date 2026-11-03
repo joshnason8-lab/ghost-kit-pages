@@ -37,6 +37,11 @@ static func attach(body: WsgBody) -> WsgFootFlat:
 	return ff
 
 
+## The body's planter (found on the skeleton): a foot it holds down is shifted in full.
+var _planter: WsgFootPlanter
+var _looked := false
+
+
 func _process_modification_with_delta(_delta: float) -> void:
 	var sk := get_skeleton()
 	if sk == null or down == 0.0:
@@ -46,7 +51,14 @@ func _process_modification_with_delta(_delta: float) -> void:
 			_ix.append([sk.find_bone(side + "Foot"), sk.find_bone(side + "ToeBase")])
 		_ankle_rest = sk.get_bone_global_rest(_ix[0][0]).origin.y
 		_toe_rest = sk.get_bone_global_rest(_ix[0][1]).origin.y if _ix[0][1] >= 0 else 0.0
-	for pair in _ix:
+	if not _looked or (_planter != null and not is_instance_valid(_planter)):
+		_looked = true
+		_planter = null
+		for c in sk.get_children():
+			if c is WsgFootPlanter:
+				_planter = c
+	for side_i in _ix.size():
+		var pair: Array = _ix[side_i]
 		if pair[0] < 0 or pair[1] < 0:
 			continue
 		var fp := sk.get_bone_global_pose(pair[0])
@@ -62,11 +74,16 @@ func _process_modification_with_delta(_delta: float) -> void:
 		g.origin.y -= _ankle_rest * (1.0 - cos(down)) * 0.6 * low
 		sk.set_bone_global_pose(pair[0], g)
 		# The turn is about the ankle: as a planted foot rolls heel to toe, the turned toe swung over the floor (a jog
-		# step 2.3 cm, 0.2 without this modifier). Moved back by what the turn moved the toe across, as much as the toe
-		# is on the ground (within TOE_ON of its standing height) - Floorball's SoleFlat. (4 cm moved a foot just landed,
-		# its heel down and its toe still coming down: the heel slid 1-2 cm a frame - Hurling's walker 2.2 cm a step.)
+		# step 2.3 cm, 0.2 without this modifier). Moved back by what the turn moved the toe across - Floorball's
+		# SoleFlat - in full the whole time the planter holds the foot down, else as much as the heel or the toe is on
+		# the ground (the ankle within 6 cm, the toe within TOE_ON of its standing height), so the move is made in the
+		# air, before the foot lands. (Gated on the toe alone it came on in the frame the toe came down, the heel
+		# already planted: the heel jumped 3.3 cm, and the toe drifted 1.8 cm as it peeled off - Hurling's walker
+		# 2.3-2.6 cm a step, measured frame by frame.)
 		var toe_now := sk.get_bone_global_pose(pair[1]).origin
-		var on := clampf(1.0 - (toe_now.y - _toe_rest) / TOE_ON, 0.0, 1.0)
+		var on := maxf(low, clampf(1.0 - (toe_now.y - _toe_rest) / TOE_ON, 0.0, 1.0))
+		if _planter != null and _planter.enabled and not _planter.keep_pose and float(_planter.contact[side_i]) > 0.5:
+			on = 1.0
 		if on > 0.0:
 			var moved := toe_now - tp.origin
 			moved.y = 0.0

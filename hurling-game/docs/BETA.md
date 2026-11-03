@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.4
+
+- **No more skidding feet**: when a player starts walking or pulls up from a run, his planted foot no longer skids
+  across the grass (it could jump several centimetres in a single frame; now under half a centimetre).
+
 ## New in 0.24.3
 
 - **Steadier feet**: a foot that has just landed no longer slides as the toe comes down (the shared animation
