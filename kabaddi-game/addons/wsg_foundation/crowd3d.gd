@@ -43,6 +43,33 @@ var _clap_left := 0.0
 var _clap_time := 0.0
 var _clap_rate := 2.4
 var _clap_sync := 0.6
+## How often each fan model is picked (its name, as crowd.json has it: "fan" to "fan6"; any not given: 1), set before
+## build(). The shared fans: fan2 and fan5 are women, fan, fan3 (older), fan4 and fan6 men. A crowd of mostly women
+## (Netball): {"fan2": 4.0, "fan5": 4.0}. None given: each the same, and the crowd exactly as before.
+var fan_weights := {}
+var _looks := {}
+## For each mesh in meshes: the spots its fans stand for (the indices given to build), in its instances' order; and
+## each fan's transform and seated lift as placed (for the audit: a MultiMesh does not give them back headless).
+var spot_of: Array = []
+var placed_xf: Array = []
+## The venue's places this crowd was built from (build_venue: WsgCrowdVenue.place()), for the audit.
+var placed := {}
+var _anchor: Array = []     # per spot: true where it is the middle of a seat (build_venue), not the feet
+var _back: Variant = INF    # per spot: how far behind it the seat's back or the step behind rises (m)
+var _dangle: Array = []     # per spot: the legs hang (a stool, a wall top)
+var _half: Array = []       # per spot: the seat's half depth (m)
+var _front: Array = []      # per spot: from the middle of the seat to the front edge of the floor under the feet (m)
+
+## Palettes for set_looks, each dark to light (sRGB): skin tones from deep brown to fair; hair black, browns, auburn,
+## blonde, grey (the grey ones older); the legs' clothes denim, black, charcoal, navy, khaki, stone.
+const LOOKS := {
+	"skin": [Color(0.36, 0.23, 0.17), Color(0.49, 0.32, 0.22), Color(0.62, 0.43, 0.31), Color(0.74, 0.55, 0.42),
+		Color(0.84, 0.66, 0.54), Color(0.9, 0.74, 0.64), Color(0.94, 0.8, 0.71)],
+	"hair": [Color(0.08, 0.07, 0.06), Color(0.17, 0.12, 0.09), Color(0.3, 0.2, 0.13), Color(0.45, 0.24, 0.13),
+		Color(0.55, 0.42, 0.27), Color(0.78, 0.65, 0.42), Color(0.68, 0.67, 0.66)],
+	"legs": [Color(0.09, 0.09, 0.1), Color(0.2, 0.21, 0.23), Color(0.16, 0.2, 0.33), Color(0.22, 0.32, 0.5),
+		Color(0.36, 0.45, 0.6), Color(0.6, 0.55, 0.43), Color(0.75, 0.72, 0.64)],
+}
 
 
 ## Is the crowd's data in this build?
@@ -97,6 +124,8 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		m.queue_free()
 	meshes.clear()
 	materials.clear()
+	spot_of.clear()
+	placed_xf.clear()
 	used = PackedInt32Array()
 	var md := meta()
 	if md.is_empty():
@@ -119,10 +148,30 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 			take.append(i)
 	used = PackedInt32Array(take)
 	var fans: Array = md.fans.keys()
+	var cum := PackedFloat32Array()
+	var tot := 0.0
+	for f in fans:
+		tot += maxf(float(fan_weights.get(f, 1.0)), 0.0)
+		cum.append(tot)
 	var by_fan := {}
 	for n in take.size():
 		var i: int = take[n]
-		var f: String = fans[rng.randi() % fans.size()] + ("" if n < near_cap else "|far")
+		var pick := rng.randi() % fans.size()
+		if i < _anchor.size() and _anchor[i] and not _dangle[i]:
+			# A venue's seat: a fan whose legs fit it (sized within FIT_MIN..FIT_MAX, the shins' reach to spare).
+			var seat_h := _per_spot(seated, i)
+			var cw := PackedFloat32Array()
+			var ct := 0.0
+			for f in fans:
+				var need := seat_h / seat_of(f).x
+				var fits := need >= FIT_MIN and need <= FIT_MAX * (1.0 + REACH / seat_of(f).x)
+				ct += maxf(float(fan_weights.get(f, 1.0)), 0.0) * (1.0 if fits else 0.02)
+				cw.append(ct)
+			if ct > 0.0:
+				pick = mini(cw.bsearch(rng.randf() * ct, false), fans.size() - 1)
+		elif not fan_weights.is_empty() and tot > 0.0:
+			pick = mini(cum.bsearch(rng.randf() * tot, false), fans.size() - 1)
+		var f: String = fans[pick] + ("" if n < near_cap else "|far")
 		if not by_fan.has(f):
 			by_fan[f] = []
 		by_fan[f].append(i)
@@ -136,22 +185,32 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		mm.use_colors = true       # (COLOR in the shader is the vertex's times the instance's)
 		mm.mesh = load(DIR + f + ("_crowd_far.res" if far else "_crowd.res"))
 		mm.instance_count = list.size()
+		var xfs := []
 		for k in list.size():
 			var i: int = list[k]
 			var fwd: Vector3 = facings[i] if i < facings.size() else Vector3.FORWARD
 			fwd = Vector3(fwd.x, 0, fwd.z).normalized()
 			var h := rng.randf_range(0.93, 1.07)
 			var seat_h := _per_spot(seated, i)
-			if seat_h > 0.0:
+			var on_seat: bool = i < _anchor.size() and _anchor[i] and seat_h > 0.0
+			if on_seat:
+				# A venue's seat: sized to it (the soles on the floor, the seat of the trousers on the seat), within
+				# what people are.
+				h = clampf(seat_h / seat_of(f).x * rng.randf_range(0.98, 1.02), FIT_MIN, FIT_MAX)
+			elif seat_h > 0.0:
 				# Sizes drawn toward ones that fit the seat: short legs dangle less, long ones sit lower.
 				h = lerpf(h, clampf(seat_h / seat_of(f).x, 0.93, 1.07), 0.6)
-			var pl := place(spots[i], fwd, h, f, seat_h, _per_spot(room, i))
+			var pl := place(spots[i], fwd, h, f, seat_h, _per_spot(room, i), on_seat, _per_spot(_back, i) if on_seat else INF,
+				float(_half[i]) if on_seat else 0.0, float(_front[i]) if on_seat else INF)
 			mm.set_instance_transform(k, pl[0])
+			xfs.append(pl)
 			# (g: the seat's light, its sign whether seated; a: the shirt's code. Small numbers: the Compatibility
 			# renderer keeps custom data in half floats.)
 			var code := shirt_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
 			var li := clampf(float(lights[i]) if i < lights.size() else 1.0, 0.05, 2.0)
-			mm.set_instance_custom_data(k, Color(rng.randf(), li if seat_h > 0.0 else -li, pl[1], code))
+			# (r: the fan's own random number, plus 2 where their legs hang.)
+			var hang: bool = i < _dangle.size() and _dangle[i]
+			mm.set_instance_custom_data(k, Color(rng.randf() + (2.0 if hang else 0.0), li if seat_h > 0.0 else -li, pl[1], code))
 			var tone := rng.randf_range(0.85, 1.1)
 			mm.set_instance_color(k, Color(tone, tone * rng.randf_range(0.95, 1.03), tone * rng.randf_range(0.93, 1.05), 1.0))
 		var mi := MultiMeshInstance3D.new()
@@ -162,15 +221,111 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 		add_child(mi)
 		meshes.append(mi)
 		materials.append(mat)
+		spot_of.append(PackedInt32Array(list))
+		placed_xf.append(xfs)
 	return used
+
+
+## A fan's size fitted to a venue's seat at most this far from the model's own.
+const FIT_MIN := 0.86
+const FIT_MAX := 1.14
+## A seated fan whose seat is higher than their legs reach (their own units) is lifted onto it and their shins
+## stretched down to the floor by as much, up to this (crowd_vat.gdshader; not where the legs hang).
+const REACH := 0.08
+
+
+## The crowd of a venue (WsgCrowdVenue): its places, each seated fan fitted to their seat (hips on it, soles on the
+## floor in front, off the seat's back and the step behind), each facing the play. The rest as build(). Returns the
+## spots drawn in 3D (indices into placed.spots: the billboards, or WsgCrowdCards, take the rest).
+func build_venue(venue: WsgCrowdVenue, quality := 1, focus := Vector3.ZERO, density := 1.0, seed := 0, shirts: Array = [],
+		lights: Array = []) -> PackedInt32Array:
+	placed = venue.place(seed)
+	_anchor = placed.anchor_seat
+	_back = Array(placed.back)
+	_dangle = placed.dangle
+	_half = Array(placed.half_depth)
+	_front = Array(placed.front)
+	var got := build(placed.spots, placed.facings, density, seed, Array(placed.seat), quality, focus, INF, shirts, lights)
+	_anchor = []
+	_back = INF
+	_dangle = []
+	_half = []
+	_front = []
+	# Getting up, a seated fan steps forward off their seat: each fan model as far as the most any of them needs
+	# (place(): their standing legs clear of the seat's front edge).
+	stand_fwd.clear()
+	for mi in meshes.size():
+		var fan := String(meshes[mi].multimesh.mesh.resource_path.get_file()).get_slice("_crowd", 0)
+		var fwd := 0.0
+		for pl in placed_xf[mi]:
+			fwd = maxf(fwd, float(pl[2]) if pl.size() > 2 else 0.0)
+		stand_fwd[fan] = fwd
+		materials[mi].set_shader_parameter("stand_fwd", fwd)
+	return got
+
+
+## For each fan model of a venue's crowd: how far forward (their own units) they step as they get up.
+var stand_fwd := {}
+
+
+## Where a standing fan's legs begin (their own units, z: the furthest back of anything lower than their seat over the
+## standing motions; ahead of their origin is positive).
+static func stand_rear(fan: String) -> float:
+	if not _stand_rears.has(fan):
+		var md := meta()
+		var img := (load(DIR + fan + "_pos.res") as Texture2D).get_image()
+		var st := seat_of(fan)
+		var rear := INF
+		for c in ["stand_idle", "stand_clap", "cheer"]:
+			for f in int(md.clips[c].frames):
+				for v in int(md.fans[fan].vertices):
+					var px := img.get_pixel(v, int(md.clips[c].row) + f)
+					if px.g < st.x:
+						rear = minf(rear, px.b)
+		_stand_rears[fan] = rear
+	return _stand_rears[fan]
+
+
+## How far ahead of their origin a fan's toes go (their own units), seated or standing.
+static func toe_of(fan: String, seated: bool) -> float:
+	var key := fan + ("|sit" if seated else "|stand")
+	if not _toes.has(key):
+		var md := meta()
+		var img := (load(DIR + fan + "_pos.res") as Texture2D).get_image()
+		var toe := -INF
+		for c in (["sit_idle", "sit_clap"] if seated else ["stand_idle", "stand_clap", "cheer"]):
+			for f in int(md.clips[c].frames):
+				for v in int(md.fans[fan].vertices):
+					var px := img.get_pixel(v, int(md.clips[c].row) + f)
+					if px.g < 0.15:
+						toe = maxf(toe, px.b)
+		_toes[key] = toe
+	return _toes[key]
+
+
+static var _stand_rears := {}
+static var _toes := {}
 
 
 ## A fan at a spot (their feet, world) facing fwd, h their size: [their transform, how far (their own units) the
 ## seated body is lifted]. seat_h: the seat's height over the feet (0: standing); room: how far behind the feet the
 ## step behind rises above the seat. Lifted so the seat of their trousers is on the seat (never sunk into it), and
 ## brought forward if they would sit back into the step.
-static func place(spot: Vector3, fwd: Vector3, h: float, fan: String, seat_h: float, room := INF) -> Array:
+static func place(spot: Vector3, fwd: Vector3, h: float, fan: String, seat_h: float, room := INF, on_seat := false,
+		back := INF, half_depth := 0.0, front := INF) -> Array:
 	var b := Basis.looking_at(-fwd, Vector3.UP)   # +Z toward fwd
+	if on_seat:
+		# spot: the floor under the middle of the seat (half_depth deep, its middle front m from the front edge of the
+		# floor the feet are on). The seat of the trousers as far back on it as the back (the body's furthest back,
+		# seated) keeps off what rises behind - people sit back, and their feet then have the room in front - but on
+		# the seat, and the toes on the floor.
+		var st := seat_of(fan)
+		var x := maxf(-back + 0.02 - (rear_of(fan) - st.y) * h, -half_depth + 0.06)
+		x = minf(x, minf(half_depth - 0.08, front - 0.02 - (toe_of(fan, true) - st.y) * h))
+		var at := spot + fwd * (x - st.y * h)
+		# Getting up: the standing legs (their furthest back, stand_rear) clear of the seat's front edge.
+		var step := maxf(0.0, (half_depth + 0.02 - (x - st.y * h)) / h - stand_rear(fan))
+		return [Transform3D(b.scaled(Vector3.ONE * h), at), maxf(seat_h / h - st.x, -0.02), step]
 	var lift := 0.0
 	var push := 0.0
 	if seat_h > 0.0:
@@ -200,6 +355,26 @@ static func seat_of(fan: String) -> Vector2:
 			var img := (load(DIR + fan + "_pos.res") as Texture2D).get_image()
 			_seats[fan] = measure_seat(img, int(fm.vertices), seated_rows(md))
 	return _seats[fan]
+
+
+## How far back a seated fan's body goes (their own units: z, negative behind their origin): the furthest back of
+## anything above the seat over the seated motions (the back, the head, an elbow).
+static func rear_of(fan: String) -> float:
+	if not _rears.has(fan):
+		var md := meta()
+		var img := (load(DIR + fan + "_pos.res") as Texture2D).get_image()
+		var st := seat_of(fan)
+		var rear := 0.0
+		for r in seated_rows(md):
+			for v in int(md.fans[fan].vertices):
+				var c := img.get_pixel(v, r)
+				if c.g > st.x + 0.1:
+					rear = minf(rear, c.b)
+		_rears[fan] = rear
+	return _rears[fan]
+
+
+static var _rears := {}
 
 
 ## The motion texture's rows a fan is seated in: sitting, clapping seated, and the first of getting up.
@@ -252,10 +427,41 @@ func _material(fan: String) -> ShaderMaterial:
 	mat.set_shader_parameter("vat_nrm", load(DIR + fan + "_nrm.res"))
 	mat.set_shader_parameter("vertices", int(md.fans[fan].vertices))
 	mat.set_shader_parameter("fps", float(md.fps))
+	mat.set_shader_parameter("knee", seat_of(fan).x * 0.9)
+	mat.set_shader_parameter("reach", REACH)
+	# (This fan's own skin, hair and trousers: what set_looks shades from. Older data has none: no part is marked.)
+	var lk: Dictionary = md.fans[fan].get("looks", {})
+	for part in lk:
+		var c: Array = lk[part]
+		mat.set_shader_parameter("ref_" + part, Vector3(c[0], c[1], c[2]))
+	_apply_looks(mat)
 	for c in md.clips:
 		var ci: Dictionary = md.clips[c]
 		mat.set_shader_parameter("clip_" + c, Vector4(ci.row, ci.frames, ci.length, 1.0 if ci.loop else 0.0))
 	return mat
+
+
+## Each fan's skin, hair and the legs' clothes (trousers, a skirt, shorts) their own, picked from these (Colors,
+## sRGB, each list dark to light, up to 8; WsgCrowd3D.LOOKS has broad ones): the six shared fans become many people.
+## An empty list keeps that part as the fan was made (and none called: the crowd exactly as before). Before or after
+## build(). Shading is kept (the new colour lighter and darker where the fan's own was); a darker skin goes mostly
+## with the darker half of the hair.
+func set_looks(skin: Array = [], hair: Array = [], legs: Array = []) -> void:
+	_looks = {"skin": skin, "hair": hair, "legs": legs}
+	for m in materials:
+		_apply_looks(m)
+
+
+func _apply_looks(mat: ShaderMaterial) -> void:
+	for part in ["skin", "hair", "legs"]:
+		var list: Array = _looks.get(part, [])
+		var arr := PackedVector3Array()
+		for c in list.slice(0, 8):
+			arr.append(Vector3((c as Color).r, (c as Color).g, (c as Color).b))
+		while arr.size() < 8:
+			arr.append(Vector3.ZERO)
+		mat.set_shader_parameter(part + "s" if part != "legs" else "legs", arr)
+		mat.set_shader_parameter("n_" + part + ("s" if part != "legs" else ""), mini(list.size(), 8))
 
 
 func set_teams(a: Color, b: Color) -> void:
@@ -298,11 +504,13 @@ static func shirt_code(col: Color) -> float:
 ## What they watch (world); eased so heads do not snap.
 func watch_ball(p: Vector3) -> void:
 	_ball = p if not _ball_set else _ball
+	_ball_lag = p if not _ball_set else _ball_lag
 	_ball_set = true
 	_target_ball = p
 
 
 var _target_ball := Vector3.ZERO
+var _ball_lag := Vector3.ZERO
 
 
 ## The rhythmic clapping is playing: claps a second, how much in unison (0..1), for how long.
@@ -321,6 +529,7 @@ func _process(delta: float) -> void:
 	var rate := 5.0 if target > excite else 0.7
 	excite = lerpf(excite, target, 1.0 - exp(-delta * rate))
 	_ball = _ball.lerp(_target_ball, 1.0 - exp(-delta * 3.0))
+	_ball_lag = _ball_lag.lerp(_ball, 1.0 - exp(-delta * 1.2))
 	_clap_time += delta
 	var clapping := 0.0
 	if _clap_left > 0.0:
@@ -329,6 +538,7 @@ func _process(delta: float) -> void:
 	for m in materials:
 		m.set_shader_parameter("excite", maxf(excite, clapping))
 		m.set_shader_parameter("ball", _ball)
+		m.set_shader_parameter("ball_lag", _ball_lag)
 		m.set_shader_parameter("clap_time", _clap_time)
 		m.set_shader_parameter("clap_rate", _clap_rate)
 		m.set_shader_parameter("clap_sync", _clap_sync)

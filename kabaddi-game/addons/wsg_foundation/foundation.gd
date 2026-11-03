@@ -25,12 +25,15 @@ const HIGH := 2
 ## full detail (twist and joint helpers, fingers, the full mesh) - the rest, farthest from the camera, get the light
 ## mesh and plain joints. A budget game's High is for the flagship that runs it: still GL Compatibility (Kabaddi's
 ## Vulkan crashes were on a flagship), a premium game's Medium crowd and every body in full.
+## (The 3D crowd is all full figures, as many as the light ones' triangles bought before: the light figure - a third of
+## the triangles - turned a fan's arms into spikes and sheared the torso, and a camera close to the stand (a crowd
+## cut-away, a replay) saw it a few metres off - Hurling's far stand, 2026-11-03. near < in all brings it back.)
 const PROFILES := {
 	"premium": {"renderer": "mobile", "default": MEDIUM,
-		"crowd": {MEDIUM: [400, 1200], HIGH: [700, 2000], 3: [2000, 3000]}, "full_bodies": {LOW: 8, MEDIUM: 14, HIGH: 22},
+		"crowd": {MEDIUM: [700, 700], HIGH: [1200, 1200], 3: [2400, 2400]}, "full_bodies": {LOW: 8, MEDIUM: 14, HIGH: 22},
 		"replay": {LOW: [4.0, 15.0], MEDIUM: [7.0, 30.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 10, MEDIUM: 16, HIGH: 24}},
 	"budget": {"renderer": "gl_compatibility", "default": LOW,
-		"crowd": {MEDIUM: [150, 150], HIGH: [400, 1200], 3: [400, 600]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 22},
+		"crowd": {MEDIUM: [150, 150], HIGH: [700, 700], 3: [500, 500]}, "full_bodies": {LOW: 6, MEDIUM: 6, HIGH: 22},
 		"replay": {LOW: [4.0, 15.0], MEDIUM: [6.0, 15.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 8, MEDIUM: 12, HIGH: 20}},
 }
 
