@@ -179,8 +179,6 @@ func _on_event(kind: String, info: Dictionary) -> void:
 	if kind in ["replay", "substitution", "replacement", "period_end", "centre_setup"]:
 		_epoch += 1
 	if kind == "period_end":
-		# A line a period: tools/wsg/sim_shard.sh takes a Godot that prints nothing for HANG seconds for a frozen one, and
-		# a netball match is minutes of play.
 		print("  netball seed %s: period %d over at %d-%d" % [cfg.get("seed", "?"), m.q, m.score[0], m.score[1]])
 	if checks:
 		checks.check_event(m, kind, info)
@@ -293,6 +291,10 @@ func rules() -> Array:
 	if not _done:
 		# The play this frame: the match's own clock of play (it stands while paused or in a replay).
 		var dt: float = m.clock - _clock_was
+		if floorf(m.clock / 120.0) > floorf(_clock_was / 120.0):
+			# A line every two minutes of play: tools/wsg/sim_shard.sh takes a Godot that prints nothing for HANG seconds
+			# for a frozen one, and a full-length netball match is up to an hour of play.
+			print("  netball seed %s: %.0f s of play, period %d, %d-%d" % [cfg.get("seed", "?"), m.clock, m.q, m.score[0], m.score[1]])
 		_clock_was = m.clock
 		checks.check_frame(m, dt)
 	return _new_findings()

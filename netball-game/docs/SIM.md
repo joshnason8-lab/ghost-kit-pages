@@ -2,25 +2,68 @@
 
 The owner's project (November 2026): thousands of simulated matches, headless, faster than real time, on the real
 game code, each from a seed that plays it again exactly, so bugs are found and fixed without anyone playing every
-build. The shared foundation will ship the general harness (WsgSim: runner, seeds, fixed-step headless, timeouts,
-failure recorder and replay, batch reports, sharding, nightly CI, generic checks). This page is the game's part: where
-its randomness is and how it is seeded, how fast a match runs headless, the netball checks, the batch runner, and the
-scenarios to generate.
+build. The shared foundation's WsgSim (synced at 7239d54, ADOPTING.md §5.17) is the harness: runner, seeds, fixed
+step, failure records and replay, reports, shards, CI, the generic checks, the human-input and menu fuzzers. This page
+is the game's part: its adapter, where its randomness is and how it is seeded, how fast a match runs headless, the
+netball checks, and the scenarios.
+
+## WsgSim: the adapter and how to run it
+
+`game/wsg_sim.gd` (extends WsgSimGame; not `game/sim.gd`, which is the game's numbers-only results simulator for the
+cup and the season, `Sim.play`). Pass `--game res://game/wsg_sim.gd` to every tool command:
+
+```
+OUT=$TMPDIR/sim   # never inside the project
+HANG=1500 sh tools/wsg/sim_shard.sh . "$OUT" --smoke --input --game res://game/wsg_sim.gd
+HANG=1500 sh tools/wsg/sim_shard.sh . "$OUT/3" --from 1 --count 2400 --shard 3/16 --input --game res://game/wsg_sim.gd
+godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- merge --game res://game/wsg_sim.gd --out "$OUT" "$OUT"/*/
+godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- replay --game res://game/wsg_sim.gd --failure "$OUT/failures/<sig>/<seed>.json"
+NETBALL_SIM_SHORT=1 godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- fps-probe --game res://game/wsg_sim.gd --seeds 6
+```
+
+- **Kinds**: `random`, `extreme` (the strongest against the weakest, the two weakest, the two strongest; 5- or
+  15-minute quarters; the fewest or the real-rate whistles), `human` (a user team, whole-team or one bib, played by
+  WsgSimInput with `--input`; idle without it), `targeted:scoring` (Double Zone, its window's edges),
+  `targeted:timer` (quarters of 4-30 s: period ends, shots in the air, knockouts), `targeted:completion` (near-equal
+  knockouts: extra time and on to a two-goal lead), `targeted:fouls` (the real whistle rate, 4-minute quarters:
+  warnings, suspensions, ordering off, injuries), `targeted:variants` (Double Zone, time-outs, rolling changes, a
+  knockout together). Every config also draws venue, level (Low, Medium, High: the foundation on Medium and High
+  when the licensed data is there), quarters (5, 8, 10, 15), camera, control, onside, difficulty.
+- **The length mix**: with `config.short` the quarters are a fifth as long (a 5-minute quarter plays 60 s; extra time
+  scales with them, as it does for any quarter length); every rule the same.
+- **rules()** is `tests/sim/netball_checks.gd`, every frame; its errors fail the match, its warnings (the umpire's
+  discretion, things seen but not rules) go in the events and in the result as `n_<check>` counts.
+- **Kept as the game plays**: a replay is skipped at once, as a tap skips it; and every player's foundation body is
+  posed in full, undoing WsgSim's sampled pose: the ball a player holds is where the foundation's pose layer puts her
+  hands (`FoundationLink.ball_at`), so a pass's or shot's start, and so the play, would change without it
+  (`NETBALL_SIM_SAMPLED_POSE=1` allows it, to measure that).
+- **The human**: the stick is the touch joystick's value (`TouchControls.joystick`); the three buttons are the keys
+  the controls read (Space, J, K), Back is Esc (pauses and resumes); after the app comes back from the background the
+  person taps Resume a moment later (the game pauses a match then, as on a phone).
+- **Bodies** are named for the stretch of play (`GS0.3`): a new quarter places everyone at once, a replay or a change
+  cuts, and the feet are measured afresh there (a jump at a cut is not a slide). A body not yet posed (not drawn) is
+  not given to the pose check.
+- The adapter prints a line a period, so `sim_shard.sh` can tell a long match from a frozen one; still set `HANG`
+  above its 120 s default (a 15-minute quarter is minutes of a runner's time).
+- **CI**: `.github/workflows/netball-sim.yml`, nightly (16 shards of the 2,400-match batch, merged into one report)
+  and on request (nightly or smoke); artifacts only, in the runner's temp folder.
+- `sh tools/wsg/rng_lint.sh` lists what is left: the six cosmetic rolls on the global generator in game/match.gd
+  (480, 723, 744, 747, 749: sounds' pitch, a squeak's chance) and game/ball.gd:171 (the ball's drawn spin), all in
+  files other work had open: mark them `# wsg-rng-ok: <why>` (or move them to `Sfx._rng`) when those files are free.
+  It does not see match.gd:558, a sound's pitch drawn from the match's own generator (below).
+
+## run_batch: the game's own batch runner
 
 ```
 XDG_DATA_HOME=$TMPDIR/x godot --headless --path . --fixed-fps 30 res://tests/sim/run_batch.tscn -- n=60 quarter_s=45 wsg=on out=$TMPDIR/sim
-# one failing match again, exactly (the JSON written for it has the line):
 godot --headless --path . --fixed-fps 30 res://tests/sim/run_batch.tscn -- only=17 seed=1 quarter_s=45 wsg=on ...
-# shards: first=0 n=30 on one machine (or core), first=30 n=30 on another
 ```
 
-`tests/sim/run_batch.gd` builds each match as the game does (`game/match.gd` with a config, AI v AI), steps it itself
-(`steps` match steps a frame, each exactly the step a frame takes: `Match._process`, 1/fixed-fps cut at 0.05 s), runs
-`tests/sim/netball_checks.gd` after every step and at every `game_event`, skips each replay as a tap does, and writes a
-JSON for every match with a violation, plus `summary.json`, to `out` (refused inside the project). Match i's config
-(teams, venue, seed, knockout, Double Zone, time-outs, rolling changes, whistle rate) follows from the batch's seed and
-i alone, so `only=i` replays it. `repro=1` plays each match twice and fails it if the two differ. Engine errors logged
-during a match count as violations. Exit code 1 on any error-level violation or unfinished match.
+Written before WsgSim landed and kept for what WsgSim does not do: several match steps a frame (`steps`), the speed
+split (`profile=1`, `checks=off`, CPU seconds), and `repro=1`. It builds each match as the game does (AI v AI),
+steps it itself (`Match._process`, 1/fixed-fps cut at 0.05 s), runs the same netball checks after every step and
+event, skips replays as a tap does, and writes a JSON for every match with a finding, plus `summary.json`, to `out`
+(refused inside the project). Match i's config follows from the batch's seed and i alone (`only=i` replays it).
 
 ## Randomness: every roll, and how it is seeded
 
@@ -166,7 +209,51 @@ simplification docs/RULES.md admits), counted and ranked.
 
 ## The first batch
 
-<<BATCH>>
+**run_batch, 20 matches** (9 with 30 s quarters, foundation off, Low/Medium/High, three venues; 11 with 45 s quarters,
+foundation on; knockouts, Double Zone, time-outs, rolling changes and whistle rates mixed; 1,231 + 2,170 s of play).
+Every match finished; no scoring, clock, period, centre-pass, throw-in, substitution, time-out or end-of-match rule
+was broken; no NaN, no body or ball out of the world or under the floor; seeded matches repeat (`repro=1`, and the
+same scores across processes). What it found, ranked by how often x how much it matters:
+
+| # | Finding | Matches | Times | Kind | Where (who may change it) |
+|---|---|---|---|---|---|
+| 1 | **A rebound taken at full stretch pops into the hands**: a GS or GA picking up her own side's rebound (the ball about 2.5 m up, `_run_loose` lets a player take it up to her leaping reach) has it at her chest the next frame, 1.3-1.6 m lower; a defender's rebound (the GK's, a "gain") the same, 1.0-1.6 m | 12 + 17 of 20 | 18 + 32 | seen (a ball jumping 1.5 m in 1/30 s), no rules effect | game/match.gd `_run_loose` (no leap for a high pick-up), game/player.gd hand point |
+| 2 | **Defenders defending inside 0.9 m for a second and more, uncalled**: 0.03-0.85 m from the landing foot; also the opposing C at a centre pass taker. The AI aims 0.94-1.15 m off, then `Rules.onside_point` pulls the spot back inside when goal-side is in an area she may not enter, and the umpire's 15% miss is on purpose | 14 of 20 | 20 | rules (obstruction R16) | game/ai.gd `_defend` (a spot 0.9 m off in another direction) |
+| 3 | **Obstruction called from 1.0-1.35 m**: the AI's "slip" calls contact or obstruction on the marker up to 1.35 m from the landing foot (`_slips`: 1.35); obstruction needs closer than 0.9 m | 9 of 20 | 10 | rules | game/ai.gd:836; the slip rates are balance: the owner's call |
+| 4 | **Offside called on a player in her own area**: the offside slip names a random player where she stands (`_slips` 851-855) | 3 of 20 | 3 | rules (the call shows nothing wrong) | game/ai.gd |
+| 5 | **The ball jumps to the centre circle or into a restart taker's hands** (up to 15 m in a frame) at every centre pass and many restarts | 20 of 20 | 186 | seen, as most games do | game/match.gd `_setup_centre`, `_run_setup` |
+| 6 | (Found and fixed in the checks, not the game: a player "teleport" after a skipped replay; the ball "in two places" for the frame after a tap ends a replay; a same-team box score when a team played itself, which the game never allows.) | | | | |
+
+**WsgSim's first matches** (the smoke batch, 4 shards; the machine's other work left each about a tenth of a core):
+<<WSGSIM_RAN>>
+
+| # | Finding (WsgSim's own check, or the netball rules') | Seen | Kind | Where |
+|---|---|---|---|---|
+| 1 | **Your player can run off the floor into the stands** with Keep me onside off: the bib-controlled C ran 5 m past the run-off behind a goal line (x 22-23 m; the court ends at 15.25, the run-off at 18.3) | human#6, human#15 | a body out of the venue (WsgSim "out of bounds"; netball `player_lost`) | game/match.gd `_drive_me` / game/player.gd `advance`: nothing holds an unfenced player inside the run-off |
+| 2 | **A centre pass nobody reached is taken outside the centre third with no call, and by its own thrower**: the human's C lobbed the centre pass, the GA was not there (`_arrive`: the ball runs on, no event), and the C picked it up at x 6.3 (a goal third): a centre pass fault and a replayed ball, neither called. docs/RULES.md says replayed ball "cannot happen in play": it can, this way | human#3 | rules (R8, R11) | game/match.gd `_arrive`, `_run_loose` |
+| 3 | **Advantage signalled three times for one challenge, then the same contact called**: the human's GK holding INTERCEPT on the shooter infringes every frame (`TeamAI` 927-933: contact from 1.2 m), the umpire plays advantage, again, again, then calls it; the user's player never gives way (`give_way` skips her) | human#3 | rules, presentation | game/ai.gd |
+| 4 | **A wing defence stands still 6 s and more with her target 8-12 m away** (WsgSim "stuck"): likely fenced at the defending circle's edge with her target across it (a straight path through an area she may not enter; nothing routes her round) | extreme#5, #11, human#6; random#2, #4 in the first try | movement | game/player.gd `advance` (fenced), game/ai.gd targets |
+| 5 | **Feet sliding while planted** (the foundation's check, the followed quarter of the bodies): 8-20 cm in most foundation matches, and 1-1.6 m once in the first stretch of play of several; the check has no planter contacts from the game (it guesses "planted" from a low, slow foot), so the large ones may be a slow shuffle read as planted: replay one with the planter's contacts before fixing anything | every Medium/High match so far | seen | the foundation link (game/foundation_link.gd) or the check |
+| 6 | The user's C in a T-pose on the first frame of a match (the frame before her first pose; the loading screen may hide it) | human#15 | seen, unconfirmed | game/foundation_link.gd (visible before posed) |
+
+**Determinism**: `sim.gd -- determinism --seeds 2` (short matches): PASS, both seeds the same frame for frame (1,479
+checks each). **The step**: `sim.gd -- fps-probe --seeds 4` (short): 20 fps gave 0 of 4 outcomes the same as 30, so
+WsgSim stays at 30 frames a second. **Speed, WsgSim** (one step a frame): a 5-minute-quarter short match (257 s of
+play) took 27 CPU s at Low (9.5x a CPU second with the start-up) and 79 CPU s at Medium with the foundation (3.3x).
+
+**The nightly batch, what it would cost**: the adapter's mix averages about 940 s of play a match (three in four
+short, a quarter of the quarters 5, 8, 10 or 15 minutes long; a third of the matches Low, two thirds with the
+foundation), about 220 CPU seconds a match on this machine's cores: 2,400 matches are about 540,000 CPU seconds. One
+Godot per job on 16 jobs: about 9 hours each (over a job's 6-hour limit). The workflow therefore runs four shards
+side by side in each job (a runner has 4 cores): 64 shards, about 2.3 hours each if a runner's core is as quick as
+this machine's, each stopped at 4.5 hours so what ran is uploaded and merged. To bring it under 2 hours: fewer
+foundation matches (each costs three Low ones), 15-minute quarters only in the extreme kind, or 2,000 matches. The
+owner's call: the mix decides what the nightly covers.
+
+**Balance, for the owner (nothing changed):** goals come at about 3.5 a minute of play in the 45-second quarters (115
+goals in 33 minutes of play over 11 matches; 3.7 in the 30-second ones), about twice the real game's 1.8-1.9 (110-120
+in 60 minutes). Short quarters inflate it a little (each starts on a centre pass), so measure it on 15-minute
+quarters before deciding anything.
 
 ## Scenarios to generate
 
@@ -183,12 +270,12 @@ simplification docs/RULES.md admits), counted and ranked.
 | Venues | all three, every match cycles them | |
 | Last-second goals, ties, extra time, two-goal lead | run_batch knockouts (30%) and near-rated pairs; test_runner `_two_goal_lead`, `_matches` (knockout) | a generator that starts a match at q4 with seconds left and the score level (config hook, or set `time_left`/`score` after `_ready` as `_two_goal_lead` does) |
 | Penalties, advantage, suspensions, ordering off, injuries | run_batch at the real whistle rate (`whistles=2`); test_runner `_sanctions_and_injury`, `_advantage_clear` | a "foul-heavy" generator (whistle rate 3x and a long quarter) checking the ladder: warning at the 4th, suspension at the 3rd after, ordered off at the second suspension, replacement after 240 s |
-| A fuzzed human player | soak `monkey` (random taps, drags, Back, home button through the menus and into matches; needs a window); `tests/user_bot.tscn` refers to a script that was never committed (dangling) | a headless in-match bot for the user team: joystick sweeps on every camera, button mashing (PASS, LOB, SHOOT, INTERCEPT, DEFEND, SWITCH), pause and resume, `NOTIFICATION_APPLICATION_PAUSED` / focus out, with the netball checks on: the user's own offside (onside off), obstruction (DEFEND inside 0.9 m), over a third, short pass |
+| A fuzzed human player | WsgSim `human` kind with `--input` (WsgSimInput: stick sweeps, holds, circles, jitter; taps, mashes, double taps of the three buttons; Back; background and back; screen turns; camera switches; whole team or one bib, onside on or off, every difficulty); soak `monkey` (needs a window); `tests/user_bot.tscn` refers to a script never committed (dangling) | the user's own infringements checked as such (offside with onside off, DEFEND inside 0.9 m, over a third, short pass): today they show as calls, which the checks accept |
 | Pause, resume, backgrounding | soak `back`, `lifecycle`, `matches` (pokes) | in run_batch: pause and resume at random steps (the clock and phase must not move while paused) |
-| Menu paths: Nations Cup and Club Season end to end | test_runner `_cup`, `_league` (simulated rounds; now with seeded repeat and save/load part way); soak `back` | the user's own matches played by the bot through Game.start_match and the result screen, every round to the medals, with seeds |
+| Menu paths: Nations Cup and Club Season end to end | test_runner `_cup`, `_league` (simulated rounds; seeded repeat and save/load part way); soak `back` | the adapter's `menu_start`, `in_match`, `menu_check` for WsgSim's menu fuzzer (not written yet), and the user's cup and season matches played by the bot through the result screens, every round to the medals |
 | Every settings combination | test_runner `_screens` (every screen in every language) | the settings product (graphics x fps x camera x control x onside x quarters x language) at the match start, a few seconds each |
 | Mid-match quit, rematch | soak `back` (quit from the pause menu); result screen REMATCH drops the seed (now re-seeded by Game.start_match) | a run_batch mode that quits at a random step and starts the next match: no leak (node count), no error |
-| Corrupted and old saves | none for the match; Game reads JSON with defaults | a generator of truncated, wrong-typed and old-version settings, records, cup and season files (old ones without `rng_state` load randomized: covered by from_dict's fallback) |
+| Corrupted and old saves | none in WsgSim yet (the adapter has no `save_paths`/`old_saves`); Game reads JSON with defaults; cups and seasons saved before `rng_state` load randomized (from_dict) | `save_paths()` (settings, records, cup, season) and old versions' samples for `sim.gd -- menu --saves` |
 
 Other test-side gaps: matches with a user team are never simulated in bulk (difficulty, control modes, the user's
 own infringements); real-length quarters (15 minutes) are not in any batch; the foundation's path (Medium, High)

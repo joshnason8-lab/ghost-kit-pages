@@ -289,6 +289,18 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
   `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
+- **Simulated matches (November 2026, the owner's project; docs/SIM.md)**: the shared foundation synced to 7239d54
+  (WsgSim) and adopted: `game/wsg_sim.gd` (the adapter; `game/sim.gd` stays the cup's results simulator), the netball
+  rules checked every frame (`tests/sim/netball_checks.gd`: scoring, clock, periods and the end, centre pass, three
+  seconds and footwork, offside, out of court, free and penalty passes, obstruction, changes and time-outs, and the
+  impossible states), the game's own batch runner (`tests/sim/run_batch.tscn`: several steps a frame, CPU timing,
+  `repro=1`), and the nightly workflow `.github/workflows/netball-sim.yml` (16 shards, 2,400 matches, merged; or the
+  smoke batch on request). Seeding: every match's config now carries its seed (`Game.start_match`); cups and seasons
+  take a seed and save their generator's state (`rng_state`; older saves load as before); the season's draw no longer
+  uses the global generator; the foundation bodies' idle fidgets have their own dice. The RNG audit, the speed
+  measurements (about 12x real time a CPU core without the foundation, 3.8x with it at one step a frame), the first
+  batches' findings (no rule broken; rebounds popping into the hands, defenders inside 0.9 m, slip calls without the
+  infringement) and the scenario list with its gaps are in docs/SIM.md. No gameplay or balance change.
 
 ## Next
 
