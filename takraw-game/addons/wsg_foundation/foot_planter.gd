@@ -66,6 +66,8 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 ## the body is going), and is planted there: the clip, its stride too short for the body (a sharp turn, a start or
 ## stop harder than its clips), kept it on the ground behind, and it slid there 3 to 13 cm (WsgSim's demo).
 const STEP_TIME := 0.2
+## How far a step's toe stays over the floor until it lands (m, the body's scale 1): over the feet rule's 3 cm touch.
+const STEP_CLEAR := 0.035
 var _low_ticks := [0, 0]                     # ticks a foot let go has stayed on the ground (it steps at 2)
 var _waited := [0, 0]                        # ticks since it was let go, neither stepping nor lifted (at 3: to the clip)
 var _aired := [true, true]                   # off the ground since it last landed (a footstep needs it)
@@ -157,6 +159,21 @@ func reset() -> void:
 	_prev = [Vector3.INF, Vector3.INF]
 	_toe_back = [[], []]
 	_drawn_move = [0.0, 0.0]
+	# (What it last drew goes too: a planter not run for a while - a body the game posed whole, the planter off - kept
+	# its feet down and where they were drawn then, and back on, the foot was planted there, far behind, and let go: it
+	# slid 7 cm with the game's pose fading out under it - Sepak Takraw's players out of a set piece.)
+	contact = [0.0, 0.0]
+	_lifted = [false, false]
+	_aired = [false, false]
+	_hip_vel = [Vector3.ZERO, Vector3.ZERO]
+	ankle_world = [Vector3.ZERO, Vector3.ZERO]
+
+
+## A planter not run for more than this many frames (inactive, or its body not drawn) starts afresh when it runs again:
+## what it last drew is no longer where the body is (WsgSim reads the reset as a cut, as it does a body not posed for
+## more than its GAP_CUT frames).
+const STALE_FRAMES := 3
+var _ran_at := -1
 
 
 ## One step of the game's time (the locomotor calls it from drive()): the feet's contacts and holds are worked out
@@ -169,6 +186,10 @@ func tick(delta: float) -> void:
 func _process_modification_with_delta(_frame_delta: float) -> void:
 	var fresh := _tick != _done
 	_done = _tick
+	var now := Engine.get_process_frames()
+	if _ran_at >= 0 and now - _ran_at > STALE_FRAMES and not keep_pose:
+		reset()
+	_ran_at = now
 	var delta := _tick_dt if fresh else 0.0
 	var sk := get_skeleton()
 	if sk == null:
@@ -525,6 +546,17 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			var tn := xf * sk.get_bone_global_pose(leg[3]).origin
 			var k := smoothstep(0.0, 1.0, clampf(float(_step[i]), 0.0, 1.0))
 			_aim_foot(sk, leg, xf, (an + (_step_toe[i] as Vector3)).lerp(tn, k))
+		if stepping != Vector3.INF:
+			# A step's toe clears the floor by STEP_CLEAR until it lands, the ankle raised as far as it takes: the clip's
+			# foot pitched toe-down under an ankle 20 cm up skimmed its toe over the floor across the step's last frames,
+			# 3-4 cm a frame, read as a planted foot sliding (Sepak Takraw's players). It comes straight down as it lands.
+			var tw := xf * sk.get_bone_global_pose(leg[3]).origin
+			var need := ground_y + _toe_rest * sc + STEP_CLEAR * sc * smoothstep(0.0, 0.25, float(_step[i])) - tw.y
+			if need > 0.001:
+				var toe_rel := tw - xf * sk.get_bone_global_pose(leg[2]).origin
+				target.y += need
+				_leg_ik(sk, leg, inv * target)
+				_aim_foot(sk, leg, xf, target + toe_rel)
 		elif on_heel:
 			var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[2])).basis
 			sk.set_bone_pose_rotation(leg[2], (parent.inverse() * heel_b).get_rotation_quaternion())
