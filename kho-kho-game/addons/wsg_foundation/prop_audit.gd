@@ -24,6 +24,9 @@ var ball_tunnels := 0
 ## The worst: {kind ("body" | "ball"), who, prop (name), depth (m), pos, from (a ball's step), time}.
 var worst: Array = []
 var time := 0.0
+## The caller's own frame number, when it has one (WsgSim): stamped on each case. (Its time - a sum of frame times -
+## read as a frame comes out a frame early for most frames: a replay stopped there ended before the case.)
+var frame := -1
 
 var _last := {}       # a ball -> its last position
 
@@ -43,7 +46,7 @@ func body(who: String, pos: Vector3, radius: float, height := 1.8, seated := fal
 	if float(pen[0]) > PEN_TOL:
 		body_cases += 1
 		_keep({"kind": "body", "who": who, "prop": String(solid.props[int(pen[1])].name), "depth": float(pen[0]),
-			"pos": pos, "radius": radius, "height": height, "time": time})
+			"pos": pos, "radius": radius, "height": height, "time": time, "frame": frame})
 
 
 ## The ball (WHO) at POS this frame. PATH: the places it went through since the last frame, in order, if its physics
@@ -75,7 +78,7 @@ func _ball_step(who: String, p0: Vector3, pos: Vector3, radius: float) -> void:
 			if inside.hit and float(inside.get("depth", 0.0)) > PEN_TOL:
 				ball_tunnels += 1
 				_keep({"kind": "ball", "who": who, "prop": String(h.name), "depth": float(inside.depth), "pos": mid,
-					"from": p0, "to": pos, "radius": radius, "time": time})
+					"from": p0, "to": pos, "radius": radius, "time": time, "frame": frame})
 
 
 func ball_reset(who := "ball") -> void:
