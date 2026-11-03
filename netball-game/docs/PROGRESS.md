@@ -404,3 +404,27 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   arena Medium 126/336k -> 137/530k, High 165/556k -> 176/871k; hall Medium 127/330k -> 132/365k, High 166/549k ->
   171/601k; park Medium 125/349k -> 130/439k, High 189/710k -> 194/841k; Low 98-99 draws, unchanged. The arena's
   painted tiers stay painted (people there would need stepped seats). Test `_crowd_facing` covers the 3D people.
+- **Crowd placement, every venue** (the owner via the lead: "make sure the crowd is sitting properly ... facing the
+  right direction, standing properly; shared foundation"): foundation synced to b073334; each venue declares where
+  its people sit or stand (`game/crowd_venues.gd`, the foundation's WsgCrowdVenue) and the foundation places, sizes
+  and turns them; `Crowd` draws them as 3D fans on Medium and High and as the foundation's cards on Low (one draw
+  call; Low had no crowd before). Arena: a section a courtside stand (11); Medium/High the Meshy bleacher's front
+  row only (its rows are 0.46-0.8 m apart: the 2nd, 3rd and 5th rows' knees would be in the chair backs in front,
+  and the 4th row's feet went 16 cm into them getting up; the empty rows' seats and backs are audit obstacles); Low
+  the light bleacher's middle plank, feet on the front plank. The bowl's tiers stay painted (real people there need
+  stepped seat geometry and thousands more places, for a crowd the broadcast camera reads as texture). Hall: the
+  tip-up seats moved to the back of each tread (the feet had no room in front), a section a block between stairs,
+  the front three rows at 60% (at full density). Park: standing; the near side either side of the benches, the far
+  side behind the tall fence between the path's benches (new), the ends behind the low fence round the park bench.
+  Fixed seats face one way a stand or block (toward the play, at most 15-25 degrees off square); outdoors the fans'
+  shade is 0.85 (faces read). `tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd` passes every venue at Medium
+  and High (tests/crowd_scene*.tscn draw the real venues). Tests: `_crowd_facing` (Low cards and High 3D: facing,
+  on a seat or the ground, the near-camera hide), `_low_unchanged` (Low adds only the cards' four sheets). The
+  cut-out crowd and its sheet are gone. perf_probe peaks (TV play, a goal's close-up, the other cameras), draw calls
+  / triangles, before -> after (the peak is the broadcast camera's play every time): Low (before: 0.8.9) arena
+  98/53.4k -> 99/53.5k, hall 99/72.0k -> 100/72.0k, park 98/56.4k -> 99/56.6k (the cards' one draw call; at most
+  100); Medium (before: 0.8.8's crowd) arena 139/529k -> 130/378k, hall 134/364k -> 132/366k, park 132/438k ->
+  132/443k; High arena 176/879k -> 167/637k, hall 171/609k -> 169/621k, park 194/849k -> 194/864k. Low's video
+  memory +12 MB (29.8 -> 41.8 MB in the arena): the cards' four 768 x 768 sheets, imported lossless without
+  mipmaps as every adopter has them (asked the foundation whether VRAM compression and mipmaps suit them). The foundation's WsgFootFlat measures the players' model at 1.85 degrees toe-up: under
+  its 2, so not attached.
