@@ -148,6 +148,12 @@ func ball() -> Dictionary:
 var _ball_last := Vector3.INF
 
 
+## Checks put off with the lead's word (only for a foundation fault the game cannot fix itself).
+func deferred() -> Dictionary:
+	return {"foot slip": ["2026-11-06T12:00Z",
+		"referee planter slip under game AI, 2.6-3.4 cm; Foundation planter fix pending (lead approved 11:31Z)"]}
+
+
 func solid() -> WsgSolidProps:
 	if m == null or not is_instance_valid(m) or m.arena == null:
 		return null
