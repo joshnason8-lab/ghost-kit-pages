@@ -80,6 +80,22 @@ func walker(parent: Node) -> Array:
 	return [body, loco]
 
 
+## Low draws the same bodies here; --bad feet_low: a body of its own at Low whose feet are carried with it, flat on the
+## ground (the game's own Low body skating - what the owner saw).
+func walker_low(parent: Node) -> Variant:
+	if bad != "feet_low":
+		return "foundation"
+	var skater := Node3D.new()
+	parent.add_child(skater)
+	var drive := func(dt: float, vel: Vector3, facing: float) -> void:
+		skater.position += vel * dt
+		skater.rotation.y = facing
+	var feet := func() -> Array:
+		var xf := skater.global_transform
+		return [xf * Vector3(-0.1, 0.08, 0), xf * Vector3(-0.1, 0.0, 0.15), xf * Vector3(0.1, 0.08, 0), xf * Vector3(0.1, 0.0, 0.15)]
+	return [skater, drive, feet]
+
+
 func key_sounds() -> Array:
 	return ["post", "whistle", "tag"]
 

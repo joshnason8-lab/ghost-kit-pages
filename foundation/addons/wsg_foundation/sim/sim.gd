@@ -249,7 +249,18 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				progress.erase(nm)
 			var wb: Variant = b.get("body")
 			# (A quarter of the bodies, chosen by the seed, followed every frame: feet are measured frame to frame.)
-			if bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
+			if bool(opts.get("feet", true)) and not wb is WsgBody and b.get("feet") is Callable and bi % 4 == seed % 4:
+				# A body the game draws itself (its own body at Low - what the owner sees on an A16): its feet as drawn,
+				# from the game's "feet" (Callable() -> [left ankle, left toe, right ankle, right toe], world), every frame.
+				var fv: Variant = (b.feet as Callable).call()
+				if fv is Array and (fv as Array).size() >= 4:
+					if not feet.has(nm):
+						feet[nm] = [[[]], 0.0, 0.0, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
+					((feet[nm][0] as Array).back() as Array).append(fv)
+					var gr0: PackedInt32Array = (feet[nm][3] as Array).back()
+					gr0.append(1)
+					feet[nm][3][-1] = gr0
+			elif bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
 				var body := wb as WsgBody
 				if not feet.has(nm):
 					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y, [PackedInt32Array()], -1, -1, 0, 0, [[]]]

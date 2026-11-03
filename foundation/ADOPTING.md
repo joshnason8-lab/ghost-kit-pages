@@ -1507,6 +1507,49 @@ use `$TAG`, so re-run the job; it never leaves `$TAG` pointing at nothing for lo
 Checked on Kho Kho Rush 0.12.4-beta (the release APK): every check passes. The key is the owner's in v1, v2 and v3;
 the largest texture that isn't GPU-compressed is 1.6 MB; there are no duplicates.
 
+## 5.21 Low: what the owner sees (every game)
+
+The owner plays at Low, on an A16. A game that draws its own bodies there (FoundationLink off at Low) gets none of
+the foundation's planter fixes, and nothing measured them: Sepak Takraw's Low planter re-planted feet 35 cm in a
+frame, 426 times in two minutes. So:
+
+**Measure it: `walker_low()` in world.gd** (the world check's `feet_low` rule; deferred until 2026-11-08 12:00 UTC,
+failed from then - an unwired hook is reported DEFERRED, then NOT WIRED, never skipped):
+
+```gdscript
+func walker_low(parent: Node) -> Variant:
+	return "foundation"          # Low draws the same WsgBody the walker measures (Hurling, Floorball)
+	# or your own body, standing at the origin under PARENT:
+	var p := preload("res://game/player.tscn").instantiate()
+	parent.add_child(p)
+	var drive := func(dt: float, vel: Vector3, facing: float): p.step_for_check(dt, vel, facing)   # one frame, as play does
+	var feet := func() -> Array: return [p.bone_world("LeftFoot"), p.bone_world("LeftToeBase"),
+		p.bone_world("RightFoot"), p.bone_world("RightToeBase")]   # as DRAWN: read after your pose and IK
+	return [p, drive, feet]
+```
+
+The rule drives it along the feet rule's match path and holds it to the same bounds (slip, skid, jump), reported as
+"Low: ...". Read the feet as drawn - after your own IK (in `skeleton_updated` if a modifier does it): a bone read
+before it is the clip's.
+
+**In WsgSim**: for a body you draw yourself, give `bodies()` an entry with `"body": null` and `"feet": Callable` (the
+same four points); WsgSim reads them every frame. Run a smoke at Low to see what the A16 shows.
+
+**Fix it: the foundation's planter on your own skeleton** - `WsgFootPlanter.bone_map`:
+
+```gdscript
+var pl := WsgFootPlanter.new()
+pl.bone_map = {"Hips": "mixamorig_Hips", "LeftUpLeg": "mixamorig_LeftUpLeg", "LeftLeg": "mixamorig_LeftLeg",
+	"LeftFoot": "mixamorig_LeftFoot", "LeftToeBase": "mixamorig_LeftToeBase", "RightUpLeg": "mixamorig_RightUpLeg",
+	"RightLeg": "mixamorig_RightLeg", "RightFoot": "mixamorig_RightFoot", "RightToeBase": "mixamorig_RightToeBase"}
+skeleton.add_child(pl)     # after whatever poses the skeleton (its AnimationPlayer, or your code each frame)
+# each game step: pl.tick(dt); pl.ground_y = floor_y; pl.body_speed = speed; and pl.reset() at a teleport
+```
+
+It reads contact from the pose as drawn (the feet's heights and speed), so it needs no clip data: whatever poses
+the legs, it plants them. Turn your own foot planting off on that body. `tests/planter_bone_map_test.gd`: a renamed
+skeleton's standing feet are held while the body moves under them.
+
 ## 5.20 The downloadable High pack: WsgAssetPack (games with a High pack)
 
 High's extra assets (8K skies, 4K pitch textures, the HD player textures) can come as a separate download instead of

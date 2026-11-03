@@ -663,3 +663,9 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     no warm-up (633 -> 158 s, the same counts and verdicts), props capped at [1, 30 s], --reuse, --merge (parallel
     jobs), per-rule seconds; a reading near its bound warns; no Web build is N/A. Kabaddi's modes and tiers 1551 ->
     175 s on this machine.
+- **Low, what the owner sees (the lead, 2026-11-03 17:53)**: Hurling and Floorball draw the foundation's WsgBody at
+  every tier; Netball (HeroBody, its Gait planter), Kho Kho (ModelBody, clip foot locks), Kabaddi (RiggedBody, its
+  planter), Sepak Takraw (RealBody, its planter: 35 cm re-plants) draw their own at Low; Pok Ta Pok (WsgToonDriver)
+  to answer. WsgWorldGame.walker_low() and the feet_low rule (deferred to 2026-11-08 12:00 UTC, then failed; unwired
+  reads DEFERRED, never skipped); WsgSim's "feet" callable for a body the game draws; WsgFootPlanter.bone_map - the
+  planter on a game's own skeleton (planter_bone_map_test). ADOPTING 5.21.
