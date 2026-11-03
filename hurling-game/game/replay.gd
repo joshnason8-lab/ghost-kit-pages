@@ -163,7 +163,7 @@ func _put(e: Array) -> void:
 	var p: Player = e[0]
 	if not is_instance_valid(p):
 		return
-	p.position = e[1]
+	p.put(e[1])      # (a jump, frame to frame of the replay and back at its end: the planter let go - Player.put)
 	p.body.rotation.y = e[2]
 	p.body.apply(e[3])
 

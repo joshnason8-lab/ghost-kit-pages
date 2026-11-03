@@ -151,7 +151,9 @@ func bodies() -> Array:
 		var tgt := pl.global_position + w.normalized() * 3.0 if w.length() > 1.0 else Vector3.INF
 		var b := {"name": "%s %d" % [pl.role if pl.role != "" else ["home", "away"][pl.team], pl.num],
 			"pos": pl.global_position, "radius": Player.BODY_R, "height": 1.8,
-			"body": pl.link.body if pl.visible and pl.link and pl.link.body.is_visible_in_tree() else null, "active": live and not pl.down(float(m.now)) and pl.role == "",
+			# (Not measured while a replay shows the kept frames again: it is the match played back, already measured
+			# when it was played, each man put frame by frame where he was - Replay._put.)
+			"body": pl.link.body if pl.visible and pl.link and pl.link.body.is_visible_in_tree() and not _replaying() else null, "active": live and not pl.down(float(m.now)) and pl.role == "",
 			"target": tgt}
 		# (An official's signal raises the arms out from the sides, straight - a wide's both arms up to cross overhead
 		# pass through a T and an A on the way: by design, counted, not failed.)
@@ -162,8 +164,14 @@ func bodies() -> Array:
 
 
 func ball() -> Dictionary:
+	# (Not live while a score or a wide is shown again: Replay puts the ball where it was, a jump over whatever is
+	# between - the parish ground's low wall behind the goal read as the ball gone through it, seeds 2, 3 and 4.)
 	return {"pos": m.ball.global_position, "radius": Sliotar.RADIUS,
-		"live": m.ball.state == Sliotar.FREE or m.ball.state == Sliotar.OUT}
+		"live": (m.ball.state == Sliotar.FREE or m.ball.state == Sliotar.OUT) and not _replaying()}
+
+
+func _replaying() -> bool:
+	return m.replay != null and m.replay.playing
 
 
 ## The fetch-behind-prop case: the ball dead at SPOT, behind one of the ground's big props, and the nearest outfield
