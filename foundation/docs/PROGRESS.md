@@ -515,3 +515,7 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   tools/asset_lint.gd (CI, ASSET_LINT.md, asset_lint_allow.txt with the owner's note); the editor plugin
   (plugin.cfg, lint_plugin.gd: checks at import, a toast). tests/asset_lint_test.gd plants each fault. ADOPTING §5.22.
   The owner-approved programme (7, 4, WsgSim, 5, 3, 1, 8, 9) is done.
+- **Feet at every size (8dc70d9, e5bd515):** the feet rule holds at most 2 cm a step on the hurler scaled 0.85-1.15 (worst
+  1.9). Fixes: the locomotor no longer starts a walk mid-stop (it read the body's speed as asked-for); a released toe
+  and a step's toe keep their place on the floor. tests/feet_scale_test.gd. Also f151f52: the T/A-pose check uses
+  bands and sideways arms (Netball's overhead catches were flagged).

@@ -30,6 +30,21 @@ The test hurler on the licensed clips was driven along the match path. The table
 | Before (planter holds the ankle only) | 1.1 | 2.4 | 3.2 | 2.4 | 1.2 |
 | Now (ball held, heel-off over the ball, steps when out of reach, twist held) | 1.5 | 0.3 | 0.9 | 0.2 | 1.0 |
 
+At every body size from 0.85 to 1.15 of the test hurler (since 8dc70d9; `tests/feet_scale_test.gd` runs all five in
+the suite), worst step in cm:
+
+| Size | walk | jog | jog, turned | run | stop |
+|---|---|---|---|---|---|
+| 0.85 | 1.3 | 0.3 | 1.1 | 0.5 | 1.2 |
+| 0.92 | 1.4 | 0.3 | 0.8 | 0.3 | 1.3 |
+| 1.00 | 1.5 | 0.3 | 0.9 | 0.2 | 1.4 |
+| 1.08 | 1.9 | 0.3 | 1.0 | 0.4 | 1.5 |
+| 1.15 | 1.8 | 0.5 | 1.0 | 0.6 | 1.6 |
+
+Before 8dc70d9 some sizes slid 2.7 to 4.0 cm. There were two causes:
+- the locomotor started a walk in the middle of a stop;
+- a released toe snapped 3 cm across the floor.
+
 WsgSim's demo game is a crude AI. It snaps its facing to its velocity, turning up to 265° a second on a planted foot. Across 40 seeds (80 sampled bodies), 15 matches had a step over 2 cm: most 2.1–3.1 cm, a few up to 4.6 cm, and one 7.0 cm.
 
 The two traced so far are steep heel strikes, the toe 7–10 cm up as the heel lands, during the turns. The toe sweeps 2–3 cm while still in the air as the foot flattens about the held ankle. The measure counts it from the frame after the heel touched, then the heel lifts. A real game turns its players at a human rate.
