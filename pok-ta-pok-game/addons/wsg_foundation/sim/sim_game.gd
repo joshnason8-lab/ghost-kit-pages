@@ -65,7 +65,8 @@ func ball() -> Dictionary:
 ## Checks put off for this game until a time, each with the lead's or owner's note: {"foot slip": ["2026-11-06T12:00Z",
 ## "the lead, 2026-11-03: planter slips 3.5-4.1 cm under our AI; foundation fix pending"]}. Until then a failure of
 ## that check is reported as deferred (under Warnings, with its reason), not failed; from then on it fails again. Only
-## for a foundation fault the game cannot fix itself, and only with the lead's or owner's word.
+## for a foundation fault the game cannot fix itself, and only with the lead's or owner's word. "planted slip": [until,
+## why, cm] puts off only a planted foot's slide up to cm (one over it, and every skid and jump, fails as "foot slip").
 func deferred() -> Dictionary:
 	return {}
 

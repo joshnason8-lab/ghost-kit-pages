@@ -454,6 +454,16 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   it. Ten new texts in six languages, fitted on every screen shape (fit_audit now opens setup with the revival chosen
   and the cup's three kinds). CI plays one AI revival match with RuleChecks.
 
+- **0.6.30-beta: shared foundation 70e571a8; the beta published in place.** The planter's 7def933a (required from
+  2026-11-06 12:00 UTC): a foot left far behind a fast steered run steps instead of being re-planted. The sim's worst
+  case (LLA_1, extreme #8, under the input fuzzer) went from 48.5 cm in a frame to 25.1, still just over the 25 cm line
+  and still deferred until 11-06. Since 2026-11-03 the workflow token is refused new tag names (403 "Resource not
+  accessible by integration"), so the beta is published in place: the new APKs uploaded to the existing release and
+  checked, the old ones removed, then the title and notes (0.6.29 was the first, at 20:16 UTC). The media kit's
+  release was lost to the same 403 (its old delete-then-create); its workflow now publishes safely, and a new one
+  waits on the owner (a new tag). Medium and High feet PASS; Low feet still DEFERRED until 11-08 (the foundation's
+  WsgToonDriver fix is next).
+
 ## Next
 
 1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
