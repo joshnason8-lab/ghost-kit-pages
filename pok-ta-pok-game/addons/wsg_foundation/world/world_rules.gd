@@ -60,11 +60,14 @@ static func drive(tree: SceneTree, body: WsgBody, loco: WsgLocomotor, segments: 
 				facing = deg_to_rad(float(seg[2]))
 			pos += Vector3(vel.x, 0, vel.y) * DT
 			body.position = pos
+			# Every frame, as a game drives its players (until 2026-11-04 it took two frames a step: the pose advances only
+			# inside drive, so the hurler's numbers are the same, but a modifier keeping its own frame-by-frame state ran
+			# twice a step there and once in a game).
 			loco.drive(DT, Vector3(vel.x, 0, vel.y), facing, Vector3(want.x, 0, want.y))
-			await tree.process_frame
 			# (A body the game advances itself - set_manual - is posed only when advanced: Hurling's hung the walk.)
 			if body.manual:
 				body.call_deferred("advance", DT)
+			# The frame's own pass - the pose as drawn (the locomotor's drive poses it once already, inside the call).
 			await body.skeleton.skeleton_updated
 			on_frame.call(t, si)
 			# (Out of skeleton_updated before the next drive: poses set inside it are undone.)
@@ -358,7 +361,11 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 				fans += (c as WsgCrowd3D).used.size()
 			var bodies := holder.find_children("*", "WsgBody", true, false)
 			var full := bodies.filter(func(b: WsgBody) -> bool: return b.full).size()
-			var fans_max: int = WsgFoundation.crowd_budget(WsgFoundation.crowd_most())[1]
+			# (The most any quality the tier allows can build: on the budget profile Close, 3, builds fewer fans than 2 -
+			# Kabaddi's High asked 2 and built its 700, within the tier, and was failed against Close's 500.)
+			var fans_max := 0
+			for q in range(1, WsgFoundation.crowd_most() + 1):
+				fans_max = maxi(fans_max, int(WsgFoundation.crowd_budget(q)[1]))
 			var full_max := WsgFoundation.full_bodies()
 			var tag := "%s at %s" % [mode, ["Low", "Medium", "High"][t]]
 			var line := "%s: tier %d after the start, %d 3D fans (at most %d), %d of %d bodies in full (at most %d), started in %.1f s (this machine)" % [

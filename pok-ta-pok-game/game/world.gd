@@ -25,12 +25,6 @@ func _init() -> void:
 	Game.settings.auto_gfx = false
 
 
-## Rules put off until a time, with the lead's word (the shape of WsgSimGame.deferred; read once the world check reads
-## it): the feet rule's walk on our walker (player_tall at 0.967) is the foundation's planter, the foundation's to fix.
-func deferred() -> Dictionary:
-	return {"feet": ["2026-11-06T12:00Z", "the lead, 2026-11-03: foundation planter on player_tall, Foundation owns (walk 2.1 cm, 2.0 at most; the other gaits 0.4 at most)"]}
-
-
 ## As the Settings screen does (ui/settings_screen.gd).
 func set_tier(t: int) -> void:
 	Game.settings.graphics = t

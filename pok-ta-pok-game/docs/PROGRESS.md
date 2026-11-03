@@ -387,6 +387,12 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   fair cell split by rules (ulama home 64% of 90, classic 45% of 110) is being tested against the first serve: config
   first_serve (default home's, as before) and balance_sim's swap option, which alternates it by seed.
 
+- **0.6.21-beta: shared foundation 5aa5773, the new feet measure.** WsgNoteChecks.foot_slip adds up, each frame a
+  foot is down, the smaller of the heel's and the ball's move: a heel-to-toe roll reads about 0, a slide in full; the
+  planter's hard stop and WsgFootFlat's toe shift fixed (4cae13ae). Our walker on the world check: walk 0.3 cm (2.1
+  before), jog 0.7, turned 0.4, run 0.3, stop 0.0 - the feet rule passes outright, so world.gd's deferral is gone. The
+  sim's foot-slip deferral stays until a smoke batch on this measure says otherwise.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
