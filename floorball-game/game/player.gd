@@ -211,7 +211,8 @@ func step(dt: float) -> void:
 		var vn := vel.dot(n)
 		if vn < 0.0:
 			vel -= n * vn
-	_keep_off_goals()
+	if match_node != null:
+		_keep_off_goals()   # (the match's goals: a body on its own, in a test or a tool, has none)
 	# Turning: toward want_face, or the way he moves when he is moving.
 	var target := facing
 	if not is_nan(want_face):
