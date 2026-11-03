@@ -3,7 +3,7 @@ extends Node
 ## match to its end (eight, or time), the venue, rules, teams and side size turned by the seed; home's wins with a 95%
 ## interval (Wilson). A side that wins more as home than as away, levels alike, is a bug in the code before it is
 ## balance (the foundation's demo: home moved first every frame).
-##   godot --headless --path . --fixed-fps 30 res://tests/balance_sim.tscn -- <home level> <away level> <first seed> <count> [minutes]
+##   godot --headless --path . --fixed-fps 30 res://tests/balance_sim.tscn -- <home level> <away level> <first seed> <count> [minutes] [swap] [ulama|classic]
 ## One line a match (BAL ...) and a summary (BALANCE ...).
 
 func _ready() -> void:
@@ -17,6 +17,9 @@ func _ready() -> void:
 	var first := int(args[2]) if args.size() > 2 else 1
 	var n := int(args[3]) if args.size() > 3 else 10
 	var mins := float(args[4]) if args.size() > 4 else 10.0
+	# "swap": the first serve alternates by seed (odd seeds away serve first), to tell home from serving first apart;
+	# "ulama" / "classic": only that rule set's courts.
+	var opts := Array(args.slice(5))
 	var wins := [0, 0]
 	var draws := 0
 	for i in n:
@@ -24,6 +27,11 @@ func _ready() -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("balance|%d" % s)
 		var venue: String = DB.VENUE_ORDER[rng.randi() % DB.VENUE_ORDER.size()]
+		for k in 64:
+			if not ("ulama" in opts or "classic" in opts) or String(DB.VENUES[venue].rules) in opts:
+				break
+			venue = DB.VENUE_ORDER[rng.randi() % DB.VENUE_ORDER.size()]
+		var first_serve := (s % 2) if "swap" in opts else 0
 		var rules := String(DB.VENUES[venue].rules)
 		var teams: Array = DB.teams_for(rules)
 		var home: String = teams[rng.randi() % teams.size()]
@@ -34,7 +42,7 @@ func _ready() -> void:
 		var m: Node = load("res://game/match.gd").new()
 		m.config = {"home": home, "away": away, "venue": venue, "rules": rules, "side": sides[rng.randi() % sides.size()],
 			"user_team": -1, "seed": s, "length": mins, "mode": "watch", "levels": lv, "difficulty": maxi(lv[0], lv[1]),
-			"urria": "3_7", "ritual": false}
+			"urria": "3_7", "ritual": false, "first_serve": first_serve}
 		add_child(m)
 		var frames := 0
 		while m.phase != m.P.OVER and frames < int(mins * 60 * 30 * 1.6) + 30 * 420:
@@ -48,7 +56,7 @@ func _ready() -> void:
 			wins[w] += 1
 		else:
 			draws += 1
-		print("BAL seed %d %s %s v %s %s side %s: winner %d after %.1f min" % [s, venue, home, away, rules, str(m.config.side), w, float(m.clock) / 60.0])
+		print("BAL seed %d %s %s v %s %s side %s: winner %d after %.1f min first %d" % [s, venue, home, away, rules, str(m.config.side), w, float(m.clock) / 60.0, first_serve])
 		m.queue_free()
 		await get_tree().process_frame
 	var played: int = wins[0] + wins[1]

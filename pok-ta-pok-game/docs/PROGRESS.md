@@ -381,6 +381,12 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   4: a foot just landed slid at the heel); the sim no longer measures feet while a replay plays back. 0.6.18's CI:
   build, release gate and world check all green.
 
+- **0.6.20-beta: the balance at 200 seeds a cell.** Computer against computer, 3-minute matches, the venue, rules,
+  teams and side size turned by the seed (tests/balance_sim; 95% Wilson): fair 1-1 home 107 / away 93 (53.5%, 47-60%);
+  home-strong 2-0 home 91.0% (86-94%); away-strong 0-2 home 7.5% (5-12%). No home/away lean and no balance flag. The
+  fair cell split by rules (ulama home 64% of 90, classic 45% of 110) is being tested against the first serve: config
+  first_serve (default home's, as before) and balance_sim's swap option, which alternates it by seed.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are

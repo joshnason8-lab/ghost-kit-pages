@@ -175,7 +175,8 @@ func build_rest(ld: WsgLoading) -> void:
 	if user_team >= 0:
 		user_player = teams[user_team].players[0]
 		user_player.user = true
-	serve_team = 0
+	# The first serve is home's (docs/RULES.md); config first_serve lets the balance tests swap it (tests/balance_sim).
+	serve_team = clampi(int(config.get("first_serve", 0)), 0, 1)
 	_pick_server()
 	ball.held = true
 	ball.pos = Vector3(0, Ball.RADIUS, 0)
