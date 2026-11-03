@@ -31,6 +31,12 @@ func modes() -> Array:
 	return ["match", "rematch"] if bad == "freed" else ["match"]
 
 
+## (WSG_DEMO_DEFER: the feet rule put off until that time - world_check_test's deferral case.)
+func deferred() -> Dictionary:
+	var until := OS.get_environment("WSG_DEMO_DEFER")
+	return {"feet": [until, "the lead, a test: foundation fix pending"]} if until != "" else {}
+
+
 func play_seconds(_mode: String) -> float:
 	return 3.0
 

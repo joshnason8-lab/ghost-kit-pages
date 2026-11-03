@@ -1350,6 +1350,12 @@ on any phone. Build what the player's tier allows. If the owner lets a mode run 
 foundation's crowd tests and notes now do). The frame budgets are set from Hurling's national stadium with about 15%
 room (docs/BUDGET.md); send me your numbers if a venue of yours needs more.
 
+**Deferring a rule (only for a foundation fault, with the lead's or owner's word).** `deferred()` in your world.gd:
+`{"feet": ["2026-11-06T12:00Z", "the lead, 2026-11-03: <why>"]}`. Until that time a failure of that rule is reported
+DEFERRED with the reason, not failed; from it, it fails again. `WsgSimGame.deferred()` is the same for WsgSim's
+checks. The feet rule itself is enforced for every game from **2026-11-04 12:00 UTC** (`RULE_FROM`; the walker's walk
+read 2.1-2.2 cm on three games' rigs on 888e222, a foundation fault).
+
 **`start_mode` must replace whatever the last call started, as a real tap does.** The tiers rule starts every mode
 three times, one after another. Hurling's `start_mode` left the previous match drawing while the next one started, so
 the tiers rule measured both: 524k triangles and 154 draw calls at Low. Free or replace the previous mode in your own

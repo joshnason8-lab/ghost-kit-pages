@@ -45,6 +45,31 @@ if ! grep -qE "^props +FAIL" "$OUT/audit.log"; then
 else
 	echo "world_check_test: a failing audit fails its rule"
 fi
+# A rule the game defers (the lead's word, until a time): reported deferred, not failed, before it; failed after.
+WSG_DEMO_DEFER=2999-01-01T00:00Z run defer_before --only feet --bad feet
+code=$?
+if [ $code != 0 ] || ! grep -qE "^feet +DEFERRED" "$OUT/defer_before.log"; then
+	echo "world_check_test: a deferred rule before its time was not reported deferred (exit $code)"; grep -E "^feet|deferred" "$OUT/defer_before.log"; FAIL=1
+else
+	echo "world_check_test: a deferred rule before its time: deferred, not failed"
+fi
+WSG_DEMO_DEFER=2000-01-01T00:00Z run defer_after --only feet --bad feet
+code=$?
+if [ $code = 0 ] || ! grep -qE "^feet +FAIL" "$OUT/defer_after.log"; then
+	echo "world_check_test: a deferral past its time did not fail (exit $code)"; grep -E "^feet" "$OUT/defer_after.log"; FAIL=1
+else
+	echo "world_check_test: a deferral past its time: failed"
+fi
+# The feet rule's own later time (RULE_FROM), without the test's WSG_WORLD_ENFORCE: deferred before it, failed after.
+WSG_WORLD_ENFORCE= WSG_NOW=2026-11-04T11:59Z run feet_from_before --only feet --bad feet
+grep -qE "^feet +DEFERRED" "$OUT/feet_from_before.log" || { echo "world_check_test: the feet rule failed before its own time"; grep -E "^feet" "$OUT/feet_from_before.log"; FAIL=1; }
+WSG_WORLD_ENFORCE= WSG_NOW=2026-11-04T12:00Z run feet_from_after --only feet --bad feet
+code=$?
+if [ $code = 0 ] || ! grep -qE "^feet +FAIL" "$OUT/feet_from_after.log"; then
+	echo "world_check_test: the feet rule did not fail from its own time (exit $code)"; FAIL=1
+else
+	echo "world_check_test: the feet rule: deferred before 2026-11-04 12:00, failed from it"
+fi
 run manual --only feet --bad manual || { echo "world_check_test: a manual walker fails the feet rule"; tail -12 "$OUT/manual.log"; FAIL=1; }
 # The Web rule: a Web preset without the licensed data excluded, and a pack that holds it, fail; excluded passes.
 printf '[preset.0]\nname="Web"\nplatform="Web"\nexclude_filter=""\n' > "$OUT/bad_presets.cfg"
