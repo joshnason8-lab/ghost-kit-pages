@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.6
+
+- **Smoother replays**: when a score is shown again, the players' feet go with them as the replay moves them, and
+  back again at its end (a planted foot used to stay behind for a moment).
+- A stopping foot is put down where it's drawn, not a stride further on (the shared animation foundation's fix).
+
 ## New in 0.24.5
 
 - **Cleaner restarts**: when the players and officials are put on their spots for a throw-in, a free or a shootout,

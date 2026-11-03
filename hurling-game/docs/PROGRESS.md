@@ -857,6 +857,15 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.6, 3 November 2026)
+
+- **Foundation 80420f64** (planter 68a16daa: a low foot's jump measured, over 25 cm a frame fails; a stopping foot
+  planted where drawn).
+- **Replay**: Replay._put goes through Player.put (the planter let go at each kept frame and at the end), and the
+  sim adapter reports the ball not live and the bodies unmeasured while a replay plays. The parish low wall's "ball
+  through" (seeds 2, 3, 4) was the replay's jump of the ball from behind it back to its first frame. Seed 6's skids:
+  away 4 35.7 -> 6.5 cm, referee 31.2 -> 2.8. Suite 708/0; owner notes 21/21 (gliding 2.0 cm).
+
 ## Done (0.24.5, 3 November 2026)
 
 - **Player.put** (a body put somewhere new: the throw-in's spots, the officials back on theirs, a free-taker's stance,
