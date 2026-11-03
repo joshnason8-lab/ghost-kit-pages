@@ -1351,6 +1351,7 @@ func _foundation(available: bool) -> void:
 	var slide := 0.0
 	var slide_n := 0
 	var last_foot := {}
+	var drawn := {}   # body -> its feet as drawn: [L ankle, L toe, R ankle, R toe] (WsgNoteChecks.feet in skeleton_updated)
 	var slide_why := ""
 	var held_gap := 0.0
 	var held_n := 0
@@ -1368,6 +1369,12 @@ func _foundation(available: bool) -> void:
 			var l: FoundationLink = rb.link
 			if l == null or not l.last.has("Hips"):
 				continue
+			# (The feet as drawn - planted - are read as the skeleton finishes them: bone_world outside skeleton_updated is
+			# the clip's pose, not the planted one.)
+			if not drawn.has(l.body):
+				drawn[l.body] = []
+				var wb: WsgBody = l.body
+				wb.skeleton.skeleton_updated.connect(func(): drawn[wb] = WsgNoteChecks.feet(wb))
 			var fresh: bool = l.last.frame != seen.get(l, -1)
 			var gap_frames := maxi(1, int(l.last.frame) - int(seen.get(l, int(l.last.frame) - 1)))
 			seen[l] = l.last.frame
@@ -1417,15 +1424,19 @@ func _foundation(available: bool) -> void:
 				walked += 1
 			for k in 2:
 				var key := [l, k]
-				var p: Vector3 = l.loco.planter.ankle_world[k]
-				var toe: Vector3 = l.body.bone_world(["LeftToeBase", "RightToeBase"][k]).origin
+				var feet: Array = drawn.get(l.body, [])
+				if feet.size() < 4:
+					continue
+				var p: Vector3 = feet[k * 2]
+				var toe: Vector3 = feet[k * 2 + 1]
 				# (On the floor: the ankle within 4 cm of its standing height.)
 				var down: bool = l.mode in ["move", "carry"] and l.legacy.weight <= 0.0 and l._pw <= 0.0 and float(l.loco.planter.contact[k]) > 0.5 \
 					and p.y < (l.body.joints["LeftFoot"] as Vector3).y * l.body.global_transform.basis.get_scale().y + 0.04
 				if down and last_foot.has(key):
-					# The smaller of the ankle's and the toe's move this frame, as the shared foundation's foot_slip measures:
+					# The smaller of the drawn ankle's and toe's move this frame, as the shared foundation's foot_slip measures:
 					# a heel rolling up over a held ball of the foot is not a slide (the planter holds a foot flat on the floor
-					# however fast it moves, 13f00e2: rolling off it read 4 cm here), and a real slide moves both ends.
+					# however fast it moves, 13f00e2: rolling off it read 4 cm on the planter's ankle alone), and a real slide
+					# moves both ends.
 					var held: Array = last_foot[key]
 					var sl := minf(Vector2(p.x - held[0].x, p.z - held[0].z).length(), Vector2(toe.x - held[1].x, toe.z - held[1].z).length()) / gap_frames
 					if sl > slide:

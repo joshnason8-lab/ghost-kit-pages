@@ -20,6 +20,12 @@ func check() -> void:
 			o.back_t = 1e9
 			o.off_to = -o.body.global_transform.basis.z.normalized() * 1.2
 			var link: FoundationLink = o.body.link
+			# (The drawn feet - planted - read as the skeleton finishes them: bone_world outside skeleton_updated is the
+			# clip's pose, not what is drawn.)
+			var drawn := {"feet": []}
+			if link:
+				var wb: WsgBody = link.body
+				wb.skeleton.skeleton_updated.connect(func(): drawn.feet = WsgNoteChecks.feet(wb))
 			var foot_speed := 0.0
 			var body_speed := 0.0
 			var n := 0
@@ -29,8 +35,10 @@ func check() -> void:
 				if link:
 					await frame()   # (the drawn body posed)
 				var pos: Vector3 = o.body.global_position
-				var fl: Vector3 = link.body.bone_world("LeftFoot").origin if link else o.body.bone_world("foot_l")
-				var fr: Vector3 = link.body.bone_world("RightFoot").origin if link else o.body.bone_world("foot_r")
+				if link and (drawn.feet as Array).size() < 4:
+					continue
+				var fl: Vector3 = drawn.feet[0] if link else o.body.bone_world("foot_l")
+				var fr: Vector3 = drawn.feet[2] if link else o.body.bone_world("foot_r")
 				var low := "l" if fl.y < fr.y else "r"
 				var f: Vector3 = fl if low == "l" else fr
 				if not was.is_empty() and was.low == low:
