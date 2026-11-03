@@ -132,6 +132,7 @@ func _think(i: int, dt: float) -> void:
 	var v := want.normalized() * minf(float(p.speed), want.length() * 3.0) if want.length() > 0.05 else Vector3.ZERO
 	# A player speeds up and slows down as people do (9 and 12 m/s/s), not from still to a sprint in a frame (that
 	# left the locomotion's feet 13 to 19 cm behind each step: WsgSim's foot check).
+	var asked := v
 	var lim: float = (9.0 if v.length() > (p.vel as Vector3).length() else 12.0) * dt
 	v = (p.vel as Vector3).move_toward(v, lim)
 	if _bug == "stuck" and i == 0 and t > 10.0:
@@ -148,7 +149,9 @@ func _think(i: int, dt: float) -> void:
 		p.facing = atan2(p.vel.x, p.vel.z)
 	if p.body:
 		(p.body as WsgBody).position = p.pos
-		(p.loco as WsgLocomotor).drive(dt, p.vel, p.facing, p.vel)
+		# (The AI's asked-for velocity as the wanted one: given the body's own, a start from standing took the walk's
+		# start clip up to a jog, its stride too short for the body, and the feet slid 3-5 cm a step.)
+		(p.loco as WsgLocomotor).drive(dt, p.vel, p.facing, asked)
 	# Picking the ball up.
 	if holder < 0 and (Vector2(ball_pos.x - p.pos.x, ball_pos.z - p.pos.z)).length() < 0.6 and ball_pos.y < 0.6 \
 			and not (i == _last_touch and t < _touch_until):
