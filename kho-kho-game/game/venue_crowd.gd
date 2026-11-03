@@ -9,6 +9,9 @@ extends RefCounted
 ##   main: everything the cameras see; near: the near side line's middle, drawn only from behind the pole.
 
 const BARRICADE := {"height": 1.1, "gap": 0.4}
+## The monobloc chair's seat as a fan sits on it (m deep): at the shared kind's 0.42 one fan (fan4) getting up still
+## goes 1 mm further into the seat than the audit allows (also after the foundation's 6a59b52); 0.36 passes.
+const CHAIR_DEPTH := 0.36
 
 
 ## The venue's crowd for a kind of ground ("village", "school", "arena", "stadium") round field f, on Low or not.
@@ -60,7 +63,7 @@ static func _ground(v: WsgCrowdVenue, kind: String, f: Dictionary, low: bool, pa
 		_add(v, {"rows": 1, "tread": 0.9, "seat": "bench", "pitch": 0.6, "barrier": BARRICADE}, "pupils' benches",
 			Vector3(-span, 0, far_z - gap), Vector3(span, 0, far_z - gap))
 	else:
-		_add(v, {"rows": 1, "tread": 0.9, "seat": "chair", "pitch": 0.75, "barrier": BARRICADE}, "front chairs",
+		_add(v, {"rows": 1, "tread": 0.9, "seat": "chair", "depth": CHAIR_DEPTH, "pitch": 0.75, "barrier": BARRICADE}, "front chairs",
 			Vector3(-span, 0, far_z - gap), Vector3(span, 0, far_z - gap))
 	_add(v, {"rows": deep - 1, "tread": 0.9, "rise": 0.0, "seat": "floor", "pitch": 0.6}, "behind the chairs",
 		Vector3(-span, 0, far_z - gap - 0.9), Vector3(span, 0, far_z - gap - 0.9))
@@ -77,7 +80,7 @@ static func _ground(v: WsgCrowdVenue, kind: String, f: Dictionary, low: bool, pa
 	if kind == "village":
 		# The guests on chairs along the back of the stage (its platform 1.2 m up, its front 2 m in front of them).
 		var z := -(Wt + 11.0)
-		_add(v, {"rows": 1, "tread": 1.3, "seat": "chair", "pitch": 0.9}, "stage", Vector3(-4.5, 1.2, z + 0.6),
+		_add(v, {"rows": 1, "tread": 1.3, "seat": "chair", "depth": CHAIR_DEPTH, "pitch": 0.9}, "stage", Vector3(-4.5, 1.2, z + 0.6),
 			Vector3(4.5, 1.2, z + 0.6))
 
 
