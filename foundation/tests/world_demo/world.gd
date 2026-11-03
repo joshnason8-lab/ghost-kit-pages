@@ -54,6 +54,8 @@ func walker(parent: Node) -> Array:
 	var loco := WsgLocomotor.attach(body)
 	if bad == "feet":
 		loco.planter.enabled = false
+	if bad == "manual":
+		body.set_manual(true)     # (a body the game advances itself: the walk must still run - Hurling's hung)
 	return [body, loco]
 
 

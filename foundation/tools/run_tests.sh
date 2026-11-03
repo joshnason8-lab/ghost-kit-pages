@@ -18,6 +18,7 @@ godot --headless --path . -s res://tools/prop_audit.gd -- res://tests/prop_runs.
 sh tests/world_check_test.sh
 python3 tests/release_gate_test.py
 godot --headless --path . -s tests/asset_pack_test.gd
+godot --headless --path . -s tests/joystick_test.gd
 godot --headless --path . --fixed-fps 30 -s tests/loco_test.gd
 godot --headless --path . -s tests/crowd_test.gd
 godot --headless --path . -s tests/crowd_venue_test.gd

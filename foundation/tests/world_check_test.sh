@@ -28,6 +28,8 @@ for bad in loading pose officials feet sounds joystick tiers; do
 		echo "world_check_test: --bad $bad caught: $(grep -E "^$bad " "$OUT/$bad.log" | cut -c21- | cut -c1-150)"
 	fi
 done
+# A walker the game advances itself (set_manual) is walked, not waited on for ever (Hurling's hung the feet rule).
+run manual --only feet --bad manual || { echo "world_check_test: a manual walker fails the feet rule"; tail -12 "$OUT/manual.log"; FAIL=1; }
 # The Web rule: a Web preset without the licensed data excluded, and a pack that holds it, fail; excluded passes.
 printf '[preset.0]\nname="Web"\nplatform="Web"\nexclude_filter=""\n' > "$OUT/bad_presets.cfg"
 printf '[preset.0]\nname="Web"\nplatform="Web"\nexclude_filter="addons/wsg_foundation/data/*"\n' > "$OUT/ok_presets.cfg"

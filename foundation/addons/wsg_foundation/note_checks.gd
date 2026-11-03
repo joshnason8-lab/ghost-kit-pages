@@ -33,7 +33,8 @@ static func _ground_forward(cam: Camera3D) -> Vector3:
 ## The joystick on every camera: for each camera, at the screen's centre, its edges and its corners (10% in) - the
 ## body standing there - the stick pushed 8 ways, MAP(stick: Vector2, cam: Camera3D, at: Vector3) -> Vector3 (the
 ## game's own mapping: where the body would go) against the camera-relative ways: the camera's own flat forward
-## (stick_world), or the way from the camera to the body (behind-the-player cameras), within TOL degrees of either.
+## (stick_world), the way from the camera to the body (behind-the-player cameras), or the screen-true way (the stick's
+## direction on the screen where the body is drawn, met with the floor), within TOL degrees of any.
 ## A mapping fixed to the world (up the stick = up the court: the fault the owner saw on any camera not alongside the
 ## court) goes 90 to 180 degrees off. The cameras must be in a viewport. Returns the failures.
 static func joystick(map: Callable, cameras: Array, tol := 25.0, ground_y := 0.0) -> Array:
@@ -69,6 +70,17 @@ static func joystick(map: Callable, cameras: Array, tol := 25.0, ground_y := 0.0
 					var r := Vector3(-f.z, 0, f.x)
 					var e2 := (r * st.x - f * st.y).normalized()
 					off = minf(off, rad_to_deg(w.angle_to(e2)))
+				# Or the screen-true way: the floor point a little way from the body in the stick's direction on the
+				# screen (Sepak Takraw's ray mapping: the body goes the stick's way where it is drawn - a flat 45-degree
+				# floor diagonal is drawn up to 40 degrees off it at the top of a broadcast picture).
+				var s2 := sp + st.normalized() * maxf(4.0, size.y * 0.03)
+				var o2 := cam.project_ray_origin(s2)
+				var d2 := cam.project_ray_normal(s2)
+				if d2.y < -1e-3:
+					var p2 := o2 + d2 * ((ground_y - o2.y) / d2.y)
+					var e3 := Vector3(p2.x - at.x, 0, p2.z - at.z)
+					if e3.length() > 1e-4:
+						off = minf(off, rad_to_deg(w.angle_to(e3)))
 				if off > worst:
 					worst = off
 					worst_what = "%s, stick %s" % [names[k], sn]
