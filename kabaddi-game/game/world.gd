@@ -6,6 +6,12 @@ extends WsgWorldGame
 ## Every start goes through Game.start_match (Play, Watch, a cup or season fixture): the modes are those starts.
 
 
+## The modes are played at Medium: the shared rig draws the players and officials there and on High (Low draws the
+## game's own bodies, which the pose and officials rules do not read). The tiers rule sets each level itself.
+func _init() -> void:
+	set_tier(Game.GFX_MEDIUM)
+
+
 func game_name() -> String:
 	return "Kabaddi Raid"
 
@@ -41,8 +47,7 @@ func _config(mode: String) -> Dictionary:
 
 
 ## The tap: the quick-match screen up (its buttons there to be turned off), then its Play, as the player does it.
-## Played at Medium: the shared rig draws the players and officials there and on High (Low draws the game's own
-## bodies, which the pose and officials rules do not read); tiers() plays every level.
+## At the level the check last set: Medium for the modes (_init), each level in turn for the tiers rule.
 func start_mode(mode: String, parent: Node) -> void:
 	# The last mode's match, finished (stopped and hidden in cameras()), is let go rather than freed as a tap would: the
 	# check keeps each mode's bodies and officials to read until it frees the modes itself (free_modes); its rules
@@ -55,7 +60,6 @@ func start_mode(mode: String, parent: Node) -> void:
 	# The level the check sets stays: on its software renderer every frame is slow, and the match would lower its own
 	# graphics mid-play (Match._check_frame_rate), releasing the shared bodies the check has hold of.
 	Game.settings.auto_gfx = false
-	set_tier(Game.GFX_MEDIUM)
 	Game.loading_overlay = true
 	Game.show_screen("res://ui/quick_setup.gd")
 	Game.start_match(_config(mode))
