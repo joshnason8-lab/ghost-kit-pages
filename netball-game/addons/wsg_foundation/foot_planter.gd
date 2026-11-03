@@ -46,6 +46,7 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 ## the body is going), and is planted there: the clip, its stride too short for the body (a sharp turn, a start or
 ## stop harder than its clips), kept it on the ground behind, and it slid there 3 to 13 cm (WsgSim's demo).
 const STEP_TIME := 0.2
+var _low_ticks := [0, 0]                     # ticks a foot let go has stayed on the ground (it steps at 2)
 var _step_toe := [Vector3.INF, Vector3.INF] # the held toe from the ankle as the step began
 var _toe_hold := [Vector3.INF, Vector3.INF] # where its toe was held (a foot released keeps its toe's place across)
 ## How far a planted foot's leg may twist (radians) before the foot turns with the body.
@@ -84,6 +85,7 @@ func reset() -> void:
 	_lock = [Vector3.INF, Vector3.INF]
 	_hold = [Vector3.INF, Vector3.INF]
 	_step = [-1.0, -1.0]
+	_low_ticks = [0, 0]
 	_toe_hold = [Vector3.INF, Vector3.INF]
 	_yaw = [NAN, NAN]
 	_hip_prev = [Vector3.INF, Vector3.INF]
@@ -155,6 +157,14 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					_lifted[i] = false
 				else:
 					is_down = false
+					# Let go, and the clip keeps it on the ground (its stride too short for the body: a sharp turn, a
+					# start or stop harder than its clips): it steps. A foot the clip is lifting - every running
+					# stride's toe-off is let go at the leg's reach - just goes with the clip (stepping those too
+					# doubled the landings: Kho Kho's runners at 7.6 steps a second).
+					_low_ticks[i] = int(_low_ticks[i]) + (1 if h < 0.03 * sc else 0)
+					if int(_low_ticks[i]) >= 2:
+						_step[i] = 0.0
+						_step_from[i] = ankle_world[i]
 			if is_down and not was:
 				landed.emit(i)
 			contact[i] = 1.0 if is_down else 0.0
@@ -333,10 +343,9 @@ func _let_go(i: int) -> void:
 	_lifted[i] = true
 	_lock[i] = Vector3.INF
 	contact[i] = 0.0
-	_step[i] = 0.0
-	_step_from[i] = ankle_world[i]
-	# (Its toe goes with the ankle from where it was held, the clip's foot taking over as the step goes on: the toe
-	# snapped to the clip's 4 cm across at the step's start, still on the ground.)
+	_low_ticks[i] = 0
+	# (If the clip then keeps it on the ground it steps - see tick's lifted case; its toe goes with the ankle from
+	# where it was held, the clip's foot taking over as the step goes on: it snapped 4 cm across at the step's start.)
 	_step_toe[i] = _toe_lock[i] - ankle_world[i] if _toe_lock[i] != Vector3.INF else Vector3.INF
 
 
