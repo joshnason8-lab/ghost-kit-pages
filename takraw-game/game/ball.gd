@@ -217,10 +217,6 @@ func _step_loose(dt: float) -> void:
 	var h := dt / float(n)
 	for i in n:
 		var p := global_position
-		# Over the low boards or the fence at an end of the hall (gone past its line in the air): behind it from then on,
-		# off its back if it rolls back to it - never put back in front of it through it.
-		var past_lo := p.z < bounds.position.y - 0.001
-		var past_hi := p.z > bounds.end.y + 0.001
 		if p.y > RADIUS + 0.0005 or vel.y > 0.0:
 			vel.y -= G * h
 			p = _through(p, h)
@@ -242,13 +238,12 @@ func _step_loose(dt: float) -> void:
 			hit = absf(vel.x)
 			vel.x = -vel.x * 0.4
 			vel.z *= 0.8
-		if p.y <= RADIUS + 0.4 and not past_lo and not past_hi and (p.z < bounds.position.y + RADIUS or p.z > bounds.end.y - RADIUS):
-			p.z = clampf(p.z, bounds.position.y + RADIUS, bounds.end.y - RADIUS)
-			hit = maxf(hit, absf(vel.z))
-			vel.z = -vel.z * 0.4
-			vel.x *= 0.8
-		elif p.y <= RADIUS + 0.4 and ((past_hi and p.z < bounds.end.y + RADIUS) or (past_lo and p.z > bounds.position.y - RADIUS)):
-			p.z = bounds.end.y + RADIUS if past_hi else bounds.position.y - RADIUS
+		# The low boards or the stand at the ends of the hall: back off them - but never put back across a board or a
+		# fence it went over in the air (then it is behind it, and the prop's own back stops it rolling through).
+		var low := p.y <= RADIUS + 0.4 and (p.z < bounds.position.y + RADIUS or p.z > bounds.end.y - RADIUS)
+		var back := Vector3(p.x, p.y, clampf(p.z, bounds.position.y + RADIUS, bounds.end.y - RADIUS))
+		if low and (solid == null or not bool(solid.sweep(p, back, RADIUS).get("hit", false))):
+			p = back
 			hit = maxf(hit, absf(vel.z))
 			vel.z = -vel.z * 0.4
 			vel.x *= 0.8
