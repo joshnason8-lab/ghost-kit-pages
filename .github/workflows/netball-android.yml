@@ -214,6 +214,27 @@ jobs:
           fi
           python3 ${PROJECT_DIR}/tools/check_pages.py ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
 
+      # The foundation's release gate (ADOPTING 5.19): the owner's key, the version, the licensed data where it belongs
+      # (in the APK, never on the Web), a clean export, compressed textures, no duplicates, and a version above the APK
+      # now published on the tag (Obtainium offers only a higher version: bump version/name and version/code).
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download netball-unleashed-beta -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          PREV=""
+          if [ -s "$RUNNER_TEMP/previous.apk" ]; then PREV="--previous $RUNNER_TEMP/previous.apk"; fi
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk \
+            --version "$VERSION" $PREV --out "$RUNNER_TEMP/gate"
+
+      - name: Release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+
       - uses: actions/upload-artifact@v4
         with:
           name: netball-unleashed-${{ env.VERSION }}-apk
@@ -240,10 +261,16 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+          # Published safely (the foundation's ADOPTING 5.19): the new release, whole, under a tag of its own first (if
+          # that fails, the old release is untouched); then the swap, seconds apart, so the tag never points at nothing.
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Netball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$TAG"
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG"   # (fails the step if the swap did not take)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot
