@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.7: **fans on their feet behind a glass barrier stand back from it.** At the mall's balconies a standing
+fan's hands could reach a few centimetres into the glass; now they stand clear of it. Nothing else changes in play.
+
 New in 0.15.6: **nothing new to see; more checking behind the scenes.** Every note you have given is now a test the
 game must pass before each build goes out, and thousands of matches are played automatically every night to catch
 bugs before you do.
