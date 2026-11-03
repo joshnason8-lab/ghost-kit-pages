@@ -26,6 +26,7 @@ godot --headless --fixed-fps 30 --path . -s res://tools/asset_lint.gd -- --out "
 godot --headless --path . --fixed-fps 30 -s tests/loco_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/foot_slip_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/feet_scale_test.gd
+godot --headless --fixed-fps 30 --path . -s tests/feet_jump_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/cadence_test.gd
 godot --headless --path . -s tests/crowd_test.gd
 godot --headless --path . -s tests/crowd_venue_test.gd

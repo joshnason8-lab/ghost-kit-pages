@@ -58,6 +58,11 @@ var _drawn_yaw := [NAN, NAN]                 # the way each foot pointed as last
 var _drawn_basis := [Basis(), Basis()]       # each foot's turn as last drawn (world)
 var _step_landed := [false, false]           # put down by its own step, its toe not yet down
 var _across := [0.0, 0.0]                    # easing across from where a let-go foot was held (1 -> 0 over release)
+## The most a foot easing back to the clip's moves across in a frame (m, the body's scale 1): a sprint's swing moves
+## up to 30-37 cm a frame low over the ground (tools/feet_calibrate, every game's walker).
+const CHASE_MAX := 0.35
+var _chase_from := [Vector3.ZERO, Vector3.ZERO] # where each foot was drawn the frame before
+var _chasing := [false, false]               # catching up with the clip's foot at CHASE_MAX
 var _step := [-1.0, -1.0]                    # how far through that step (0..1); -1: none
 var _step_from := [Vector3.INF, Vector3.INF]
 var _hip_prev := [Vector3.INF, Vector3.INF]
@@ -102,6 +107,8 @@ func reset() -> void:
 	_ball = [Vector3.INF, Vector3.INF]
 	_step_landed = [false, false]
 	_across = [0.0, 0.0]
+	_chasing = [false, false]
+	_chase_from = [Vector3.ZERO, Vector3.ZERO]
 	_w = [0.0, 0.0]
 	_prev = [Vector3.INF, Vector3.INF]
 
@@ -137,6 +144,8 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 	var floor_ankle := ground_y + _ankle_rest * sc
 	for i in 2:
 		var leg: Array = _ix[i]
+		if fresh:
+			_chase_from[i] = ankle_world[i]
 		var ank := xf * sk.get_bone_global_pose(leg[2]).origin
 		var hip := xf * sk.get_bone_global_pose(leg[0]).origin
 		var reach := (sk.get_bone_global_rest(leg[0]).origin.distance_to(sk.get_bone_global_rest(leg[1]).origin)
@@ -229,7 +238,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			if _lock[i] == Vector3.INF:
 				# Planted means on the ground: the foot comes down until its lowest point (heel or ball) touches.
 				_lock[i] = Vector3(ank.x, maxf(ank.y - maxf(h, 0.0), floor_ankle - 0.5 * _toe_rest * sc), ank.z)
-				if _w[i] > 0.0 and _hold[i] != Vector3.INF and ankle_world[i] != Vector3.ZERO:
+				if (_w[i] > 0.0 and _hold[i] != Vector3.INF or bool(_chasing[i])) and ankle_world[i] != Vector3.ZERO:
 					# Down again while still easing back from where it was last held (a stop from a sprint: the clip lifts
 					# the foot for a frame and puts it down a stride on): planted where it is drawn, not where the clip
 					# has it - it jumped there, 80-95 cm in a frame. If that is beyond the leg, it steps (as any foot).
@@ -343,6 +352,22 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				# start).
 				var gap := Vector2(_hold[i].x - ank.x, _hold[i].z - ank.z).length()
 				target.y += minf(0.08 * sc, gap * 0.6) * sin(PI * (1.0 - hw))
+		# Easing back to the clip's foot (or still catching up with it): no faster than CHASE_MAX a frame across, until
+		# it has caught up (a stop from a sprint: the ease covered 50-90 cm of the gap in one frame, in the air).
+		if down or stepping != Vector3.INF:
+			_chasing[i] = false
+		elif (_w[i] > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i])) and _chase_from[i] != Vector3.ZERO:
+			var from: Vector3 = _chase_from[i]
+			var gap := Vector2(target.x - from.x, target.z - from.z)
+			var cap := CHASE_MAX * sc
+			if gap.length() > cap:
+				gap = gap.normalized() * cap
+				target.x = from.x + gap.x
+				target.z = from.z + gap.y
+				if fresh:
+					_chasing[i] = true
+			elif fresh:
+				_chasing[i] = false
 		# Never through the ground.
 		target.y = maxf(target.y, floor_ankle)
 		if not target.is_equal_approx(ank):
