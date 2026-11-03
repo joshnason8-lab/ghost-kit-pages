@@ -107,7 +107,8 @@ jobs:
 
       - name: Crowd audit (every venue's fans on their seats, facing the play)
         working-directory: ${{ env.PROJECT_DIR }}
-        run: timeout 900 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd crowd_audit
+        # (Its contact sheets written outside the project: inside it, the export imported and packed them, 65 MB.)
+        run: timeout 900 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "${{ runner.temp }}/crowd_audit"
 
       - name: Configure Android export
         env:

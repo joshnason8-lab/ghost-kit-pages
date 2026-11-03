@@ -227,6 +227,12 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.6-beta: the APK back to its size (3 November 2026)
+
+- 0.9.5's APK was 155 MB (0.9.4: 89): CI's new crowd-audit step wrote its contact sheets (three tall PNGs) inside
+  the project before the export, which imported and packed them (65 MB). The audit now writes to the runner's temp
+  folder, and both export presets leave out crowd_audit/ as well.
+
 ### 0.9.5-beta: the crowd seated properly, the shared foundation's crowd (3 November 2026)
 
 The owner's rule for every game (through the lead): every fan sits on their seat (not in it, not floating), stands on
