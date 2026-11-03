@@ -25,7 +25,8 @@ const OPPOSITE := {"GS": "GK", "GA": "GD", "WA": "WD", "C": "C", "WD": "WA", "GD
 
 const HOLD_LIMIT := 3.0              # seconds a player may hold the ball (held ball)
 const SHORT_PASS_MIN := 0.9          # metres between thrower and catcher: room for an opponent to intercept
-const OUT_OF_PLAY_GAP := 1.35        # m: the penalised player stands beside the thrower, an arm's length and more off
+const OUT_OF_PLAY_GAP := 1.42        # m: the penalised player stands beside the thrower, an arm's length and more off
+const OUT_OF_PLAY_MIN := 1.32        # m: the nearest she comes to the thrower's body or landing foot, there or on her way
 
 ## Free passes and penalty passes (R6): what each infringement gives the other team (R11 playing the ball, R12 passing
 ## distances, R13 footwork, R14 offside, R15 out of court, R16 obstruction, R17 contact).
@@ -126,35 +127,46 @@ static func onside_point(pos: String, p: Vector2, dir: int, margin := 0.25) -> V
 ## thrower attacking toward thrower_dir (R6): beside her, OUT_OF_PLAY_GAP off (not touching, not crowding her), square
 ## to her line to the goal she attacks, on the court's middle side; where a line is in the way, round to the other
 ## side or a little behind her; never in front of her (between her and where she passes), and on ground she may
-## stand on. (In a corner where none of that fits, the nearest to it.)
-static func out_of_play_spot(pos: String, dir: int, spot: Vector2, thrower_dir: int) -> Vector2:
+## stand on. (In a corner where none of that fits, the nearest to it.) body is where the thrower's body stands, when
+## she is there (her landing foot is spot): the place is OUT_OF_PLAY_MIN and more off both, as she is seen.
+static func out_of_play_spot(pos: String, dir: int, spot: Vector2, thrower_dir: int, body := Vector2.INF) -> Vector2:
 	var u := Court.goal_post(thrower_dir) - spot
 	u = u.normalized() if u.length() > 0.1 else Vector2(thrower_dir, 0)
+	if body == Vector2.INF:
+		body = spot
+	# (Measured round the middle of her foot and her body, a little further out by half the step between them.)
+	var c := (spot + body) * 0.5
+	var half := spot.distance_to(body) * 0.5
 	# The turn from her line to goal that puts her on the court's middle side.
 	var mid := 1.0 if u.rotated(PI * 0.5).y * (1.0 if spot.y < 0.0 else -1.0) >= 0.0 else -1.0
 	var best := Vector2.INF
 	var best_miss := INF
 	for deg: float in [90.0, 105.0, 120.0, 135.0, 150.0, 165.0, 180.0, 80.0]:
 		for s: float in [mid, -mid]:
-			for r: float in [OUT_OF_PLAY_GAP, OUT_OF_PLAY_GAP + 0.12]:
-				var q := onside_point(pos, spot + u.rotated(s * deg_to_rad(deg)) * r, dir, 0.05)
-				var d := q.distance_to(spot)
-				var miss := maxf(0.0, 1.2 - d) * 4.0 + maxf(0.0, d - 1.5) + maxf(0.0, (q - spot).dot(u) - 0.25)
+			for r: float in [OUT_OF_PLAY_GAP + half, OUT_OF_PLAY_GAP + half + 0.08]:
+				var q := onside_point(pos, c + u.rotated(s * deg_to_rad(deg)) * r, dir, 0.05)
+				var d := minf(q.distance_to(spot), q.distance_to(body))
+				var far := maxf(q.distance_to(spot), q.distance_to(body))
+				var miss := maxf(0.0, OUT_OF_PLAY_MIN - d) * 4.0 + maxf(0.0, far - 1.55) + maxf(0.0, (q - c).dot(u) - 0.25)
 				if miss <= 0.0:
 					return q
 				if miss < best_miss:
 					best_miss = miss
 					best = q
-	# A corner by a line: any place round her that fits, the most square-on to her line.
-	var square := INF
-	for i in 48:
-		for r: float in [1.22, OUT_OF_PLAY_GAP, 1.5]:
-			var q := onside_point(pos, spot + Vector2.from_angle(TAU * i / 48.0) * r, dir, 0.05)
-			var d := q.distance_to(spot)
-			var fwd := (q - spot).dot(u)
-			if d >= 1.2 and d <= 1.55 and fwd <= 0.28 and absf(fwd) < square:
-				square = absf(fwd)
-				best = q
+	# A corner by a line: any place round her that fits, the most square-on to her line (OUT_OF_PLAY_MIN off her if
+	# that fits, else 1.2 m).
+	for near: float in [OUT_OF_PLAY_MIN, 1.2]:
+		var square := INF
+		for i in 48:
+			for r: float in [near + half, OUT_OF_PLAY_GAP + half, 1.5]:
+				var q := onside_point(pos, c + Vector2.from_angle(TAU * i / 48.0) * r, dir, 0.05)
+				var d := minf(q.distance_to(spot), q.distance_to(body))
+				var fwd := (q - c).dot(u)
+				if d >= near and d <= 1.55 and fwd <= 0.28 and absf(fwd) < square:
+					square = absf(fwd)
+					best = q
+		if square < INF:
+			break
 	return best
 
 

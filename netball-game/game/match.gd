@@ -494,15 +494,15 @@ func _run_setup(_dt: float) -> void:
 	var there := taker.p.distance_to(spot) < 0.35
 	# (A ball tossed on to her is hers once it has come down, not out of the air above her.)
 	var down := not (ball.state == "dead" and ball._moving and ball.carrier == null and ball.pos.y > Ball.R + 0.05)
-	if there and down and ball.state != "held":
+	if there and down and ball.state != "held" and (_out_clear(taker) or phase_t > 3.0):
 		taker.target = taker.p
 		_give(taker, false)
 		from_free = String(restart.kind) == Rules.FREE or (String(restart.kind) == Rules.PENALTY and not bool(restart.shot))
 		taker.stopped = true
 		var out: Player = restart.get("out")
 		if out and is_instance_valid(out):
-			# Beside her where she has stopped (a step from the mark at most).
-			restart.out_at = Rules.out_of_play_spot(out.pos, out.dir, taker.landing, taker.dir)
+			# Beside her where she has stopped (a step from the mark at most), clear of her body and her landing foot.
+			restart.out_at = Rules.out_of_play_spot(out.pos, out.dir, taker.landing, taker.dir, taker.p)
 	if held:
 		return    # under the loading overlay: the whistle waits for kick_off()
 	if ball.state == "held" and holder == taker:
@@ -521,6 +521,21 @@ func _run_setup(_dt: float) -> void:
 	elif phase_t > 9.0 and taker.p.distance_to(spot) < 1.5:
 		# Near enough (another player stood on the spot): the pass is taken from where she is.
 		restart.spot = taker.p
+
+
+## At a penalty pass the thrower takes the ball on her spot once the penalised player has stepped clear of her
+## (Rules.OUT_OF_PLAY_MIN and more off her and the spot, and not in front of her): the umpire sees to it first.
+func _out_clear(taker: Player) -> bool:
+	var out: Player = restart.get("out")
+	if out == null or not is_instance_valid(out) or not out.away():
+		return true
+	var spot: Vector2 = restart.get("spot", restart.at)
+	var near := Rules.OUT_OF_PLAY_MIN - 0.02
+	if out.p.distance_to(taker.p) < near or out.p.distance_to(spot) < near:
+		return false
+	var u := (Court.goal_post(taker.dir) - taker.p).normalized()
+	var rel := out.p - taker.p
+	return not (rel.dot(u) > 0.25 and absf(rel.cross(u)) < 0.8)
 
 
 ## The next point on the way from p to spot for a player in position pos (attacking toward dir): round a goal circle she
