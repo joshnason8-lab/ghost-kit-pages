@@ -310,7 +310,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 				var u: float = 0.0 if pose == "sit" else (1.0 if pose == "stand" else float(rise_up[ri]))
 				var l := lift * (1.0 - u)
 				var rch := 0.0 if dangle else clampf(l, 0.0, WsgCrowd3D.REACH)
-				var up := Vector3(0, l, fwd_up * u)
+				var up := Vector3(0, l, fwd_up * smoothstep(0.0, 0.5, u))
 				var lowest := INF
 				var hips := INF
 				for v in pts.size():

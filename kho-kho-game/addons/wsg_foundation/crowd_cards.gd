@@ -27,6 +27,12 @@ var _layout := {}
 var _atlas: Texture2D
 var _mask: Texture2D
 var _excite := 0.0
+## How bright the cards are drawn (1: as the 3D fans; a game whose own crowd was painted brighter can match it).
+var brightness := 1.0:
+	set(v):
+		brightness = v
+		if material:
+			material.set_shader_parameter("brightness", v)
 
 
 static func available() -> bool:
@@ -47,7 +53,8 @@ func _art() -> void:
 
 
 ## The cards for these places (WsgCrowdVenue.place()'s dictionary; which: the indices to draw, none: all). shirts and
-## lights as WsgCrowd3D.build's (one a spot). Seated fans are sized to their seat (the seat of the trousers on it).
+## lights as WsgCrowd3D.build's (one a spot; a card's shirt is exactly its Color). Seated fans are sized to their seat
+## (the seat of the trousers on it).
 func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: Array = [], lights: Array = []) -> void:
 	_art()
 	if mm_instance:
@@ -60,6 +67,7 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
+	mm.use_colors = true          # (each card's shirt exactly: its colour, alpha 1; none given: alpha 0)
 	mm.mesh = _quad()
 	mm.instance_count = idx.size()
 	for k in idx.size():
@@ -91,9 +99,10 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 			at.y += maxf(0.0, seat_h - h * float(_layout.fans[fans[fi]].seat))
 		var xf := Transform3D(Basis.looking_at(-fwd, Vector3.UP).scaled(Vector3.ONE * h), at)
 		mm.set_instance_transform(k, xf)
-		var code := WsgCrowd3D.shirt_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
 		var li := clampf(float(lights[i]) if i < lights.size() else 1.0, 0.05, 2.0)
-		mm.set_instance_custom_data(k, Color(rng.randf(), float(fi), li if seat_h > 0.0 else -li, code))
+		mm.set_instance_custom_data(k, Color(rng.randf(), float(fi), li if seat_h > 0.0 else -li, 0.0))
+		var shirt: Color = shirts[i] if i < shirts.size() and shirts[i] is Color else Color(0, 0, 0, 0)
+		mm.set_instance_color(k, Color(shirt.r, shirt.g, shirt.b, 1.0 if shirt.a > 0.0 else 0.0))
 		placed_cards.append([i, xf, fans[fi]])
 	material = ShaderMaterial.new()
 	material.shader = load("res://addons/wsg_foundation/crowd_card.gdshader")
@@ -105,6 +114,7 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 	material.set_shader_parameter("poses", (poses as Array).size() if poses is Array else int(poses))
 	material.set_shader_parameter("size", Vector2(_layout.size[0], _layout.size[1]))
 	material.set_shader_parameter("turn", TURN)
+	material.set_shader_parameter("brightness", brightness)
 	var refs := {"skin": PackedVector3Array(), "hair": PackedVector3Array(), "legs": PackedVector3Array()}
 	for n in 8:
 		for part in refs:

@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.0
+
+- **The crowd, sitting and standing properly, at every ground** (the owner's rule for every game). Every seat,
+  step, bench, chair, plank and standing row round each ground is now declared to the World Stage Games
+  foundation, which places each fan: seated fans sit on their seat (not in it, not floating) with their legs down in
+  front of it, standing fans have their feet on the ground behind the barricades, and everyone faces the play. The
+  same at every graphics level, Low included (no draw call more). The foundation's crowd check measures every fan
+  at all four grounds, on Low and High, and the build fails if one is wrong.
+- The fans' shirts: mostly everyday whites and pale colours, some in the home side's colours.
+
 ## What's new in 0.11.3
 
 - **Outs back where they were.** 0.11.2's solid bodies pushed a defender on, away from the chaser's hand, every time

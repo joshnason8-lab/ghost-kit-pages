@@ -230,6 +230,14 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   steer round him; his give-way is at most 3 cm a frame (smooth speeds). After: classic 1.35 (real matches 1.3-1.6),
   fast 1.66.
 
+- 0.12.0 (the owner's crowd rule, via the lead): the foundation synced to b6fdb87 (cut_from_heading kept true).
+  `game/venue_crowd.gd` declares every ground's crowd as WsgCrowdVenue sections (the stands' steps, the far chairs
+  or benches, standing rows behind the barricades, the scaffolds, the village stage, the near side), the same
+  measures Arena builds them to; Arena draws them as WsgCrowdCards (main and near side: two draw calls, as before)
+  and puts the chairs and benches under the placed seats. `game/crowd_venues.gd` registers all 16 (4 grounds x
+  main/near x Low/High) for `tools/wsg/crowd_audit.gd`: all pass, and CI runs it. The game's own Crowd now only
+  keeps its statics (the play it watches, its clothes).
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
