@@ -195,7 +195,9 @@ func think(dt: float) -> void:
 ## or penalty pass or a throw-in everyone stands where the umpire puts them, the penalised player out of play beside
 ## the thrower (Match). So while an opponent holds the ball, or a restart's spot is being set up, nobody of the other
 ## side goes within CLEAR_R of that foot (or spot): a place nearer is moved out to CLEAR_R, and a way to it across
-## that ring goes round it (clear_path). (Your own player goes where you take her, and the umpire calls you.)
+## that ring goes round it (clear_path). The penalised player keeps wider, Rules.OUT_OF_PLAY_MIN off the thrower's
+## body and landing foot both (out_ring), and goes round behind her, never across the front (clear_path's u). (Your own
+## player goes where you take her, and the umpire calls you.)
 func keep_clear() -> void:
 	var c := Vector2.INF
 	var t := -1
@@ -214,10 +216,30 @@ func keep_clear() -> void:
 	for pl: Player in m.players[1 - t]:
 		if pl == me or pl.suspended > 0.0 or _give_way.has(pl):
 			continue
-		# (The penalised player, out of play, goes round her wider, to her place beside her.)
-		var r := Rules.OUT_OF_PLAY_GAP - 0.2 if pl.away() else CLEAR_R
-		pl.target = clear_path(pl.pos, pl.dir, pl.p, pl.target, c, r)
-		pl.keep_out = Vector3(c.x, c.y, r - 0.02)
+		if pl.away():
+			# (The penalised player, out of play, goes round her wider and behind her, to her place beside her.)
+			var ring := out_ring(c)
+			var oc := Vector2(ring.x, ring.y)
+			var u := Court.goal_post(m.team_dir(t)) - oc
+			u = u.normalized() if u.length() > 0.1 else Vector2(m.team_dir(t), 0)
+			pl.target = clear_path(pl.pos, pl.dir, pl.p, pl.target, oc, ring.z, u)
+			pl.keep_out = Vector3(oc.x, oc.y, ring.z - 0.02)
+			continue
+		pl.target = clear_path(pl.pos, pl.dir, pl.p, pl.target, c, CLEAR_R)
+		pl.keep_out = Vector3(c.x, c.y, CLEAR_R - 0.02)
+
+
+## The ring the penalised player keeps out of (x, y its middle, z its radius): OUT_OF_PLAY_MIN round the thrower's
+## body and her landing foot both (c), once she is on her spot (until then, round the spot c and her body as she
+## comes up to it).
+func out_ring(c: Vector2) -> Vector3:
+	var taker: Player = m.holder if m.holder else m.restart.get("taker")
+	var body := c
+	if taker and is_instance_valid(taker) and taker.p.distance_to(c) < 1.0:
+		body = taker.p
+	var mid := (c + body) * 0.5
+	var r := Rules.OUT_OF_PLAY_MIN + c.distance_to(body) * 0.5
+	return Vector3(mid.x, mid.y, r)
 
 
 ## How near the nearest opponent of the player with the ball (in play or out of it) stands to her landing foot (m).
@@ -231,8 +253,10 @@ func nearest_opponent(h: Player) -> float:
 
 ## Where a player (pos, attacking toward dir) at p heads for `to` without coming within r of c: `to` itself moved out
 ## to r (round the ring to ground she may stand on); from inside the ring, straight out first; and a straight way
-## across the ring replaced by a step round it, 40 degrees at a time.
-static func clear_path(pos: String, dir: int, p: Vector2, to: Vector2, c: Vector2, r: float) -> Vector2:
+## across the ring replaced by a step round it, 40 degrees at a time. With u (the way the player at c attacks), she
+## never crosses in front of c: a way across the ring, or across c's line ahead of her, goes round behind her (the
+## other way only where her areas leave no room behind).
+static func clear_path(pos: String, dir: int, p: Vector2, to: Vector2, c: Vector2, r: float, u := Vector2.ZERO) -> Vector2:
 	var rel := to - c
 	if rel.length() < r:
 		var d := rel if rel.length() > 0.05 else p - c
@@ -241,12 +265,39 @@ static func clear_path(pos: String, dir: int, p: Vector2, to: Vector2, c: Vector
 	var ml := mine.length()
 	if ml < r - 0.02:
 		var out := mine / ml if ml > 0.05 else (to - c).normalized()
+		if u != Vector2.ZERO and out.dot(u) > 0.0:
+			# (Out to her side, not further in front of her.)
+			var side := Vector2(-u.y, u.x)
+			out = (side if side.dot(out) >= 0.0 else -side) * 0.9 - u * 0.44 + out * 0.2
+			out = out.normalized()
 		return ring_spot(pos, dir, c, out, r + 0.08)
 	# The nearest the straight way comes to c.
 	var seg := to - p
 	var k := clampf((c - p).dot(seg) / maxf(seg.length_squared(), 1e-6), 0.0, 1.0)
-	if (p + seg * k).distance_to(c) < r - 0.02:
-		var turn := clampf(mine.angle_to(to - c), -0.7, 0.7)
+	var across := (p + seg * k).distance_to(c) < r - 0.02
+	var turn := clampf(mine.angle_to(to - c), -0.7, 0.7)
+	if u != Vector2.ZERO:
+		# Round behind her: the way round from where she is to `to` that does not pass c's line ahead of her.
+		var a := mine.angle_to(to - c)
+		var ahead := u.angle_to(mine)    # where she is, measured from the line ahead
+		# (The short way round passes the line ahead when it turns through angle 0 from `ahead`.)
+		var passes := (a > 0.0 and ahead < 0.0 and ahead + a > 0.0) or (a < 0.0 and ahead > 0.0 and ahead + a < 0.0)
+		# A straight way that crosses the line ahead of her (in front, within 2.5 m) goes round too.
+		var cross_front := false
+		var s0 := u.cross(mine)
+		var s1 := u.cross(to - c)
+		if s0 * s1 < 0.0:
+			var x := p + seg * (s0 / (s0 - s1))
+			cross_front = (x - c).dot(u) > -0.1 and (x - c).length() < 2.5
+		if passes and (across or cross_front):
+			var back := a - signf(a) * TAU
+			# (From further off, in toward the ring as she goes round: not a wide loop.)
+			var q := Rules.onside_point(pos, c + mine.rotated(clampf(back, -0.7, 0.7)) / ml * maxf(minf(ml, 2.0), r + 0.06), dir, 0.05)
+			if q.distance_to(c) >= r - 0.02 and q.distance_to(p) > 0.05:
+				return q
+		elif cross_front:
+			across = true
+	if across:
 		var q := Rules.onside_point(pos, c + mine.rotated(turn) / ml * maxf(ml, r + 0.05), dir, 0.05)
 		if q.distance_to(c) >= r - 0.02:
 			return q

@@ -417,6 +417,16 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   defending on the move at 3 m/s with both arms straight out (T-pose measure, 85-87 degrees; the game's own body
   keeps them by her sides). Found on the way: the netball-loading merge left game.gd warming `Crowd.SHEET_HD` and
   test_runner's `_match_sig` reading `crowd.spots`, both removed by the crowd placement (the game did not compile).
+- **Penalty spacing** (owner note 2026-11-03-penalty-spacing: "the defender is almost on top of the passer").
+  The penalised player stood 1.03-1.17 m from the thrower's body (the note wants 1.2 m and more) and, for the C at
+  the centre and a GS by the GK's post, in front of her. Causes: her place (`Rules.out_of_play_spot`, 1.35 m) and her
+  keep-out ring (1.15 m) were round the landing foot only, so from the body, where she is seen, she was nearer; the
+  ring let her walk on it at 1.13 m; the way round it took the short side, across the front; and the thrower took the
+  ball as soon as she was on her spot, the penalised player still walking. Now: OUT_OF_PLAY_GAP 1.42 m and
+  OUT_OF_PLAY_MIN 1.32 m off the body and the landing foot both (out_of_play_spot takes the body; TeamAI.out_ring is
+  round both); `clear_path` with the thrower's line to goal goes round behind her, never across her line ahead; and
+  `Match._out_clear` holds the thrower's taking of the ball until the penalised player is clear (3 s at most). The
+  other defenders keep 0.9 m from the landing foot as before. After: 1.30-1.64 m in all three venues, never in front.
 
 ## Next
 
