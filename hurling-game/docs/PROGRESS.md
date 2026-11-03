@@ -857,6 +857,13 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.5, 3 November 2026)
+
+- **Player.put** (a body put somewhere new: the throw-in's spots, the officials back on theirs, a free-taker's stance,
+  out of a goal, the shootout's spots, practice's spare men) resets the planter (FoundationLink.put_down), as
+  ADOPTING asks; FoundationLink's own reset on a move over 1.5 m stays. WsgSim read the snaps as 20-35 cm skids.
+  Suite 707/0; owner notes 21/21.
+
 ## Done (0.24.4, 3 November 2026)
 
 - **Foundation 71269a55** (13f00e20 and on): the foot_slip measure counts the smaller of the heel's and the ball's

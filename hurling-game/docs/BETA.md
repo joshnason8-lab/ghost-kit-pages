@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.5
+
+- **Cleaner restarts**: when the players and officials are put on their spots for a throw-in, a free or a shootout,
+  their feet go with them (a planted foot used to stay behind for a moment and catch up, stretching the leg).
+
 ## New in 0.24.4
 
 - **No more skidding feet**: when a player starts walking or pulls up from a run, his planted foot no longer skids
