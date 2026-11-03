@@ -66,6 +66,7 @@ const CHASE_MAX := 0.25
 const CHASE_OVER := 0.10
 var _clip_move := [0.0, 0.0]                 # how far the clip moved each ankle this frame
 var _chase_from := [Vector3.ZERO, Vector3.ZERO] # where each foot was drawn the frame before
+var _step_at := [Vector3.ZERO, Vector3.ZERO]   # where a foot taking its own step is across, this frame
 var _chasing := [false, false]               # catching up with the clip's foot at CHASE_MAX
 var _step := [-1.0, -1.0]                    # how far through that step (0..1); -1: none
 var _step_from := [Vector3.INF, Vector3.INF]
@@ -96,7 +97,20 @@ func _cache(sk: Skeleton3D) -> void:
 
 
 ## Lets go of both feet at once (a teleport, a new play).
+## How many times reset() has been called: WsgSim reads a reset as a cut (the body put somewhere new - a restart, an
+## official snapped to his spot), not as the feet sliding there (Hurling: umpires snapped 20-35 cm read as skids).
+var resets := 0
+
+
+## Whether the planter has this foot (0 left, 1 right): planted, held, or easing back from a hold - not the clip's own
+## swing. (WsgSim's skid counts only these: a clip's low swing before it lands skims within the measure's 2 cm, and a
+## body posed every 2nd frame showed it as a 13 cm "skid" - Pok Ta Pok's hard turns.)
+func holding(i: int) -> bool:
+	return float(contact[i]) > 0.5 or float(_w[i]) > 0.0 or float(_across[i]) > 0.0
+
+
 func reset() -> void:
+	resets += 1
 	_lock = [Vector3.INF, Vector3.INF]
 	_hold = [Vector3.INF, Vector3.INF]
 	_step = [-1.0, -1.0]
@@ -194,6 +208,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					if int(_low_ticks[i]) >= 2:
 						_step[i] = 0.0
 						_step_from[i] = ankle_world[i]
+						_step_at[i] = ankle_world[i]
 					elif int(_waited[i]) >= 3:
 						# (Skimming, neither lifted nor kept down: to the clip.)
 						_lifted[i] = false
@@ -234,7 +249,15 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				contact[i] = 1.0
 			else:
 				var from: Vector3 = _step_from[i]
-				stepping = from.lerp(to, smoothstep(0.0, 1.0, st)) + Vector3(0.0, 0.08 * sc * sin(PI * st), 0.0)
+				# Across, an even share of what is left to where it is going each frame the step has left (the aim moves
+				# with the body: on a smoothstep from where it began to the aim now, a stop's step crept 3-6 cm a frame,
+				# then crossed 35 in one - Floorball's referee); up and down as before.
+				if fresh:
+					var left := roundf((1.0 - st) * STEP_TIME / maxf(delta, 0.0001)) + 1.0
+					var at: Vector3 = _step_at[i]
+					_step_at[i] = Vector3(at.x + (to.x - at.x) / left, 0.0, at.z + (to.z - at.z) / left)
+				var at2: Vector3 = _step_at[i]
+				stepping = Vector3(at2.x, lerpf(from.y, to.y, smoothstep(0.0, 1.0, st)), at2.z) + Vector3(0.0, 0.08 * sc * sin(PI * st), 0.0)
 				is_down = false
 				contact[i] = 0.0
 		var down: bool = enabled and is_down
@@ -367,7 +390,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				# ground there (a foot held across while let go, then eased 10-70 cm along the floor - Hurling's walk
 				# start).
 				var gap := Vector2(_hold[i].x - ank.x, _hold[i].z - ank.z).length()
-				target.y += minf(0.08 * sc, gap * 0.6) * sin(PI * (1.0 - hw))
+				target.y += minf(0.08 * sc, gap * 0.6) * sin(PI * clampf(1.0 - _w[i], 0.0, 1.0))
 		# Easing back to the clip's foot (or still catching up with it): across no faster than CHASE_MAX/CHASE_OVER
 		# allow, until it has caught up (a stop from a sprint: the ease covered 50-90 cm of the gap
 		# in one frame, in the air).

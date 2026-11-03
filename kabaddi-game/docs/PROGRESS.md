@@ -576,3 +576,13 @@ hints no longer start shown in a browser (they still appear when a key is presse
 its browser-version paragraph (dated 3 November 2026); README, PLAY_STORE and GRAPHICS no longer point to it. Builds up
 to 0.8.6 opened the Netlify site's privacy.html and support.html: those old betas' View online buttons stop working
 once the site is taken down.
+
+## 0.14.12: foundation 1b6793c (the feet batch)
+
+The foundation's 11-06 feet batch (required from 2026-11-06 12:00 UTC): WsgSim reads bodies posed every 2nd or 3rd
+frame per frame (our officials' 2.7 cm skids and many far players' 26-52 cm "jumps" were three frames read as one),
+counts a planter.reset() as a cut (our reset at every change into a planter-driven mode), counts a skid only for a foot
+the planter holds, and reads no pose under a replay; the planter moves a foot's own step an even share a frame and lifts
+a let-go foot from its first frame; the world check plays its modes undrawn (much faster). Still open, the foundation's:
+a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is dragged rather than stepped.
+

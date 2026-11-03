@@ -130,7 +130,14 @@ const LOW := 0.10
 const SWING := 1.2
 const FRAME_DT := 1.0 / 30.0
 
-static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, ground_y := 0.0) -> Dictionary:
+## gaps: for a body not posed every frame (FoundationLink.pose_every 2-3 on far bodies), how many frames each sample
+## is after the one before (empty: every frame). A move over N frames is N frames' moves: the skid and the jump are per
+## frame (the jump per frame per frame), the cut's bound and a swing's speed scale with it, the slip (a distance over the
+## step) does not (Kabaddi: an official posed every 3rd frame, a landing foot read 2.7 cm "in one frame" from three
+## frames' 0.9).
+## held: for each sample, [left, right] - whether the planter had that foot then (WsgFootPlanter.holding); given, a
+## skid counts only a foot it had in both samples (a clip's own low swing is the jump's to judge, not the skid's).
+static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, ground_y := 0.0, gaps := PackedInt32Array(), held := []) -> Dictionary:
 	var slips := []
 	var toe_up := 0.0
 	var skid := 0.0
@@ -149,7 +156,9 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 		var worst := 0.0
 		var prev_t := Vector3.INF
 		var was_flat := false
-		for f: Array in frames:
+		for fi in frames.size():
+			var f: Array = frames[fi]
+			var g := float(maxi(1, gaps[fi])) if fi < gaps.size() else 1.0
 			var a: Vector3 = f[side * 2]
 			var t: Vector3 = f[side * 2 + 1]
 			var ha := a.y - ground_y - ankle_rest
@@ -157,7 +166,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			if ha < TOUCH * 0.5:
 				toe_up = maxf(toe_up, ht)
 			# A body put somewhere new (a kick-off, a restart: more than 0.4 m in a frame) is a cut, not a slide.
-			if prev_t != Vector3.INF and Vector2(t.x - prev_t.x, t.z - prev_t.z).length() > 0.4:
+			if prev_t != Vector3.INF and Vector2(t.x - prev_t.x, t.z - prev_t.z).length() > 0.4 * g:
 				if touching_for > 2:
 					slips.append(worst * 100.0)
 				touching_for = 0
@@ -170,15 +179,16 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			if f.size() > 5:
 				down = bool(f[4 + side])
 			else:
-				var sp := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() / FRAME_DT if prev_t != Vector3.INF else 0.0
+				var sp := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() / (FRAME_DT * g) if prev_t != Vector3.INF else 0.0
 				down = minf(ha, ht) < TOUCH and sp < SWING
 			var step_a := Vector2(a.x - prev_a.x, a.z - prev_a.z).length() if prev_a != Vector3.INF else 0.0
 			var step_t := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() if prev_t != Vector3.INF else 0.0
 			prev_t = t
 			prev_a = a
 			var flat := maxf(ha, ht) < FLAT
-			if flat and was_flat:
-				skid = maxf(skid, minf(step_a, step_t))
+			var had: bool = held.is_empty() or (fi < held.size() and fi > 0 and bool(held[fi][side]) and bool(held[fi - 1][side]))
+			if flat and was_flat and had:
+				skid = maxf(skid, minf(step_a, step_t) / g)
 			was_flat = flat
 			if down:
 				touching_for += 1
@@ -208,11 +218,20 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 				var p2: Vector3 = frames[k - 1][side * 2 + e]
 				var p3: Vector3 = frames[k][side * 2 + e]
 				var p4: Vector3 = frames[k + 1][side * 2 + e]
-				if Vector2(p3.x - p2.x, p3.z - p2.z).length() > 1.5:
+				var g2 := float(maxi(1, gaps[k - 1])) if k - 1 < gaps.size() else 1.0
+				var g3 := float(maxi(1, gaps[k])) if k < gaps.size() else 1.0
+				var g4 := float(maxi(1, gaps[k + 1])) if k + 1 < gaps.size() else 1.0
+				if Vector2(p3.x - p2.x, p3.z - p2.z).length() > 1.5 * g3:
 					jmp = 0.0
 					break
-				var into := Vector2(p3.x - 2.0 * p2.x + p1.x, p3.z - 2.0 * p2.z + p1.z).length()
-				var out := Vector2(p4.x - 2.0 * p3.x + p2.x, p4.z - 2.0 * p3.z + p2.z).length()
+				# (The change in the per-frame move per frame: with every frame posed, the second difference. A body
+				# posed every 3rd frame changes its move over 3 frames: per frame, a smooth stride reads as it does
+				# posed every frame - the bound's calibration - where a raw difference read 9 times as much.)
+				var v12 := Vector2(p2.x - p1.x, p2.z - p1.z) / g2
+				var v23 := Vector2(p3.x - p2.x, p3.z - p2.z) / g3
+				var v34 := Vector2(p4.x - p3.x, p4.z - p3.z) / g4
+				var into := (v23 - v12).length() / ((g2 + g3) * 0.5)
+				var out := (v34 - v23).length() / ((g3 + g4) * 0.5)
 				jmp = minf(jmp, minf(into, out))
 			jump = maxf(jump, jmp)
 	slips.sort()

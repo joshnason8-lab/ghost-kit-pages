@@ -1,4 +1,7 @@
-**New in 0.14.11: Android only.** The browser version of the game is retired: it is no longer built, and its page
+**New in 0.14.12: feet that step, not slide.** On Medium and High, a foot taking its own step moves evenly across
+the floor instead of in a lurch, and a foot let go after a stop lifts at once instead of gliding along the floor.
+
+**In 0.14.11: Android only.** The browser version of the game is retired: it is no longer built, and its page
 (kabaddi-raid-beta.netlify.app) is being taken down. The Privacy policy in Settings > About no longer mentions it.
 Nothing changes in the Android game.
 
