@@ -670,6 +670,48 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The shared crowd: fans on their seats, facing the play (0.15.0)
+
+The owner, for every game: the crowd sitting properly (not standing inside a seat), standing properly, watching the
+game and facing the right way, and the same in every game (the shared foundation). The inventory (sent to the
+Foundation session) found every fan's body pointed at the court's centre point (up to 55 degrees off square to their
+row at the ends of the long stands), seated fans' feet hanging 0.45 m straight down into the step below, and the
+arena's steps bare on Low. The foundation then gave every game one placement (synced: `addons/wsg_foundation`
+cd6c29f; ADOPTING 5.1):
+- **Each venue declared** (`Arena.crowd_venue`): its seats and standing room as `WsgCrowdVenue` sections, the same
+  rows, heights and depths the arena builds. The arena: the steps on all four sides as "step" seats (sitting on a pad
+  at the front of each step, 0.44 m over the step below, where the feet go; the pad now on every level), the jury on
+  their chairs at the table. The provincial hall and the mall: the hall's aluminium bleachers (each plank measured on
+  the model: tops 0.33, 0.77, 1.20 m, two tiers; on a 4 cm base, the upper tier 1.33 m up), each row sitting on its
+  plank with its feet on the plank in front. The mall's own metal bleachers went: their model's planks are not level,
+  so no seat height fits them (the mall's near side two sections, clear of the escalators). The mall's balconies: people
+  standing at the glass rails. The park: three to a bench (0.44 m, its back 0.4 m over it) and a standing line behind;
+  the beach: two standing lines a side.
+- **Placed and faced by the foundation**: square to their row, turned toward the court's nearest part at most 50
+  degrees; a seated fan's feet on the floor in front of the seat; a fan who gets up steps forward off the seat.
+- **Drawn as the shared cards** (`WsgCrowdCards`) at every level: one draw call, as before (Low's budget unchanged),
+  each card sized to its seat (the seat of the trousers on it) and standing just in front of it, turned to the camera
+  at most 35 degrees off the way the fan faces. Low 40% of the places, Medium 70%, High all. Their looks: a Southeast
+  Asian crowd (skin, hair, trousers: `Crowd.SKIN`, `HAIR`, `LEGS`), shirts in the home side's colours more than any
+  other, both teams' colours as the team shirts; they get up and cheer with the play (`WsgCrowd3D.set_excite`). The
+  two teams' flags are still this game's own (one fan in thirty). The cards face the play rather than follow the ball
+  (the shared 3D fans' heads follow it; Medium and High can take them later if their cost fits).
+- **The near side's fans** (facing the way the broadcast and side cameras look, over their heads) are a second set of
+  cards, hidden while a camera looks over their backs: a card has only its front, and seen from behind it turns edge
+  on, a sliver (the broadcast camera showed a row of them in its corner). The end camera, from the side, shows them.
+  Asked the Foundation for back views, which would bring them back.
+- **The crowd audit** (`game/crowd_venues.gd`, `tools/wsg/crowd_audit.gd`): every venue PASS, every fan measured
+  in 3D and as a card: the arena 1,614 fans, the mall 740, the provincial hall 504, the park 97, the beach 122.
+  The seat of the trousers on the seat within 1 mm, the soles 9 mm under to 30 mm over the floor, nothing more than
+  22 mm into a seat, a seat back, a step or a rail (the limit 25), every fan within 7 degrees of the play (the limit
+  35). To pass, the arena's pads went from 3 to 2 cm, the jury's chairs from 0.46 to 0.44 m, the balcony people 12 cm
+  back from the rail, and the bleachers onto their base (the first plank too low for the long-legged, the upper tier's
+  first too high for the short).
+- `crowd_sheet.png` and `crowd_sheet_hi.png` (10.9 MB) and their tool are gone; the cards are 0.27 MB. The Android
+  preset keeps the cards (`addons/wsg_foundation/crowd/*.res` left out, the 3D crowd, not used).
+- test_runner: every venue at every level has its crowd, the level's share of its places filled, in one draw call,
+  every card passing `WsgCrowdCards.audit`; on the sand everyone stands, in the arena everyone sits; the flags.
+
 ## The joystick is the screen's, in every camera (0.14.4)
 
 The owner found the joystick wrong in two other games when the camera wasn't alongside the court, and asked for it to be

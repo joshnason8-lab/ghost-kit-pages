@@ -234,8 +234,12 @@ func _team_event_lineups() -> void:
 
 
 ## AI matches in each event: they finish, with legal set scores.
-## Every venue, at every graphics level: each spectator faces the court's centre (their forward, on the ground, within
-## about 45 degrees of the way to it), the near stands as much as the far ones.
+## Every venue, at every graphics level, its crowd the shared foundation's (0.15.0; the owner: fans sitting on their
+## seats, not in them, standing on the floor, facing the play): its places declared (Arena.crowd_venue), the share the
+## level fills them (Low 40%, Medium 70%, High all), drawn as the shared cards (one draw call, the near side's a second,
+## hidden while a camera looks over their backs), and every card measured
+## (WsgCrowdCards.audit): a seated fan's seat of the trousers on their seat, the card in front of the seat, never in
+## it, and every fan within 35 degrees of the play's nearest part. tools/wsg/crowd_audit.gd measures the 3D fans too.
 func _crowd_facing() -> void:
 	var keep: int = Game.settings.graphics
 	for v in DB.VENUES:
@@ -244,57 +248,54 @@ func _crowd_facing() -> void:
 			var a := Arena.new(v[0], false, [Color("ff8a1f")])
 			add_child(a)
 			await frames(1)
-			# (The crowd's own list: a headless MultiMesh keeps no transforms to read back.)
-			var placed: Array[Transform3D] = []
-			if a.crowd:
-				placed = a.crowd.placed
-			check(not placed.is_empty() and placed.size() == a.crowd.multimesh.instance_count, "%s (graphics %d): a crowd" % [v[0], g])
-			var worst := 1.0
-			var near := 0
-			for xf in placed:
-				var fwd := Vector3(xf.basis.z.x, 0, xf.basis.z.z).normalized()
-				var to_c := Vector3(-xf.origin.x, 0, -xf.origin.z).normalized()
-				worst = minf(worst, fwd.dot(to_c))
-				if xf.origin.z < 0.0:
-					near += 1
-			check(worst > 0.7, "%s (graphics %d): every spectator faces the court (worst %.2f, %d on the near side)" % [v[0], g, worst, near])
+			var ok: bool = a.crowd != null and a.crowd.cards != null
+			check(ok, "%s (graphics %d): a crowd" % [v[0], g])
+			if ok:
+				var places: Dictionary = a.crowd.places
+				var n: int = places.spots.size()
+				var sets: Array = a.crowd.card_sets()
+				var shown := 0
+				var draws := 0
+				var fails := []
+				var hips := [INF, -INF]
+				var facing := 0.0
+				for c: WsgCrowdCards in sets:
+					shown += c.placed_cards.size()
+					draws += c.find_children("*", "MultiMeshInstance3D", false, false).size()
+					var res: Dictionary = c.audit(Arena.crowd_venue(v[0]), places)
+					fails.append_array(res.fails)
+					if res.hips[0] != INF:
+						hips = [minf(hips[0], res.hips[0]), maxf(hips[1], res.hips[1])]
+					facing = maxf(facing, res.facing)
+				var want: float = Game.crowd_density()
+				check(n > 50 and absf(float(shown) / n - want) < 0.08, "%s (graphics %d): %d of its %d places filled (%.0f%%, the level's %.0f%%)"
+					% [v[0], g, shown, n, 100.0 * shown / maxf(n, 1), 100.0 * want])
+				check(draws <= 2, "%s (graphics %d): the crowd in at most two draw calls (%d: the near side's apart, hidden from behind)" % [v[0], g, draws])
+				check(fails.is_empty(), "%s (graphics %d): every fan sits on their seat (hips %+.3f..%+.3f m), in front of it, and faces the play (at most %.0f degrees off) %s"
+					% [v[0], g, hips[0] if hips[0] != INF else 0.0, hips[1] if hips[1] != -INF else 0.0, facing, str(fails)])
 			a.queue_free()
 			await frames(1)
 	Game.settings.graphics = keep
 
 
-## The spectators are whole people: seated ones' feet on the floor under their seats, standing ones' on the ground;
-## the sheet has both, from the front and from behind, and the cheering's frames (within 4096 px for older phones);
-## the flags in the crowd are the two teams'.
+## The spectators: on the sand they stand, in the arena's stands they sit (and the jury at their table); the flags in
+## the crowd are the two teams'.
 func _crowd_people() -> void:
-	for hi in [false, true]:
-		var figs := Crowd.FIGS_HI if hi else Crowd.FIGS
-		var cell := Vector2(Crowd.FIG_W_HI, Crowd.FIG_H_HI) if hi else Vector2(Crowd.FIG_W, Crowd.FIG_H)
-		var size := Crowd.sheet(hi).get_size()
-		check(size == cell * Vector2(Crowd.cols(figs), Crowd.SHEET_ROWS) and size.x <= 4096 and size.y <= 4096,
-			"the %s crowd sheet: %d figures, their cheering (%s)" % ["bigger" if hi else "small", figs, size])
-		var last := Crowd.cheer_cell(figs / 2 - 1, Crowd.CHEER_FRAMES - 1, Crowd.VIEWS.size() - 1, figs)
-		check(Crowd.cell(last, figs).y < Crowd.SHEET_ROWS and Crowd.cell(Crowd.ROWS * figs, figs) == Vector2i(0, 8),
-			"the %s crowd sheet's cells fit it" % ["bigger" if hi else "small"])
-	check(Crowd.CHEERS.size() >= Crowd.FIGS_HI / 2, "a cheer for each person on the bigger sheet")
 	for v in ["beach", "national"]:
 		var a := Arena.new(v, false, [Color("ff8a1f")])
 		add_child(a)
 		await frames(1)
 		var standing := 0
-		var seated_ok := true
-		for i in a.crowd.spots.size():
-			var spot: Vector3 = a.crowd.spots[i]
-			var feet: Vector3 = a.crowd.placed[i].origin
-			if is_equal_approx(feet.y, spot.y):
-				standing += 1
+		var seated := 0
+		for i in a.crowd.places.spots.size():
+			if float(a.crowd.places.seat[i]) > 0.0:
+				seated += 1
 			else:
-				seated_ok = seated_ok and is_equal_approx(feet.y, spot.y - Crowd.SEAT)
-		check(seated_ok, "%s: seated spectators' feet are a seat's height under them" % v)
+				standing += 1
 		if v == "beach":
-			check(standing > 20, "beach: people stand on the sand (%d)" % standing)
+			check(standing > 40 and seated == 0, "beach: people stand on the sand (%d)" % standing)
 		else:
-			check(standing == 0, "national: everyone in the stands is seated (%d standing)" % standing)
+			check(standing == 0 and seated > 1000, "national: everyone in the stands is seated (%d seated, %d standing)" % [seated, standing])
 		a.crowd.show_teams("THA", "LAO")
 		var tex: Texture2D = Crowd._flag_material().get_shader_parameter("flags")
 		var img := tex.get_image() if tex else null
@@ -354,8 +355,8 @@ func _ball_spins() -> void:
 	b.queue_free()
 
 
-## Low loads what it always has (the surfaces at 512 px, the 2K skies, the players' 1024 px textures, the 16-figure
-## crowd); Medium and High their own bigger files (2K surfaces, 4K skies, 2048 px players, the 32-figure crowd).
+## Low loads what it always has (the surfaces at 512 px, the 2K skies, the players' 1024 px textures); Medium and High
+## their own bigger files (2K surfaces, 4K skies, 2048 px players). (The crowd: the shared cards at every level.)
 func _detail_by_level() -> void:
 	var keep: int = Game.settings.graphics
 	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
@@ -372,10 +373,7 @@ func _detail_by_level() -> void:
 		var mat := RealBody.material_for({"jersey": Color(0.1, 0.2, 0.3)})
 		var skin: Texture2D = mat.get_shader_parameter("albedo_tex")
 		check(skin.get_width() == (1024 if low else 2048), "graphics %d: the players' texture %d px" % [g, skin.get_width()])
-		check(Crowd.hi() != low and Crowd.material().get_shader_parameter("figs") == float(Crowd.FIGS if low else Crowd.FIGS_HI),
-			"graphics %d: the crowd's sheet (%d figures)" % [g, Crowd.material().get_shader_parameter("figs")])
 	Game.settings.graphics = keep
-	Crowd.material()
 
 
 ## Graphics on Auto by default, and Auto never above what a slow match lowered it to.

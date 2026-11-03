@@ -58,8 +58,18 @@ var phase := 0.0                # gait phase, 0..1 from the left foot's landing
 var in_air := false             # the game says the body is in the air (a jump's air holds until it lands)
 var enabled := false
 var leg_scale := 1.0            # this body's leg against the clips' (strides scale with it)
+## Dice for the idle fidgets (one now and then, after standing a while). Unset (the default), the global randf/randi
+## are drawn on, as before; that changes what a seeded game does next (a test's thumb, a sound's pitch: Pok Ta Pok's
+## seeded matches went differently). Give it its own: loco.rng = RandomNumberGenerator.new() (seed it to repeat).
+var rng: RandomNumberGenerator = null
+## How a cut is measured: off (the default, as before), from the way the body's velocity went last frame; on, from
+## the way the body was going (its facing plus its smoothed velocity). Turn it on for a game that drives without a
+## want_velocity: there the cut is seen only once the velocity has already swung round, and measured from there it
+## never came round - its clip crawled while the body ran on (Kho Kho's chasers glided through turns at 8 m/s).
+var cut_from_heading := false
 
 var _blend := {}                # gait blend-space points: name -> Vector2
+var _rings := []                # per gait (walk, jog, run): its points as [direction (rad), speed, stride] (_stride)
 var _shot := ""                 # the one-off clip playing
 var _shot_t := 0.0
 var _shot_len := 1.0
@@ -290,6 +300,34 @@ func _fire(clip: String, st: State, rate := 1.0) -> void:
 	state = st
 
 
+## A body the game has posed itself for a while (its own pose over the whole body: a dive, a kho, kneeling) handed
+## back to the capture, going at velocity (world, m/s) and facing facing (world yaw), at once: moving, straight into
+## the gait at its speed (no start from standing); still, standing. Without it the smoothing still had the velocity
+## from before the game's pose, and the first drive saw a sharp change of direction or a start from standing - a cut
+## or a start whose clip crawled while the body ran on (Kho Kho: a seated chaser rising to run glided).
+func resume(velocity: Vector3, facing: float) -> void:
+	if not enabled:
+		return
+	var flat := Vector2(velocity.x, velocity.z)
+	yaw = facing
+	_facing = facing
+	_driven = true
+	speed = flat.length()
+	_prev_speed = speed
+	_accel = 0.0
+	local_vel = Vector2(flat.dot(Vector2(cos(yaw), -sin(yaw))), flat.dot(Vector2(sin(yaw), cos(yaw))))
+	_last_dir = atan2(flat.x, flat.y) if speed > 0.2 else yaw
+	_curve = 0.0
+	if speed > START_SPEED:
+		state = State.MOVE
+		_w_move = 1.0
+	else:
+		state = State.IDLE
+		_w_move = 0.0
+	_w_shot = 0.0
+	_idle_for = 0.0
+
+
 ## The game's say for this frame. velocity: where the body is going (world, m/s; y ignored); facing: the way it should
 ## face (world yaw, radians; for a player usually the way he runs, for an official the play).
 ## want_velocity: where the player is asking to go (the stick, the AI's target velocity), if the game has it: a sharp
@@ -325,9 +363,9 @@ func drive(delta: float, velocity: Vector3, facing: float, want_velocity := Vect
 				_start(flat, _want_speed)
 			elif absf(face_err) > deg_to_rad(TURN_ANGLE):
 				_turn(face_err)
-			elif _idle_for > 6.0 and randf() < delta * 0.15:
+			elif _idle_for > 6.0 and (rng.randf() if rng else randf()) < delta * 0.15:
 				_idle_for = 0.0
-				_fire("Stand_Relaxed_Fgt_v%d" % (randi() % 4 + 1), State.SHOT)
+				_fire("Stand_Relaxed_Fgt_v%d" % ((rng.randi() if rng else randi()) % 4 + 1), State.SHOT)
 		State.MOVE:
 			# Stopping: as soon as it is asked to (if the game says), with the stop for the speed it is going at.
 			if want < STOP_SPEED or want_velocity != Vector3.INF and intent.length() < STOP_SPEED and speed > 1.0:
@@ -439,20 +477,28 @@ func _stride(v: Vector2) -> float:
 	if s < 0.05:
 		return 1.0
 	var a := atan2(v.x, v.y)
+	if _rings.is_empty():
+		# Each gait's points, once (this ran over every point's name and meta three times a frame: a third of the
+		# locomotor's own time).
+		for g in ["Walk", "Jog", "Run"]:
+			var pts := []
+			for nm in _blend:
+				if nm.begins_with(g + "_"):
+					var p: Vector2 = _blend[nm]
+					var m := WsgClips.meta(nm)
+					pts.append([atan2(p.x, p.y), float(m.speed), float(m.stride)])
+			_rings.append(pts)
 	var rings := []
-	for g in ["Walk", "Jog", "Run"]:
-		var best := ""
+	for pts: Array in _rings:
+		var best: Array = []
 		var bd := INF
-		for nm in _blend:
-			if nm.begins_with(g + "_"):
-				var p: Vector2 = _blend[nm]
-				var d := absf(wrapf(atan2(p.x, p.y) - a, -PI, PI))
-				if d < bd:
-					bd = d
-					best = nm
-		if best != "":
-			var m := WsgClips.meta(best)
-			rings.append([float(m.speed) * leg_scale, float(m.stride) * leg_scale])
+		for p: Array in pts:
+			var d := absf(wrapf(float(p[0]) - a, -PI, PI))
+			if d < bd:
+				bd = d
+				best = p
+		if not best.is_empty():
+			rings.append([float(best[1]) * leg_scale, float(best[2]) * leg_scale])
 	if rings.is_empty():
 		return 1.0
 	if s <= rings[0][0]:
@@ -632,8 +678,9 @@ func _cut(off: float) -> void:
 	var a := absf(rad_to_deg(off))
 	var clip := "%s_%s_%d" % [g, "L" if off > 0.0 else "R", 180 if a > 135.0 else 90]
 	if WsgClips.has(clip):
-		_cut_from = _last_dir
-		_cut_to = _last_dir + off
+		# cut_from_heading: from the way it was going (its smoothed velocity), not the way it goes now (see the var).
+		_cut_from = yaw + atan2(local_vel.x, local_vel.y) if cut_from_heading else _last_dir
+		_cut_to = _cut_from + off
 		_fire(clip, State.CUT)
 
 

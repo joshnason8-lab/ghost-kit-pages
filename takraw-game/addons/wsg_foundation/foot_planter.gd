@@ -25,8 +25,18 @@ var _tick_dt := 1.0 / 30.0
 ## World height of the ground under the body.
 var ground_y := 0.0
 @export var release := 0.12
-## Off: the feet do whatever the clip does (to measure what planting saves).
+## Off: no foot is planted (the feet do whatever the clip does: to measure what planting saves). The rest still runs:
+## no ankle or toe lower than a standing one's over ground_y (by IK), a foot let go easing back over `release` (on
+## tick()'s steps), the hips' lift. Under a pose the game makes of the whole body, use keep_pose instead.
 @export var enabled := true
+## The legs exactly as the pose before it has them (a game's own pose of the whole body: a dive, a kneel, a kick): no
+## planting, no release easing, no floor or toe clamp, and whatever it held let go (nothing is held over when it is
+## turned back off). Only the hips' lift (hips_offset) still applies, so a WsgPoseLayer under it keeps
+## lift_after = hips_offset. Off by default. (enabled = false still lifts ankles to its floor and eases a released
+## foot - on the locomotor's steps, which do not run under a game's pose - which bent a game's legs by up to 10 cm and
+## held feet where the last stride left them (Sepak Takraw, Kho Kho); active = false skips the hips' lift too, so a
+## layer's lift_after must then be 0.)
+@export var keep_pose := false
 
 var _lock := [Vector3.INF, Vector3.INF]     # world ankle position held
 var _w := [0.0, 0.0]                         # how much the lock applies
@@ -78,6 +88,13 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		var h := sk.find_bone("Hips")
 		sk.set_bone_pose_position(h, sk.get_bone_pose_position(h) + Vector3(0, hips_offset, 0))
 	var xf := sk.global_transform
+	if keep_pose:
+		reset()
+		contact = [0.0, 0.0]
+		_lifted = [false, false]
+		for i in 2:
+			ankle_world[i] = xf * sk.get_bone_global_pose(_ix[i][2]).origin
+		return
 	var inv := xf.affine_inverse()
 	var sc := xf.basis.get_scale().y
 	var floor_ankle := ground_y + _ankle_rest * sc

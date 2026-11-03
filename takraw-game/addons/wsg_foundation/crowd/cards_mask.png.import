@@ -2,22 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4jv7l1ma6g8e"
-path.s3tc="res://.godot/imported/crowd_sheet.png-67581f5380492f2d4b092ebae84790b5.s3tc.ctex"
-path.etc2="res://.godot/imported/crowd_sheet.png-67581f5380492f2d4b092ebae84790b5.etc2.ctex"
+uid="uid://c18hlnsrebd7f"
+path="res://.godot/imported/cards_mask.png-9b85d0f8673cd6a910d4c089c55d58c0.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/models/crowd_sheet.png"
-dest_files=["res://.godot/imported/crowd_sheet.png-67581f5380492f2d4b092ebae84790b5.s3tc.ctex", "res://.godot/imported/crowd_sheet.png-67581f5380492f2d4b092ebae84790b5.etc2.ctex"]
+source_file="res://addons/wsg_foundation/crowd/cards_mask.png"
+dest_files=["res://.godot/imported/cards_mask.png-9b85d0f8673cd6a910d4c089c55d58c0.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -25,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -39,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

@@ -15,6 +15,18 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.0: **the crowd sits properly, everywhere**, as the owner asked of every game. The spectators are now the
+shared foundation's: in every venue each fan sits on their seat (not in it, not floating) with their feet on the floor
+in front of it, or stands on the floor, and sits square to their row turned toward the court. Before, every fan's
+whole body pointed at the middle of the court (up to 55 degrees off at the ends of the long stands) and seated fans'
+feet hung down into the step below. What changed in the venues:
+- The arena's steps have a seat pad at the front of every step, on every graphics level (Low had none).
+- The mall's temporary bleachers are now the same aluminium bleachers as the provincial hall's, whose seats could be
+  measured exactly. The near side has two sections, clear of the escalators.
+- The fans are new: the six people shared by all the games, in many skin tones, hair colours, trousers and shirts
+  (the home side's colours most), seated, standing and cheering. Flags of the two teams are still waved here and
+  there.
+
 New in 0.14.4: **the joystick goes the way you push it, on the screen, in every camera.** Push up and your player
 runs up the screen; push right and he runs right, whether the camera is the broadcast one, side on or behind your end,
 and wherever he is in the picture. Before, the stick only followed the camera's heading, which put it 24-33 degrees out
