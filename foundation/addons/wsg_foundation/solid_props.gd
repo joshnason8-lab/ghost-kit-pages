@@ -379,8 +379,16 @@ func _flips(memo: Dictionary, at: int, sgn: float, pos: Vector3, goal: Vector3) 
 ## in the way.
 func path(a: Vector3, b: Vector3, radius: float, height := 1.8) -> PackedVector3Array:
 	b = free_spot(b, radius, height)
+	# (A start already touching a prop - a door beside a bench, a body brushing a seat - first steps out to the nearest
+	# free spot: from inside, every join read as blocked, no route was found, and the straight way through the prop came
+	# back - Floorball's fetch, through the bench seat.)
+	var lead := PackedVector3Array()
+	if float(penetration(a, radius, height)[0]) > 0.002:
+		a = free_spot(a, radius, height)
+		lead.append(a)
 	if _seg_clear(a, b, radius, height):
-		return PackedVector3Array([b])
+		lead.append(b)
+		return lead
 	# Corners round the props near the way (each pushed out past the body's radius), joined where the way is clear.
 	var lo := Vector2(minf(a.x, b.x), minf(a.z, b.z)) - Vector2(8, 8)
 	var hi := Vector2(maxf(a.x, b.x), maxf(a.z, b.z)) + Vector2(8, 8)
@@ -423,13 +431,15 @@ func path(a: Vector3, b: Vector3, radius: float, height := 1.8) -> PackedVector3
 				dist[v] = dist[u] + w
 				prev[v] = u
 	if prev[1] < 0:
-		return PackedVector3Array([b])
+		lead.append(b)
+		return lead
 	var out := []
 	var at := 1
 	while at > 0:
 		out.push_front(nodes[at])
 		at = prev[at]
-	return PackedVector3Array(out)
+	lead.append_array(PackedVector3Array(out))
+	return lead
 
 
 # ---------------------------------------------------------------- the ball

@@ -17,6 +17,7 @@ func _initialize() -> void:
 	var solid := _ground()
 	_bodies(solid)
 	_paths(solid)
+	_path_from_touching()
 	_ball(solid)
 	_ball_path()
 	await _physics(solid)
@@ -145,6 +146,28 @@ func _paths(s: WsgSolidProps) -> void:
 		print("path %s -> %s: %d waypoints, %.1f m, deepest %.3f m" % [a, pair[1], way.size(), length, worst])
 		if worst > 0.005 or way.is_empty() or way[way.size() - 1].distance_to(pair[1]) > 0.8:
 			fails.append("path %s -> %s: %s (deepest %.3f)" % [a, pair[1], way, worst])
+
+
+## A walk starting against a prop (a door beside a bench seat, the body brushing it): it steps out, then goes round -
+## never the straight way through (Floorball's fetch: path() gave the line through the 0.465 m seat).
+func _path_from_touching() -> void:
+	var s := WsgSolidProps.new()
+	s.add({"kind": "box", "name": "near bench seat", "size": Vector3(2.0, 0.465, 0.42), "position": Vector3(2.2, 0, 11.3)})
+	var a := Vector3(2.2, 0, 10.8)
+	var b := Vector3(0, 0, 15.3)
+	for r in [0.3, 0.35]:
+		var way := s.path(a, b, r, H)
+		var worst := 0.0
+		# (From the start: no deeper than the overlap it starts in.)
+		var start_pen := float(s.penetration(a, r, H)[0])
+		var prev := a
+		for w in way:
+			for k in 21:
+				worst = maxf(worst, float(s.penetration(prev.lerp(w, k / 20.0), r, H)[0]) - start_pen)
+			prev = w
+		print("path from touching the seat (radius %.2f): %s, deepest past its start %.3f m" % [r, way, worst])
+		if way.is_empty() or worst > 0.005 or way[way.size() - 1].distance_to(b) > 0.8:
+			fails.append("path from touching the seat (radius %.2f): %s (deepest %.3f)" % [r, way, worst])
 
 
 func _ball(s: WsgSolidProps) -> void:
