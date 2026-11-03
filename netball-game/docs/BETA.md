@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.2-beta
+
+- **The stick goes exactly where you push it, diagonals too**: pushing up-right now moves your player up-right on
+  the screen from every camera (before, diagonals drifted 15 to 20 degrees off).
+
 ## New in 0.9.1-beta
 
 - **A loading screen when you tap Start**: the screen dims at once with a moving bar, the buttons switch off so a
