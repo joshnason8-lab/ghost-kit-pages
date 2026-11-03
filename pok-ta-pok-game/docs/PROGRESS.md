@@ -223,6 +223,30 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   forward; after a cut to another view his way turns over about 0.2 s. The end camera also stays 10 m behind your
   player as well as 16 m behind the ball, so he is on the screen with it rather than under the lens. Tested: each
   camera, both courts, up, right, down, left within 10 degrees, his aim and his run, and the cut.
+- **0.6.3-beta: the owner's notes on the A16** ("this does not seem like it has the shared foundation"; players
+  "floating around when they go to get the ball"; "the AI is dumb and barely hits the ball after the serve"; the
+  stance "too rigid"; "the ball is rubber and should have more bounce"; the AI "rolling the ball on the serve").
+  - The shared foundation synced (1886c2e to 79b346e, loco.rng set in FoundationLink as the sync asks) and now on
+    Low too, where the A16 plays: its WsgToonDriver drives the game's own bodies with the motion capture while a
+    player runs or walks somewhere, so he strides with planted feet and swinging arms instead of gliding; his
+    stance, strike, dive and serve stay the game's (at once on an action, so the match plays exactly the same with it
+    as without). Players more than 28 m from the camera are posed every other frame. A phone too slow for it turns
+    it off by itself (WsgAutoTier at Low), back to the beta's own run. Medium and High keep FoundationLink.
+  - The AI: on the earth the ball was nearly always rolling, so players dived for it over and over (88 dives to 10
+    hip strikes in a match), mostly in vain. Now the ball bounces, a dive scoops it up to hip height, drives skip up
+    off the earth, and players wait for the ball to come up rather than dive. Four bugs fixed in the planning: a
+    ball over the head was planned for the hip (41% of strikes missed), the time to get there ignored speeding up
+    from a standstill, a player already on his spot could wait forever for a slow ball, and the ring was tried as
+    often as before on four times the strikes (halved). Each level misjudges a share of balls outright (18%, 12%,
+    7%). AI matches now: hip strikes 98% met, about 4-14 touches a raya, 9-15 rayas a match.
+  - The serve: the low serve (male abajo) is thrown low to bounce up to the receivers, not rolled (docs/RULES.md, the
+    owner's call); the stone court's bounced serve is thrown higher so it comes up to the hip.
+  - The ball: the earth's bounce 0.42 to 0.6, the stone's 0.68 to 0.76, the walls' with them.
+  - The stance breathes, shifts its weight foot to foot, bounces now and then on the balls of the feet, shakes its
+    arms loose and looks about, each player on his own time; the feet stay planted (tested).
+  - The Web preset leaves out all the foundation's licensed data.
+  - Tests: the serve bounces and is never rolled, the AI meets the ball with the hip and rallies go on, the stance is
+    alive and planted, and at Low every player has the capture, runs on it, and the match plays exactly as without.
 
 ## Next
 

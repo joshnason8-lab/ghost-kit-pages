@@ -167,7 +167,7 @@
   "RULES_FAULTS": "Fautes",
   "RULES_FAULTS_TEXT": "Mains, pieds, genoux ou corps : tout contact autre que la hanche est une faute, et la raya va à l'autre équipe. Sortir la balle sur le côté aussi. Écartez-vous si vous ne la frappez pas.",
   "RULES_SERVE": "Le service",
-  "RULES_SERVE_TEXT": "Le serveur, le male, met la balle en jeu à la main à travers l'analco. Sur les terrains de terre de l'ulama : roulée au sol (male abajo) ou lancée haut (male arriba) ; roulée à égalité, lancée quand un camp tient le compte. Sur le terrain de pierre, comme dans les jeux du Yucatán d'aujourd'hui : lancée vers le sol pour rebondir avant l'autre camp et remonter vers lui, jouée au rebond. Le camp qui a gagné la dernière raya sert.",
+  "RULES_SERVE_TEXT": "Le serveur, le male, met la balle en jeu à la main à travers l'analco. Sur les terrains de terre de l'ulama : lancée bas (male abajo), pour rebondir sur la terre et remonter vers l'autre camp, ou lancée haut (male arriba) ; basse à égalité, haute quand un camp tient le compte. Sur le terrain de pierre, comme dans les jeux du Yucatán d'aujourd'hui : lancée vers le sol pour rebondir avant l'autre camp et remonter vers lui, jouée au rebond. Le camp qui a gagné la dernière raya sert.",
   "RULES_TIME": "Le temps",
   "RULES_TIME_TEXT": "Un vrai match dure jusqu'à ce qu'une équipe atteigne huit. Avec une durée limite, l'équipe qui tient le décompte à la fin gagne ; en cas d'égalité, la raya suivante l'emporte.",
   "RULES_CLASSIC": "Le terrain classique (reconstitué)",

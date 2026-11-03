@@ -48,6 +48,8 @@ func _ready() -> void:
 	await _yucatan()
 	await _ring_replay()
 	await _foundation()
+	await _ai_plays("village", "ulama")
+	await _ai_plays("stone", "classic")
 	await _watch_ai()
 	await _stick_camera("village", "ulama")
 	await _stick_camera("stone", "classic")
@@ -219,7 +221,8 @@ func _ball() -> void:
 				bounced = true
 		if bounced:
 			top = maxf(top, b.pos.y - Ball.RADIUS)
-	check(bounced and top > 0.06 and top < 0.25, "Ball: dropped from the hip onto earth it comes back only %.2f m" % top)
+	# A lively rubber ball (the owner, 0.6.3): off the earth from the hip to about knee height, not dead.
+	check(bounced and top > 0.2 and top < 0.4, "Ball: dropped from the hip onto earth it comes back to %.2f m (rubber, a little deadened)" % top)
 	b.court = Court.new(Rules.CLASSIC)
 	b.pos = Vector3(0, 0.9, 0)
 	b.vel = Vector3.ZERO
@@ -234,7 +237,7 @@ func _ball() -> void:
 				bounced = true
 		if bounced:
 			top = maxf(top, b.pos.y - Ball.RADIUS)
-	check(top > 0.2 and top < 0.45, "Ball: on stone it bounces higher (%.2f m)" % top)
+	check(top > 0.38 and top < 0.6, "Ball: on stone it bounces higher (%.2f m)" % top)
 	b.court = Court.new(Rules.ULAMA)
 	b.pos = Vector3(-10, Ball.RADIUS, 0)
 	b.vel = Vector3(8, 0, 0)
@@ -563,6 +566,38 @@ func _stance() -> void:
 			"stance %.1f: the soles stay on the floor, heels up (ankle %.3f m)" % [low, ankle_y])
 		check(knee.z > hips.z + 0.1 and hips.y < 0.92, "stance %.1f: the knees bent and forward, the hips down (%.2f m)" % [low, hips.y])
 		check(absf(hand.x - sh.x) < 0.12 and hand.y < sh.y, "stance %.1f: the hands hang near the body, not out from the sides" % low)
+	# Never still (owner, 0.6.3: "too rigid"), and still planted: over 20 s of waiting the hips shift and dip and the arms
+	# stir, while the ankles stay within a few centimetres of where they stood.
+	var ankles := []
+	var hips_lo := INF
+	var hips_hi := -INF
+	var side_lo := INF
+	var side_hi := -INF
+	var hand_lo := INF
+	var hand_hi := -INF
+	var ank_y_lo := INF
+	var ank_y_hi := -INF
+	for i in 600:
+		b.apply(Moves.stance(i / 30.0, 0.5))
+		var hp := b.bone_world("hips")
+		hips_lo = minf(hips_lo, hp.y)
+		hips_hi = maxf(hips_hi, hp.y)
+		side_lo = minf(side_lo, hp.x)
+		side_hi = maxf(side_hi, hp.x)
+		var hz := b.bone_world("hand_r").z
+		hand_lo = minf(hand_lo, hz)
+		hand_hi = maxf(hand_hi, hz)
+		for sd in ["l", "r"]:
+			var a := b.bone_world("foot_" + sd)
+			ankles.append(Vector2(a.x, a.z))
+			ank_y_lo = minf(ank_y_lo, a.y)
+			ank_y_hi = maxf(ank_y_hi, a.y)
+	var drift := 0.0
+	for i in range(2, ankles.size()):
+		drift = maxf(drift, (ankles[i] as Vector2).distance_to(ankles[i % 2]))
+	check(hips_hi - hips_lo > 0.02 and side_hi - side_lo > 0.03 and hand_hi - hand_lo > 0.03,
+		"stance: alive while he waits (the hips dip %.0f cm and shift %.0f cm, the hands stir %.0f cm)" % [(hips_hi - hips_lo) * 100.0, (side_hi - side_lo) * 100.0, (hand_hi - hand_lo) * 100.0])
+	check(drift < 0.05 and ank_y_lo > 0.02 and ank_y_hi < 0.11, "stance: and his feet stay where they stand (%.1f cm at most, ankles %.2f-%.2f m up)" % [drift * 100.0, ank_y_lo, ank_y_hi])
 	b.queue_free()
 
 
@@ -784,8 +819,13 @@ func _ring_replay() -> void:
 				turned += absf(angle_difference(last, m.server.yaw))
 			last = m.server.yaw
 	check(turned < 4.0, "Serve: the server holding the ball does not spin on the spot (turned %.1f rad)" % turned)
-	for i in 60:
+	# A moment into play (a raya before it, a serve taken on the body say, and it waits for the next one).
+	var into := 0
+	n = 0
+	while into < 20 and n < 30 * 60:
 		await get_tree().process_frame
+		n += 1
+		into = into + 1 if m.phase == m.P.LIVE else 0
 	m._award(0, "ring", false, null)
 	var seen := false
 	var still := true
@@ -882,6 +922,61 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 
 
 # ---------------------------------------------------------------- a match
+
+## The computer plays the hip game (owner, 0.6.3: "the AI is dumb and barely hits the ball after the serve"; "it is
+## rolling the ball on the serve, it should set up for bouncing"): every serve comes down and bounces up off the
+## ground, never rolled along it; through two minutes of an AI match the ball is met with the hip standing far more
+## often than dived for on the ground, and rallies go on.
+func _ai_plays(venue: String, rules: String) -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC" if rules == "ulama" else "PIS", "away": "LLA" if rules == "ulama" else "VAL", "venue": venue, "rules": rules,
+		"user_team": -1, "seed": 21, "length": 0.0, "mode": "test", "difficulty": 1, "ritual": false}
+	add_child(m)
+	await frames(2)
+	var serves := 0
+	var rolled := 0
+	var low_bounce := 0
+	var flight := -1
+	var watch := false
+	var first_top := 0.0
+	var landed := false
+	var rallies := []
+	for f in 30 * 120:
+		await get_tree().process_frame
+		if m.phase == m.P.OVER:
+			break
+		if m.ball_flight != flight:
+			if watch and landed:
+				if first_top < 0.4:
+					low_bounce += 1
+			flight = m.ball_flight
+			watch = m.rally == 0 and m.phase == m.P.LIVE
+			if watch:
+				serves += 1
+			first_top = 0.0
+			landed = false
+		if watch and not m.ball.held:
+			var y: float = m.ball.pos.y - Ball.RADIUS
+			if not landed and y < 0.02:
+				landed = true
+				if m.ball.grounded:
+					rolled += 1
+			elif landed:
+				# How high it would rise off that bounce (a receiver may take it on the way up).
+				first_top = maxf(first_top, y + maxf(0.0, float(m.ball.vel.y)) ** 2 / (2.0 * Ball.GRAVITY))
+	var st: int = int(m.tstats[0].get("strikes", 0)) + int(m.tstats[1].get("strikes", 0))
+	var dv: int = int(m.tstats[0].get("dives", 0)) + int(m.tstats[1].get("dives", 0))
+	var rayas: int = m.log_rayas.size()
+	check(serves >= 3 and rolled == 0 and low_bounce <= serves / 4,
+		"%s: the serve bounces up off the ground, never rolled (%d serves, %d rolled, %d bounced under 0.4 m)" % [venue, serves, rolled, low_bounce])
+	check(st > dv * 1.5 and st >= 20, "%s: the computer meets the ball with the hip, not on the ground (%d strikes, %d dives in 2 min)" % [venue, st, dv])
+	var why := {}
+	for r in m.log_rayas:
+		why[r[1]] = int(why.get(r[1], 0)) + 1
+	check(float(st + dv) / maxf(1.0, rayas) >= 3.0, "%s: and the rallies go on (%.1f touches a raya over %d rayas %s, longest %d)" % [venue, (st + dv) / maxf(1.0, rayas), rayas, str(why), m.longest_rally])
+	m.queue_free()
+	await frames(2)
+
 
 ## The stick is the screen's, whatever the camera (owner: "switching to a camera angle that is not alongside the
 ## court, the joystick movement is all wrong"): on the court-side, high and end cameras, pushing the stick up, right,
@@ -1023,10 +1118,11 @@ func _watch_ai() -> void:
 	# A raya through the ring, at 2x: it is replayed, as in a match (the ring's at every level; the other big moments'
 	# on Medium and High, which these tests do not draw).
 	guard = 0
-	while m.phase != m.P.LIVE and guard < 30 * 30:
+	var into := 0
+	while into < 20 and guard < 30 * 60:
 		await get_tree().process_frame
 		guard += 1
-	await frames(30)
+		into = into + 1 if m.phase == m.P.LIVE else 0
 	m._award(0, "ring", false, null)
 	guard = 0
 	while (m.replays as Array).is_empty() and guard < 30 * 20:
@@ -1195,6 +1291,7 @@ func _foundation() -> void:
 			if not x in with_f:
 				print("  only without it: ", x)
 	check(with_f.size() > 20 and with_f == without, "Foundation: Low draws the same %d things with the foundation in the build as without it" % with_f.size())
+	await _toon_low(have)
 	FoundationLink.off = false
 	for g in [Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = g
@@ -1252,6 +1349,61 @@ func _drawn_list(venue: String, rules: String) -> Array:
 	return out
 
 
+## Low (owner, 0.6.3: "this does not seem like it has the shared foundation", on the A16 that runs Low): the shared
+## foundation's motion capture drives the game's own bodies (WsgToonDriver): every player has it, a player running
+## somewhere is drawn by the capture, his strike, dive and serve by the game, and the match plays exactly as without it
+## (the same rayas at the same moments, everyone in the same place). Without the licensed clips nobody has it.
+func _toon_low(have: bool) -> void:
+	var keep_g := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	WsgToonDriver.off = false
+	FoundationLink.off = false
+	var m := _new_match("village", "ulama", 9)
+	await frames(2)
+	var drivers := 0
+	var captured := 0
+	var own_on_action := true
+	var n := 0
+	while n < 30 * 40 and m.phase != m.P.OVER:
+		await frames(1)
+		n += 1
+		drivers = 0
+		for p in m.all_players():
+			var pl: Player = p
+			if pl.toon == null:
+				continue
+			drivers += 1
+			if pl.vel.length() > 2.0 and pl.action == Player.A.NONE and pl.toon.override("thigh_l") < 0.01:
+				captured += 1
+			# (A celebration or a shrug is set by the match after the players are posed: drawn the next frame.)
+			if (pl.action in [Player.A.STRIKE, Player.A.DIVE, Player.A.SERVE] or pl.holding) and pl.toon.override("hips") < 0.999:
+				own_on_action = false
+	var players: int = m.all_players().size()
+	var played: Array = [m.log_rayas.duplicate(true), _places(m)]
+	m.queue_free()
+	await frames(2)
+	if not have:
+		check(drivers == 0, "Foundation (Low): without the licensed clips no body is driven by the capture (%d)" % drivers)
+		Game.settings.graphics = keep_g
+		return
+	check(drivers == players, "Foundation (Low): every player's own body is driven by the motion capture (%d of %d)" % [drivers, players])
+	check(captured > 100, "Foundation (Low): running, he is drawn by the capture (%d player-frames)" % captured)
+	check(own_on_action, "Foundation (Low): striking, diving, serving, holding the ball, by the game's own pose at once")
+	FoundationLink.off = true
+	var m2 := _new_match("village", "ulama", 9)
+	await frames(2)
+	var n2 := 0
+	while n2 < n and m2.phase != m2.P.OVER:
+		await frames(1)
+		n2 += 1
+	check(m2.log_rayas == played[0] and _places(m2) == played[1],
+		"Foundation (Low): the match plays exactly as without the capture (%d rayas)" % m2.log_rayas.size())
+	m2.queue_free()
+	await frames(2)
+	FoundationLink.off = false
+	Game.settings.graphics = keep_g
+
+
 ## A Medium or High match with the foundation: everyone linked, and what each drawn body does measured.
 func _foundation_match(g: int, have: bool) -> void:
 	var m := _new_match("village", "ulama", 9)
@@ -1281,6 +1433,8 @@ func _foundation_match(g: int, have: bool) -> void:
 	var turned := 0.0
 	var last_yaw := NAN
 	var game_turned := 0.0
+	var serve_turn := 0.0          # this serve's turning so far (he turns once to face across: a spin is far more)
+	var serve_game_turn := 0.0
 	var last_game_yaw := 0.0
 	var modes := {}
 	var n := 0
@@ -1332,12 +1486,16 @@ func _foundation_match(g: int, have: bool) -> void:
 		if m.phase == m.P.SERVE and m.ball.held and m.server and m.server.body.link:
 			var y: float = m.server.body.link.body.global_transform.basis.get_euler().y
 			if not is_nan(last_yaw):
-				turned += absf(angle_difference(last_yaw, y))
-				game_turned += absf(angle_difference(last_game_yaw, m.server.yaw))
+				serve_turn += absf(angle_difference(last_yaw, y))
+				serve_game_turn += absf(angle_difference(last_game_yaw, m.server.yaw))
+				turned = maxf(turned, serve_turn)
+				game_turned = maxf(game_turned, serve_game_turn)
 			last_yaw = y
 			last_game_yaw = m.server.yaw
 		else:
 			last_yaw = NAN
+			serve_turn = 0.0
+			serve_game_turn = 0.0
 	check(worst_place < 0.4, "Foundation (graphics %d): the drawn bodies are where their players are (worst %.2f m off)" % [g, worst_place])
 	check(hits >= 3 and worst_hip < 0.05, "Foundation (graphics %d): at contact the drawn hip is where the game's hip meets the ball (%d strikes and dives, worst %.3f m)" % [g, hits, worst_hip])
 	check(worst_gear > 0.0 and worst_gear < 0.2, "Foundation (graphics %d): the faja and chimali stay on the drawn hips (worst %.3f m from them)" % [g, worst_gear])
@@ -1350,7 +1508,7 @@ func _foundation_match(g: int, have: bool) -> void:
 	var p90: float = slide_all[int(slide_all.size() * 0.9)] if not slide_all.is_empty() else 0.0
 	check(slides > 50 and mean_s < 8.0 and worst_slide < 0.05,
 		"Foundation (graphics %d): planted feet under the motion capture do not slide (%d poses: %.1f cm/s on average, %.1f at the 90th percentile; worst %.3f m a frame: %s)" % [g, slides, mean_s, p90, worst_slide, slide_why])
-	check(turned < 4.0, "Foundation (graphics %d): the server holding the ball does not spin on the spot (drawn: turned %.1f rad; the game's %.1f)" % [g, turned, game_turned])
+	check(turned < 4.0, "Foundation (graphics %d): the server holding the ball does not spin on the spot (drawn: turned %.1f rad at most in a serve; the game's %.1f)" % [g, turned, game_turned])
 	var seen := {}
 	var once := true
 	var others := 0
@@ -1486,9 +1644,11 @@ func _replay_rules(have: bool) -> void:
 		"mode": "quick", "length": 3.0, "difficulty": 1})
 	var q: Node = Game.current
 	var n := 0
-	while n < 30 * 40 and not (q.phase == q.P.LIVE and q.phase_t > 4.0):
+	var into := 0
+	while n < 30 * 60 and into < 20:
 		await frames(1)
 		n += 1
+		into = into + 1 if q.phase == q.P.LIVE else 0
 		if q.phase == q.P.SERVE and "SERVE" in q.hud.touch.ids and n % 30 == 0:
 			q.hud.touch._fire("SERVE")
 	q._award(0, "ring", false, null)

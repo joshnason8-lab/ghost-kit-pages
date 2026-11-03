@@ -360,7 +360,8 @@ func _begin_serve() -> void:
 	_serve_launched = true
 
 
-## R11: the male. Abajo: bowled along the earth across the analco; arriba: thrown high across it.
+## R11: the male. Abajo: thrown low across the analco to bounce up to the receivers; arriba: thrown high across it; on
+## the stone court, bote.
 func _launch_serve() -> void:
 	if not ball.held:
 		return
@@ -369,16 +370,14 @@ func _launch_serve() -> void:
 	var hand := ball.pos
 	var v: Vector3
 	var zt := rng.randf_range(-0.8, 0.8) * (court.half_w_at(0.0) * 0.4)
-	if kind == "abajo":
-		var sp := rng.randf_range(8.0, 10.0)
-		v = Vector3(d * sp, 0.0, (zt - hand.z) / 4.0)
-		hand = Vector3(hand.x, Ball.RADIUS, hand.z)
-	elif kind == "bote":
-		# Thrown down and across so it first bounces a few metres short of the other side's front player, and comes
-		# up to them off the stone.
-		var land_x := d * rng.randf_range(BOTE_LAND.x, BOTE_LAND.y)
+	if kind == "abajo" or kind == "bote":
+		# Thrown so it first bounces a few metres short of the other side's front player and comes up to them off the
+		# ground, to be played off the bounce: on the stone court thrown down hard (bote); the low serve of the earth
+		# courts underarm, on a lower arc (the owner, 0.6.3: the ball set up to bounce, not rolled along the earth).
+		var abajo := kind == "abajo"
+		var land_x := d * (rng.randf_range(ABAJO_LAND.x, ABAJO_LAND.y) if abajo else rng.randf_range(BOTE_LAND.x, BOTE_LAND.y))
 		var dist := maxf(2.0, absf(land_x - hand.x))
-		var ang := deg_to_rad(rng.randf_range(BOTE_ANGLE.x, BOTE_ANGLE.y))
+		var ang := deg_to_rad(rng.randf_range(ABAJO_ANGLE.x, ABAJO_ANGLE.y) if abajo else rng.randf_range(BOTE_ANGLE.x, BOTE_ANGLE.y))
 		var dy := hand.y - Ball.RADIUS
 		var denom := 2.0 * cos(ang) * cos(ang) * (dist * tan(ang) + dy)
 		var sp := sqrt(Ball.GRAVITY * dist * dist / maxf(denom, 0.01)) * 1.03
@@ -390,7 +389,7 @@ func _launch_serve() -> void:
 		v = Vector3(d * cos(ang) * sp, sin(ang) * sp, (zt - hand.z) / maxf(1.0, dist / 6.0))
 	ball.launch(hand, v, serve_team, server)
 	_rally_events.clear()
-	serve_bounced = kind != "bote"
+	serve_bounced = not (kind == "bote" or kind == "abajo")
 	ball_flight += 1
 	server.stats.serves += 1
 	tstats[serve_team].serves += 1
@@ -839,15 +838,19 @@ func ring_shot(p: Player, stick: Vector3) -> int:
 
 
 ## Now and then a computer player goes for the ring when he is placed for it (more often at a harder level).
+## The computer goes for the ring now and then on a strike within reach of it (halved in 0.6.3, when it began meeting
+## the ball with the hip several times as often: the ring stays the rare thing it is).
 func ai_ring_shot(p: Player) -> int:
-	if not court.classic() or rng.randf() > [0.04, 0.08, 0.14][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 2)]:
+	if not court.classic() or rng.randf() > [0.02, 0.04, 0.07][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 2)]:
 		return 0
 	return ring_shot(p, Vector3(0, 0, signf(p.global_position.z) if absf(p.global_position.z) > 0.1 else 1.0))
 
 
 var serve_bounced := true    # the bounced serve has come down (its receivers wait for it to: TeamAI)
-const BOTE_LAND := Vector2(0.8, 2.6)     # how far past the analco the bounced serve first comes down (m)
-const BOTE_ANGLE := Vector2(28.0, 38.0)  # thrown up and over, so it comes down hard enough to rise to the hip
+const BOTE_LAND := Vector2(1.4, 3.2)     # how far past the analco the bounced serve first comes down (m)
+const BOTE_ANGLE := Vector2(36.0, 46.0)  # thrown up and over, so it comes down hard enough to rise to the hip
+const ABAJO_LAND := Vector2(1.5, 4.0)     # the earth's low serve: how far past the analco it first comes down (m)
+const ABAJO_ANGLE := Vector2(24.0, 32.0)  # its arc: low, underarm, to skip up off the earth to the receivers' hips
 
 
 const RING_SHOT_X := Vector2(4.0, 12.0)   # how far from the middle a ring shot can be struck from (m)
@@ -1062,8 +1065,8 @@ func _strike(p: Player, window: float, off: float) -> void:
 		# A dive is a scramble. On the stone court, where the lively ball would otherwise be dived back and forth for
 		# minutes, well timed it carries and badly timed it barely moves the ball, which may die short.
 		cap *= 0.62 * (clampf((quality - 0.1) / 0.6, 0.45, 1.0) if court.classic() else 1.0)
-		# Up off the floor: on the stone court a dive scoops the ball up to come down and bounce for a standing hip.
-		ang = maxf(ang, deg_to_rad(26.0 if court.classic() else 12.0))
+		# Up off the floor: a dive scoops the ball up to come down and bounce for a standing hip.
+		ang = maxf(ang, deg_to_rad(26.0 if court.classic() else 40.0))
 	var sp := minf(need, cap)
 	var v := Vector3(hn.x * cos(ang) * sp, sin(ang) * sp, hn.y * cos(ang) * sp)
 	if p.action_ring != 0 and p.action == Player.A.STRIKE:
@@ -1177,7 +1180,20 @@ func _check_frame_rate(delta: float, real_delta: float) -> void:
 			if fps < 36.0 and int(Game.settings.graphics) > Game.GFX_LOW and int(Game.settings.fps) != Game.FPS_SAVER:
 				lower_graphics()
 		return
-	if phase == P.REPLAY or int(Game.settings.graphics) <= Game.GFX_LOW or int(Game.settings.fps) == Game.FPS_SAVER:
+	if phase == P.REPLAY or int(Game.settings.fps) == Game.FPS_SAVER:
+		return
+	if int(Game.settings.graphics) <= Game.GFX_LOW:
+		# Low: nothing lower to step to but the motion capture on the game's own bodies (Player.toon): a phone too slow
+		# for it runs on without it, the game's own run, as the beta did.
+		if WsgToonDriver.off or not WsgToonDriver.available() or FoundationLink.off:
+			return
+		if (DisplayServer.get_name() == "headless" and not auto_headless) or OS.has_feature("movie"):
+			return
+		if _auto_gfx == null:
+			_auto_gfx = WsgAutoTier.new(Game.frame_cap())
+		if _auto_gfx.feed(real_delta):
+			WsgToonDriver.off = true
+			_auto_gfx.reset()
 		return
 	if (DisplayServer.get_name() == "headless" and not auto_headless) or OS.has_feature("movie"):
 		return

@@ -317,6 +317,8 @@ func _pose(speed: float) -> void:
 	body.apply(p)
 	if body.link:
 		_drive_link(speed)
+	elif _toon_ready():
+		_drive_toon(speed)
 
 
 ## The shared foundation's body (FoundationLink, Medium and High): the game's whole pose for everything pok ta pok -
@@ -327,6 +329,53 @@ const LINK_STAND := 0.6
 var _link_dt := 0.0
 var desired_vel := Vector3.ZERO   # the velocity he steers to this frame (the drawn body's gait reads it)
 var holding := false              # the ball is in his hand (the server's, before the serve: Match sets it)
+
+
+## Low (no FoundationLink): the shared foundation's motion capture on the game's own body (WsgToonDriver, its Low tier):
+## while he runs or walks somewhere with nothing else to do, the captured run with its planted strides and swinging
+## arms drives this body's bones (and the realistic body that follows them); the stance, the strike, the dive, the
+## serve, a celebration and the arms raised to the copal stay the game's, eased over 0.2 s each way. Off without the
+## licensed clips (a fork's build), in the tests that are not about drawing (FoundationLink.off), and when a phone too
+## slow for it turns it off (Match: WsgToonDriver.off).
+var toon: WsgToonDriver = null
+var _toon_moving := false
+
+
+func _toon_ready() -> bool:
+	if WsgToonDriver.off or FoundationLink.off or not FoundationLink.in_match:
+		if toon != null:
+			toon = null
+			_toon_moving = false
+			body.apply(body.pose)
+		return false
+	if toon == null:
+		if not WsgToonDriver.available() or body.skeleton == null or not body.is_inside_tree():
+			return false
+		# Its own dice (the idle's fidgets), so a seeded match plays the same with it as without.
+		toon = WsgToonDriver.new(body.skeleton, {}, {"rng": RandomNumberGenerator.new(), "offset": num})
+		toon.set_override(1.0, [], 0.0)
+	return true
+
+
+func _drive_toon(speed: float) -> void:
+	var free := action == A.NONE and offering <= 0.01 and not holding
+	var go := free and speed > (LINK_STAND if _toon_moving else LINK_MOVE)
+	if go != _toon_moving:
+		_toon_moving = go
+		# Into a strike, a dive, the serve or the ball in his hand: the game's pose at once, not eased in, for the
+		# match reads his hip and hand off this skeleton (where the ball is met, where it is held): a match plays
+		# exactly the same with the capture in the build as without it. Back to the stance it eases.
+		var now := action != A.NONE or holding
+		toon.set_override(0.0 if go else 1.0, [], 0.0 if now else 0.2)
+	elif not go and (action != A.NONE or holding) and toon.override("hips") < 1.0:
+		toon.set_override(1.0, [], 0.0)
+	# Far from the camera (28 m: the court-side camera stands up to 22 m back), posed every other frame (the last pose
+	# laid again between: the feet slide in it, so only where they are small).
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	toon.every = 1 if user or busy() or cam == null or global_position.distance_to(cam.global_position) < 28.0 else 2
+	toon.update(_link_dt, vel, yaw, desired_vel)
+	if body.rigged:
+		body.rigged.follow(body)
 
 
 func _drive_link(speed: float) -> void:

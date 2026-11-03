@@ -15,13 +15,16 @@ var intercept := {}           # the taker's plan: pos (where the ball is met), s
 var level := 1                # 0 Village, 1 Regional, 2 Champion
 var rng := RandomNumberGenerator.new()
 var _jitter := 0.0            # this ball's timing error (s)
+var _lapse := false           # this ball is misjudged (LAPSE)
 var _ball_id := -1            # the ball's flight (changes on each strike)
 
 ## By level: reaction (s), timing error (s, either way), aim error (m), the share of low skidding drives.
 const REACT := [0.24, 0.15, 0.08]
 const TIMING := [0.075, 0.045, 0.022]
 const AIM_ERR := [3.2, 2.0, 1.1]
-const DRIVES := [0.25, 0.4, 0.55]
+const DRIVES := [0.12, 0.18, 0.25]
+## By level: the share of balls he misjudges outright (late or early by a good deal: a miss, a mistimed return).
+const LAPSE := [0.18, 0.12, 0.07]
 
 
 func _init(p_m, p_team: int, p_players: Array, p_level: int, seed_: int) -> void:
@@ -75,6 +78,9 @@ func update(dt: float) -> void:
 	if _ball_id != m.ball_flight:
 		_ball_id = m.ball_flight
 		_jitter = rng.randf_range(-float(TIMING[level]), float(TIMING[level]))
+		_lapse = rng.randf() < float(LAPSE[level])
+		if _lapse:
+			_jitter = rng.randf_range(0.11, 0.2) * (1.0 if rng.randf() < 0.5 else -1.0)
 		taker = null
 		intercept = {}
 	if live:
@@ -100,9 +106,9 @@ func _plan(path: Array) -> void:
 	var best := {}
 	var best_p: Player = null
 	var court: Court = m.court
-	# On the lively stone of the Yucatán courts players wait for the ball to come up off the bounce and take it with the
-	# hip standing, as in the games played there; on ulama's dead earth a low ball is dived for sooner.
-	var dive_cost := 0.9 if m.court.classic() else 0.25
+	# Players wait for the ball to come up off the bounce and take it with the hip standing, as the game is played; a
+	# dive is the last resort for a ball that will not come up in time (the rubber ball bounces on the earth too).
+	var dive_cost := 0.9 if m.court.classic() else 0.8
 	# The bounced serve is let come down and played off the bounce, never taken on the full.
 	var bounced: bool = m.serve_bounced
 	for i in path.size():
@@ -123,8 +129,9 @@ func _plan(path: Array) -> void:
 		var grounded: bool = path[i][1]
 		if pt.y >= 0.42 and pt.y < 1.15:
 			kind = "hip"
-		elif pt.y >= Player.STRIKE_MIN_Y + 0.02 and not grounded:
-			# A low ball still in the air: a player sinks right down for it, not quite a dive.
+		elif pt.y >= Player.STRIKE_MIN_Y + 0.02 and pt.y < 0.42 and not grounded:
+			# A low ball still in the air: a player sinks right down for it, not quite a dive. (Only below the hip: an
+			# airborne ball over the head was planned for the hip too, and missed.)
 			kind = "hip"
 		elif grounded or pt.y < Player.STRIKE_MIN_Y + 0.02:
 			# Lower, or rolling on the earth: only by going down to the ground with the hip (the dive).
@@ -138,7 +145,7 @@ func _plan(path: Array) -> void:
 			var side := _side_for(p)
 			var stand := _stand_for(pt, kind, side)
 			var dist := Vector2(stand.x - p.global_position.x, stand.z - p.global_position.z).length()
-			var need: float = dist / (p.max_speed * 0.85) + float(REACT[level]) + lead
+			var need: float = run_time(p, dist) + float(REACT[level]) + lead
 			if dist < 0.35:
 				need = lead
 			var score := t + (dive_cost if kind == "dive" else 0.0)
@@ -154,6 +161,20 @@ func _plan(path: Array) -> void:
 		return
 	taker = best_p
 	intercept = best
+
+
+## How long he takes to cover dist metres from where he is, speeding up from his present speed (Player.ACCEL) to a
+## little under his best (the plan once took him to be at speed already: from a standstill he came late, and the ball
+## went by or died).
+static func run_time(p: Player, dist: float) -> float:
+	var top := p.max_speed * 0.9
+	var a := Player.ACCEL
+	var v0 := clampf(Vector2(p.vel.x, p.vel.z).length() * 0.5, 0.0, top)
+	var t_acc := (top - v0) / a
+	var d_acc := (v0 + top) * 0.5 * t_acc
+	if dist <= d_acc:
+		return (-v0 + sqrt(v0 * v0 + 2.0 * a * dist)) / a
+	return t_acc + (dist - d_acc) / top
 
 
 ## Which hip: side-on to the ball's coming, the hip toward the other side's end (docs/AI.md): facing across the court
@@ -198,7 +219,13 @@ func _place(p: Player, i: int, live: bool, path: Array, _dt: float) -> void:
 		# Strike as the ball arrives: the strike's moment lined up with the ball's, give or take this level's error.
 		if not p.user and not p.busy():
 			var go_at: float = float(intercept.lead) + _jitter
-			if t <= go_at + 0.017 and Vector2(p.global_position.x - intercept.stand.x, p.global_position.z - intercept.stand.z).length() < 0.7:
+			var off := Vector2(p.global_position.x - intercept.stand.x, p.global_position.z - intercept.stand.z).length()
+			# Already on his spot, he goes as the ball arrives, late at the worst by a frame: the plan, made afresh each
+			# frame, never has the ball later than "now" for a man standing there, so a late timing error once kept
+			# him waiting, backing off with a slow ball until it died at his feet.
+			if off < 0.35 and not _lapse:
+				go_at = maxf(go_at, float(intercept.lead) + 0.02)
+			if t <= go_at + 0.017 and off < 1.0:
 				var aim := choose_aim()
 				if intercept.kind == "hip":
 					p.start_strike(side, aim, m.ai_ring_shot(p))
@@ -230,5 +257,6 @@ func choose_aim() -> Vector3:
 	var e: float = AIM_ERR[level]
 	x += rng.randf_range(-e, e) * 1.5
 	z += rng.randf_range(-e, e) * 0.35
-	var ang := rng.randf_range(8.0, 14.0) if drive else rng.randf_range(26.0, 42.0)
+	# A drive is low and hard, but off the ground: it skips up off the earth to the other side's hips.
+	var ang := rng.randf_range(16.0, 22.0) if drive else rng.randf_range(26.0, 42.0)
 	return Vector3(x, ang, z)

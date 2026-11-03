@@ -111,6 +111,9 @@ func _ready() -> void:
 	legacy.arms = reader
 	legacy.torso_r = 0.08       # the forearms kept out of the chest
 	loco = WsgLocomotor.attach(body)
+	# Its own dice for the idle's fidgets (the foundation's opt-in since 79b346e; this game's pilot had it built in):
+	# the global ones are the game's, and a seeded match must play the same with the foundation as without it.
+	loco.rng = RandomNumberGenerator.new()
 	# The strides for this body's legs in the world: the locomotor reads the rig's leg, not the body node's scale (a
 	# player is drawn at his own height, Body.scale: a 1.62 m man's strides were a tenth too long, his feet dragged).
 	# Its hips' lift and its root motion stay in the skeleton's own space.

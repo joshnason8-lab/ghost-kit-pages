@@ -4,8 +4,9 @@
 # no further than the APK/AAB: it is never committed, cached or uploaded.
 #   tools/fetch_assets.sh [addon dir]     (default: this foundation's addons/wsg_foundation)
 # Credentials, in order: $ASSETS_REPO_TOKEN (CI: a fine-grained, read-only token for that one repository), else the
-# gh CLI's own login (a developer's computer). With neither, it says so and exits 0: the game builds and runs on its
-# own animation (forks, pull requests from forks, computers without access).
+# gh CLI's REST API (a developer's computer logged in to gh, or a Claude Code cloud session whose proxy authenticates
+# api.github.com for repositories added to it - add world-stage-games-assets to the session first). With neither, it
+# says so and exits 0: the game builds and runs on its own animation (forks, pull requests from forks, no access).
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 if [ -d "$HERE/../addons/wsg_foundation" ]; then DEF="$HERE/../addons/wsg_foundation"; else DEF="$HERE/../../addons/wsg_foundation"; fi
@@ -16,16 +17,17 @@ TAG=mocap-source
 ZIP=FBX_Mobility_27B_Pro.zip
 ACZIP=Actorcore.moves.zip
 
-if [ -z "$ASSETS_REPO_TOKEN" ] && ! gh auth status >/dev/null 2>&1; then
-	echo "fetch_assets: no ASSETS_REPO_TOKEN and no gh login: building without the licensed animation (the game's own is used)"
-	exit 0
-fi
 if [ -f "$DATA/mobility.res" ] && [ -z "$FORCE" ]; then
 	echo "fetch_assets: $DATA already has the library (FORCE=1 to rebuild)"
 	exit 0
 fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
+# Without a token, the gh CLI's REST API (gh auth status can fail behind a proxy that still authenticates the calls).
+if [ -z "$ASSETS_REPO_TOKEN" ] && ! { command -v gh >/dev/null 2>&1 && gh api "repos/$REPO/releases/tags/$TAG" > "$WORK/release.json" 2>/dev/null; }; then
+	echo "fetch_assets: no ASSETS_REPO_TOKEN and no gh access to $REPO: building without the licensed animation (the game's own is used)"
+	exit 0
+fi
 echo "fetch_assets: finding $ZIP on $REPO@$TAG"
 get() {   # get <asset name>: into $WORK; returns 1 if the release has no such asset
 	if [ -n "$ASSETS_REPO_TOKEN" ]; then
@@ -33,7 +35,9 @@ get() {   # get <asset name>: into $WORK; returns 1 if the release has no such a
 		[ -n "$ID" ] || return 1
 		curl -fsSL -H "Authorization: Bearer $ASSETS_REPO_TOKEN" -H "Accept: application/octet-stream" -o "$WORK/$1" "https://api.github.com/repos/$REPO/releases/assets/$ID"
 	else
-		gh release download "$TAG" -R "$REPO" -p "$1" -D "$WORK" || return 1
+		ID=$(python3 -c "import json,sys; a=[a['id'] for a in json.load(open(sys.argv[1]))['assets'] if a['name']==sys.argv[2]]; print(a[0] if a else '')" "$WORK/release.json" "$1")
+		[ -n "$ID" ] || return 1
+		gh api -H "Accept: application/octet-stream" "repos/$REPO/releases/assets/$ID" > "$WORK/$1" || return 1
 	fi
 }
 if [ -n "$ASSETS_REPO_TOKEN" ]; then

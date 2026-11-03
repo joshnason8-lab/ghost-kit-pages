@@ -10,25 +10,41 @@ static func _v(x: float, y := 0.0, z := 0.0) -> Vector3:
 	return Vector3(x, y, z)
 
 
-## The ready stance, breathing a little: low (0-1) is how far down he sits. An athlete's, not a mannequin's: the hips
-## sat back and low, the trunk over the knees, knees bent and over the toes, the heels just off the ground (his weight
-## on the balls of his feet), the arms loose at his sides and a little in front, elbows bent, ready to go either way
-## and to turn the hip into the ball. The hips' height comes from the legs' angles, so the soles stay on the floor.
+## The ready stance: low (0-1) is how far down he sits. An athlete's, not a mannequin's: the hips sat back and low,
+## the trunk over the knees, knees bent and over the toes, the heels just off the ground (his weight on the balls of his
+## feet), the arms loose at his sides and a little in front, elbows bent, ready to go either way and to turn the hip
+## into the ball. And never still (the owner, 0.6.3: "too rigid"): he breathes, shifts his weight from foot to foot,
+## gives a little bounce on the balls of his feet now and then, shakes his arms loose and looks about; t carries each
+## player's own offset, so no two move together. The hips' height comes from the legs' angles, so the soles stay on the
+## floor through all of it.
 static func stance(t: float, low := 0.6) -> Dictionary:
-	var b := sin(t * 2.2) * 2.0
-	var pelvis := 12.0 + 12.0 * low                  # the pelvis tipped forward (the hips sat back)
-	var thigh := -(18.0 + 36.0 * low)                # the thigh's angle from the vertical, forward
-	var knee := 30.0 + 50.0 * low - b * 0.4          # the knee's bend
-	var shin := thigh + knee                         # the shin's angle, the knee over the toes
-	var heel := 7.0 + 4.0 * low                      # the heels off the ground
+	var b := sin(t * 2.2) * 2.0                                   # breath
+	var shift := sin(t * 0.85) * 0.7 + sin(t * 0.37 + 1.3) * 0.3   # weight from foot to foot (-1..1)
+	# A bounce on the balls of his feet: a few quick dips, then a while settled.
+	var spell := clampf(sin(t * 0.55 + 0.4) * 2.0 - 0.6, 0.0, 1.0)
+	var bob := (0.5 - 0.5 * cos(t * 7.0)) * spell
+	var pelvis := 12.0 + 12.0 * low                               # the pelvis tipped forward (the hips sat back)
+	var thigh := -(18.0 + 36.0 * low) - 5.0 * bob                 # the thigh's angle from the vertical, forward
+	var knee := 30.0 + 50.0 * low - b * 0.4 + 10.0 * bob          # the knee's bend
+	var shin := thigh + knee                                      # the shin's angle, the knee over the toes
+	var heel := 7.0 + 4.0 * low + 4.0 * bob                       # the heels off the ground
 	var hips_y := _leg_drop(pelvis, thigh, shin, heel)
+	# The weight over one foot: the hips across a little, that leg nearer upright, the other's knee a touch softer.
+	var side := 0.03 * shift
+	var lean := rad_to_deg(atan(side / 0.86))
+	var soft_l := maxf(0.0, -shift) * 6.0
+	var soft_r := maxf(0.0, shift) * 6.0
+	# The arms hang loose and stir: a slow swing, now and then a shake of the hands.
+	var sw := sin(t * 1.3 + 0.8) * 4.0
+	var shake := sin(t * 9.0) * 4.0 * clampf(sin(t * 0.43 + 2.1) * 3.0 - 2.2, 0.0, 1.0)
 	return {
-		"hips_y": hips_y,
-		"hips": _v(pelvis), "spine": _v(6.0 + 6.0 * low + b * 0.3), "chest": _v(2.0), "head": _v(-pelvis - 4.0 - 10.0 * low),
-		"thigh_l": _v(thigh - pelvis, 0, 6), "shin_l": _v(knee), "foot_l": _v(heel - shin),
-		"thigh_r": _v(thigh - pelvis, 0, -6), "shin_r": _v(knee), "foot_r": _v(heel - shin),
-		"upperarm_l": _v(-14.0 - 10.0 * low + b, 0, 8), "forearm_l": _v(-48.0 - 14.0 * low, -20),
-		"upperarm_r": _v(-14.0 - 10.0 * low - b, 0, -8), "forearm_r": _v(-48.0 - 14.0 * low, 20),
+		"hips_y": hips_y - (soft_l + soft_r) * 0.0012, "hips_side": side,
+		"hips": _v(pelvis, 0.0, -shift * 2.0), "spine": _v(6.0 + 6.0 * low + b * 0.3, sin(t * 0.6) * 4.0, shift * 3.0),
+		"chest": _v(2.0), "head": _v(-pelvis - 4.0 - 10.0 * low, sin(t * 0.45 + 0.7) * 10.0),
+		"thigh_l": _v(thigh - pelvis - soft_l * 0.5, 0, 6.0 - lean), "shin_l": _v(knee + soft_l), "foot_l": _v(heel - shin - soft_l * 0.5),
+		"thigh_r": _v(thigh - pelvis - soft_r * 0.5, 0, -6.0 - lean), "shin_r": _v(knee + soft_r), "foot_r": _v(heel - shin - soft_r * 0.5),
+		"upperarm_l": _v(-14.0 - 10.0 * low + b + sw, 0, 8.0 + shake * 0.5), "forearm_l": _v(-48.0 - 14.0 * low + shake, -20),
+		"upperarm_r": _v(-14.0 - 10.0 * low - b - sw, 0, -8.0 - shake * 0.5), "forearm_r": _v(-48.0 - 14.0 * low - shake, 20),
 	}
 
 

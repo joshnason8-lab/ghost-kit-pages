@@ -55,7 +55,10 @@ def bake(obj, img, margin):
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
     target(obj, img)
-    bpy.ops.object.bake(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"}, margin=margin, use_clear=True)
+    # (Extend: each patch's edge texels copied out into the gap round it, so the filtering at a patch's edge reads its
+    # own light; the default, adjacent faces, looks for neighbours across UV seams, and WsgLightBake's patches have none.)
+    bpy.ops.object.bake(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"}, margin=margin, margin_type="EXTEND",
+                        use_clear=True)
 
 
 def save(img, path, scale):

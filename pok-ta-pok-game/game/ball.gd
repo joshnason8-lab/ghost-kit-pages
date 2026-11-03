@@ -12,11 +12,12 @@ const GRAVITY := 9.81
 const DRAG := 0.5 * 1.2 * 0.47 * PI * RADIUS * RADIUS / MASS
 ## How much of its speed into a surface comes back (the coefficient of restitution), and how much along it is kept.
 ## Measured values for heavy solid rubber were not found (docs/RULES.md); these are chosen so a ball dropped from hip
-## height on earth comes back to about 15 cm, on stone to about 30 cm.
+## height on earth comes back to about 35 cm, on stone to about 55 cm: a lively rubber ball (the owner, 0.6.3: "the ball
+## is rubber and should have more bounce"; it was 15 and 30 cm, which left it rolling on the earth).
 # Packed earth deadens the heavy ball (ulama in Sinaloa); on the smooth plastered stone of the Yucatán courts it comes up
 # lively, to knee or hip height, and is played off the bounce, as in the games played there today.
-const BOUNCE := {"earth": 0.42, "stone": 0.68, "talud": 0.62, "wall": 0.66, "end_wall": 0.64, "ring": 0.5}
-const KEEP := {"earth": 0.78, "stone": 0.86, "talud": 0.8, "wall": 0.85, "end_wall": 0.85, "ring": 0.7}
+const BOUNCE := {"earth": 0.6, "stone": 0.76, "talud": 0.68, "wall": 0.72, "end_wall": 0.7, "ring": 0.5}
+const KEEP := {"earth": 0.84, "stone": 0.88, "talud": 0.82, "wall": 0.86, "end_wall": 0.86, "ring": 0.7}
 ## Rolling resistance, as a slowing in m/s per second: packed earth, then stone.
 const ROLL_DECEL := {"earth": 1.5, "stone": 1.3}
 const DEAD_SPEED := 0.35      # rolling slower than this the ball has as good as stopped (R8)
@@ -188,7 +189,7 @@ static func simulate(b: Object, dt: float, c: Court, floor_k: String, events: Ar
 				v.x *= keep
 				v.z *= keep
 				events.append({"kind": "bounce", "surface": kind, "pos": p, "speed": vin})
-			if v.y < 0.9:
+			if v.y < 0.6:
 				v.y = 0.0
 				b.grounded = true
 	# The talud, the walls, the rings' stone.
