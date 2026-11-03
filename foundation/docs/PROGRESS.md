@@ -450,3 +450,26 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   materials and the floor as a prop; make_bodies; debug_mesh), prop_audit.gd (WsgPropAudit), tools/prop_audit.gd
   (a game's registry: venues() + run(); JSON + close-up sheets; refuses an output inside the project),
   tests/solid_props_test.gd, tests/prop_runs.gd, ADOPTING §5.15. Inventories in from Kho Kho, Pok Ta Pok, Floorball.
+- Owner-approved items:
+  - **7 (8f688ff): REQUIRED manifest.** check_foundation fails a game's CI without a required commit.
+  - **4 (ed3c181): owner notes as permanent tests.** WsgOwnerNote, WsgNoteChecks, the runner and the history guard;
+    the foundation's 16 notes all pass.
+- **877bcd9: WsgLoading settles a device that is slow but even** (last 6 frames within 20%; Netball's software GL).
+- **WsgSim (owner-approved, before item 5): the shared match simulator.**
+  - What it is:
+    - WsgSimGame adapter, WsgSim runner and generic checks;
+    - WsgSimLog (a Logger: script errors), WsgSimInput (human fuzz), WsgSimMenu (menus and saves);
+    - tools/sim.gd (batch, replay, determinism, menu, merge, adopt), sim_shard.sh (freeze and crash), rng_lint.sh,
+      sim_ci.yml;
+    - the demo game tests/sim_demo and the self-test tests/sim_test.gd.
+  - Found while building it:
+    - Godot's first frames after start are not on the fixed step even with --fixed-fps, so 30 warm-up frames run
+      first and a per-frame step check guards it.
+    - A rig's rest heights are not its standing bone heights, so foot_slip now takes each foot's lowest point.
+    - Demo bugs found by the sim: shooters re-catching their own shots (no goals); a 30 m vertical shot from inside
+      the goal; the scenario generator always favouring away; update-order bias (equal sides home 22% / away 47%,
+      now 32/44).
+  - Measured:
+    - nightly 2,000 matches in 422 s on 4 cores (x165); smoke 62 in 25 s;
+    - with 6 animated WsgBodies x21;
+    - the demo's foot slip with retargeting AI is 7-8.5 cm a step (for item 5's planter work).

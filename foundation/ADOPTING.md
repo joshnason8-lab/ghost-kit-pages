@@ -1043,6 +1043,142 @@ The foundation's own 16 (`foundation/tests/owner_notes/`, all passing) show the 
 - props solid;
 - the post clang crisp at 50 m.
 
+## 5.17 WsgSim: thousands of simulated matches (every game)
+
+The owner: "Please build an automated simulation and testing system ... so you can find and fix bugs without relying
+on me to manually play every build ... I want it to take hours not days."
+
+WsgSim runs your matches with your **production code**: your movement, AI, ball, rules, and animation-driven logic
+such as root motion, the locomotor and contact timing. Only the drawing is skipped. It runs headless, on a fixed step
+(`--fixed-fps 30`, each frame 1/30 s of game time) and as fast as the computer allows. Every match comes from a seed,
+and any failure replays from it.
+
+The foundation provides:
+- the runner, the batch tool, sharding and the CI template;
+- the human-input fuzzer and the menu fuzzer;
+- the generic checks.
+
+You provide one adapter, `res://game/sim.gd`. Build it on what you already have (match_sim, user_bot, score_check,
+test_runner); it is not a second copy of your game.
+
+**1. The adapter** (extends `WsgSimGame`; `tests/sim_demo/demo_sim.gd` is a full one):
+
+| Method | What it gives the harness |
+|---|---|
+| `scenarios()` | `"random"`, `"extreme"` and your targeted kinds (`"targeted:scoring"`, `"targeted:timer"`, `"targeted:possession"`, `"targeted:collisions"`, `"targeted:completion"`, …) |
+| `config(kind, rng)` | one match's conditions, drawn only from `rng`: team strengths, player attributes, AI strategies, settings, venue, the human's side |
+| `start(config, seed, tree)` | builds the match with your own code, every random roll from `seed`, and returns its root |
+| `state()` | `{score, clock, clock_running, phase, possession, finished}` |
+| `events()` | what happened since the last call |
+| `bodies()` | `[{name, pos, radius, height, body (WsgBody), active, target}]` |
+| `ball()` | the ball's position, radius and whether it's in play |
+| `solid()` | your WsgSolidProps |
+| `bounds()` | where anything may ever be |
+| `score_steps()` | how much one side's score may go up at once (e.g. `[1, 3]`) |
+| `max_seconds(config)` | the most simulated time a match may take |
+| `rules()` | your sport's own checks, every frame |
+| `result()` | `{winner, score}` |
+| `balance_keys(config)` | `{fair, strategy_home, …}` |
+| `stop()` | frees the match |
+
+For the human and the menus:
+
+| Method | What it gives the harness |
+|---|---|
+| `human_team()` | which side a person plays |
+| `input_actions()` | the input actions a person uses |
+| `stick(v)` | your touch joystick, if you have one |
+| `cameras()`, `set_camera(i)` | the cameras the fuzzer switches between |
+| `menu_start(tree)` | your main menu |
+| `in_match()` | whether a match is under way |
+| `menu_check()` | your menu invariants |
+| `save_paths()`, `old_saves()` | the saves the fuzzer corrupts, and old versions' saves to load |
+
+**2. What every match is checked for** (WsgSim). A match that finishes is not a pass. It fails on:
+- **Errors:** any script or engine error during the match. A `Logger` catches them; a GDScript error doesn't stop the
+  game, it carries on wrong.
+- **Bad positions:** NaN, or anything outside `bounds()`.
+- **The score:** going down, or up by a step not in `score_steps()`.
+- **The clock:** running backwards within a phase, jumping, or standing still while running.
+- **Stuck bodies:** a body that is active, with its target more than 1.5 m away, and has hardly moved for 6 s.
+- **Endless matches:** past `max_seconds`.
+- **Props:** a body more than 2 cm into a prop, or the ball through one.
+- **Feet and poses:** a planted foot slipping more than 2 cm in a step, or a T-pose or A-pose. A quarter of your
+  WsgBodies are followed every frame.
+- **Your `rules()`.**
+
+A freeze, meaning an endless loop that no in-game check can interrupt, and a crash are caught by `sim_shard.sh`. It
+records the match the batch was on and carries on from the next seed.
+
+**3. Every random roll from the seed.** `sh tools/wsg/rng_lint.sh [folders]` (default `game/`) fails on any bare
+`randf`, `randi`, `randf_range`, `randi_range`, `randfn`, `randomize`, `shuffle` or `pick_random` in gameplay code.
+A call on a seeded generator (`rng.randf()`) passes. Hurling was bitten by one unseeded `randf`. Cosmetic-only lines
+can be marked `# wsg-rng-ok: <why>`.
+
+`sim.gd -- determinism --seeds N [--realtime]` runs each seed twice, the second at 1× real time with `--realtime`.
+The states must match frame for frame, checked every 15 frames. A decision made on the wall clock is caught.
+
+**4. Run it:**
+```
+sh tools/wsg/sim_shard.sh . "$OUT" --smoke --input                                # every push: minutes
+sh tools/wsg/sim_shard.sh . "$OUT/3" --from 1 --count 2400 --shard 3/8 --input    # nightly, one of 8 shards
+godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- merge --out "$OUT" "$OUT"/*/
+godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- replay --failure "$OUT/failures/<sig>/<seed>.json"
+godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- menu --seeds 20 --steps 400 --saves
+godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- adopt "$OUT/failures/<sig>/<seed>.json"
+```
+- **Smoke:** 50 seeds of the general kinds, every targeted kind × 3 seeds, and every adopted case.
+- **Nightly:** every tenth seed is a targeted case.
+- `--input` lets WsgSimInput play the human side through your own input path:
+  - stick sweeps, holds, circles and jitter;
+  - taps, mashes and double taps;
+  - pause and resume;
+  - the app sent to the background and back;
+  - the screen turned;
+  - camera switches.
+
+`$OUT` must be outside the project (`$RUNNER_TEMP`); the tool refuses a path inside it. `tools/wsg/sim_ci.yml` is the
+workflow: a smoke job on push, and 8 nightly shards plus a merge job. Copy it, then set your game's folder.
+
+**5. The report** is `SIM_REPORT.md` and `sim_report.json`. It gives:
+- what ran: the count, the kinds, and seeds and configs in `results.jsonl`;
+- failures grouped by signature (the message with its numbers taken out), ranked by how often × how bad, with example
+  seeds and a replay command for each;
+- balance: win rates, draws, scoring and length by each `balance_keys` value, with flags for the owner (equal sides
+  far from 50/50, a dominant strategy, too many draws, hardly any scoring);
+- speed: simulated seconds per wall second;
+- what it cannot see.
+
+**Change no balance without the owner's OK.**
+
+**6. The fix-and-retest loop:**
+1. Triage by the ranking. Fix the top signatures first and list the rest in your report.
+2. For each one, replay it, find the root cause and fix it.
+3. `adopt` the failing match into `res://tests/sim_cases.json`, so every smoke batch runs it from now on.
+4. Write an owner-note test (§5.16) if the owner saw it.
+5. Rerun smoke, then a broad batch.
+
+Never weaken a check or bypass game logic to make it pass.
+
+**7. Report to the lead after each batch:**
+- what ran;
+- bugs found;
+- bugs fixed, with commits;
+- remaining issues, ranked;
+- balance flags;
+- coverage gaps;
+- speed.
+
+Don't claim a pass you didn't run.
+
+**What it cannot see:** how the game looks (animation quality), on-device stutter, frame and load times on the A16,
+touch feel, audio as heard, and anything on the GPU. Those need a person, or the on-device diagnostics screen
+(item #2, deferred).
+
+**Speed target:** a 2,000-match nightly batch in under 2 hours wall-clock, and smoke under 10 minutes. Measure your
+speed (`speed` in the report). Logic that only advances with animation playback can't run faster than 1×; if that
+caps you, report it, and move that logic onto the game clock.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
