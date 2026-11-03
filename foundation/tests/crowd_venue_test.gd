@@ -29,6 +29,20 @@ static func outdoor() -> WsgCrowdVenue:
 	return v
 
 
+## A hall with jury tables set just in front of its stands' first rows (Sepak Takraw's national arena: a rising knee
+## went 3 cm into a jury chair, a clash between two sections).
+static func hall() -> WsgCrowdVenue:
+	var v := WsgCrowdVenue.new(Vector3.ZERO, Vector2(13.4, 6.1))
+	for s in [-1.0, 1.0]:
+		v.add({"name": "%s stand" % ("near" if s < 0 else "far"), "a": Vector3(-15.1, 0, s * 8.8), "b": Vector3(15.1, 0, s * 8.8),
+			"rows": 12, "tread": 0.8, "rise": 0.42, "seat": "step", "height": 0.43, "depth": 0.3, "pitch": 0.55})
+		v.add({"name": "%s end stand" % ("left" if s < 0 else "right"), "a": Vector3(s * 12.6, 0, -7.38), "b": Vector3(s * 12.6, 0, 7.38),
+			"rows": 6, "tread": 0.8, "rise": 0.42, "seat": "step", "height": 0.43, "depth": 0.3, "pitch": 0.55})
+		v.add({"name": "jury table %s" % ("left" if s < 0 else "right"), "a": Vector3(s * 6.2 - 1.65, 0, 8.33), "b": Vector3(s * 6.2 + 1.65, 0, 8.33),
+			"rows": 1, "tread": 0.74, "seat": "chair", "height": 0.44, "depth": 0.44, "back": 0.51, "setback": 0.3, "pitch": 1.09})
+	return v
+
+
 func _initialize() -> void:
 	# (High and Close crowds: the top tier, where the cap - WsgFoundation.crowd_quality - lets them be built.)
 	WsgFoundation.tier = WsgFoundation.HIGH
@@ -37,11 +51,12 @@ func _initialize() -> void:
 		quit(0)
 		return
 	var fails := []
-	for v in [["arena", arena()], ["outdoor", outdoor()]]:
+	for v in [["arena", arena()], ["outdoor", outdoor()], ["hall", hall()]]:
 		var crowd := WsgCrowd3D.new()
 		root.add_child(crowd)
 		crowd.build_venue(v[1], 2, Vector3.ZERO, 1.0, 5)
-		var a := WsgCrowdVenue.audit(crowd, v[1], 0 if OS.has_environment("ALL_FANS") else 40)
+		# (The hall: every fan - its clash is in one or two places.)
+		var a := WsgCrowdVenue.audit(crowd, v[1], 0 if OS.has_environment("ALL_FANS") or v[0] == "hall" else 40)
 		print("%s: %d places, %d fans in 3D" % [v[0], crowd.placed.spots.size(), a.fans])
 		for name in a.sections:
 			var s: Dictionary = a.sections[name]
