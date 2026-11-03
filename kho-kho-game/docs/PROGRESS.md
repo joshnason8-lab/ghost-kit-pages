@@ -294,6 +294,14 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   move). FoundationLink notes why each frame's drive ran (trace_why, trace_dt) and its layer how often it ran, for the
   diag of the running A/T-poses (sent to the foundation).
 
+- 0.12.9: fast format SWERVE_TOUCH_FAST 0.912 (classic SWERVE_TOUCH 0.9 unchanged), the owner's call of 2026-11-03 (about 1.6
+  outs a minute from 1.74). Balance run 41685649140, 200 matches a cell, 95% CIs: classic 1.45 +- 0.05; fast 1.63 +- 0.05,
+  fast without the tune 1.67 +- 0.05 (-0.04 +- 0.03 paired: the day's other fixes had brought most of the drop). WsgSim
+  adapter: no body active under a replay, a replayed pose excused (the T/A-poses after a pole turn, random 29's stuck
+  chaser). Foundation synced to d70ac7d (the 11-06 feet batch; no pose read under a replay; walker_low: Low's ModelBody
+  measured, its feet slipping 3-14 cm - deferred to 11-08). Safe release publish (ADOPTING 5.19). No nightly schedule
+  (the owner: simulations in rounds). The release gate's "newer" only on a publishing build.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

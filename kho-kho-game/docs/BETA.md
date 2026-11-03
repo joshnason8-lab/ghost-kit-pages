@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.9
+
+- **The fast game is a little harder to score in** (the owner's call): a running touch slips off a defender a
+  little more often in the 7-a-side game, bringing it to about 1.6 outs a minute (200 matches: 1.63, from 1.67).
+  The classic game is unchanged (1.45).
+- **Feet** on Medium and High: the shared foundation's 11-06 fixes - far players' feet measured and held frame by
+  frame, no foot left behind a stride when a chaser pulls up.
+- Behind the scenes: a new beta is put up whole before the old one is taken down, so the download link never points
+  at nothing; the players drawn on Low are now measured too.
+
 ## What's new in 0.12.8
 
 - **Feet stay put when a sprinter stops.** Pulling up hard from a sprint, a player's planted foot could jump a
