@@ -10,6 +10,12 @@ extends RefCounted
 ##   NaN or infinite positions, and anything outside the game's bounds;
 ##   the score only going up, by a legal step; the clock only one way, never stuck while it runs, never jumping;
 ##   a body stuck (meant to move, its target far, hardly moved for STUCK_S);
+##   no progress: a body moving but no closer to a target that stays put, where a body can stand, for NO_PROGRESS_S
+##   (back and forth in front of a prop); its steering turning back and forth at one prop (WsgSolidProps.flip_warnings:
+##   a warning in the report, not a failure);
+##   the fetch-behind-prop case (FETCH_KIND, every smoke batch; or any kind whose config has fetch_behind_prop true):
+##   the ball behind one of the venue's largest props, a body there within the game's time, never into a prop
+##   (WsgSimGame.fetch);
 ##   an endless match (past the game's max_seconds);
 ##   bodies inside props and the ball through one (WsgSolidProps, WsgPropAudit);
 ##   feet: a planted foot's slip in a step over FOOT_SLIP_CM; no T- or A-pose (WsgNoteChecks), sampled bodies.
@@ -18,12 +24,23 @@ extends RefCounted
 
 const FPS := 30.0
 const STUCK_S := 6.0
+## No progress: a body that moved over NO_PROGRESS_MOVED m but got no closer than PROGRESS_M to its target in this long.
+const NO_PROGRESS_S := 10.0
+const PROGRESS_M := 0.5
+const NO_PROGRESS_MOVED := 2.0
+## The fetch-behind-prop case: the ball put behind one of the venue's FETCH_PROPS largest props (in turn by seed) at
+## FETCH_AT_S; the fetcher there (within FETCH_ARRIVE_M) within FETCH_S, unless the game says otherwise.
+const FETCH_KIND := "targeted:fetch_behind_prop"
+const FETCH_PROPS := 3
+const FETCH_AT_S := 1.0
+const FETCH_S := 20.0
+const FETCH_ARRIVE_M := 1.0
 const FOOT_SLIP_CM := 2.0
 const EVENTS_KEPT := 300
 const MAX_FAILS := 3
 ## How bad each kind of failure is (the batch report ranks signatures by how often x this).
 const SEVERITY := {"script error": 5, "nan": 5, "out of bounds": 4, "score": 5, "clock": 4, "endless": 4, "stuck": 3,
-	"prop": 3, "ball through": 3, "foot slip": 2, "pose": 3, "rule": 4, "start": 5, "determinism": 5, "timestep": 5}
+	"no progress": 3, "fetch": 4, "prop": 3, "ball through": 3, "foot slip": 2, "pose": 3, "rule": 4, "start": 5, "determinism": 5, "timestep": 5}
 
 static var _log: WsgSimLog = null
 static var _warm := false
@@ -90,6 +107,9 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var clock_still := 0.0
 	var phase := ""
 	var moved := {}           # name -> [position, seconds hardly moving]
+	var progress := {}        # name -> [target, nearest yet, seconds since, metres moved since, last position]
+	var fetch := {}           # the fetch-behind-prop case: {who, spot, prop, by, arrive, pen, done}
+	var flips_seen := 0
 	var feet := {}            # name -> [runs (each frames the planter drove), ankle rest, toe rest]
 	var shown := {}           # body id -> [feet, T/A-pose] as last drawn ([] once used)
 	# Sampled pose (the lead's speed default): a quarter of the bodies posed in full (planter IK, layers, helpers),
@@ -193,6 +213,26 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				moved[nm] = m
 			else:
 				moved.erase(nm)
+			# No progress: moving, but no closer to a target that stays put (and that a body can stand on).
+			if bool(b.get("active", false)) and tgt != Vector3.INF and tgt.is_finite() and Vector2(tgt.x - p.x, tgt.z - p.z).length() > 1.5:
+				var dist := Vector2(tgt.x - p.x, tgt.z - p.z).length()
+				var g: Array = progress.get(nm, [])
+				if g.is_empty() or (g[0] as Vector3).distance_to(tgt) > 1.0:
+					g = [tgt, dist, 0.0, 0.0, p]
+				g[3] = float(g[3]) + (g[4] as Vector3).distance_to(p)
+				g[4] = p
+				if dist < float(g[1]) - PROGRESS_M:
+					g[1] = dist
+					g[2] = 0.0
+					g[3] = 0.0
+				else:
+					g[2] = float(g[2]) + dt
+					if float(g[2]) > NO_PROGRESS_S and float(g[3]) > NO_PROGRESS_MOVED and _standable(solid, bounds, tgt, b):
+						_fail(out, "no progress", "%s moved %.0f m in %.0f s but got no closer to its target %.1f m away%s" % [nm, g[3], g[2], dist, _by_prop(solid, p)], t, frame, st, events)
+						g[2] = -INF
+				progress[nm] = g
+			else:
+				progress.erase(nm)
 			var wb: Variant = b.get("body")
 			# (A quarter of the bodies, chosen by the seed, followed every frame: feet are measured frame to frame.)
 			if bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
@@ -220,6 +260,44 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 						runs.append([])
 					if seen[1] != "":
 						_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
+		if (kind == FETCH_KIND or bool(cfg.get("fetch_behind_prop", false))) and t >= FETCH_AT_S:
+			if fetch.is_empty():
+				var spots := fetch_spots(solid, bounds) if solid else []
+				var g: Dictionary = {} if spots.is_empty() else game.fetch(spots[seed % spots.size()][0])
+				if spots.is_empty() or g.is_empty():
+					out["fetch"] = "no props to fetch behind" if spots.is_empty() else "not wired (WsgSimGame.fetch)"
+					print("sim: %s seed %d: %s" % [kind, seed, out.fetch])
+					break
+				var sp: Array = spots[seed % spots.size()]
+				fetch = {"who": String(g.get("who", "")), "spot": sp[0], "prop": sp[1], "by": t + float(g.get("seconds", FETCH_S)),
+					"arrive": float(g.get("arrive", FETCH_ARRIVE_M)), "pen": 0.0, "done": -1.0, "from": t}
+				events.append({"type": "fetch", "who": fetch.who, "spot": sp[0], "prop": sp[1], "t": snappedf(t, 0.01)})
+			elif float(fetch.done) < 0.0:
+				var fb := {}
+				for b: Dictionary in bl:
+					if String(b.get("name", "")) == fetch.who:
+						fb = b
+				if fb.is_empty():
+					_fail(out, "fetch", "the fetcher '%s' is not among the bodies" % fetch.who, t, frame, st, events)
+					break
+				var fp: Vector3 = fb.get("pos", Vector3.ZERO)
+				var sp: Vector3 = fetch.spot
+				fetch.pen = maxf(float(fetch.pen), float(solid.penetration(fp, float(fb.get("radius", 0.3)), float(fb.get("height", 1.8)))[0]))
+				var left := Vector2(sp.x - fp.x, sp.z - fp.z).length()
+				if left <= float(fetch.arrive):
+					fetch.done = t
+					out["fetch"] = "%s reached the ball behind the %s in %.1f s" % [fetch.who, fetch.prop, t - float(fetch.from)]
+					if float(fetch.pen) > WsgPropAudit.PEN_TOL:
+						_fail(out, "fetch", "%s went %.0f cm into a prop fetching the ball behind the %s" % [fetch.who, float(fetch.pen) * 100.0, fetch.prop], t, frame, st, events)
+				elif t > float(fetch.by):
+					_fail(out, "fetch", "%s did not reach the ball behind the %s in %.0f s (%.1f m short)" % [fetch.who, fetch.prop, float(fetch.by) - float(fetch.from), left], t, frame, st, events)
+					break
+			elif t > float(fetch.done) + 1.0:
+				break
+		if solid and solid.flip_warnings.size() > flips_seen:
+			for w: Dictionary in solid.flip_warnings.slice(flips_seen):
+				out["warnings"] = out.get("warnings", []) + ["steer flip: a body turned back and forth %d times at the %s (goal %s)" % [w.flips, w.prop, (w.goal as Vector3).snappedf(0.1)]]
+			flips_seen = solid.flip_warnings.size()
 		var bd := game.ball()
 		if not bd.is_empty():
 			var bp: Vector3 = bd.get("pos", Vector3.ZERO)
@@ -268,6 +346,66 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	if input:
 		out["input"] = input.summary()
 	return _finish(out, game, t_wall, t, frame)
+
+
+## The fetch-behind-prop case's spots: behind each of the venue's MOST largest props a body is kept out of (by its
+## footprint), on the side away from the field's middle (BOUNDS' centre) - or round it, if that side is out or blocked
+## - clear of every prop: [[spot, the prop's name], ...], largest first.
+static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, height := 1.8, most := FETCH_PROPS) -> Array:
+	var cands := []
+	for i in solid.props.size():
+		var pr: Dictionary = solid.props[i]
+		var ab: AABB = pr.aabb
+		if pr.kind == "floor" or not bool(pr.walk) or ab.size.y < 0.3 or ab.position.y > 0.3:
+			continue
+		cands.append([ab.size.x * ab.size.z, i])
+	cands.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) > float(y[0]))
+	var centre := bounds.get_center()
+	var out := []
+	for c: Array in cands:
+		if out.size() >= most:
+			break
+		var i := int(c[1])
+		var ab: AABB = solid.props[i].aabb
+		var pc := ab.get_center()
+		var away := Vector2(pc.x - centre.x, pc.z - centre.z)
+		away = away.normalized() if away.length() > 0.1 else Vector2(0, 1)
+		for turn in [0.0, PI * 0.5, -PI * 0.5, PI]:
+			var d := away.rotated(turn)
+			var p2 := Vector2(pc.x, pc.z)
+			var k := 0
+			while solid._sdi(i, p2) < radius + 0.35 and k < 600:
+				p2 += d * 0.05
+				k += 1
+			var spot := Vector3(p2.x, ab.position.y, p2.y)
+			if bounds.has_point(spot + Vector3.UP * 0.1) and float(solid.penetration(spot, radius, height)[0]) <= 0.0:
+				out.append([spot, String(solid.props[i].name)])
+				break
+	return out
+
+
+## A target a body could stand on: in the bounds, clear of the props.
+static func _standable(solid: WsgSolidProps, bounds: AABB, tgt: Vector3, b: Dictionary) -> bool:
+	if not bounds.has_point(tgt + Vector3.UP * 0.1):
+		return false
+	return solid == null or float(solid.penetration(tgt, float(b.get("radius", 0.3)), float(b.get("height", 1.8)))[0]) <= WsgPropAudit.PEN_TOL
+
+
+## " by the <prop>" when one is within 1.5 m of P.
+static func _by_prop(solid: WsgSolidProps, p: Vector3) -> String:
+	if solid == null:
+		return ""
+	var best := ""
+	var bd := 1.5
+	for i in solid.props.size():
+		var pr: Dictionary = solid.props[i]
+		if pr.kind == "floor" or not bool(pr.walk):
+			continue
+		var d := solid._sdi(i, Vector2(p.x, p.z))
+		if d < bd:
+			bd = d
+			best = String(pr.name)
+	return " (by the %s)" % best if best != "" else ""
 
 
 ## The planter drives this body's feet now: on, not under a pose the game makes of the whole body (keep_pose), and

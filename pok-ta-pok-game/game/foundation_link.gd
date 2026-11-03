@@ -232,7 +232,10 @@ func _update(delta: float) -> void:
 		if mode == "":
 			legacy.weight = w      # (a new body starts as it is asked: no blend in from nothing)
 		legacy.fade_to(w, FADE_IN if want == "full" else FADE)
-		if mode == "" or want == "move":
+		# Back from the game's whole pose its feet were the game's: held again from where they are drawn. (Not from its
+		# arms only: the planter held the feet all along, and let go they slid to the capture's feet, a judge's 3-5 cm
+		# after each call: the sim.)
+		if mode == "" or (want == "move" and mode == "full"):
 			loco.planter.reset()
 		mode = want
 	body.visible = true

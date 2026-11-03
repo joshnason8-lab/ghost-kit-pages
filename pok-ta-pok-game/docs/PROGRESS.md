@@ -342,6 +342,19 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   and the foundation's test-time scripts and our adapters are kept out of the export. The game's auto graphics stands
   down when WsgAutoTier.off is set (the simulator and the world check).
 
+- **0.6.15-beta: what the simulator found.** WsgSim smoke (74 matches on d4e3107, x10 real time) found two bugs in
+  the game and one in its own rule checks:
+  - The stick moved the user's man in the walk-out, when the players may cross the analco to their places: held
+    toward the far end, he ran into the other half and the serve's own-half clamp snapped him back (8 m in one frame
+    in the new test; 1 m in the sim's seed 18). The stick now waits for the serve, as it already did in the serve's
+    set-up.
+  - The judges' planted feet slid 3-5 cm after every call: FoundationLink let the planter go when a body came back
+    from its arms-only pose ("upper"), and the feet slid to the capture's. Only a body coming back from the game's whole
+    pose is reset now (seed 13 replayed: gone).
+  - RuleChecks read a sudden-death win (time up, level: the next raya wins) as a count that was not its history.
+  Shared foundation synced to eaa6713 (the sim's no-progress check). The players' own foot slips in the sim (2.5-5.7
+  cm on hard stops and pivots at speed, in the planter's "move") are reported to the foundation with replays.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are

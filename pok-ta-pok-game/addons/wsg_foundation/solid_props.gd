@@ -36,6 +36,10 @@ const PROPS_LAYER := 9
 const STEP := 0.12
 ## The grid's cells (m).
 const CELL := 2.0
+## A body turning back and forth at one prop: FLIP_COUNT changes of side round it within FLIP_CALLS steer calls (about
+## 3 s at 30 a second) is warned of, once per body and prop (flip_warnings; WsgSim reports them).
+const FLIP_COUNT := 4
+const FLIP_CALLS := 90
 
 ## Per material: restitution (a ball's speed into it kept, 0..1), friction (along it lost on a bounce, 0..1), the
 ## sound kind (WsgAudio.play_at's kind, crisp at a distance: bright_kinds).
@@ -60,6 +64,10 @@ const MATERIALS := {
 var props: Array = []
 ## Props left out on purpose: [{name, reason}] (register's opt-outs; a game's own with skip()).
 var skipped: Array = []
+## Bodies seen turning back and forth at one prop (steer): {prop, flips, pos, goal}, each body and prop once. Usually a
+## goal straight behind a long prop with the body's MEMO lost or rebuilt each frame, or a goal that moves from one side
+## to the other: path() walks round it instead (Sepak Takraw's fetcher froze in front of a bench).
+var flip_warnings: Array = []
 
 var _grid := {}       # Vector2i -> PackedInt32Array of prop indices
 var _planes := PackedInt32Array()    # the floors (in every sweep)
@@ -288,6 +296,7 @@ func steer(pos: Vector3, vel: Vector3, radius: float, height := 1.8, goal := Vec
 		look := 1.6) -> Vector3:
 	var flat := Vector2(vel.x, vel.z)
 	var speed := flat.length()
+	memo["calls"] = int(memo.get("calls", 0)) + 1
 	if speed < 0.01:
 		return vel
 	var p2 := Vector2(pos.x, pos.z)
@@ -296,12 +305,14 @@ func steer(pos: Vector3, vel: Vector3, radius: float, height := 1.8, goal := Vec
 	var near := PackedInt32Array()
 	var side := 0.0
 	var nearest := INF
+	var at := -1
 	for i in _near2(p2, look + radius):
 		if _blocks(i, pos.y, height):
 			near.append(i)
 			var sd := _sdi(i, p2)
 			if sd < nearest:
 				nearest = sd
+				at = i
 				# The side the body is on: the prop's surface normal across the way it wants to go.
 				side = signf(flat.normalized().cross(-(_sd2(props[i], p2)[1] as Vector2)))
 	if near.is_empty():
@@ -334,7 +345,33 @@ func steer(pos: Vector3, vel: Vector3, radius: float, height := 1.8, goal := Vec
 			break
 		keep = 0.0
 	memo["side"] = best_sign
+	_flips(memo, at, best_sign, pos, goal)
 	return Vector3(best.x * speed, vel.y, best.y * speed)
+
+
+## Counts a body's changes of side round one prop (MEMO: its own), and warns of back and forth.
+func _flips(memo: Dictionary, at: int, sgn: float, pos: Vector3, goal: Vector3) -> void:
+	if at < 0 or sgn == 0.0:
+		return
+	var calls := int(memo.get("calls", 0))
+	var last := float(memo.get("flip_side", 0.0))
+	if int(memo.get("flip_prop", -1)) == at and last != 0.0 and last != sgn:
+		var flips: Array = memo.get("flips", [])
+		flips.append(calls)
+		while not flips.is_empty() and int(flips[0]) < calls - FLIP_CALLS:
+			flips.pop_front()
+		memo["flips"] = flips
+		var warned: Dictionary = memo.get("flip_warned", {})
+		if flips.size() >= FLIP_COUNT and not warned.has(at):
+			warned[at] = true
+			memo["flip_warned"] = warned
+			var w := {"prop": String(props[at].name), "flips": flips.size(), "pos": pos, "goal": goal}
+			flip_warnings.append(w)
+			push_warning("WsgSolidProps: a body turned back and forth %d times in %d steps at the %s (at %s, goal %s): a goal behind it? Keep the body's memo between frames, or walk it round with path()" % [flips.size(), FLIP_CALLS, w.prop, pos.snappedf(0.01), goal.snappedf(0.01) if goal != Vector3.INF else goal])
+	elif int(memo.get("flip_prop", -1)) != at:
+		memo.erase("flips")
+	memo["flip_prop"] = at
+	memo["flip_side"] = sgn
 
 
 ## A walk from A to B around the props (an out-of-play walk: a substitute to the bench, an official to their spot, a

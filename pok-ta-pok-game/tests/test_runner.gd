@@ -60,6 +60,7 @@ func _ready() -> void:
 	await _ai_plays("village", "ulama")
 	await _ai_plays("stone", "classic")
 	await _watch_ai()
+	await _stick_in_walkout()
 	await _stick_camera("village", "ulama")
 	await _stick_camera("stone", "classic")
 	await _tv_camera("village", "ulama")
@@ -1121,6 +1122,48 @@ func _ai_plays(venue: String, rules: String) -> void:
 ## court, the joystick movement is all wrong"): on the court-side, high and end cameras, pushing the stick up, right,
 ## down or left sends your player up, right, down or left on the screen (within 10 degrees), the way he is told to go
 ## and the way he then runs.
+## The sim (seed 18): the stick held toward the far half through the walk-out (the players may cross the analco to
+## their places then) ran the user's man over it, and the serve's own-half clamp snapped him 1 m back. The stick waits
+## for play: no man on the wrong half, and none jumps, when the serve comes.
+func _stick_in_walkout() -> void:
+	var keep_ctl := int(Game.settings.get("control", 0))
+	Game.settings.control = 1
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": 0, "seed": 3,
+		"length": 0.0, "mode": "quick", "difficulty": 0, "ritual": false}
+	add_child(m)
+	await frames(2)
+	var guard := 0
+	while not m.built and guard < 300:
+		await frames(1)
+		guard += 1
+	var worst_x := -INF
+	var worst_jump := 0.0
+	var last := {}
+	var intro_frames := 0
+	guard = 0
+	while m.phase == m.P.INTRO and guard < 30 * 30:
+		# Toward the far half on the screen, whatever the camera: the stick for the far end.
+		var far: Vector2 = m.cam.camera.unproject_position(Vector3(Rules.dir(0) * 8.0, 0, 0)) - m.cam.camera.unproject_position(Vector3.ZERO)
+		m.hud.touch.joystick = far.normalized()
+		await get_tree().process_frame
+		intro_frames += 1
+		guard += 1
+	for k in 10:
+		for p: Player in m.teams[0].players:
+			worst_x = maxf(worst_x, p.global_position.x * Rules.dir(0))
+			if last.has(p):
+				worst_jump = maxf(worst_jump, Vector2(p.global_position.x - last[p].x, p.global_position.z - last[p].z).length())
+			last[p] = p.global_position
+		await get_tree().process_frame
+	m.hud.touch.joystick = Vector2.ZERO
+	check(intro_frames > 10 and worst_x <= -0.39 and worst_jump < 0.5,
+		"the stick held toward the far half in the walk-out: at the serve no man over the analco (%.2f m), none jumps (%.2f m)" % [worst_x, worst_jump])
+	m.queue_free()
+	await frames(2)
+	Game.settings.control = keep_ctl
+
+
 func _stick_camera(venue: String, rules: String) -> void:
 	var keep_cam := int(Game.settings.camera)
 	var keep_ctl := int(Game.settings.get("control", 0))

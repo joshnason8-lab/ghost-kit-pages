@@ -367,6 +367,11 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 					r.fails.append("%s: a frame makes %d draw calls, over the tier's %d" % [tag, dcs, fb.draw_calls])
 			else:
 				line += ", the scene holds %d triangles (not culled; drawn counts need a renderer)" % _scene_triangles(holder)
+			# What the start left outside the parent it was given (start_mode must replace what the last call started,
+			# as a tap does: Hurling's kept its last match drawing - 524k triangles, 154 draw calls at Low).
+			var outside := _scene_triangles(tree.root) - _scene_triangles(holder)
+			if outside > 0:
+				line += "; %d triangles outside the parent start_mode was given (the last mode's? see ADOPTING 5.18)" % outside
 			r.lines.append(line)
 			if now_tier > t:
 				r.fails.append("%s: the mode put the graphics tier up to %d (the player chose %d)" % [tag, now_tier, t])

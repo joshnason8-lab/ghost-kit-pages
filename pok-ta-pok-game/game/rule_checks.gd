@@ -34,14 +34,14 @@ func step(m: Node, dt := 1.0 / 30.0) -> Array:
 		for k in 2:
 			if int(c.points[k]) < 0 or int(c.points[k]) > Rules.CLASSIC_TARGET:
 				out.append("points %s outside 0..%d" % [str(c.points), Rules.CLASSIC_TARGET])
-		if c.winner >= 0 and not c.ring and int(c.points[c.winner]) < Rules.CLASSIC_TARGET and not _at_time(m):
+		if c.winner >= 0 and not c.ring and int(c.points[c.winner]) < Rules.CLASSIC_TARGET and not _at_time(m) and not bool(m.sudden):
 			out.append("side %d won on %d points" % [c.winner, int(c.points[c.winner])])
 	else:
 		if c.holder < -1 or c.holder > 1 or c.rayas < 0 or c.rayas > Rules.TARGET:
 			out.append("count holder %d rayas %d" % [c.holder, c.rayas])
 		if (c.holder == -1) != (c.rayas == 0):
 			out.append("count holder %d with %d rayas" % [c.holder, c.rayas])
-		if c.winner >= 0 and not c.ring and (c.holder != c.winner or c.rayas < Rules.TARGET) and not (_at_time(m) and c.holder == c.winner):
+		if c.winner >= 0 and not c.ring and (c.holder != c.winner or c.rayas < Rules.TARGET) and not (_at_time(m) and c.holder == c.winner) and not bool(m.sudden):
 			out.append("side %d won holding %d (holder %d)" % [c.winner, c.rayas, c.holder])
 	# Each change of the count exactly its history replayed (one raya at a time, by the rules).
 	if c.history.size() != _hist:
@@ -54,6 +54,9 @@ func step(m: Node, dt := 1.0 / 30.0) -> Array:
 				Rules.award_ring(again, int(h[0]))
 			else:
 				Rules.award(again, int(h[0]))
+		# Sudden death (R14): time up and level, the next raya wins the match whatever the count.
+		if bool(m.sudden) and again.winner < 0 and c.history.size() > 0:
+			again.winner = int(c.history[-1][0])
 		if again.to_dict() != c.to_dict():
 			out.append("the count %s is not its history replayed %s" % [JSON.stringify(c.to_dict()), JSON.stringify(again.to_dict())])
 		_hist = c.history.size()

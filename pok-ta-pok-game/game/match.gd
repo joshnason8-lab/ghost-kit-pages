@@ -802,7 +802,9 @@ func _user_input() -> void:
 	if phase == P.LIVE and ai.taker != null and ai.taker != user_player and not user_player.busy() and not one_player():
 		_set_user(ai.taker)
 	var j: Vector2 = hud.joystick()
-	if j.length() > 0.15 and phase != P.SERVE and not in_ritual():
+	# Not in the walk-out either (players cross the analco to their places then; a man run into the far half by the
+	# stick was snapped 1 m back at the serve: the sim, seed 18).
+	if j.length() > 0.15 and phase != P.SERVE and phase != P.INTRO and not in_ritual():
 		var w := screen_to_world(j)
 		# Just after the camera changes (another view, a cut), the way he runs turns over about 0.2 s, not at once.
 		var since: float = cam.since_change()

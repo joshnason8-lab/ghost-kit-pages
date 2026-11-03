@@ -101,6 +101,9 @@ func _batch() -> int:
 	var scen := game.scenarios()
 	var targeted := scen.filter(func(k: String) -> bool: return k.begins_with("targeted:"))
 	var general := scen.filter(func(k: String) -> bool: return not k.begins_with("targeted:"))
+	# Every game's: the ball behind a big prop (WsgSimGame.fetch; not wired, it ends at once, noted in the report).
+	if not targeted.has(WsgSim.FETCH_KIND):
+		targeted.append(WsgSim.FETCH_KIND)
 	if kinds.is_empty():
 		kinds = general
 	if args.has("smoke"):
@@ -214,7 +217,19 @@ func _report(game: WsgSimGame, all: Array, wall: float) -> Dictionary:
 	var by_kind := {}
 	var speeds := []
 	var sim_total := 0.0
+	var warnings := {}
+	var fetch := {}
 	for r: Dictionary in all:
+		for w: String in r.get("warnings", []):
+			var ws := WsgSim._signature(w)
+			var wg: Dictionary = warnings.get(ws, {"warning": ws, "count": 0, "example": w, "seeds": []})
+			wg.count = int(wg.count) + 1
+			if (wg.seeds as Array).size() < 10:
+				(wg.seeds as Array).append("%s#%d" % [r.kind, r.seed])
+			warnings[ws] = wg
+		if r.has("fetch"):
+			var fs := WsgSim._signature(String(r.fetch))
+			fetch[fs] = int(fetch.get(fs, 0)) + 1
 		by_kind[r.kind] = int(by_kind.get(r.kind, 0)) + 1
 		speeds.append(float(r.get("speed", 0.0)))
 		sim_total += float(r.get("sim_s", 0.0))
@@ -233,6 +248,7 @@ func _report(game: WsgSimGame, all: Array, wall: float) -> Dictionary:
 		for r: Dictionary in all:
 			wall += float(r.get("wall_s", 0.0))
 	return {"game": game.game_name(), "matches": all.size(), "failed": failed, "by_kind": by_kind, "signatures": ranked,
+		"warnings": warnings.values(), "fetch": fetch,
 		"balance": _balance(all),
 		"speed": {"median": float(speeds[speeds.size() / 2]) if not speeds.is_empty() else 0.0,
 			"min": float(speeds[0]) if not speeds.is_empty() else 0.0, "simulated_s": snappedf(sim_total, 0.1),
@@ -303,6 +319,16 @@ func _write_report(rep: Dictionary) -> void:
 		md.append("None.")
 	for s: Dictionary in rep.signatures:
 		md.append("- **%s** - %d matches, severity %d. e.g. %s. Seeds: %s" % [s.signature, s.count, s.severity, s.example, ", ".join(s.seeds)])
+	md.append("")
+	md.append("## Warnings (not failures)")
+	var warns: Array = rep.get("warnings", [])
+	var fetch: Dictionary = rep.get("fetch", {})
+	if warns.is_empty() and fetch.is_empty():
+		md.append("None.")
+	for w: Dictionary in warns:
+		md.append("- **%s** - %d matches. e.g. %s. Seeds: %s" % [w.warning, w.count, w.example, ", ".join(w.seeds)])
+	for fs in fetch:
+		md.append("- Fetch behind a prop: %s - %d matches" % [fs, fetch[fs]])
 	md.append("")
 	md.append("## Balance (for the owner: no change without their OK)")
 	var flags: Array = rep.balance.flags_for_the_owner
