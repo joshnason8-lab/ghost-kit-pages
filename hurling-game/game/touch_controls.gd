@@ -30,10 +30,21 @@ var _drag_slot := -1
 var _drag_touch := -1
 
 
+## The buttons as input actions too (the first to fourth button showing, SWITCH), on the same keys: a gamepad mapped
+## to them, or the shared foundation's input fuzzer (WsgSimInput) presses them through the game's own buttons.
+const ACTIONS := ["hurl_button_1", "hurl_button_2", "hurl_button_3", "hurl_button_4", "hurl_switch"]
+
+
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
+	for i in ACTIONS.size():
+		if not InputMap.has_action(ACTIONS[i]):
+			InputMap.add_action(ACTIONS[i])
+			var k := InputEventKey.new()
+			k.physical_keycode = (KEYS + [KEY_Q])[i]
+			InputMap.action_add_event(ACTIONS[i], k)
 
 
 func _k() -> float:
@@ -174,6 +185,16 @@ func _input(event: InputEvent) -> void:
 			_joy_knob = _joy_base + v
 			joystick = v / JOY_R
 			queue_redraw()
+	elif event is InputEventAction and event.pressed:
+		# (An action pressed as such - a gamepad's, the input fuzzer's: the keys come as InputEventKey, below.)
+		var ai := ACTIONS.find(String((event as InputEventAction).action))
+		var shown_a: Array = ids.filter(func(x): return String(x) != "SWITCH")
+		if ai >= 0 and ai < 4 and ai < shown_a.size():
+			_fire(String(shown_a[ai]))
+		elif ai == 4 and "SWITCH" in ids:
+			_fire("SWITCH")
+		elif String((event as InputEventAction).action) == "ui_cancel":
+			Game.go_back()
 	elif event is InputEventKey and not event.echo:
 		var ke := event as InputEventKey
 		_keys[ke.physical_keycode] = ke.pressed

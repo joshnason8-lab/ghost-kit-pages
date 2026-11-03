@@ -538,7 +538,7 @@ func _champ() -> void:
 			if f.is_empty():
 				c.play_others()
 				continue
-			var r := Sim.play(String(f.home), String(f.away), null, bool(f.knockout))
+			var r := ResultSim.play(String(f.home), String(f.away), null, bool(f.knockout))
 			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner, "extra_time": r.extra_time, "shootout": {}})
 			if c.phase == "ko" and guard < 40 and String(c.ko_stage) in ["STAGE_QUARTER", "STAGE_SEMI"]:
 				Game.save_champ()

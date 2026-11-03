@@ -83,8 +83,9 @@ static func feet(body: WsgBody) -> Array:
 		body.bone_world("RightFoot").origin, body.bone_world("RightToeBase").origin]
 
 
-## Planted feet over a run of frames (feet() each frame, the body's rest heights of ankle and toe over the ground):
-## a foot touching the ground (its ankle or toe within TOUCH of its rest height) must stay where it touched down. Each
+## Planted feet over a run of frames (feet() each frame; the two rest heights are no longer used - each foot's height
+## on the ground is the lowest it goes over the run): a foot touching the ground (its ankle or toe within TOUCH of that)
+## must stay where it touched down. Each
 ## step's slip: how far the planted part (the slower of heel and ball) moved over the ground while touching, from the
 ## frame after it landed. Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with
 ## its heel down)}.
@@ -97,10 +98,18 @@ const TOUCH := 0.03
 const SWING := 1.2
 const FRAME_DT := 1.0 / 30.0
 
-static func foot_slip(frames: Array, ankle_rest: float, toe_rest: float, ground_y := 0.0) -> Dictionary:
+static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, ground_y := 0.0) -> Dictionary:
 	var slips := []
 	var toe_up := 0.0
 	for side in 2:
+		# Where this foot's ankle and toe are when it stands on the ground: the lowest each goes over the run (a rig's
+		# rest heights are not where its bones stand: the test hurler's ankle bone stands 13 cm below its rest
+		# height - every frame read as planted, a slow walk away one long slide).
+		var ankle_rest := INF
+		var toe_rest := INF
+		for f: Array in frames:
+			ankle_rest = minf(ankle_rest, (f[side * 2] as Vector3).y - ground_y)
+			toe_rest = minf(toe_rest, (f[side * 2 + 1] as Vector3).y - ground_y)
 		var start_a := Vector3.INF
 		var start_t := Vector3.INF
 		var touching_for := 0
@@ -113,6 +122,14 @@ static func foot_slip(frames: Array, ankle_rest: float, toe_rest: float, ground_
 			var ht := t.y - ground_y - toe_rest
 			if ha < TOUCH * 0.5:
 				toe_up = maxf(toe_up, ht)
+			# A body put somewhere new (a kick-off, a restart: more than 0.4 m in a frame) is a cut, not a slide.
+			if prev_t != Vector3.INF and Vector2(t.x - prev_t.x, t.z - prev_t.z).length() > 0.4:
+				if touching_for > 2:
+					slips.append(worst * 100.0)
+				touching_for = 0
+				worst = 0.0
+				prev_t = t
+				continue
 			var down: bool
 			if f.size() > 5:
 				down = bool(f[4 + side])

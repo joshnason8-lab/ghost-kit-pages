@@ -150,7 +150,7 @@ func sim_user(rng: RandomNumberGenerator = null) -> Dictionary:
 	var f := next_fixture()
 	if f.is_empty():
 		return {}
-	var r := Sim.play(String(f.home), String(f.away), rng, bool(f.knockout))
+	var r := ResultSim.play(String(f.home), String(f.away), rng, bool(f.knockout))
 	_set_result(f, r.score, int(r.winner), bool(r.extra_time), r.pens)
 	play_others()
 	play_byes()
@@ -177,7 +177,7 @@ func play_others(rng: RandomNumberGenerator = null) -> void:
 	for f in fixtures:
 		if bool(f.played) or not _due(f) or f.home == user or f.away == user:
 			continue
-		var r := Sim.play(String(f.home), String(f.away), rng, bool(f.knockout))
+		var r := ResultSim.play(String(f.home), String(f.away), rng, bool(f.knockout))
 		_set_result(f, r.score, int(r.winner), bool(r.extra_time), r.pens)
 	_advance()
 

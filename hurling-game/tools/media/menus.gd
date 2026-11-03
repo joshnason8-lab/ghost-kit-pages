@@ -32,7 +32,7 @@ func _ready() -> void:
 		if f.is_empty():
 			c.play_others()
 			continue
-		var r := Sim.play(String(f.home), String(f.away))
+		var r := ResultSim.play(String(f.home), String(f.away))
 		c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner})
 	Game.save_champ()
 	var h := await _screen("06_championship_fixtures", "res://ui/champ_screen.gd")

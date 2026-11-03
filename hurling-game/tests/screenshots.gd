@@ -42,7 +42,7 @@ func _ready() -> void:
 			if f.is_empty():
 				c.play_others()
 				continue
-			var r := Sim.play(String(f.home), String(f.away))
+			var r := ResultSim.play(String(f.home), String(f.away))
 			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner})
 		Game.save_champ()
 		var h := Game.show_screen("res://ui/champ_screen.gd")
@@ -64,7 +64,7 @@ func _ready() -> void:
 			await _wait(2.5)
 			await shot("match_play_%d" % i)
 	if only == "" or only.begins_with("result"):
-		var r := Sim.play("KIL", "TIP")
+		var r := ResultSim.play("KIL", "TIP")
 		r.config = {"mode": "quick", "stage": "Semi-final"}
 		r.user_team = 0
 		r.pstats = {}

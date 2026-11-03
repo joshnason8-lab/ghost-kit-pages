@@ -328,7 +328,7 @@ func _notification(what: int) -> void:
 
 
 ## The rest of the match simulated (the pause menu's Simulate to the end): the score from now on from the teams'
-## ratings (Sim.finish), extra time and penalties in a knock-out game, then full time as if it had been played.
+## ratings (ResultSim.finish), extra time and penalties in a knock-out game, then full time as if it had been played.
 func sim_to_end() -> void:
 	if phase in [P.SHOOTOUT, P.OVER] or attract:
 		return
@@ -343,7 +343,7 @@ func sim_to_end() -> void:
 	else:
 		var eh := half_len_now()
 		et_frac = (maxf(0.0, eh - clock) + (eh if half == 3 else 0.0)) / (2.0 * eh)
-	var r := Sim.finish(String(teams[0].id), String(teams[1].id), score, frac, knockout, half >= 3, et_frac, rng)
+	var r := ResultSim.finish(String(teams[0].id), String(teams[1].id), score, frac, knockout, half >= 3, et_frac, rng)
 	_sim_box(score, r.score)
 	score = r.score
 	for id in r.scorers:
@@ -712,9 +712,9 @@ func _run_pending() -> void:
 func _ref_whistle(kind: String) -> void:
 	var at: Vector3 = officials.referee.global_position if officials != null and officials.referee != null else cam.camera.global_position
 	if attract:
-		Sfx.play(kind, -24.0, randf_range(0.98, 1.02))
+		Sfx.play(kind, -24.0, randf_range(0.98, 1.02))   # wsg-rng-ok: a sound's pitch only
 	else:
-		Sfx.play_at(kind, at, -1.0, randf_range(0.98, 1.02), 5, _near_db(at, -3.0))
+		Sfx.play_at(kind, at, -1.0, randf_range(0.98, 1.02), 5, _near_db(at, -3.0))   # wsg-rng-ok: a sound's pitch only
 
 
 ## The sliotar meeting the hurley without a full swing (lifted onto it, soloed, saved, hopped on the bas): the
@@ -722,7 +722,7 @@ func _ref_whistle(kind: String) -> void:
 func _hurley_tap(at: Vector3, db: float, pitch := 1.18) -> void:
 	if attract:
 		return
-	Sfx.play_at("strike", at, db + 2.0, pitch * randf_range(0.95, 1.05), 2, _near_db(at, db))
+	Sfx.play_at("strike", at, db + 2.0, pitch * randf_range(0.95, 1.05), 2, _near_db(at, db))   # wsg-rng-ok: a sound's pitch only
 
 
 var _hop_n := 0
@@ -740,7 +740,7 @@ func _footsteps() -> void:
 	if active.step_n != _last_step:
 		_last_step = active.step_n
 		var sp := Vector2(active.vel.x, active.vel.z).length()
-		Sfx.voice("step", lerpf(-24.0, -14.0, clampf(sp / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))
+		Sfx.voice("step", lerpf(-24.0, -14.0, clampf(sp / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))   # wsg-rng-ok: a sound's pitch only
 
 
 var _last_step := 0
@@ -1929,7 +1929,7 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				# any distance (a 3D sound's distance filter takes the highs out, and a clang is all highs: from a free's
 				# camera 30 to 65 m off it came out a dull thud under the crowd - the owner, 0.20 and again 0.21: "I still
 				# do not hear the sound of a clang").
-				Sfx.play_at("post", c, -1.0, randf_range(0.97, 1.03), 5, -1.0)
+				Sfx.play_at("post", c, -1.0, randf_range(0.97, 1.03), 5, -1.0)   # wsg-rng-ok: a sound's pitch only
 				_after(0.35, func(): Sfx.react("ooh", -3.0))   # (the crowd a beat after the ping, not over it)
 				hud.call_line(tr("CALL_POST") if hit_post else tr("CALL_BAR"))
 				_say("post")

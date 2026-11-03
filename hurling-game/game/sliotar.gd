@@ -383,7 +383,7 @@ func step(dt: float) -> Array:
 		if state == OUT:
 			_nets()
 		if bounced and vel.length() > 3.0:
-			Sfx.play_at("bounce", global_position, -10.0 + minf(8.0, vel.length() * 0.3), randf_range(0.95, 1.08), 1, -14.0 + minf(8.0, vel.length() * 0.3))
+			Sfx.play_at("bounce", global_position, -10.0 + minf(8.0, vel.length() * 0.3), randf_range(0.95, 1.08), 1, -14.0 + minf(8.0, vel.length() * 0.3))   # wsg-rng-ok: a sound's pitch only
 	_mesh.rotate_x(spin * dt)
 	_shadow.global_position = Vector3(global_position.x, 0.015, global_position.z)
 	_shadow.visible = state == FREE or state == DEAD or state == OUT
@@ -400,11 +400,11 @@ func _on_prop(hit: Dictionary) -> void:
 	var at: Vector3 = hit.pos
 	match String(hit.sound):
 		"clang":
-			Sfx.play_at("post", at, -10.0 + minf(8.0, sp * 0.3), randf_range(1.05, 1.2), 2)
+			Sfx.play_at("post", at, -10.0 + minf(8.0, sp * 0.3), randf_range(1.05, 1.2), 2)   # wsg-rng-ok: a sound's pitch only
 		"net":
 			Sfx.play_at("bounce", at, -20.0, 0.6, 1)
 		_:
-			Sfx.play_at("bounce", at, -8.0 + minf(8.0, sp * 0.3), randf_range(0.8, 0.95), 1)
+			Sfx.play_at("bounce", at, -8.0 + minf(8.0, sp * 0.3), randf_range(0.8, 0.95), 1)   # wsg-rng-ok: a sound's pitch only
 
 
 ## A dead ball flying on over the end line: into the goal's net if it went in under the bar (the net takes the pace

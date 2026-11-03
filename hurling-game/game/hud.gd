@@ -306,6 +306,8 @@ var _last_clock := -1.0
 var _behind := 0.0           # the part of jumps not yet run off
 var _run_rate := 20.0        # how fast it is run off (match seconds a second)
 const CLOCK_CATCH_UP := 1.5   # s: a jump on the watch is run off in about this long
+const CLOCK_RUN_MAX := 90.0   # match seconds a second at most: a big stoppage (up to 5 minutes on a short match's
+							  # watch) counts up over a little longer, never more than 3 s on the bug in a frame
 
 
 func tick(delta: float) -> void:
@@ -315,7 +317,7 @@ func tick(delta: float) -> void:
 		_behind = 0.0            # (a new half, or a jump too big to run: as it is)
 	elif step > maxf(3.0, 4.0 * delta * float(m.clock_k) + 1.0):
 		_behind += step          # a jump, not the watch's own running
-		_run_rate = maxf(_behind / CLOCK_CATCH_UP, 20.0)
+		_run_rate = clampf(_behind / CLOCK_CATCH_UP, 20.0, CLOCK_RUN_MAX)
 	_last_clock = real
 	if _behind > 0.0:
 		_behind = maxf(0.0, _behind - _run_rate * delta)

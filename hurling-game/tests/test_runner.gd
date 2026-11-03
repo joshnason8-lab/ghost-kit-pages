@@ -439,7 +439,7 @@ func _championship() -> void:
 			if f.is_empty():
 				check(c.phase == "done", "%s: never stuck without a game (%s, round %d)" % [team, c.phase, c.round])
 				break
-			var r := Sim.play(String(f.home), String(f.away), null, bool(f.knockout))
+			var r := ResultSim.play(String(f.home), String(f.away), null, bool(f.knockout))
 			c.record_user_result({"home": f.home, "away": f.away, "score": r.score, "winner": r.winner, "extra_time": r.extra_time,
 				"shootout": {"goals": r.pens} if not (r.pens as Array).is_empty() else {}})
 		check(c.phase == "done" and c.champion != "", "%s: the championship reaches a champion (%s)" % [team, c.champion])
@@ -468,7 +468,7 @@ func _sim_scores() -> void:
 	var tot := 0
 	var goals := 0
 	for i in 200:
-		var r := Sim.play("KIL", "COR", rng, i % 2 == 0)
+		var r := ResultSim.play("KIL", "COR", rng, i % 2 == 0)
 		for k in 2:
 			tot += Rules.total(r.score[k][0], r.score[k][1])
 			goals += int(r.score[k][0])
