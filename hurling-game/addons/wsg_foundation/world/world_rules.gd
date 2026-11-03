@@ -163,6 +163,12 @@ static func play_modes(game: WsgWorldGame, parent: Node) -> Array:
 			m.officials = offs
 		want.on = false
 		m.cams = game.cameras(mode, holder)
+		# Done with: stopped and hidden, its cameras kept for the joystick rule (every mode left playing and drawing
+		# under the later rules took Kabaddi's run past 50 minutes on software GL).
+		holder.process_mode = Node.PROCESS_MODE_DISABLED
+		for c in holder.get_children():
+			if c is Node3D or c is CanvasItem:
+				c.visible = false
 		out.append(m)
 	return out
 
@@ -223,10 +229,12 @@ static func officials(game: WsgWorldGame, modes: Array) -> Dictionary:
 		if offs.size() < want:
 			r.fails.append("%s: %d officials on the field, %d expected" % [m.mode, offs.size(), want])
 		var kits := []
-		for b: WsgBody in m.bodies:
-			if is_instance_valid(b):
+		# (Untyped: a typed loop variable is assigned before the check, and a body the game has freed since - a mode
+		# replacing the last - stopped the rule with an error; world_check then never finished. Hurling, Floorball.)
+		for b in m.bodies:
+			if is_instance_valid(b) and b is WsgBody:
 				kits.append_array(_kits(b))
-		for o: Node in offs:
+		for o in offs:
 			if not is_instance_valid(o):
 				continue
 			var ob: Variant = o.get("body") if o.get("body") is WsgBody else (o if o is WsgBody else null)
@@ -294,7 +302,7 @@ static func joystick(game: WsgWorldGame, modes: Array) -> Dictionary:
 		return _not_wired(r, "stick_map")
 	var any := false
 	for m: Dictionary in modes:
-		var cams: Array = (m.cams as Array).filter(func(c: Variant) -> bool: return c is Camera3D and is_instance_valid(c))
+		var cams: Array = (m.cams as Array).filter(func(c: Variant) -> bool: return is_instance_valid(c) and c is Camera3D)
 		if cams.is_empty():
 			continue
 		any = true
@@ -367,6 +375,11 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 					r.fails.append("%s: a frame makes %d draw calls, over the tier's %d" % [tag, dcs, fb.draw_calls])
 			else:
 				line += ", the scene holds %d triangles (not culled; drawn counts need a renderer)" % _scene_triangles(holder)
+			# What the start left outside the parent it was given (start_mode must replace what the last call started,
+			# as a tap does: Hurling's kept its last match drawing - 524k triangles, 154 draw calls at Low).
+			var outside := _scene_triangles(tree.root) - _scene_triangles(holder)
+			if outside > 0:
+				line += "; %d triangles outside the parent start_mode was given (the last mode's? see ADOPTING 5.18)" % outside
 			r.lines.append(line)
 			if now_tier > t:
 				r.fails.append("%s: the mode put the graphics tier up to %d (the player chose %d)" % [tag, now_tier, t])
