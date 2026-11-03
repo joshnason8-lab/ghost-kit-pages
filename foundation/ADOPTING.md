@@ -477,7 +477,9 @@ A model standing flat gets none. (From Hurling's FootFlat, 0.21.1: its match aud
   Before keep_pose the pilots used `planter.active = false` with `lift_after = 0` (Sepak Takraw, Pok Ta Pok) or
   `reset()` + `tick(dt)` each update and a low `ground_y` (Kho Kho): both still work.
 - **Handing the body back to the capture**: `loco.resume(velocity, facing)` and `loco.planter.reset()` (the
-  locomotor's smoothing still had the speed from before your pose: bogus cuts and starts).
+  locomotor's smoothing still had the speed from before your pose: bogus cuts and starts). Only after a pose of the
+  whole body: from an arms-only layer (your "upper" mode, the legs the capture's all along) do not reset the planter -
+  every reset snapped the held feet to the clip's, 3-5 cm (Pok Ta Pok's judges, WsgSim).
 - **Meshy A-pose legs and elbows**: a game rigged with the legs splayed (or the arms in an A) gives turns that,
   corrected from their own rest, put the rig's knee or elbow off its hinge, and the drivers straighten it. Rebuild
   the limbs from the joint positions instead: each thigh (upper arm) turned so its hinge is square to the plane of

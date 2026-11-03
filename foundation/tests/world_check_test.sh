@@ -29,6 +29,15 @@ for bad in loading pose officials feet sounds joystick tiers; do
 	fi
 done
 # A walker the game advances itself (set_manual) is walked, not waited on for ever (Hurling's hung the feet rule).
+# A mode freeing the last one's match (as a tap does): the later rules go on, and the check finishes (Hurling's and
+# Floorball's stopped on a freed body and never printed WORLD CHECK).
+run freed --only pose,officials,loading,joystick --bad freed
+code=$?
+if [ $code != 0 ] || ! grep -q "^WORLD CHECK: PASS" "$OUT/freed.log"; then
+	echo "world_check_test: a mode freeing the last stopped the check (exit $code):"; grep -E "SCRIPT ERROR|FAIL|WORLD CHECK" "$OUT/freed.log" | head -8; FAIL=1
+else
+	echo "world_check_test: a mode freeing the last: the check went on and passed"
+fi
 run manual --only feet --bad manual || { echo "world_check_test: a manual walker fails the feet rule"; tail -12 "$OUT/manual.log"; FAIL=1; }
 # The Web rule: a Web preset without the licensed data excluded, and a pack that holds it, fail; excluded passes.
 printf '[preset.0]\nname="Web"\nplatform="Web"\nexclude_filter=""\n' > "$OUT/bad_presets.cfg"

@@ -229,10 +229,12 @@ static func officials(game: WsgWorldGame, modes: Array) -> Dictionary:
 		if offs.size() < want:
 			r.fails.append("%s: %d officials on the field, %d expected" % [m.mode, offs.size(), want])
 		var kits := []
-		for b: WsgBody in m.bodies:
-			if is_instance_valid(b):
+		# (Untyped: a typed loop variable is assigned before the check, and a body the game has freed since - a mode
+		# replacing the last - stopped the rule with an error; world_check then never finished. Hurling, Floorball.)
+		for b in m.bodies:
+			if is_instance_valid(b) and b is WsgBody:
 				kits.append_array(_kits(b))
-		for o: Node in offs:
+		for o in offs:
 			if not is_instance_valid(o):
 				continue
 			var ob: Variant = o.get("body") if o.get("body") is WsgBody else (o if o is WsgBody else null)
@@ -300,7 +302,7 @@ static func joystick(game: WsgWorldGame, modes: Array) -> Dictionary:
 		return _not_wired(r, "stick_map")
 	var any := false
 	for m: Dictionary in modes:
-		var cams: Array = (m.cams as Array).filter(func(c: Variant) -> bool: return c is Camera3D and is_instance_valid(c))
+		var cams: Array = (m.cams as Array).filter(func(c: Variant) -> bool: return is_instance_valid(c) and c is Camera3D)
 		if cams.is_empty():
 			continue
 		any = true

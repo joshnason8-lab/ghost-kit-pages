@@ -27,14 +27,28 @@ func crowd_registry() -> String:
 
 
 func modes() -> Array:
-	return ["match"]
+	return ["match", "rematch"] if bad == "freed" else ["match"]
 
 
 func play_seconds(_mode: String) -> float:
 	return 3.0
 
 
+var _last: Node = null
+
+
 func start_mode(_mode: String, parent: Node) -> void:
+	# ("freed": two modes, each start freeing the last one's match - as a real tap replaces it; the rules after must
+	# not stop on its freed bodies.)
+	if bad == "freed" and is_instance_valid(_last):
+		_last.free()
+	if bad == "freed":
+		_last = DemoMatch.new("")
+		var ldf := WsgLoading.cover(parent, [])
+		ldf.step("The players", func(): parent.add_child(_last))
+		await ldf.run()
+		await ldf.done()
+		return
 	if bad == "loading":
 		parent.add_child(DemoMatch.new(bad))
 		return
