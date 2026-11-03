@@ -406,3 +406,30 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   thumb uses the inverse (`world_to_input`). No aimed passes or shots; the AI does not use the stick. test_runner:
   both cameras, four directions moving the raider (within 10 degrees on screen), a sweep of the screen out to its
   edges, and the camera change mid-move.
+
+## 0.14.2: the owner's list (ticker, crowd, tag buzz, get-up, bow legs, chant)
+
+- **News ticker** removed from the home screen, the season hub and the cup screen (NewsTicker.make no longer called;
+  the front page and breaking news stay). test_runner: no ticker on the home screen or the season hub.
+- **The crowd "in the seats"**: from the front a seated fan's thighs vanished and the sitting frames read as people
+  standing sunk into the tier. tools/crowd/render_crowd.gd: seated frames from 30 degrees above (was 16), thighs a
+  little apart and the shins forward to the step below (SIT_LEGS); both sheets and the Medium/High sheet re-rendered.
+- **Tag haptics**: `touched` is a firm double knock (45 ms, 60, 30; was 16 ms at 0.35, unfelt) and a tag on a team-mate
+  as you defend is `team_touched` (30 ms). test_runner.
+- **Get-up twitch** (measured: leg joint second differences through AI play, quaternions): (1) HumanModel's side-shuffle
+  switched on past gait 0.25; a defender slid aside as he rose (gait scaled down while lying) crossed it for one frame,
+  knees +21 and thighs +15 degrees. Now faded in (smoothstep 0.15-0.4). (2) A defender up from a dive had 0.57-1.03 s,
+  so the 1.4 s get-up clip played at up to 2.4 times and the stepping leg flicked 60 degrees in 0.1 s: at least
+  GETUP_MIN 1.0 s now (at most 1.4 times). (3) rise and recover ended standing straight and ready dropped him into
+  his crouch: both rise into READY_CROUCH. Worst jolts: rise 0.80 to 0, rise-to-ready 0.70 to 0.23, recover 0.67 to
+  0.56 (the clip's own step). test_runner: a dash dive's get-up (1.0 s, worst 0.40 rad, knees at least 35 degrees)
+  and a slipped hold's rise (knees at least 56; the old code stood him to 5).
+- **Bow legs**: the captured locomotion clips bowed the knees out from the line hip to ankle (run 5 cm mean, 13.6 max;
+  strafe 12.6; back jog 7.8). tools/mocap/unbow.py turns each leg about its hip-ankle line until the knee is within
+  1.5 cm (a shuffle 4): the feet are exactly where they were. In matches the run's mean fell from 4.5 to 2 cm.
+  test_runner: every move clip within 2 cm (shuffles 4.5).
+- **The chant**: tools/audio/make_chant.py, the Piper TTS Telugu voice "venkatesh" (CC BY 4.0 data), the raider's
+  single words said with a comma (mid-cant), each take checked by faster-whisper and kept only if heard as "kabaddi";
+  the crowd's chant 16 checked takes at their own pitches. Credited in Licences and SOUNDS.md. No CC0 recording of a real
+  raider's cant was found (Commons has only CC0 pronunciation clips, rate-limited from here; Freesound blocked).
+

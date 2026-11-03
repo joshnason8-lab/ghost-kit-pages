@@ -1,4 +1,16 @@
-**New in 0.14.1: the stick goes where you push it, all over the screen.** Up on the stick moves your player up the
+**New in 0.14.2: your list.**
+- **No news ticker**: the headlines scrolling along the foot of the home screen, the season and the cup are gone (the
+  season and cup still have their front-page story).
+- **The crowd sits**: the fans in the stands are drawn sitting, knees forward and laps showing, from a little above as
+  the camera sees them; they read as people standing sunk into their seats before.
+- **Tagged on defence**: when the raider tags you, the phone gives a firm double buzz; a tag on a team-mate, a light one.
+- **Getting up**: no more leg twitch. A defender gets up from a dive at a human pace (his get-up was playing at up to
+  2.4 times its speed, the stepping leg flicking), a one-frame knee jerk as he was slid aside is gone, and he rises into
+  his crouch instead of standing straight up and dropping back into it.
+- **No bow legs**: runners' knees stay over their feet (the captured runs had the knees out by up to 14 cm).
+- **The chant**: "kabaddi, kabaddi" in a natural Indian voice instead of the robotic one.
+
+**In 0.14.1: the stick goes where you push it, all over the screen.** Up on the stick moves your player up the
 screen, right moves him right, and so on, wherever he is on the screen and in both cameras. Toward the edges of the
 screen the camera's perspective had turned the stick by up to 24 degrees (pushing straight up sent him off at an angle);
 now it is exact. Switching camera mid-move eases the stick round instead of turning him on the spot.
