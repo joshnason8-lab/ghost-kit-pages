@@ -1,0 +1,133 @@
+{
+ "about": "The owner's notes, each a test for good (tools/owner_notes.gd). Never remove one: tools/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-10-30-feet-slide",
+   "file": "2026-10-30_feet_slide.gd",
+   "game": "hurling",
+   "date": "2026-10-30",
+   "version": "Hurling 0.18 on the A16",
+   "words": "The feet do not seem to slide or skate thats great."
+  },
+  {
+   "id": "2026-10-30-arm-wrong-way",
+   "file": "2026-10-30_arm_wrong_way.gd",
+   "game": "hurling",
+   "date": "2026-10-30",
+   "version": "Hurling 0.18 on the A16",
+   "words": "I did see the arm bending the wrong way a few times."
+  },
+  {
+   "id": "2026-11-02-a-pose",
+   "file": "2026-11-02_a_pose.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.x",
+   "words": "base position is still like an A pose"
+  },
+  {
+   "id": "2026-11-02-gliding-arms",
+   "file": "2026-11-02_gliding_arms.gd",
+   "game": "netball",
+   "date": "2026-11-02",
+   "version": "Netball 0.8.x",
+   "words": "players gliding around not running, arms just stretched out when running."
+  },
+  {
+   "id": "2026-11-02-standing-twitch",
+   "file": "2026-11-02_standing_twitch.gd",
+   "game": "kabaddi",
+   "date": "2026-11-02",
+   "version": "Kabaddi beta",
+   "words": "standing position is still awful guy is twitching"
+  },
+  {
+   "id": "2026-11-02-block-figure",
+   "file": "2026-11-02_block_figure.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.x",
+   "words": "the man doing the smoke ritual looks like a block figure"
+  },
+  {
+   "id": "2026-10-30-referees",
+   "file": "2026-10-30_referees.gd",
+   "game": "hurling",
+   "date": "2026-10-30",
+   "version": "Hurling 0.18 on the A16",
+   "words": "Referees still look awful, their upper body looks weird, can we use the player graphics for them? And they don't look like they are actually holding the flag."
+  },
+  {
+   "id": "2026-10-30-crowd-feet-up",
+   "file": "2026-10-30_crowd_feet_up.gd",
+   "game": "hurling",
+   "date": "2026-10-30",
+   "version": "Hurling 0.18 on the A16",
+   "words": "In the free taking it does look like some of the crowds feet are pointing up too much."
+  },
+  {
+   "id": "2026-10-30-crowd-in-seats",
+   "file": "2026-10-30_crowd_in_seats.gd",
+   "game": "hurling",
+   "date": "2026-10-30",
+   "version": "Hurling 0.18 on the A16",
+   "words": "The crowd is still 'in' the seats."
+  },
+  {
+   "id": "2026-11-02-crowd-facing-away",
+   "file": "2026-11-02_crowd_facing_away.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.x",
+   "words": "crowd moves poorly and is facing away from the game often"
+  },
+  {
+   "id": "2026-11-03-crowd-properly",
+   "file": "2026-11-03_crowd_properly.gd",
+   "game": "all",
+   "date": "2026-11-03",
+   "version": "every game",
+   "words": "make sure the crowd is sitting propery/body not standing awkwardly inside the seat, watching the game properly, facing the right direction, standing properly."
+  },
+  {
+   "id": "2026-11-02-joystick-cameras",
+   "file": "2026-11-02_joystick_cameras.gd",
+   "game": "all",
+   "date": "2026-11-02",
+   "version": "every game",
+   "words": "When switching to a camera angle that is not alongside the court the joystick movement is all wrong."
+  },
+  {
+   "id": "2026-10-30-auto-tier",
+   "file": "2026-10-30_auto_tier.gd",
+   "game": "hurling",
+   "date": "2026-10-30",
+   "version": "Hurling 0.18 on the A16",
+   "words": "Graphics were set to high and lower graphics by itself was set on but the graphics didnt lower even though there was a lot of stuttering."
+  },
+  {
+   "id": "2026-11-03-loading-frozen",
+   "file": "2026-11-03_loading_frozen.gd",
+   "game": "all",
+   "date": "2026-11-03",
+   "version": "every game",
+   "words": "On a lot of the games when you click start game there is a loading delay ... long enough on the slow phone that users might think the game has frozen."
+  },
+  {
+   "id": "2026-11-03-props-solid",
+   "file": "2026-11-03_props_solid.gd",
+   "game": "all",
+   "date": "2026-11-03",
+   "version": "every game",
+   "words": "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should also bounce off these items."
+  },
+  {
+   "id": "2026-11-03-post-clang",
+   "file": "2026-11-03_post_clang.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.22 (reported twice)",
+   "words": "the post clang can't be heard"
+  }
+ ]
+}

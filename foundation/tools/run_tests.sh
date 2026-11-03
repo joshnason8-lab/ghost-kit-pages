@@ -10,6 +10,8 @@ godot --headless --path . -s tests/rig_test.gd
 godot --headless --path . -s tests/foot_flat_test.gd
 godot --headless --path . -s tests/loading_test.gd
 godot --headless --path . -s tests/solid_props_test.gd
+godot --headless --path . --fixed-fps 30 -s res://tools/owner_notes.gd
+sh tools/owner_notes_guard.sh "$PWD/tests/owner_notes"
 godot --headless --path . -s res://tools/prop_audit.gd -- res://tests/prop_runs.gd "${TMPDIR:-/tmp}/wsg_prop_audit" 1 30
 godot --headless --path . --fixed-fps 30 -s tests/loco_test.gd
 godot --headless --path . -s tests/crowd_test.gd

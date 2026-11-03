@@ -969,6 +969,72 @@ xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_au
 **Next step:** measure that cost on your A16. It only climbs when bodies are near props; far from them, a `steer()` is a
 grid lookup.
 
+## 5.16 The owner's notes, kept as tests for good (every game)
+
+The owner: "the regressions are getting worse." So every note the owner gives becomes a test that never goes away. It
+checks the very symptom they saw, across its whole range (the joystick at the screen's centre, edges and corners on
+every camera, not just the middle of the sideline view), and it carries their words, the date and the version.
+
+**Where they live.** Your notes go in `tests/owner_notes/`, one script each, plus `INDEX.json`, which lists them all:
+```gdscript
+# tests/owner_notes/2026-11-02_joystick_cameras.gd
+extends WsgOwnerNote
+const NOTE := {"id": "2026-11-02-joystick-cameras", "game": "netball", "date": "2026-11-02", "version": "0.8.4",
+	"words": "When switching to a camera angle that is not alongside the court the joystick movement is all wrong."}
+
+func check() -> void:                     # may await; tree is the SceneTree
+	var cams := await _my_cameras()       # every camera the game has, in a viewport
+	for f in WsgNoteChecks.joystick(Callable(Player, "stick_to_world"), cams):
+		fail(f)
+```
+- `fail()` and `expect()` record failures. `info()` prints the numbers.
+- `skip(why)` is only for when the data a note needs isn't there. CI runs with `WSG_NOTES_STRICT=1`, which fails any
+  skip.
+
+**Shared checkers (`WsgNoteChecks`) for the notes that keep coming back:**
+- `joystick(map, cameras)`: the stick pushed 8 ways with the body at 9 places on the screen, on every camera. It passes
+  within 25° of a camera-relative way: the camera's own flat forward (`stick_world`, which you can use as your
+  mapping), or the camera-to-body direction. A world-fixed mapping fails on end-on, overhead, corner and
+  behind-the-player cameras.
+- `foot_slip(frames, ankle_rest, toe_rest)`: each step's planted-foot slip in cm, from `feet(body)` every frame. A
+  planted foot is one on the ground and not swinging through; pass the planter's own flags as items 4 and 5 if you
+  have them.
+- `t_or_a_pose(body)` and `arms(body)`: an A-pose or T-pose, how far out the arms are, how bent the elbows.
+- `block_figure(node)`: no skinned body, or primitive shapes standing in for one.
+- `pose(body)` and `jitter(body, poses)`: twitching while standing.
+- `bright(au, kinds)`: key sounds kept crisp at a distance.
+- The crowd: `WsgCrowdVenue.audit`. Props: `WsgPropAudit`.
+
+**Run and guard them in CI:**
+```yaml
+      - run: sh <game>/tools/wsg/owner_notes_guard.sh   # reads INDEX.json's history (deepens a shallow checkout)
+      - run: WSG_NOTES_STRICT=1 godot --headless --path <game> --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
+```
+The runner fails on:
+- any failed note;
+- a file not in the index;
+- a listed note whose file is gone.
+
+The guard fails if any id that was ever in `INDEX.json` has been removed.
+
+**Back-fill your history.** Write one note per owner remark, using the owner's own words. Sources:
+- your PROGRESS.md, BETA.md, PLAYTEST.md, AI.md and MOCAP.md;
+- code comments that say "the owner saw…";
+- your session transcript, because the owner talks to you directly.
+
+The foundation's own 16 (`foundation/tests/owner_notes/`, all passing) show the pattern:
+- the feet not sliding (each step's slip at most 4 cm, 1.5 on average);
+- arms not bending the wrong way;
+- no A-pose, no block figures and no twitching while standing;
+- runners stepping, with their arms bent;
+- referees drawn from the players' model, holding the flag;
+- the crowd not feet-up, not in the seats, not facing away, and seated properly;
+- the joystick on every camera;
+- the auto tier lowering when it stutters;
+- the loading overlay in the tap's own frame;
+- props solid;
+- the post clang crisp at 50 m.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
