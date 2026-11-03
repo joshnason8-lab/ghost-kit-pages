@@ -22,13 +22,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [current, before, no_dive_stop, no_kneel_push, no_goal_clear]
+        # The owner's fast-format tune (2026-11-03, about 1.6 outs a minute from 1.74): the game as it is in both
+        # formats (classic must be unchanged) and the fast game with the tune taken back out. (The 0.12.6 variants -
+        # before, no_dive_stop, no_kneel_push, no_goal_clear - answered the classic drop; their patches stay.)
+        variant: [current, fast_untuned]
         fmt: [classic, fast]
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
         exclude:
-          - {fmt: fast, variant: no_dive_stop}
-          - {fmt: fast, variant: no_kneel_push}
-          - {fmt: fast, variant: no_goal_clear}
+          - {fmt: classic, variant: fast_untuned}
     steps:
       - uses: actions/checkout@v4
       - name: Godot ${{ env.GODOT_VERSION }}

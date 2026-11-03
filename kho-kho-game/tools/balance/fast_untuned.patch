@@ -1,0 +1,24 @@
+diff --git b/kho-kho-game/game/match.gd a/kho-kho-game/game/match.gd
+index d12b70c..9207eff 100644
+--- b/kho-kho-game/game/match.gd
++++ a/kho-kho-game/game/match.gd
+@@ -1628,9 +1628,6 @@ static func dive_touch_at(a: Athlete) -> Vector3:
+ ## 1.3-2 defenders a minute, as real matches do (docs/AI.md). Once a defender has swerved a hand, it has missed him.
+ const SWERVE_TOUCH := 0.9   # a running touch at arm's length: he twists clear this often (0.78 until 0.12.2, when
+ const SWERVE_MAX := 0.93    # a slip was unseen and the hand reached less far; match_sim 20 matches: classic 1.46)
+-## The fast game (the owner, 2026-11-03: back to about 1.6 outs a minute from 1.74, by the touch's slip): a running
+-## touch in the 7-a-side, quicker game slips off a little more often. Classic keeps SWERVE_TOUCH.
+-const SWERVE_TOUCH_FAST := 0.912
+ const TOUCH_AHEAD := 0.45   # m: the middle of a running touch's reach, ahead of him ...
+ const TOUCH_R := 0.42       # ... and how far round it the hand finds a man (0.4 and 0.36 until 0.12.2)
+ const CONTACT := 0.62       # m between middles: body to body ...
+@@ -1653,8 +1650,7 @@ func _swerves(d: Athlete, kind: String) -> bool:
+ 		return true
+ 	var turn := float(d.data.get("turn", 70)) + float(_diff[d.side])
+ 	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
+-	var touch := SWERVE_TOUCH_FAST if fmt == KhoRules.FAST else SWERVE_TOUCH
+-	var base := touch if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
++	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
+ 	var p := clampf(base + (turn - reach) / 150.0, 0.15, SWERVE_MAX)
+ 	# Body to body (the owner, 0.12: "so close it's obvious there would be a tag, but they just run right by"): at
+ 	# arm's length a twist may take him clear of the hand; this close, rarely.
