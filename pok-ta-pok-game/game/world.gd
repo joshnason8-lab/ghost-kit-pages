@@ -5,7 +5,7 @@ extends WsgWorldGame
 ## High (his model on the foundation's rig through FoundationLink); the stick is the match's own (Match.stick_to_world)
 ## on the court-side, high and end cameras; props and crowd are the game's own audits.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world"
-## Drawn on Medium: the foundation's bodies are what is drawn there and on High. (Low draws the game's own body, the
+## Started on Medium (the player's setting at the start): the foundation's bodies are what is drawn there and on High. (Low draws the game's own body, the
 ## toon driver posing it from the capture: the owner notes' block-figure and A-pose tests cover it.)
 
 const MatchScript := preload("res://game/match.gd")
@@ -13,8 +13,19 @@ const MODES := {
 	"match": {"home": "ESC", "away": "LLA", "venue": "village", "rules": "ulama", "user_team": 0, "mode": "quick"},
 	"watch AI": {"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "mode": "watch"},
 	"tournament": {"home": "SAV", "away": "QUE", "venue": "festival", "rules": "ulama", "user_team": 0, "mode": "cup"},
-	"night": {"home": "VAL", "away": "IZA", "venue": "night", "rules": "classic", "user_team": 0, "mode": "quick"},
 }
+
+
+## The player's setting when the check starts: Medium, where the foundation's bodies are what is drawn (the tiers
+## rule then plays every mode at Low, Medium and High through set_tier). No mode changes it.
+func _init() -> void:
+	set_tier(Game.GFX_MEDIUM)
+
+
+## As the Settings screen does (ui/settings_screen.gd).
+func set_tier(t: int) -> void:
+	Game.settings.graphics = t
+	WsgFoundation.tier = t
 
 
 func game_name() -> String:
@@ -45,8 +56,6 @@ func play_seconds(_mode: String) -> float:
 func start_mode(mode: String, parent: Node) -> void:
 	Game.settings.sound = false
 	Game.settings.coach = false
-	Game.settings.graphics = Game.GFX_MEDIUM
-	Game.settings.auto_gfx = false
 	Game.main = parent
 	var host := Control.new()
 	host.name = "Menu"
@@ -69,16 +78,24 @@ func officials(_mode: String) -> int:
 ## One of the players as a match draws him on Medium and High: the game's body (his look, his height) with the
 ## foundation's rig and locomotor made for it by FoundationLink, exactly as in play.
 func walker(parent: Node) -> Array:
-	Game.settings.graphics = Game.GFX_MEDIUM
+	if int(Game.settings.graphics) < Game.GFX_MEDIUM:
+		set_tier(Game.GFX_MEDIUM)   # (the walker is the foundation's body: Medium and High draw it)
 	FoundationLink.off = false
+	var was := FoundationLink.in_match
+	FoundationLink.in_match = true   # (made as a match makes its players)
 	if not FoundationLink.enabled():
+		FoundationLink.in_match = was
 		return []
 	var b := Body.new({"kind": "ulama", "skin": DB.SKINS[1], "hair": DB.HAIRS[0], "team": Color("b8352b"), "trim": Color("e9c46a"),
 		"height": 1.74, "build": 0.6, "seed": 3, "foundation": true})
 	parent.add_child(b)
+	FoundationLink.in_match = was
 	if b.link == null or b.link.body == null:
 		return []
 	b.link.body.visible = true
+	# Drawn at his own size, as FoundationLink._place draws him in a match every frame (his strides, leg_scale, are
+	# his height's: drawn at the rig's 1.80 they fell a stride's worth short).
+	b.link.body.scale = Vector3.ONE * b.scale.x
 	return [b.link.body, b.link.loco]
 
 

@@ -332,6 +332,15 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   wsg_official), a player as the walker, the match's own stick (Match.stick_to_world, the code screen_to_world runs)
   on the court-side, high and end cameras, the props' and crowd's audits; it runs in CI (warnings till 12:00 UTC).
   The simulator's pause hook (paused()) for its input fuzzer.
+- **0.6.14-beta: the shared foundation's rules for 12:00 UTC.** Synced to d4e3107 (running cadence fixed, feet measured
+  only where the planter drives them, graphics tiers enforced, the release gate). The world check found two real
+  things: the players were missing for the first frame after loading (the shared bodies are hidden until their first
+  pose, and since loading v2 the match poses them only once it starts: Match._first_pose now poses everyone at the end
+  of the build), and the copal offering's arms were held locked straight overhead (they read as a mannequin's: the
+  elbows are softly bent now). world.gd: set_tier as the Settings screen does, Medium at the start, three modes. The
+  world check runs as its own job beside the build. The release gate runs on both APKs before anything is published,
+  and the foundation's test-time scripts and our adapters are kept out of the export. The game's auto graphics stands
+  down when WsgAutoTier.off is set (the simulator and the world check).
 
 ## Next
 

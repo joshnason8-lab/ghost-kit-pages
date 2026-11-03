@@ -208,10 +208,23 @@ func build_rest(ld: WsgLoading) -> void:
 			hud.banner(tr("RITUAL_COPAL"), Game.C_GOLD)
 		if not attract:
 			Sfx.crowd(0.12)
+	_first_pose()
 	built = true
 	# Under the loading overlay the clock starts once it has gone (Game.start_match: kick_off), not behind it.
 	if not bool(config.get("deferred", false)):
 		set_process(true)
+
+
+## Everyone posed once before the first frame is drawn: the loading's warm-up draws them, and the first frame after
+## the overlay shows them standing ready (the shared foundation's bodies are hidden until their first pose: the world
+## check found ten players missing for a frame). Only the drawing: nothing of the play moves.
+func _first_pose() -> void:
+	for p in all_players():
+		var pl: Player = p
+		pl._link_dt = 1.0 / 30.0
+		pl._pose(0.0)
+	if officials:
+		officials._process(1.0 / 30.0)
 
 
 ## The match begins: its clock, the AI, the copal (after the loading overlay's warm-up and settle: WsgLoading.done).
@@ -1269,7 +1282,7 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 ## row slower than 36 a second or hitching take another level off (not on the battery saver's 30, which is not slow;
 ## not headless). Either way the step applies at once, the foundation's bodies with it (lower_graphics).
 func _check_frame_rate(delta: float, real_delta: float) -> void:
-	if attract or not bool(Game.settings.get("auto_gfx", true)) or phase == P.INTRO:
+	if attract or not bool(Game.settings.get("auto_gfx", true)) or phase == P.INTRO or WsgAutoTier.off:
 		return
 	if not _gfx_checked:
 		_fps_t += delta

@@ -63,6 +63,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		cfg["short"] = not kind.begins_with("targeted:") and seed % 4 != 0 and bool(opts.get("length_mix", false))
 	# Any stray global randf in the game is at least the same for the same seed (rng_lint finds them).
 	seed(seed)
+	WsgAutoTier.off = true
 	var out := {"ok": true, "seed": seed, "kind": kind, "config": cfg, "failures": [], "hashes": []}
 	var t_wall := Time.get_ticks_usec()
 	var fps := float(opts.get("fps", FPS))
@@ -89,7 +90,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var clock_still := 0.0
 	var phase := ""
 	var moved := {}           # name -> [position, seconds hardly moving]
-	var feet := {}            # name -> [frames, ankle rest, toe rest]
+	var feet := {}            # name -> [runs (each frames the planter drove), ankle rest, toe rest]
 	var shown := {}           # body id -> [feet, T/A-pose] as last drawn ([] once used)
 	# Sampled pose (the lead's speed default): a quarter of the bodies posed in full (planter IK, layers, helpers),
 	# a different quarter each seed; the rest keep their animation, bones and foot contacts (WsgBody.set_sim_full).
@@ -197,7 +198,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 			if bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
 				var body := wb as WsgBody
 				if not feet.has(nm):
-					feet[nm] = [[], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y]
+					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y]
 				# The pose as it is drawn, read as the skeleton finishes it: read here, after the frame, the bones are
 				# back to the clip's (no planted feet, no hips' lift, no layers - 14 cm out on the test hurler, and
 				# every slip the clip's own).
@@ -205,11 +206,18 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				if not shown.has(id):
 					shown[id] = []
 					body.skeleton.skeleton_updated.connect(func():
-						shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body)])
+						shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body), _planted(body)])
 				var seen: Array = shown[id]
 				if not seen.is_empty():
 					shown[id] = []
-					(feet[nm][0] as Array).append(seen[0])
+					# Feet are measured only while the planter drives them: a body the game poses itself (a kneel, a
+					# dive, a sit - its own whole pose, the planter put aside) ends the run, and a new one starts after
+					# (Kho Kho's chasers diving were counted as planted feet sliding).
+					var runs: Array = feet[nm][0]
+					if bool(seen[2]):
+						(runs.back() as Array).append(seen[0])
+					elif not (runs.back() as Array).is_empty():
+						runs.append([])
 					if seen[1] != "":
 						_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
 		var bd := game.ball()
@@ -247,15 +255,29 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				float(c.time), int(float(c.time) * FPS), {}, [])
 	for nm in feet:
 		var f: Array = feet[nm]
-		if (f[0] as Array).size() > 20:
-			var s := WsgNoteChecks.foot_slip(f[0], f[1], f[2])
-			if float(s.max_cm) > FOOT_SLIP_CM:
-				_fail(out, "foot slip", "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM], t, frame, {}, [])
+		var s := {"max_cm": 0.0}
+		for run: Array in f[0]:
+			if run.size() > 20:
+				var r := WsgNoteChecks.foot_slip(run, f[1], f[2])
+				if float(r.max_cm) > float(s.max_cm):
+					s = r
+		if float(s.max_cm) > FOOT_SLIP_CM:
+			_fail(out, "foot slip", "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM], t, frame, {}, [])
 	out["result"] = game.result()
 	out["balance"] = game.balance_keys(cfg)
 	if input:
 		out["input"] = input.summary()
 	return _finish(out, game, t_wall, t, frame)
+
+
+## The planter drives this body's feet now: on, not under a pose the game makes of the whole body (keep_pose), and
+## its ground where the body stands (a game that sends ground_y far below while it poses the body itself is not).
+static func _planted(body: WsgBody) -> bool:
+	for c in body.get_children():
+		if c is WsgLocomotor:
+			var p: WsgFootPlanter = (c as WsgLocomotor).planter
+			return p != null and p.enabled and not p.keep_pose and absf(p.ground_y - body.global_position.y) < 0.5
+	return false
 
 
 func _finish(out: Dictionary, game: WsgSimGame, t_wall: int, t: float, frame: int) -> Dictionary:

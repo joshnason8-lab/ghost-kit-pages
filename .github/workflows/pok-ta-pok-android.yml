@@ -25,7 +25,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 60
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -141,22 +141,6 @@ jobs:
           timeout 1200 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 120 2>&1 | tee prop.log
           if grep -q "SCRIPT ERROR" prop.log; then grep -A4 "SCRIPT ERROR" prop.log; exit 1; fi
 
-      # The world rules every game keeps (docs/WORLD_RULES.md: props, crowd, feet, poses, officials, sounds, loading,
-      # the joystick, nothing licensed in a Web build), on this game's own code (game/world.gd).
-      - name: World rules (wsg_world_check)
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          set -o pipefail
-          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tail -40
-
-      - name: Upload the world check
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: world-check
-          path: ${{ runner.temp }}/world
-          if-no-files-found: ignore
-
       - name: Upload the props audit's sheets
         if: failure()
         uses: actions/upload-artifact@v4
@@ -254,6 +238,30 @@ jobs:
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
       # "pok-ta-pok-rivals-beta", always the latest build of this branch, made afresh on every push that passes the
       # tests.
+      # The shared release gate (ADOPTING §5.19) on both APKs before anything is published: the owner's key, the
+      # version, the licensed clips inside, nothing of tests, docs or tools exported, textures, stray files; and the
+      # size against the last release.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download pok-ta-pok-rivals-beta -p 'pok-ta-pok-rivals-*-beta.apk' -D "$RUNNER_TEMP/previous" || true
+          PREV=$(ls "$RUNNER_TEMP"/previous/*.apk 2>/dev/null | grep -v 32bit | head -1)
+          B=${PROJECT_DIR}/build
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk $B/pok-ta-pok-rivals-${VERSION}.apk --version "$VERSION" \
+            ${PREV:+--previous "$PREV"} --out "$RUNNER_TEMP/gate/64bit"
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk $B/pok-ta-pok-rivals-${VERSION}-32bit.apk --version "$VERSION" \
+            --out "$RUNNER_TEMP/gate/32bit"
+
+      - name: Upload the release gate's report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+          if-no-files-found: ignore
+
       - name: Publish the beta release
         # Only this game's own branch publishes the beta: a push to another branch (a pilot cut from this one) builds
         # and tests but never replaces it.
@@ -299,3 +307,66 @@ jobs:
           gh release create "$TAG" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Foundation pilot: Pok Ta Pok Rivals ${VERSION}" --notes-file notes.md
           gh release view "$TAG"
+
+  # The world rules every game keeps (docs/WORLD_RULES.md: props, crowd, feet, poses, officials, sounds, loading, the
+  # joystick, the graphics tiers, nothing licensed in a Web build), on this game's own code (game/world.gd). Its own job,
+  # beside the build: it plays every mode at every tier (long on a runner's software GL), and fails on its own.
+  world-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: World rules (wsg_world_check)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          set -o pipefail
+          timeout 6600 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | grep -vE "^\s+at:|^\s+\[|GDScript backtrace|ALSA" | tail -80
+
+      - name: Upload the world check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
+          if-no-files-found: ignore
