@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.4-beta
+
+- **Solid props**: nobody walks through a table, bench, board, sign or post, and the ball bounces off them (each
+  at its own bounce: the post's pad soft, the boards hard).
+- **Defenders' arms**: a defender over the ball lifts both arms up toward it with soft elbows, never held straight
+  out to the sides; running into a defence or changing moves no longer flings an arm out straight.
+- **Shooters face the post**: a shooter who catches facing away turns to the post before she shoots.
+- Fixed: after a throw-in over the goal line beyond the circle, the player taking it could stand at the circle's
+  edge for good and the match never restarted; she now goes round it. The player taking a restart waits for a
+  tossed ball to come down instead of taking it out of the air.
+
 ## New in 0.9.3-beta
 
 - **Passes come down**: a pass nobody reaches carries on along its arc and drops to the floor under gravity, then

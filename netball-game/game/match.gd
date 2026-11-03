@@ -532,8 +532,8 @@ static func round_circles(pos: String, dir: int, p: Vector2, spot: Vector2) -> V
 		var c := Court.goal_post(end)
 		var seg := spot - p
 		var t := clampf((c - p).dot(seg) / maxf(seg.length_squared(), 1e-6), 0.0, 1.0)
-		if (p + seg * t).distance_to(c) >= Court.CIRCLE_R + 0.3:
-			continue
+		if (p + seg * t).distance_to(c) >= Court.CIRCLE_R + Court.LINE_W:
+			continue   # (the straight way stays out of it: a spot just outside the circle is reached straight)
 		# Along the edge (a little outside it), a step of the arc at a time, the short way round toward the spot.
 		var a0 := (p - c).angle()
 		var turn := wrapf((spot - c).angle() - a0, -PI, PI)
