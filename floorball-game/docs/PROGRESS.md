@@ -239,8 +239,10 @@ The owner's round 5:
   high in under their aim).
 - **No time-out** (it did nothing worth having): the button, the AI's, the card and their words are gone.
 - **Penalty shots' feet under the floor**: the shared foundation's body takes the game's own whole-body pose, and its
-  legs are not the game's lengths: a bent knee or a crouch put its toes up to 16 cm under the floor (the close camera
-  shows it). Every ankle and toe is now kept at least at its height standing, the body raised by what it lacks.
+  legs are not the game's lengths: a bent knee or a crouch put its toes up to 28 cm under the floor (the close camera
+  shows it; since 0.9.5, when the foot planter was told to leave the game's pose alone). Now any ankle or toe lower
+  than it stands is brought up to the floor by bending that leg (two-bone IK, FloorLegs); the hips, trunk and hands
+  stay where the game puts them, so the hands keep the stick.
 - **Penalty shots: you skate in**: the shooter no longer skates in on his own. The joystick up takes him in, never
   back; stood still for a second and a half the ball has stopped, and the shot is over (as the rule says).
 
