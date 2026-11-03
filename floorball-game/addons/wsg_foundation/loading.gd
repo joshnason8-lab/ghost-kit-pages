@@ -335,6 +335,7 @@ func done() -> void:
 		var prev := t0
 		var good := 0
 		var steady := INF
+		var recent := []
 		while good < settle_frames:
 			if (Time.get_ticks_usec() - t0) / 1e6 > settle_cap:
 				settled = false
@@ -348,6 +349,14 @@ func done() -> void:
 			# to twice settle_ms (compile stalls are hundreds of ms: they never pass).
 			steady = minf(steady, gap)
 			good = good + 1 if gap < clampf(steady * 1.3, settle_ms, settle_ms * 2.0) else 0
+			# Or slow but even: the last STABLE_FRAMES all within 20% of their middle one (a device that is simply
+			# this slow - Netball's software renderer at 250-450 ms a frame - not one still compiling: compile stalls
+			# come and go).
+			recent.append(gap)
+			if recent.size() > STABLE_FRAMES:
+				recent.pop_front()
+			if recent.size() == STABLE_FRAMES and _even(recent):
+				break
 		settle = (Time.get_ticks_usec() - t0) / 1000.0
 		_set_target(1.0)
 	if not report.is_empty():
@@ -371,6 +380,17 @@ func done() -> void:
 	tw.tween_callback(func():
 		finished.emit()
 		queue_free())
+
+
+## done(): this many frames in a row within 20% of each other count as settled, however slow.
+const STABLE_FRAMES := 6
+
+
+static func _even(gaps: Array) -> bool:
+	var s := gaps.duplicate()
+	s.sort()
+	var mid: float = s[s.size() / 2]
+	return float(s[0]) >= mid * 0.8 and float(s[-1]) <= mid * 1.2
 
 
 ## The overlay's own parts, for a game that wants to restyle further (the dim, the title, the bar, the tip).
@@ -565,13 +585,13 @@ static func warm_scene(root: Node, after_frame: Callable = Callable(), max_batch
 		if g.is_visible_in_tree() and (g.layers & mask) != 0:
 			geoms.append(g)
 	var groups := {}
-	for g: GeometryInstance3D in geoms:
+	for g in geoms:
 		var k := _look_key(g)
 		if not groups.has(k):
 			groups[k] = []
 		(groups[k] as Array).append(g)
 	var saved := {}
-	for g: GeometryInstance3D in geoms:
+	for g in geoms:
 		saved[g] = [g.layers, g.visibility_range_begin, g.visibility_range_end]
 		g.layers = 0
 		g.visibility_range_begin = 0.0
@@ -597,11 +617,13 @@ static func warm_scene(root: Node, after_frame: Callable = Callable(), max_batch
 		var box := AABB()
 		var first := true
 		for k in keys.slice(i, i + n):
-			for g: GeometryInstance3D in groups[k]:
-				if not is_instance_valid(g):
+			# (Untyped: a node the game frees during the warm-up is skipped, not an error - Hurling 0.23.)
+			for g in groups[k]:
+				if not is_instance_valid(g) or not (g as GeometryInstance3D).is_inside_tree():
 					continue
-				g.layers = int(saved[g][0])
-				var b := g.global_transform * g.get_aabb()
+				var gi := g as GeometryInstance3D
+				gi.layers = int(saved[g][0])
+				var b: AABB = gi.global_transform * gi.get_aabb()
 				box = b if first else box.merge(b)
 				first = false
 		i = mini(i + n, keys.size())

@@ -247,7 +247,7 @@ The owner's round 5:
 
 The owner's rules for every game (through the lead): a tap on Start or Play shows a loading screen at once, with a bar
 that moves, never a frozen menu; and nobody ever walks through a table, a bench or the boards, every asset solid.
-The foundation synced to ad83891 (its shared loading screen, WsgLoading, with the settle and shader warm-up):
+The foundation synced to 877bcd9 (its shared loading screen, WsgLoading, with the settle and shader warm-up; CI now fails without the foundation's required commits):
 - **Every way into a match** (Quick match, Watch a match, Penalty shots, a cup or season game, Rematch) goes through
   Game.play_match: the loading screen (the menus' colours and font) is up in the frame of the tap and the buttons
   are off, the match's files load on threads, then the venue is built ("Venue") and the match set up ("Match"), each
