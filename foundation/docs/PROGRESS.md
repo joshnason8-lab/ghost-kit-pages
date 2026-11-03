@@ -544,3 +544,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     had eased 7 cm over the ground toward the clip's foot (29f4829's wait). Gliding note 6.6 -> 4.0 (limit 4); feet
     sweep and cadence unchanged.
   - The fetch hook is enforced from 2026-11-04 12:00 UTC (`FETCH_ENFORCED_FROM`; REQUIRED from then).
+- **Later on 2026-11-03:**
+  - **9c461ca:** a footstep (landed/step) needs the foot to have left the ground. A stance foot let go at reach
+    re-planted and fired again; Kho Kho's run cadence was 5.3/s, now 4.41/s on its branch.
+  - **b5ba195:** world_check stops and hides each played mode (Kabaddi: over 50 min on software GL).
+  - **4dc2e3c:** a mode's freed bodies no longer stop the rules, and a rule's error fails it by name (Hurling and
+    Floorball's CI hung until timeout).
+  - **63b8d62:** WsgFootFlat keeps a planted toe where it was (Floorball's SoleFlat). Floorball's model: jog
+    2.1 -> 0.7. Hurling's gliding note: 4.0 -> 2.8.
+  - **Open:**
+    - Kho Kho AI slips 2-4 cm, deferred to 2026-11-06 12:00 (repro /home/user/wt-khokho, targeted:fair 101/103);
+    - Pok Ta Pok hard stops and pivots (awaiting replays);
+    - stop 2.1 cm on Floorball's model.
