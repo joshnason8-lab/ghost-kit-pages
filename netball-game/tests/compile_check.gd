@@ -23,3 +23,5 @@ func _scan(dir: String, out: Array) -> void:
 	for f in d.get_files():
 		if f.ends_with(".gd"):
 			out.append(dir.path_join(f))
+	for sub in d.get_directories():
+		_scan(dir.path_join(sub), out)   # (tests/sim)

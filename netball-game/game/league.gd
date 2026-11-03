@@ -17,12 +17,19 @@ var champion := ""
 var rng := RandomNumberGenerator.new()
 
 
-static func create(club: String) -> League:
+## p_seed: the season's draw and its other matches' results from this seed (the simulations' reproducible seasons);
+## -1, a new one each time.
+static func create(club: String, p_seed := -1) -> League:
 	var l := League.new()
 	l.user = club
-	l.rng.seed = hash(club) + Time.get_ticks_msec()
+	l.rng.seed = p_seed if p_seed >= 0 else hash(club) + Time.get_ticks_msec()
 	l.teams = DB.club_ids()
-	l.teams.shuffle()
+	# The draw from the season's own generator (Array.shuffle draws from the global one: not reproducible).
+	for i in range(l.teams.size() - 1, 0, -1):
+		var j := l.rng.randi_range(0, i)
+		var t: String = l.teams[i]
+		l.teams[i] = l.teams[j]
+		l.teams[j] = t
 	# A round robin by the circle method: one club stays put, the others turn round it a place each round.
 	var n := l.teams.size()
 	var ring: Array = l.teams.duplicate()
@@ -150,7 +157,7 @@ func table() -> Array:
 
 func to_dict() -> Dictionary:
 	return {"user": user, "teams": teams, "fixtures": fixtures, "finals": finals, "stage": stage, "round": round,
-		"champion": champion}
+		"champion": champion, "rng_state": str(rng.state)}
 
 
 static func from_dict(d: Dictionary) -> League:
@@ -162,7 +169,11 @@ static func from_dict(d: Dictionary) -> League:
 	l.stage = String(d.get("stage", "season"))
 	l.round = int(d.get("round", 0))
 	l.champion = String(d.get("champion", ""))
-	l.rng.randomize()
+	# Saved before 0.9.1 without the generator's state: a new one.
+	if d.has("rng_state"):
+		l.rng.state = String(d.rng_state).to_int()
+	else:
+		l.rng.randomize()
 	for f in l.fixtures:
 		f.round = int(f.round)
 	return l
