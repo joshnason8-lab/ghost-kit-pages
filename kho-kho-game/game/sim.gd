@@ -191,7 +191,10 @@ func bodies() -> Array:
 			tgt = Vector3(float(m.f.square_x[int(walking[a])]), 0, 0)   # to his square
 		var wb: WsgBody = a.link.body if a.link != null else null
 		out.append({"name": _who(a), "pos": a.position, "radius": Athlete.BODY_R, "height": 1.8, "body": wb,
-			"active": m.phase == "play" and not bool(m.paused), "target": tgt})
+			"active": m.phase == "play" and not bool(m.paused), "target": tgt,
+			# Round the pole his arms are out by design: one hand on the pole, the other arm thrown out (the Drive
+			# video's slingshot, 0.10).
+			"pose_excuse": "pole turn: one hand on the pole, the other arm out" if a.act == "pole_turn" else ""})
 	return out
 
 

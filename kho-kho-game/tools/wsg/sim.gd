@@ -227,6 +227,9 @@ func _report(game: WsgSimGame, all: Array, wall: float) -> Dictionary:
 			if (wg.seeds as Array).size() < 10:
 				(wg.seeds as Array).append("%s#%d" % [r.kind, r.seed])
 			warnings[ws] = wg
+		for why in r.get("pose_excused", {}):
+			var pk := "pose excused (the game's reason: %s)" % why
+			fetch[pk] = int(fetch.get(pk, 0)) + 1
 		if r.has("fetch"):
 			var fs := WsgSim._signature(String(r.fetch))
 			fetch[fs] = int(fetch.get(fs, 0)) + 1
@@ -328,7 +331,7 @@ func _write_report(rep: Dictionary) -> void:
 	for w: Dictionary in warns:
 		md.append("- **%s** - %d matches. e.g. %s. Seeds: %s" % [w.warning, w.count, w.example, ", ".join(w.seeds)])
 	for fs in fetch:
-		md.append("- Fetch behind a prop: %s - %d matches" % [fs, fetch[fs]])
+		md.append("- %s - %d matches" % [fs if String(fs).begins_with("pose excused") else "Fetch behind a prop: " + fs, fetch[fs]])
 	md.append("")
 	md.append("## Balance (for the owner: no change without their OK)")
 	var flags: Array = rep.balance.flags_for_the_owner

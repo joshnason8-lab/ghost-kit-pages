@@ -58,12 +58,14 @@ func _initialize() -> void:
 				watched[id] = true
 				var who: String = g._who(a2)
 				body.skeleton.skeleton_updated.connect(func():
+					if not body.sim_full:
+						return   # (as WsgSim: only the quarter posed in full is read - the rest skip the rig's modifiers)
 					var p := WsgNoteChecks.t_or_a_pose(body)
-					var key := "%s|%s|%s|%s" % [p, a2.act, a2.link.mode, body.full]
+					var key := "%s|%s|%s|%s" % [p, a2.act, a2.link.mode, body.sim_full]
 					if p != "":
 						counts[key] = int(counts.get(key, 0)) + 1
 						if int(counts[key]) <= 2:
-							_say("f%d %s: %s, act '%s', link mode '%s', pose_every %d, sim full %s, vel %.1f" % [Engine.get_process_frames(), who, p, a2.act, a2.link.mode, a2.link.pose_every, body.full, a2.vel.length()])
+							_say("f%d %s: %s, act '%s', link mode '%s', pose_every %d, sim full %s, vel %.1f" % [Engine.get_process_frames(), who, p, a2.act, a2.link.mode, a2.link.pose_every, body.sim_full, a2.vel.length()])
 					var ft := WsgNoteChecks.feet(body)
 					if last_feet.has(id):
 						var was: Array = last_feet[id]
@@ -71,10 +73,10 @@ func _initialize() -> void:
 							var now_y := (ft[k] as Vector3).y
 							var dxz := Vector2((ft[k] as Vector3).x - (was[k] as Vector3).x, (ft[k] as Vector3).z - (was[k] as Vector3).z).length()
 							if now_y < 0.12 and (was[k] as Vector3).y < 0.12 and dxz > 0.02 and a2.vel.length() < 0.4:
-								var fk := "slip|%s|%s|%s" % [a2.act, a2.link.mode, body.full]
+								var fk := "slip|%s|%s|%s" % [a2.act, a2.link.mode, body.sim_full]
 								counts[fk] = int(counts.get(fk, 0)) + 1
 								if int(counts[fk]) <= 2:
-									_say("f%d %s: a standing foot moved %.1f cm, act '%s', link mode '%s', pose_every %d, sim full %s" % [Engine.get_process_frames(), who, dxz * 100.0, a2.act, a2.link.mode, a2.link.pose_every, body.full])
+									_say("f%d %s: a standing foot moved %.1f cm, act '%s', link mode '%s', pose_every %d, sim full %s" % [Engine.get_process_frames(), who, dxz * 100.0, a2.act, a2.link.mode, a2.link.pose_every, body.sim_full])
 					last_feet[id] = ft)
 	print("DIAG COUNTS ", JSON.stringify(counts))
 	g.stop()
