@@ -308,8 +308,8 @@ func get_cup():
 	return cup
 
 
-func new_cup(country_id: String):
-	cup = Cup.create(country_id)
+func new_cup(country_id: String, p_seed := -1):
+	cup = Cup.create(country_id, p_seed)
 	save_cup()
 	return cup
 
@@ -332,8 +332,8 @@ func get_league():
 	return league
 
 
-func new_league(club_id: String):
-	league = League.create(club_id)
+func new_league(club_id: String, p_seed := -1):
+	league = League.create(club_id, p_seed)
 	save_league()
 	return league
 
@@ -382,6 +382,9 @@ func goto_menu() -> void:
 func start_match(config: Dictionary) -> void:
 	if test_quarter_s > 0.0:
 		config.quarter_s = test_quarter_s
+	# Every match's draws from a seed kept in its config (and so in its result): a match can be played again exactly.
+	if not config.has("seed"):
+		config.seed = randi()
 	var s: Script = load("res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config
