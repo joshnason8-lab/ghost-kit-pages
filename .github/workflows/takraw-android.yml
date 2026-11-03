@@ -224,7 +224,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" -p '*.apk' -O "$RUNNER_TEMP/previous.apk" 2>/dev/null || true
+          # (Against the beta published now - unless that is this very commit's: the push's run and the pull request's
+          # build the same commit, and the one that finished first had published it; the other then read its own
+          # version as "not newer" and failed, 0.15.13's pull request run.)
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          PUBLISHED=$(gh release view sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" --json targetCommitish -q .targetCommitish 2>/dev/null || true)
+          if [ "$PUBLISHED" != "$HEAD_SHA" ]; then
+            gh release download sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" -p '*.apk' -O "$RUNNER_TEMP/previous.apk" 2>/dev/null || true
+          else
+            echo "The published beta is this commit's own build: no earlier one to compare with."
+          fi
           PREV=""
           if [ -s "$RUNNER_TEMP/previous.apk" ]; then PREV="--previous $RUNNER_TEMP/previous.apk"; fi
           python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/sepak-takraw-unleashed-${VERSION}.apk \
