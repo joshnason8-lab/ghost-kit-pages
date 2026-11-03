@@ -1088,24 +1088,35 @@ func _stick_camera() -> void:
 			waited += 1
 			await get_tree().process_frame
 		var worst := 0.0
-		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
-			var me: Player = m.me
-			# In her own half of the centre third, room to move every way (she does not have the ball).
-			me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
-			for f in 20:
-				m.controls.joystick = Vector2.ZERO
-				await get_tree().process_frame
-			var cam3 := get_viewport().get_camera_3d()
-			still.global_transform = cam3.global_transform
-			still.fov = cam3.fov
-			var a: Vector2 = still.unproject_position(me.global_position)
-			for f in 18:
-				m.controls.joystick = d
-				await get_tree().process_frame
-			var moved: Vector2 = still.unproject_position(me.global_position) - a
-			if OS.get_cmdline_user_args().has("stick"):
-				print("cam %d team %d stick %s: moved %s" % [cm[0], cm[1], d, moved])
-			var off := rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+		for d in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(1, -1).normalized(),
+				Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(), Vector2(-1, -1).normalized()]:
+			var off := 180.0
+			# (A sample cut by a whistle or a restart, which puts everyone back on her spot, is taken again.)
+			for attempt in 4:
+				while m.phase != "live":
+					await get_tree().process_frame
+				var me: Player = m.me
+				# In her own half of the centre third, room to move every way (she does not have the ball).
+				me.place(Vector2(-me.dir * 2.4, 0.0), 0.0)
+				for f in 20:
+					m.controls.joystick = Vector2.ZERO
+					await get_tree().process_frame
+				var cam3 := get_viewport().get_camera_3d()
+				still.global_transform = cam3.global_transform
+				still.fov = cam3.fov
+				var a: Vector2 = still.unproject_position(me.global_position)
+				var cut := false
+				for f in 18:
+					m.controls.joystick = d
+					await get_tree().process_frame
+					cut = cut or m.phase != "live" or m.me != me
+				var moved: Vector2 = still.unproject_position(me.global_position) - a
+				if OS.get_cmdline_user_args().has("stick"):
+					print("cam %d team %d stick %s: moved %s%s" % [cm[0], cm[1], d, moved, " (cut)" if cut else ""])
+				if cut:
+					continue
+				off = rad_to_deg(absf(angle_difference(moved.angle(), d.angle()))) if moved.length() > 2.0 else 180.0
+				break
 			worst = maxf(worst, off)
 		if cm[0] == Game.CAM_TV:
 			# The camera changing mid-run (to behind the goal): the stick's way turns over about 0.2 s, not at once.
