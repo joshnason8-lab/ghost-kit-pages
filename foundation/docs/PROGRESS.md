@@ -383,3 +383,5 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   (fan2 and fan5 are the women). No draw calls, no CPU; nothing changes without the calls. Found: fan2's and fan5's
   long hair was weighted to the spine and so took the shirt's team colour - hair is never shirt now. crowd_test checks
   the parts, hair-not-shirt, set_looks and the weights (0.68 against 0.67). ADOPTING §5.
+- **Meshy: spend NO credits** without the owner's own OK (not the lead's alone): the owner's standing rule, relayed
+  by Netball 2026-11-02. Balance then 59 (a fan costs 35: preview 20, refine 10, rig 5).
