@@ -1415,7 +1415,10 @@ had played, released its foundation bodies, and the walker read a toe 9.4 cm up.
 `{"feet": ["2026-11-06T12:00Z", "the lead, 2026-11-03: <why>"]}`. Until that time a failure of that rule is reported
 DEFERRED with the reason, not failed; from it, it fails again. `WsgSimGame.deferred()` is the same for WsgSim's
 checks. The feet rule itself is enforced for every game from **2026-11-04 12:00 UTC** (`RULE_FROM`; the walker's walk
-read 2.1-2.2 cm on three games' rigs on 888e222, a foundation fault).
+read 2.1-2.2 cm on three games' rigs on 888e222, a foundation fault). In WsgSim the planted slide alone can be put off
+up to a bound, while skids and jumps still fail: `{"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-03: <why>",
+2.5]}` - a planted slide up to 2.5 cm is DEFERRED, one over it fails as "foot slip" (the lead, for Floorball and Kho
+Kho: replace a whole "foot slip" deferral with this one from 2026-11-06 12:00).
 
 **`start_mode` must replace whatever the last call started, as a real tap does.** The tiers rule starts every mode
 three times, one after another. Hurling's `start_mode` left the previous match drawing while the next one started, so
@@ -1462,7 +1465,15 @@ any of these fail:
 ```yaml
       - name: Release gate
         run: |
-          gh release download <your-beta-tag> -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          # (Not this commit's own build: a push run and a pull_request run of one commit race, and the one that
+          # publishes first made the other's gate fail "newer" - Sepak Takraw. The publish step puts the commit in the
+          # notes.)
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          if gh release view <your-beta-tag> --json body -q .body 2>/dev/null | grep -q "Commit: $HEAD_SHA"; then
+            echo "The published beta is this commit's own build: no earlier one to compare with."
+          else
+            gh release download <your-beta-tag> -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          fi
           python3 <game>/tools/wsg/release_gate.py --apk build/<game>-$VERSION.apk --version "$VERSION" \
             --web build/web/index.pck --previous "$RUNNER_TEMP/previous.apk" --out "$RUNNER_TEMP/gate"
       - uses: actions/upload-artifact@v4
@@ -1481,28 +1492,40 @@ Warnings name the foundation's test-time scripts in your export: `prop_audit`, `
 and `world/`. Exclude them in your Android preset's `exclude_filter` unless your game uses them. Keep `note_checks`
 if you map the stick with `WsgNoteChecks.stick_world`.
 
-**Publishing safely: never delete the old release before the new one exists.** Floorball's publish deleted its
-release, then hit a 403 on create, and its tag sat empty for an hour. Make the new release under a temporary tag
-first; only once it holds every asset, delete the old one and move the new one onto the tag:
+**Publishing safely: in place, never a tag made or deleted.** The release on your beta tag is updated where it
+stands: the new APKs go up beside the old ones, then the old ones come off, then the title and notes change. It
+always holds an APK, and no tag is created or removed - since 2026-11-03 about 17:00 the workflow token is refused new
+tag names in this repo (HTTP 403 "Resource not accessible by integration" on create: Floorball, Hurling's temporary
+tag, Pok Ta Pok's media kit), while existing tags still work. (Delete-then-create left Floorball's tag empty for an
+hour; the temporary-tag swap this section gave before now 403s.) Hurling's 6bad1840 (hurling-android.yml):
 
 ```yaml
-      - name: Publish the beta release
+      - name: Publish the beta release (in place)
         run: |
           TAG=<your-beta-tag>
-          NEXT="$TAG-next-$GITHUB_RUN_ID"
-          # The new release, whole, under a tag of its own: if this fails, the old release is untouched.
-          gh release create "$NEXT" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "<Game> $VERSION (latest beta)" --notes-file notes.md
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
-          # Then swap: the old one goes, the new one takes the tag (seconds apart).
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
-          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+          printf '\n\nCommit: %s\n' "$GITHUB_SHA" >> notes.md   # (the gate's guard reads it)
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            # The tag's first release only (a tag that already exists: the token may create releases on it).
+            gh release create "$TAG" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "<Game> $VERSION (latest beta)" --notes-file notes.md
+            exit 0
+          fi
+          OLD=$(gh release view "$TAG" --json assets -q '.assets[].name')
+          # 1. The new APKs up beside the old (if this fails, the old release is untouched).
+          gh release upload "$TAG" "$APK" "$APK32" --clobber
+          for f in "$APK" "$APK32"; do gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$f")"; done
+          # 2. Then the old ones off (only names not just uploaded).
+          for n in $OLD; do
+            case "$n" in "$(basename "$APK")"|"$(basename "$APK32")") ;; *) gh release delete-asset "$TAG" "$n" --yes || true ;; esac
+          done
+          # 3. Then its title and notes.
+          gh release edit "$TAG" --title "<Game> $VERSION (latest beta)" --notes-file notes.md --prerelease
 ```
 
-If the swap ever fails, the new build is still published under `$TAG-next-<run>`. Obtainium and the owner's links
-use `$TAG`, so re-run the job; it never leaves `$TAG` pointing at nothing for longer than the swap.
+The release gate's `newer` check reads the published version from the APK itself (its manifest's `versionName`
+and `versionCode`, via `--published` / `--previous`), not from the tag's name, so it works unchanged: download the
+APK on the tag before the gate, as above. A failed step leaves the release as it was, or holding both builds - never
+empty; re-run the job.
 
 Checked on Kho Kho Rush 0.12.4-beta (the release APK): every check passes. The key is the owner's in v1, v2 and v3;
 the largest texture that isn't GPU-compressed is 1.6 MB; there are no duplicates.
@@ -1549,6 +1572,11 @@ skeleton.add_child(pl)     # after whatever poses the skeleton (its AnimationPla
 It reads contact from the pose as drawn (the feet's heights and speed), so it needs no clip data: whatever poses
 the legs, it plants them. Turn your own foot planting off on that body. `tests/planter_bone_map_test.gd`: a renamed
 skeleton's standing feet are held while the body moves under them.
+
+A rig whose bones all share a prefix needs no map: `pl.bone_prefix = "mixamorig_"` (a map, if any, is applied first,
+then the prefix). Your own rule for a foot being down, if you have one, replaces the planter's gate:
+`pl.contact_fn = func(foot: int, ankle: Vector3, toe: Vector3, was_down: bool) -> bool: ...` (world positions as the
+pose has them, before planting). The test covers both.
 
 ## 5.20 The downloadable High pack: WsgAssetPack (games with a High pack)
 
