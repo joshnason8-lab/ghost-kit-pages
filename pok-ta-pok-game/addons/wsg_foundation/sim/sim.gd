@@ -199,6 +199,8 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 						clock_still = -INF
 			clock_prev = c
 		# Bodies: numbers, bounds, stuck, props, feet, poses.
+		if audit:
+			audit.frame = frame
 		var bl := game.bodies()
 		for bi in bl.size():
 			var b: Dictionary = bl[bi]
@@ -257,7 +259,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				if not shown.has(id):
 					shown[id] = []
 					body.skeleton.skeleton_updated.connect(func():
-						shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body), _planted(body)])
+						shown[id] = [WsgNoteChecks.feet(body), "" if _replaying(body) else WsgNoteChecks.t_or_a_pose(body), _planted(body)])
 				var seen: Array = shown[id]
 				if not seen.is_empty():
 					shown[id] = []
@@ -356,7 +358,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		for c: Dictionary in rep.worst:
 			_fail(out, "prop" if c.kind == "body" else "ball through",
 				"%s %.0f cm into the %s" % [c.who, float(c.depth) * 100.0, c.prop] if c.kind == "body" else "the ball went through the %s" % c.prop,
-				float(c.time), int(float(c.time) * FPS), {}, [])
+				float(c.time), int(c.get("frame", -1)) if int(c.get("frame", -1)) >= 0 else roundi(float(c.time) * FPS), {}, [])
 	for nm in feet:
 		var f: Array = feet[nm]
 		var s := {"max_cm": 0.0}
@@ -499,12 +501,20 @@ static func _by_prop(solid: WsgSolidProps, p: Vector3) -> String:
 
 ## The planter drives this body's feet now: on, not under a pose the game makes of the whole body (keep_pose), and
 ## its ground where the body stands (a game that sends ground_y far below while it poses the body itself is not).
+## A replay playing back on the body (WsgReplay's pose, active): every frame it shows was read live when drawn - not
+## read again for its feet or its pose (Kho Kho: a replayed pole turn, one arm out by design, read as an A-pose).
+static func _replaying(body: WsgBody) -> bool:
+	for m in body.skeleton.get_children():
+		if m is WsgReplayPose and (m as WsgReplayPose).active:
+			return true
+	return false
+
+
 static func _planted(body: WsgBody) -> bool:
 	# (A replay playing back - WsgReplay's pose on the skeleton, active - draws the kept pose, at 0.4x: the planter
 	# drives nothing then, and a swinging foot under SWING read as a 13 cm slide - Sepak Takraw's officials.)
-	for m in body.skeleton.get_children():
-		if m is WsgReplayPose and (m as WsgReplayPose).active:
-			return false
+	if _replaying(body):
+		return false
 	for c in body.get_children():
 		if c is WsgLocomotor:
 			var p: WsgFootPlanter = (c as WsgLocomotor).planter

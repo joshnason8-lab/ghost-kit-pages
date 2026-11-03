@@ -406,6 +406,12 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   bone reads audited (the lead): the drawn feet read inside skeleton_updated, heel and toe; the stance test's
   20-second "feet stay where they stand" read the ankles only and now reads the balls of the feet too.
 
+- **0.6.24-beta: published safely; shared foundation 3b3563fd.** The beta is made whole under a tag of its own first
+  (both APKs checked on it), and only then is the old release deleted and the new one moved onto the tag (ADOPTING
+  5.19): a failed create no longer leaves the tag empty. The WsgSim workflow is in (.github/workflows/pok-ta-pok-sim.yml:
+  the smoke on every push in three shards, the 16-shard batch only by hand); simulation work stops here until the owner
+  calls the next round. The sim's foot-slip deferral goes when the foundation's 2026-11-06 batch lands.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
