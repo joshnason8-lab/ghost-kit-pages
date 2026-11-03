@@ -680,6 +680,15 @@ The first smoke batch to finish in CI (on 0.15.8, 65 matches) failed 31. Every f
     under the floor and past the end fence (the prop sweep missed it, the way being under the floor). It now lands
     where its path meets the floor, and the sweep sees the fence first. The line calls are unchanged: they use the
     flight's own landing (`Match.land_t`, `Ball.at`).
+  - (0.15.10) 0.15.9 first kept a ball that had gone over the line behind it by a rule of its own, which assumed the
+    board stands on the line: at the park the fence is 10 cm past it, and a ball flying at it at 0.5 m was put into it
+    and stuck there (smoke, extreme 36). The rule is now simply: a low ball past the ends' line is put back to it only
+    if `WsgSolidProps.sweep` finds no prop on the way; otherwise it is behind a board or the fence, and the prop's own
+    back stops it.
+  - (0.15.10) The ball between the corner TV tripod and the end wall at 15 m/s bounced off the wall inside one frame:
+    its four small steps stayed outside the tripod, but the straight line between the frames cut 2.3 cm into it. The
+    ball now keeps its frame's path (`Ball.path`: each small step and each prop it met), and the adapter hands it to
+    the audit, which sweeps every step (the Foundation's 73abc13).
 - **The score went down (6 matches): the game's video review.** An overturned line call moves the point to the other
   side. The adapter now counts a line-call point only once it can no longer be challenged, so the score it reports
   only goes up (the Foundation agrees; no looser check).

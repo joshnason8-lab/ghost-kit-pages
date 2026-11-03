@@ -21,6 +21,11 @@ var t_launch := 0.0
 var loose := false          # the rally is over: bouncing and rolling by itself
 var bounds := Rect2(-12.0, -9.0, 24.0, 18.0)   # x and z the walls and boards keep it within (Arena.bounds)
 var soft := false           # on sand: it hardly bounces and stops soon
+## Where the ball went in its last step, in order (each small step's end, and where it met a prop), and the frame it was
+## taken in: for the shared simulator's audit of the props (game/sim.gd ball()), which otherwise reads the straight
+## line between frames - a bounce off a wall inside a frame cuts that corner past a prop.
+var path := PackedVector3Array()
+var path_frame := -1
 var _mesh: MeshInstance3D
 var _shadow: MeshInstance3D
 var _trail: Array[MeshInstance3D] = []
@@ -152,6 +157,8 @@ func set_loose(t: float) -> void:
 
 ## Moves the ball to where its flight has it at match time t; loose, a step of its bounces and roll.
 func update_to(t: float, dt: float) -> void:
+	path.clear()
+	path_frame = Engine.get_process_frames()
 	if loose:
 		_step_loose(dt)
 		return
@@ -170,6 +177,8 @@ func update_to(t: float, dt: float) -> void:
 		# there (the match calls the rally: hit_prop).
 		if solid and bool(solid.sweep(was, global_position, RADIUS).get("hit", false)):
 			var r := solid.bounce(was, vel, RADIUS, dt, _on_prop)
+			for c: Dictionary in r.hits:
+				path.append(c.pos)
 			global_position = r.pos
 			vel = r.vel
 			flying = false
@@ -182,6 +191,7 @@ func update_to(t: float, dt: float) -> void:
 			flying = false
 			loose = true
 			_floor_bounce()
+		path.append(global_position)
 
 
 signal bounced(at: Vector3, speed: float)   # off the floor or a wall, after a rally: for its sound
@@ -198,6 +208,8 @@ func _through(p: Vector3, h: float) -> Vector3:
 		return p + vel * h
 	var r := solid.bounce(p, vel, RADIUS, h, _on_prop)
 	vel = r.vel
+	for c: Dictionary in r.hits:
+		path.append(c.pos)
 	return r.pos
 
 
@@ -252,6 +264,7 @@ func _step_loose(dt: float) -> void:
 			hit = maxf(hit, absf(vel.z))
 			vel.z = -vel.z * 0.3
 		global_position = p
+		path.append(p)
 		if hit > 1.0:
 			bounced.emit(p, hit)
 	# Rolling: it turns over the way it goes.

@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.10: **a ball hit hard into the park's fence no longer sticks in it.** 0.15.9's fix for balls behind the
+boards could leave a ball, flying at the fence at waist height, caught in the wire; now it comes off the fence like any
+other. Nothing else changes in play.
+
 New in 0.15.9: **the ball no longer passes through the boards or the fence.** A ball that flew over the low LED
 boards (indoor) or came down fast against the park's fence could end up back on the court side of it, as if it had
 gone through; now it stays behind it, or comes off it. A player chesting the ball now bends his elbows and draws his
