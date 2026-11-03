@@ -86,6 +86,10 @@ jobs:
       contents: write   # to publish the beta release (below)
     steps:
       - uses: actions/checkout@v4
+        with:
+          # (The whole history: the owner-notes guard reads INDEX.json's past, and deepening a shallow clone later
+          # can fail on the network - run 162.)
+          fetch-depth: 0
 
       # The shared foundation (addons/wsg_foundation) against claude/shared-foundation: a warning when this copy is
       # behind, a failure when it lacks a commit in foundation/REQUIRED (tools/wsg/sync_foundation.sh brings it up to date).
