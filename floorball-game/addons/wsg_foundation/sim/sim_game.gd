@@ -76,6 +76,14 @@ func fetch(_spot: Vector3) -> Dictionary:
 	return {}
 
 
+## Where this game's bodies may go to fetch (the fetch case offers only spots reachable from the field's middle, over
+## the floor, clear of the props, where this says yes): a court-bound game says its court, so it is tested round the
+## props on it. A game that cannot fetch at all returns {"exempt": "<why, with the lead's word>"} from fetch(): noted,
+## never failed.
+func fetch_reach(_p: Vector3) -> bool:
+	return true
+
+
 ## The venue's solid props (WsgSolidProps), or null.
 func solid() -> WsgSolidProps:
 	return null

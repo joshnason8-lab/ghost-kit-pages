@@ -36,7 +36,13 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(abs_out)
 	var matches := int(a[2]) if a.size() > 2 else 2
 	var seconds := float(a[3]) if a.size() > 3 else 120.0
-	var reg_script: Script = load(a[0])
+	# (A registry that is not there: say so and stop - a script error here left the run waiting for ever, and
+	# world_check with it.)
+	var reg_script: Script = load(a[0]) if ResourceLoader.exists(a[0]) else null
+	if reg_script == null or not reg_script.can_instantiate():
+		printerr("prop_audit: no registry at %s (or it does not compile)" % a[0])
+		quit(2)
+		return
 	var reg: Object = reg_script.new()
 	var all := {}
 	var ok := true
