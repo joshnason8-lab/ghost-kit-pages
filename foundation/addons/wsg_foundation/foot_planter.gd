@@ -48,6 +48,7 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 const STEP_TIME := 0.2
 var _low_ticks := [0, 0]                     # ticks a foot let go has stayed on the ground (it steps at 2)
 var _waited := [0, 0]                        # ticks since it was let go, neither stepping nor lifted (at 3: to the clip)
+var _aired := [true, true]                   # off the ground since it last landed (a footstep needs it)
 var _step_toe := [Vector3.INF, Vector3.INF] # the held toe from the ankle as the step began
 var _toe_hold := [Vector3.INF, Vector3.INF] # where its toe was held (a foot released keeps its toe's place across)
 ## How far a planted foot's leg may twist (radians) before the foot turns with the body.
@@ -172,7 +173,13 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					elif int(_waited[i]) >= 3:
 						# (Skimming, neither lifted nor kept down: to the clip.)
 						_lifted[i] = false
-			if is_down and not was:
+			# A footstep is a foot that went up and came down: one let go at its reach and planted again without
+			# leaving the ground (the clip's stance foot, still in the world) is the same footfall, not another - it
+			# fired landed twice a stride (Kho Kho's sprinters: 5.3 footsteps a second, 4.8 the most).
+			if h > 0.05 * sc:
+				_aired[i] = true
+			if is_down and not was and bool(_aired[i]):
+				_aired[i] = false
 				landed.emit(i)
 			contact[i] = 1.0 if is_down else 0.0
 		var stepping := Vector3.INF
@@ -191,7 +198,8 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				_toe_lock[i] = Vector3.INF
 				_low[i] = INF
 				is_down = true
-				if contact[i] < 0.5:
+				if contact[i] < 0.5 and bool(_aired[i]):
+					_aired[i] = false
 					landed.emit(i)
 				contact[i] = 1.0
 			else:
