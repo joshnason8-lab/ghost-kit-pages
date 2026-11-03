@@ -16,6 +16,8 @@ about 2019).
 - **Defenders' arms**: a defender over the ball lifts both arms up toward it with soft elbows, never held straight
   out to the sides; running into a defence or changing moves no longer flings an arm out straight.
 - **Shooters face the post**: a shooter who catches facing away turns to the post before she shoots.
+- **Smoother on Medium and High**: only the players nearest the camera are drawn in full detail (14 on Medium, 22
+  on High); the reserves and far players use the lighter model.
 - Fixed: after a throw-in over the goal line beyond the circle, the player taking it could stand at the circle's
   edge for good and the match never restarted; she now goes round it. The player taking a restart waits for a
   tossed ball to come down instead of taking it out of the air.
