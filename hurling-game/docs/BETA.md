@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.8
+
+- **A man sent off leaves the field**: after a red card the player walks off over the touchline and is gone. He used
+  to head for a spot behind the wall at the stadium (and too far out at the other grounds), stand there, and keep
+  playing when the game restarted.
+
 ## New in 0.24.7
 
 - **No T-pose flash in replays**: a player who comes into view during a score's replay no longer appears for a frame

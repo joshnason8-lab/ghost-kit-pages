@@ -36,6 +36,7 @@ func _ready() -> void:
 	_clock_lengths()
 	_coach()
 	await _subs()
+	await _sent_off_walks_off()
 	await _tactics()
 	await _playtest_fixes()
 	await _nets()
@@ -521,6 +522,29 @@ func _coach() -> void:
 	check(c.event("STEPS") == "STEPS" and c.event("STEPS") == "", "Coach: the steps tip once, at once")
 	for id in Coach.TIPS + ["STEPS", "INTRO"]:
 		check(tr(Coach.text_key(id)) != Coach.text_key(id), "Coach: COACH_%s has words" % id)
+
+
+## A man sent off walks off the field and is gone, at every ground (WsgSim seed 8: at the stadium he made for a spot
+## behind the pitch wall, stood at the wall, and played on).
+func _sent_off_walks_off() -> void:
+	for venue in ["stadium", "county", "parish"]:
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "COR", "venue": venue, "user_team": -1, "seed": 4, "length": 8.0, "mode": "test"}
+		m.set_meta("test", true)
+		add_child(m)
+		await frames(3)
+		var red: Player = m.player_by_num(1, 8)
+		red.global_position = Vector3(0, 0, 0)
+		red.sent_off = true
+		var f := 0
+		while red.visible and f < 30 * 30:
+			m._walk_off(red)
+			red.solid = m._solid()
+			red.integrate(1.0 / 30.0, float(f) / 30.0)
+			f += 1
+		check(not red.visible, "Sent off (%s): he walks off and is gone in %.1f s (from the middle; 30 at most)" % [venue, f / 30.0])
+		m.queue_free()
+		await frames(2)
 
 
 ## Substitutions: five, made at a break; not for a man sent off; the substitute takes the place in the shape.

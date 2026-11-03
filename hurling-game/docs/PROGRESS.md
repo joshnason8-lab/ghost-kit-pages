@@ -857,6 +857,14 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.8, 3 November 2026)
+
+- **Sent off, walked off** (WsgSim seed 8, stadium: "side 1's 15 plays on though sent off", and the same man "stuck"):
+  Match._walk_off made for 5 m past the touchline, behind the stadium's pitch wall, so he never got there and stayed
+  on. Now 1.5 m out, where the linesmen run, moved clear of any prop (WsgSolidProps.free_spot). Test
+  `_sent_off_walks_off`: from the middle, gone within 30 s at the stadium, county and parish grounds (it failed at
+  county and parish before). Suite 710/0; owner notes 21/21.
+
 ## Done (0.24.7, 3 November 2026)
 
 - **Foundation f1e53923**: WsgReplay keeps no rest pose (a62b5396; WsgSim seed 4 found home 13 T-posed for his first

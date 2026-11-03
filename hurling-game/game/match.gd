@@ -2408,9 +2408,13 @@ func _show_card(pl: Player, card: String) -> void:
 
 
 func _walk_off(pl: Player) -> void:
-	var off := Vector3(pl.global_position.x, 0, -Pitch.HALF_W - 5.0)
+	# (Off over the near touchline, where the linesmen run: a spot every ground leaves free. It was 5 m out, behind
+	# the stadium's pitch wall - he never got there, so a man sent off stood at the wall and played on - WsgSim seed 8.)
+	var off := Vector3(pl.global_position.x, 0, -Pitch.HALF_W - 1.5)
+	if _solid():
+		off = stadium.solid.free_spot(off, Player.BODY_R)
 	_steer(pl, off, 3.0)
-	if pl.global_position.distance_to(off) < 1.0:
+	if Vector2(pl.global_position.x - off.x, pl.global_position.z - off.z).length() < 1.0:
 		pl.visible = false
 
 
