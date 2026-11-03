@@ -9,6 +9,15 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.9-beta
+
+- **No more floating** on Medium and High: the players' and umpires' feet stay planted every step, at any speed.
+- **Shooters face the post**, and a passer faces who she passes to.
+- **Hands on the ball**: both palms on the ball's sides, on every level (not the forearms).
+- **A natural stance standing**: relaxed arms, breathing, weight shifts and small head turns; hands come up only when
+  the ball may come to her.
+- **Human umpires** on every level: the players' model in a teal shirt and dark trousers.
+
 ## New in 0.8.8-beta
 
 - **A real crowd on Medium and High**: the stands in the arena, the hall's seats and the people standing round the park
