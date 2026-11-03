@@ -31,8 +31,11 @@ func modes() -> Array:
 ## The tap: Throw-in (a quick match you play), Watch AI, Free-taking practice - each through Game.start_match_loading,
 ## which puts the loading overlay up in this frame.
 func start_mode(mode: String, parent: Node) -> void:
-	Game.main = parent
+	# (One match at a time, as in the game: the last mode's is let go - a tap on a menu button replaces the menu.)
+	if Game.current != null and is_instance_valid(Game.current):
+		Game.current.queue_free()
 	Game.current = null
+	Game.main = parent
 	Game.settings.sound = false
 	var cfg := {"home": "KIL", "away": "TIP", "venue": "county", "seed": 3, "length": 8.0}
 	match mode:

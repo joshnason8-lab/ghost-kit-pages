@@ -580,7 +580,9 @@ func _draw_marks() -> void:
 	# The ball's marker (in free-taking practice no dot on it while it reads by itself up close, but the dot as soon as it
 	# is a few pixels across - far off towards the posts it was lost against the crowd, "the ball disappears" - and the
 	# arrow when it is off the screen: the owner lost a ball struck up out of the picture).
-	if m.ball.state != Sliotar.HELD or m.carrier == null:
+	# (A ball level with the camera's own plane - beside it, at the free's low camera - has no place on the screen.)
+	var depth := (b - cam.global_position).dot(-cam.global_transform.basis.z)
+	if (m.ball.state != Sliotar.HELD or m.carrier == null) and absf(depth) > 0.01:
 		if not cam.is_position_behind(b):
 			var sp := cam.unproject_position(b)
 			if Rect2(Vector2.ZERO, vp).grow(-4).has_point(sp):
