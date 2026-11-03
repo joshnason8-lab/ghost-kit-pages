@@ -70,6 +70,7 @@ func _init(p_player: Player, p_body: Body) -> void:
 
 
 var floor_legs: FloorLegs     # the legs bent so the feet stay on the floor under the game's pose
+var wrist_limit: WristLimit   # no wrist bent past what looks broken (skaters)
 
 func _ready() -> void:
 	var look := gb.look
@@ -125,6 +126,11 @@ func _ready() -> void:
 		_make_stick()
 	elif kind == "keeper" and not keeper_model:
 		_make_helmet()
+	# No wrist bent past what looks broken, after the holds have laid the fists on the stick (before the helpers).
+	if kind == "player":
+		wrist_limit = WristLimit.new()
+		wrist_limit.name = "WristLimit"
+		body.add_modifier(wrist_limit)
 	# The feet on the floor under the game's own pose: legs bent by IK where its pose would put them through it.
 	floor_legs = FloorLegs.new()
 	floor_legs.name = "FloorLegs"
@@ -482,12 +488,21 @@ func _roll(sk: Skeleton3D, side: String, grip: Vector3, off: Vector3, dir: Vecto
 	return best
 
 
+var _fore_dir := {}            # side -> the forearm's direction as last drawn (skeleton space), for _straight
+const FORE_W := 0.75             # how far the hand lines up on the forearm as drawn rather than the shoulder's line
+const TILT_MAX := 50.0           # degrees the shaft may run diagonally across the fingers toward the arm
+
+
 ## A hand on the shaft (its grip already along it, q) rolled round the shaft so the fingers point on from the arm (the
 ## shoulder toward the hand's place on the shaft): the wrist straight, not bent back or twisted.
 func _straight(sk: Skeleton3D, side: String, q: Quaternion, at: Vector3, down: Vector3) -> Quaternion:
 	var d := down.normalized()
 	var fingers: Vector3 = q * ((body.joints[side + "HandMiddle1"] as Vector3) - (body.joints[side + "Hand"] as Vector3)).normalized()
 	var arm := at - sk.get_bone_global_pose(sk.find_bone(side + "Arm")).origin
+	# The forearm as last drawn (its elbow bent, it does not run from the shoulder): the hand lined up on it, so the
+	# wrist runs straight on into the hand - the owner's golfer's grip, "the wrists are straight".
+	if _fore_dir.has(side):
+		arm = arm.normalized().lerp(_fore_dir[side] as Vector3, FORE_W)
 	var f := fingers - d * fingers.dot(d)
 	var a := arm - d * arm.dot(d)
 	if f.length() < 0.01 or a.length() < 0.01:
@@ -505,7 +520,7 @@ func _straight(sk: Skeleton3D, side: String, q: Quaternion, at: Vector3, down: V
 	var arm_n := arm.normalized() - n * arm.normalized().dot(n)
 	if arm_n.length() < 0.01:
 		return q
-	var tilt := clampf(atan2(n.dot(fingers.cross(arm_n.normalized())), fingers.dot(arm_n.normalized())), -deg_to_rad(35.0), deg_to_rad(35.0))
+	var tilt := clampf(atan2(n.dot(fingers.cross(arm_n.normalized())), fingers.dot(arm_n.normalized())), -deg_to_rad(TILT_MAX), deg_to_rad(TILT_MAX))
 	return (Quaternion(n, tilt) * q).normalized()
 
 
@@ -523,6 +538,11 @@ static func _along(q0: Quaternion, dir: Vector3) -> Quaternion:
 func _place_stick() -> void:
 	if stick == null or not stick.visible:
 		return
+	var sk := body.skeleton
+	for side in [top, low]:
+		var d := sk.get_bone_global_pose(sk.find_bone(side + "Hand")).origin - sk.get_bone_global_pose(sk.find_bone(side + "ForeArm")).origin
+		if d.length() > 0.01:
+			_fore_dir[side] = d.normalized()
 	var hand := body.bone_world(top + "Hand")
 	if replay_at != INF:
 		stick.global_transform = hand * _replay_stick(replay_at)
