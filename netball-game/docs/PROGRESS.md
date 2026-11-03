@@ -289,6 +289,30 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
   `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
+- **Solid props** (the owner: "There will NEVER be a time when a player or referee should walk through a table or
+  bench etc. A ball should also bounce off these items."): foundation synced to 8f688ff (WsgSolidProps, prop_audit;
+  CI's foundation step now fails without a required commit). Arena.solid: each builder declares what it builds where
+  it builds it (posts r 0.05, pads r 0.19 "padding", ring arms and the rings' tubes, goal lights, LED boards, tables,
+  chairs, benches, the arena bowl's front wall and stepped rows, the hall's walls, wall pads, stand, portable boards,
+  backboards and their rings, scoreboard, ball cage; the park's chain-link fences and floodlight poles) and every
+  VenueProps model from its own bounds (`placed`, `bounds()`); what is not solid is skipped with a reason (nets,
+  overhead lights and trusses, wall clocks, tree cut-outs). Bodies: Player.advance and Umpire.advance step through
+  `solid.move()` (one memo each), then the venue's floor (Arena.floor_rect: inside the boards, walls or fences; the
+  crowd is not a prop) and `push_out`; their velocity is the step they really took only when a prop turned it (so a
+  match away from props plays exactly as before). Out-of-play walks (to and from the bench, huddles, umpires to the
+  middle) follow `solid.path()`. A target or catch point in a prop moves to the nearest free spot. The ball: loose
+  balls and dead balls still rolling through `solid.bounce()` (each prop's restitution and friction, Ball's own floor);
+  a flight that meets a prop comes off it loose (a shot stops where it touched the ring, post or arm: the rebound
+  starts clear of it); a held ball never goes into a prop (the holder gives way); a shot that is in passes the ring
+  only coming down, and is released at least 0.45 m out from under the ring. Rules: a ball in play that touches a prop
+  outside the court is out of court there, and a ball called out rolls on after the whistle (off the boards, the
+  bench); the goal post, pad and ring are in play; a goal-line throw-in by the post is taken clear of its pad. The
+  arena's reserves stand clear in front of the boards (their benches are behind them). tests/prop_runs.gd and
+  tools/wsg/prop_audit.gd (CI, after the tests) over a 240 s Watch-AI match at the arena, hall and park (Medium) and the
+  arena at Low: 0 bodies in a prop, 0 ball steps through one. Test `_solid_props` (`test_runner.tscn -- solid`).
+  `_gait_in_match` measures arms only when they are the run's (arms_w < 0.5): a leap's arms coming down at a mark
+  read as "out" once a prop changed the match's course. Cost: 26 bodies and the ball about 0.3 ms a frame here; no
+  draw call (colliders are not drawn).
 
 ## Next
 

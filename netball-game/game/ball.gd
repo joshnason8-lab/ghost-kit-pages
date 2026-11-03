@@ -34,6 +34,15 @@ var f_bounce := -1.0         # 0-1 of the flight's time when a bounce pass meets
 var _bounced := false        # the bounce pass has hit the floor
 var _mesh: MeshInstance3D
 var _spin := Vector3.ZERO
+## The venue's props (Arena.solid): a flight or a loose ball that meets one comes off it (WsgSolidProps.bounce), at
+## the prop's own restitution and friction. A flight that meets one is loose from there on; a shot stops where it
+## touched the ring, the post or its arm (f_struck: the match plays the rebound). struck tells the match each touch.
+var solid: WsgSolidProps
+var through_ring := false    # a shot that is in (the rules' call) drops through the ring's middle untouched
+var f_kind := ""
+var f_struck := false
+signal struck(hit: Dictionary)
+var _hits: Array = []
 
 static var _tex: ImageTexture
 
@@ -167,6 +176,8 @@ func throw(kind: String, from: Vector3, to: Vector3) -> Dictionary:
 	f_legs = pl.legs
 	f_bounce = float(pl.bounce)
 	_bounced = false
+	f_kind = kind
+	f_struck = false
 	pos = from
 	_spin = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)).normalized() * 8.0
 	return pl
@@ -198,23 +209,46 @@ func loose(at: Vector3, v: Vector3) -> void:
 	vel = v
 
 
-func dead(at: Vector3) -> void:
+## Dead: the whistle has gone. Moving (v: a ball called out of court as it rolls on), it bounces and rolls to a stop.
+func dead(at: Vector3, v := Vector3.ZERO) -> void:
 	holder = null
 	state = "dead"
 	pos = at
-	vel = Vector3.ZERO
+	vel = v
 
 
 ## The one place the ball's position changes, once a frame.
 func step(dt: float) -> void:
+	# (A dead ball still rolling, called out of court as it went: it rolls and bounces on as a loose ball does.)
+	var rolling_dead := state == "dead" and vel != Vector3.ZERO
+	if rolling_dead:
+		state = "loose"
 	match state:
 		"held":
 			if holder:
+				var was := pos
 				pos = holder.hand_point()
+				if solid:
+					# Her hands can't take it into a prop (the post's pad): it stops against it, and she gives way.
+					var into := solid.sweep(was, pos, R)
+					if into.hit and was.distance_to(pos) < 1.0:
+						var stop: Vector3 = (into.pos as Vector3) + (into.normal as Vector3) * (float(into.get("depth", 0.0)) + 0.002)
+						holder.held_off += _back(stop.distance_to(pos))
+						pos = stop
+					for k in 4:   # (out of each it is in: the post inside its pad)
+						var h := solid.sweep(pos, pos, R)
+						if not h.hit:
+							break
+						var push := (h.normal as Vector3) * (float(h.get("depth", 0.0)) + 0.002)
+						pos += push
+						holder.held_off += _back(push.length())
 		"flight":
+			var was := pos
 			f_t += dt
 			pos = flight_at(f_t / f_dur)
-			if f_bounce > 0.0 and not _bounced and f_t / f_dur >= f_bounce:
+			if solid:
+				_flight_props(was, dt)
+			if f_bounce > 0.0 and not _bounced and f_t / f_dur >= f_bounce and state == "flight":
 				_bounced = true
 				bounced.emit(Vector3(pos.x, R, pos.z), absf(flight_vel(f_bounce - 0.001).y))
 			_mesh.rotate(_spin.normalized() if _spin.length() > 0 else Vector3.RIGHT, _spin.length() * dt)
@@ -229,7 +263,7 @@ func step(dt: float) -> void:
 					vel.x = vel.x * hold - off.x * 12.0 * dt
 					vel.z = vel.z * hold - off.y * 12.0 * dt
 					vel.y = maxf(vel.y, -1.7)
-			pos += vel * dt
+			_move_loose(dt)
 			if pos.y < R:
 				pos.y = R
 				if vel.y < -0.6:
@@ -246,7 +280,54 @@ func step(dt: float) -> void:
 				vel.x = flat.x
 				vel.z = flat.y
 			_mesh.rotate(Vector3(vel.z, 0, -vel.x).normalized() if Vector2(vel.x, vel.z).length() > 0.01 else Vector3.RIGHT, Vector2(vel.x, vel.z).length() / R * dt)
+	if rolling_dead:
+		state = "dead"
+		if pos.y <= R + 0.001 and Vector2(vel.x, vel.z).length() < 0.05:
+			vel = Vector3.ZERO
 	position = pos
+	for h: Dictionary in _hits:
+		struck.emit(h)
+	_hits.clear()
+
+
+## The way her holder gives way when a prop holds the ball off her hands: back from where her hands are, by D.
+func _back(d: float) -> Vector2:
+	var b := Vector2(holder.p.x - pos.x, holder.p.y - pos.z)
+	return b.normalized() * d if b.length() > 0.01 else Vector2.ZERO
+
+
+## A loose ball's step of DT: on through the air, off every prop it meets (WsgSolidProps.bounce: each prop's own
+## restitution and friction, however fast); the floor is Ball's own (above).
+func _move_loose(dt: float) -> void:
+	if solid == null:
+		pos += vel * dt
+		return
+	var r := solid.bounce(pos, vel, R, dt)
+	pos = r.pos
+	vel = r.vel
+	_hits.append_array(r.hits)
+
+
+## A flight's step among the props: through nothing, it flies on as planned; meeting a prop, a shot stops at the touch
+## (f_struck: the ring, the post or its arm; Match plays the rebound) and anything else comes off it, loose.
+func _flight_props(was: Vector3, dt: float) -> void:
+	var h := solid.sweep(was, pos, R)
+	if not h.hit or (through_ring and String(h.name) == "ring" and pos.y < was.y):
+		return
+	var v := (pos - was) / maxf(dt, 0.0001)
+	if f_kind == "shot":
+		pos = (h.pos as Vector3) + (h.normal as Vector3) * (float(h.get("depth", 0.0)) + 0.002)
+		f_t = f_dur
+		f_struck = true
+		h.speed = -v.dot(h.normal)
+		h.sound = WsgSolidProps.MATERIALS[h.material].sound
+		_hits.append(h)
+		return
+	var r := solid.bounce(was, v, R, dt)
+	state = "loose"
+	pos = r.pos
+	vel = r.vel
+	_hits.append_array(r.hits)
 
 
 func court_pos() -> Vector2:

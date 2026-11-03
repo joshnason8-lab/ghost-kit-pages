@@ -35,6 +35,11 @@ var _arms_w := 1.0
 var _pose := {}
 var _idle_t := 0.0
 var _var := Vector4(0.5, 0.5, 0.5, 0.5)   # her own way of standing (Poses.idle)
+var solid: WsgSolidProps      # the venue's props (Arena.solid): she walks round them, never through
+var floor_rect := Rect2(-50, -50, 100, 100)   # the venue's floor (Arena.floor_rect)
+var _memo := {}
+var _way := PackedVector3Array()
+var _way_to := Vector2.INF
 
 
 func _init(p_half: int) -> void:
@@ -53,6 +58,10 @@ func _ready() -> void:
 		add_child(link)
 	p = Vector2(7.0 * half, side * (Court.HALF_W + LINE))
 	position = Vector3(p.x, 0, p.y)
+	var m := get_parent()
+	if m is Match and (m as Match).arena:
+		solid = (m as Match).arena.solid
+		floor_rect = (m as Match).arena.floor_rect
 	_var = Vector4(0.3, 0.7, 0.4, 0.6) if half < 0 else Vector4(0.8, 0.2, 0.7, 0.3)
 	_pose = Poses.idle(0.0, 0.0, _var)
 	gait = Gait.new(body)
@@ -116,14 +125,44 @@ func call_signal(kind: String, award_dir: int) -> void:
 
 ## The one place her position changes, once a frame.
 func advance(dt: float, ball: Vector2) -> void:
-	var to := target - p
+	# At a break, her walk to the middle goes round the props (WsgSolidProps.path); in play she keeps to her lines.
+	var goal := target
+	if solid and pace == WALK:
+		if _way_to.distance_to(target) > 0.25:
+			_way = solid.path(Vector3(p.x, 0, p.y), Vector3(target.x, 0, target.y), Player.BODY_R, Player.BODY_H)
+			_way_to = target
+		while _way.size() > 1 and Vector2(_way[0].x, _way[0].z).distance_to(p) < 0.4:
+			_way.remove_at(0)
+		if not _way.is_empty():
+			goal = Vector2(_way[0].x, _way[0].z)
+	elif solid:
+		_way_to = Vector2.INF
+		var g := solid.free_spot(Vector3(target.x, 0, target.y), Player.SPOT_R, Player.BODY_H)
+		goal = Vector2(g.x, g.z)
+	var to := goal - p
 	# Her pace (play far from her and she runs to catch up); still while she signals.
 	var spd := pace if to.length() < 6.0 or pace == WALK else SPEED
 	var want := to.limit_length(spd) if to.length() > 0.2 else Vector2.ZERO
 	if sig != "":
 		want = Vector2.ZERO
 	vel = vel.move_toward(want, 10.0 * dt)
-	p += vel * dt
+	if solid:
+		# Her step among the venue's props (WsgSolidProps.move), the velocity she really moved at handed on.
+		var m := solid.move(Vector3(p.x, 0, p.y), Vector3(vel.x, 0, vel.y), dt, Player.BODY_R, Player.BODY_H, Vector3(goal.x, 0, goal.y), _memo)
+		var q: Vector3 = m[0]
+		var r := floor_rect
+		q = solid.push_out(Vector3(clampf(q.x, r.position.x + Player.BODY_R, r.end.x - Player.BODY_R), 0,
+			clampf(q.z, r.position.y + Player.BODY_R, r.end.y - Player.BODY_R)), Player.BODY_R, Player.BODY_H)
+		var plain := p + vel * dt
+		var to2 := Vector2(q.x, q.z)
+		if to2.distance_squared_to(plain) > 1e-10:
+			if dt > 0.0:
+				vel = (to2 - p) / dt
+			p = to2
+		else:
+			p = plain   # (nothing in her way: her step exactly as meant)
+	else:
+		p += vel * dt
 	position = Vector3(p.x, 0, p.y)
 	var d := ball - p
 	if d.length() > 0.1:

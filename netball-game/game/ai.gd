@@ -705,7 +705,10 @@ func pass_kind(from: Player, to: Player) -> String:
 func catch_point(to: Player, kind: String) -> Vector2:
 	var t := 0.45 if kind != "lob" else 0.8
 	var at := to.p + to.vel * t
-	return Rules.onside_point(to.pos, at, to.dir, 0.15)
+	at = Rules.onside_point(to.pos, at, to.dir, 0.15)
+	# Clear of the post's pad (and any prop): she can stand there, the ball can come to her there (WsgSolidProps).
+	var f: Vector3 = m.arena.solid.free_spot(Vector3(at.x, 0, at.y), Player.SPOT_R, Player.BODY_H)
+	return Vector2(f.x, f.z)
 
 
 ## How high a pass of `kind` to `to` is caught: a lob at the top of her leap, where it drops in over her marker
