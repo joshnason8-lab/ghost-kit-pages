@@ -629,3 +629,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   - Next: AI seeds. Floorball ref0 targeted:completion 6 - a 44 cm jump in the planter's own step (its path a
     smoothstep to an aim that moves with the body: 30ff2759, an even share a frame, WIP) and a 4.1 cm slip at the
     let-go (unexplained yet; FootFlat's shift fading with the release did not change it).
+  - Landed (80420f64), all 7 games' own suites run on it first: Hurling 706/0, Floorball 736/0, Netball 2487/0, Kho
+    Kho 714/0, Pok Ta Pok 813/0, Kabaddi all passed, Sepak Takraw clean once its planted-foot check reads the drawn
+    heel and toe in skeleton_updated (bone_world read outside it is the clip's pose; its 595bec1 read the clip's toe,
+    4.0 cm, on its own pushed 13f00e2 tree too; drawn: 0.4 cm).
+- **WsgSim and WsgReplay, three fixes the games traced** (on 80420f64):
+  - A prop failure dated by the sim's own frame (WsgPropAudit.frame): it was int(summed frame times x 30), one or two
+    frames early for most frames, and a replay stopped there before the crossing - Hurling's "ball through the low
+    wall", batch yes, replay no (seed 3: dated 2638, now 2640, replays). sim_test: a shot through the bench at 0.4 s.
+  - WsgReplay keeps no skeleton still at its rest pose: a body posed only once the camera sees it was kept at its
+    first update and drawn a frame in a T-pose (Hurling's home 13). replay_test.
+  - WsgSim reads no pose from a body under an active replay (each frame was read live; Kho Kho's replayed pole turn,
+    one arm out by design, read as an A-pose).
