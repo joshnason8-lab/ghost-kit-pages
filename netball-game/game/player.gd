@@ -73,6 +73,12 @@ var _ready_hands := 0.0       # her hands up to take a pass (0 hanging relaxed .
 var _idle_t := 0.0            # seconds she has been about (her breathing, her weight shifting: never restarting)
 var _var := Vector4(0.5, 0.5, 0.5, 0.5)   # her own way of standing (each 0-1: Poses.idle), from her name
 var _ball_c := Vector3.INF    # the ball's centre between her palms this frame (world), while she holds it
+## Set to shoot and still turning to the post (pivoting on her landing foot): the shot waits (act_t held at 0, and
+## Match._run_shot's clock) until her body faces the post within SQUARE_DEG, or SQUARE_MAX seconds have gone.
+var squaring := false
+var _square_t := 0.0
+const SQUARE_DEG := 8.0
+const SQUARE_MAX := 0.6
 var _arm_travel := [0.0, 0.0]  # how far each upper arm is from her move's still (0 there .. 1 a long way: Player._animate)
 
 
@@ -246,6 +252,14 @@ func _room_along(d: Vector2) -> float:
 ## what she is doing laid over it (Poses: the catch, the pass, holding the ball, defending, the leap); nothing jumps.
 func _animate(dt: float) -> void:
 	act_t += dt
+	if squaring:
+		# (The owner: "a player shooting ... facing the wrong direction and not at the hoop": a shooter who caught
+		# facing away, 1 m out from the post, shot 140 degrees off it. The shot starts once she has turned.)
+		_square_t += dt
+		if post_off() <= deg_to_rad(SQUARE_DEG) or _square_t >= SQUARE_MAX or act != "shoot":
+			squaring = false
+		else:
+			act_t = 0.0
 	var spd := vel.length()
 	var k := 1.0 - exp(-14.0 * dt)
 	_idle_t += dt
@@ -422,7 +436,8 @@ func _body_yaw(dt: float) -> void:
 	if spd > 0.4:
 		var w := smoothstep(2.6, 4.0, spd) * (1.0 - arms_w)
 		want = lerp_angle(facing, atan2(vel.x, vel.y), w)
-	body_yaw = rotate_toward(body_yaw, want, TURN * dt)
+	# (Turning to shoot: a pivot, as quick as her facing turns.)
+	body_yaw = rotate_toward(body_yaw, want, (TURN * 1.6 if act == "shoot" else TURN) * dt)
 	if body:
 		body.rotation.y = angle_difference(facing, body_yaw)
 
@@ -479,6 +494,16 @@ func set_act(a: String, kind := "") -> void:
 	act = a
 	act_kind = kind
 	act_t = 0.0
+	squaring = a == "shoot"
+	_square_t = 0.0
+
+
+## How far (radians) her body as drawn (body_yaw) is turned from the post she shoots at.
+func post_off() -> float:
+	var d := Court.goal_post(dir) - p
+	if d.length() < 0.05:
+		return 0.0
+	return absf(angle_difference(body_yaw, atan2(d.x, d.y)))
 
 
 ## Where her hands hold the ball, in the world: the drawn hands' (the foundation's) when it draws her holding it.
