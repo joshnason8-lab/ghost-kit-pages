@@ -150,7 +150,9 @@ void vertex() {
 	vec3 p = mix(p0, p1, keen);
 	// INSTANCE_CUSTOM.b: how far a seated fan is lifted onto their seat (their own units); none once up. Lifted, the
 	// soles reach back down to the floor (the shins stretched, up to reach) unless the legs hang.
-	float lift = INSTANCE_CUSTOM.b * (1.0 - up);
+	// (Held through the first half of getting up, gone by the end: a fan lifted onto a seat higher than their legs
+	// sank into it as they began to rise - Kho Kho's front chairs.)
+	float lift = INSTANCE_CUSTOM.b * (1.0 - smoothstep(0.5, 1.0, up));
 	float ground = p.y;
 	p.y += lift;
 	if (!hang && lift > 0.0) {
