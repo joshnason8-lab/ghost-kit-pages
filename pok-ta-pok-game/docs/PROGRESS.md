@@ -256,6 +256,9 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   are gone. The seated are the shared cards (the only seated figures), in local skin, hair and clothes, and only the
   fans the shared sheet draws from the front (some of its fans are baked from behind: reported); the standing stay
   this game's townspeople, turned to the play within 50 degrees of their place. Contact sheets: docs/playtest/crowd/.
+- **0.6.5-beta: the seated fans' faces.** The foundation's cards (ca57ce7) are now drawn from each fan's whole
+  textured model, faces and all, and take a spot's shirt colour exactly: all six fans sit again (0.6.4's cut-down
+  sheet of the three that read from the front is gone), in white, red, turquoise and the teams' colours.
 
 ## Next
 
