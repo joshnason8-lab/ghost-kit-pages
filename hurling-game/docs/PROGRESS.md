@@ -815,3 +815,13 @@ The owner's 0.20 playtest (code 34):
     (0.38 s, the bas 1.8 m up over the left shoulder), held to the put-down; it had stopped with the hurley upright
     by the right ear and the hips square. Filmed on the licensed rig (tests/free_film).
   - The sideways glide is the facing rule above, on either body.
+
+## Done (0.21.2, 3 November 2026)
+
+- Foundation synced to 5914b7c (code 36): the 3D crowd's full figures only (the light "far" figure sheared torsos and
+  splayed arms close up: the Foundation's root cause of the seated-fans bug in the crowd inventory); the shared
+  crowd placement (WsgCrowdVenue, WsgCrowdCards, crowd_audit) is in, not yet adopted; WsgFootFlat (this game's 0.21.1
+  FootFlat, now shared) replaces the game's own copy (FoundationLink: WsgFootFlat.attach).
+- FoundationLink: a move of the arms made on the run (ON_THE_RUN: strike, hook, hand pass, block, tackle...) keeps the
+  motion capture's running legs ("upper"), above 0.8 m/s: the game's own legs, standing in its move while the body
+  ran on, glided.

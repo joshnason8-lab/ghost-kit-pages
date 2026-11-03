@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.21.2
+
+- **The seated fans look right close up** (Medium and High): the 3D fans past the nearest few hundred were a cut-down
+  figure whose arms stuck out and whose bodies looked sheared; every 3D fan is now the full figure.
+- **No gliding when a player strikes, hooks or passes on the run**: his legs keep running while his arms make the move.
+
 ## New in 0.21.1
 
 - **Feet flat on the grass again**: the players' and officials' boots stood with their toes up (the model's own

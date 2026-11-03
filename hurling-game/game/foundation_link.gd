@@ -160,13 +160,8 @@ func _ready() -> void:
 		body.skeleton.move_child(_stick_clear, legacy.get_index() + 1)
 
 	# The feet set down flat, last of all (after the foot planter): this body's model stands with its boots' toes up
-	# (FootFlat).
-	var tilt := FootFlat.sole_tilt(body)
-	if tilt > 2.0:
-		var ff := FootFlat.new()
-		ff.name = "FootFlat"
-		ff.down = deg_to_rad(tilt)
-		body.skeleton.add_child(ff)
+	# (the shared foundation's WsgFootFlat, from this game's 0.21.1).
+	WsgFootFlat.attach(body)
 
 
 static var _hd_mats := {}
@@ -220,6 +215,10 @@ static func _official_material(prefix: String) -> Material:
 	return _hd_mats[key]
 
 
+## The game's own moves that are of the arms and the trunk, made running as often as standing.
+const ON_THE_RUN := ["strike", "strike_stick", "hand_pass", "hook", "flick", "block", "tackle", "celebrate", "dejected"]
+
+
 ## After player.gd has posed the game's body this frame: drive this one.
 func update(now: float) -> void:
 	var dt := clampf(now - _last, 0.0, 0.1) if _last >= 0.0 else 1.0 / 60.0
@@ -234,6 +233,11 @@ func update(now: float) -> void:
 	elif act.begins_with("sig_"):
 		mode = "upper"
 	elif player.ball_stick or player.ball_hand or act in CARRY:
+		mode = "upper"
+	# A move of the arms made on the run (a strike, a hook, a hand pass...): the legs keep running on the motion
+	# capture, the game's move above the hips - the game's own legs, standing in its move while the body ran on, slid
+	# across the grass (the owner: "gliding/hovering some when running or strafing sideways").
+	if mode == "full" and act in ON_THE_RUN and not player.down(now) and Vector2(player.vel.x, player.vel.z).length() > 0.8:
 		mode = "upper"
 	var pose := reader.read()
 	if mode == "upper":
@@ -399,77 +403,6 @@ func _two_hands() -> void:
 	legacy.hold = {"Left": ["RightHand", Transform3D(Basis(rq), on - rq * v), w, dr, v]}
 	# (Closing as it comes onto the handle; open at once when it lets go, before it moves off.)
 	_left_grip = [HANDLE_R, w * w * w if _on_handle else 0.0, [c, Vector3.BACK]]
-
-
-## The feet turned down by the model's own toe-up (its boots' soles rise from the heel: the licensed hurler's by 15
-## degrees, so every move, standing worst, showed the toes off the grass - the owner, 0.20: "the feet are pointing upward
-## again everywhere"); and, a foot on the ground, set down by what that turn lifted the heel, so the sole lies on the
-## grass. The last of the skeleton's modifiers: after the foot planter (whose toe clamp would turn them back up).
-class FootFlat extends SkeletonModifier3D:
-	var down := 0.0          # radians to turn each foot toe-down
-	var _ix := []            # [foot, toe base] for each side
-	var _ankle_rest := 0.0
-	static var _tilt := {}   # mesh -> degrees
-
-	func _process_modification_with_delta(_delta: float) -> void:
-		var sk := get_skeleton()
-		if sk == null or down == 0.0:
-			return
-		if _ix.is_empty():
-			for side in ["Left", "Right"]:
-				_ix.append([sk.find_bone(side + "Foot"), sk.find_bone(side + "ToeBase")])
-			_ankle_rest = sk.get_bone_global_rest(_ix[0][0]).origin.y
-		for pair in _ix:
-			if pair[0] < 0 or pair[1] < 0:
-				continue
-			var fp := sk.get_bone_global_pose(pair[0])
-			var tp := sk.get_bone_global_pose(pair[1])
-			var fwd := tp.origin - fp.origin
-			fwd.y = 0.0
-			if fwd.length() < 0.0001:
-				continue
-			var axis := Vector3.UP.cross(fwd.normalized())
-			var q := Quaternion(axis, down)
-			var g := Transform3D(Basis(q) * fp.basis, fp.origin)
-			# On the ground (the ankle within a few cm of its standing height): down by what the turn raised the heel.
-			var low := clampf(1.0 - (fp.origin.y - _ankle_rest) / 0.06, 0.0, 1.0)
-			g.origin.y -= _ankle_rest * (1.0 - cos(down)) * 0.6 * low
-			sk.set_bone_global_pose(pair[0], g)
-
-	## How far the model's boots' soles rise from heel to toe as it stands at rest (degrees), from the mesh: the lowest
-	## point of the left boot's underside in its back and its front, a little toe spring (1.5 degrees) allowed.
-	static func sole_tilt(b: Node) -> float:
-		for mi in b.find_children("*", "MeshInstance3D", true, false):
-			var mesh: Mesh = (mi as MeshInstance3D).mesh
-			if mesh == null or mesh.get_surface_count() == 0:
-				continue
-			if _tilt.has(mesh):
-				return float(_tilt[mesh])
-			var bins := {}
-			var lo := 1e9
-			for s in mesh.get_surface_count():
-				for q: Vector3 in mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]:
-					lo = minf(lo, q.y)
-			for s in mesh.get_surface_count():
-				for q: Vector3 in mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]:
-					if q.y < lo + 0.12 and q.x > 0.03 and q.x < 0.25:
-						var k := int(floor(q.z / 0.02))
-						bins[k] = minf(float(bins.get(k, 1e9)), q.y)
-			if bins.size() < 6:
-				_tilt[mesh] = 0.0
-				return 0.0
-			var ks := bins.keys()
-			ks.sort()
-			var heel := 1e9
-			var toe := 1e9
-			for i in 3:
-				heel = minf(heel, float(bins[ks[i]]))
-				toe = minf(toe, float(bins[ks[ks.size() - 1 - i]]))
-			var len := (float(ks[-1]) - float(ks[0])) * 0.02
-			var t := clampf(rad_to_deg(atan2(toe - heel, maxf(len, 0.05))) - 1.5, 0.0, 25.0)
-			_tilt[mesh] = t
-			return t
-		return 0.0
 
 
 ## Runs _clear_stick as the skeleton's modifiers run, just after the layer.
