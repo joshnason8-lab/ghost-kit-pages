@@ -46,6 +46,10 @@ var _dt := 0.0
 var _frame := -1
 var _last_pos := Vector3.INF
 var _act_was := ""
+## (Read by tests/diag_pose.gd only: why this frame's drive ran or not - "ran", "same frame", "held", "skip" - and the
+## dt it advanced the body by.)
+var trace_why := ""
+var trace_dt := 0.0
 var _pole_shift := Vector3.ZERO   # drawn nearer the pole in a pole turn, while his near arm could not reach it
 
 ## Set by the tests that are not about drawing (tests/test_runner.gd): their matches run as a build without the
@@ -303,9 +307,11 @@ func want_mode() -> String:
 func _on_game_posed() -> void:
 	var f := Engine.get_process_frames()
 	if f == _frame:
+		trace_why = "same frame"
 		return
 	_frame = f
 	if frozen or paused or not is_inside_tree() or not who.is_visible_in_tree():
+		trace_why = "held: frozen %s paused %s in tree %s visible %s" % [frozen, paused, is_inside_tree(), who.is_visible_in_tree()]
 		return
 	var t0 := Time.get_ticks_usec()
 	_update(get_process_delta_time())
@@ -327,6 +333,7 @@ func _update(delta: float) -> void:
 	var jumped := _last_pos != Vector3.INF and who.global_position.distance_to(_last_pos) > 1.2
 	_last_pos = who.global_position
 	if _skip < pose_every and want == mode and not jumped:
+		trace_why = "skip"
 		_place()
 		return
 	_skip = 0
@@ -385,6 +392,8 @@ func _update(delta: float) -> void:
 	else:
 		loco.yaw = who.yaw
 	_place()
+	trace_why = "ran"
+	trace_dt = dt
 	body.advance(dt)
 
 
@@ -509,8 +518,13 @@ class Layer extends WsgPoseLayer:
 	var joints := {}
 	var held := {}            # the hands on it, this frame ("Left", "Right" -> bool)
 
+	var ticks := 0            # (tests/diag_pose.gd: how often it ran, and its last delta)
+	var last_delta := 0.0
+
 	func _process_modification_with_delta(delta: float) -> void:
 		t0 = Time.get_ticks_usec()
+		ticks += 1
+		last_delta = delta
 		super(delta)
 		if pole != Vector3.INF and weight > 0.0:
 			_hold_pole(smoothstep(0.0, 1.0, weight))

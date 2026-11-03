@@ -6,11 +6,13 @@ extends SceneTree
 ##   godot --headless --fixed-fps 30 --path . -s res://tests/diag_pose.gd -- KIND SEED
 
 var _lines := 0
+var _hist := {}     # athlete -> the last 25 frames of FoundationLink's drive (the foundation's probe)
+var _dumped := {}
 var _was_at := {}   # athlete -> where he stood last frame
 
 
 func _say(s: String) -> void:
-	if _lines < 60:
+	if _lines < 160:
 		print("DIAG ", s)
 	_lines += 1
 
@@ -77,6 +79,13 @@ func _initialize() -> void:
 				still.erase(b.name)
 		for a2 in m.everyone():
 			_was_at[a2] = a2.position
+			if a2.link != null and is_instance_valid(a2.link.body):
+				var L = a2.link
+				var hl: Array = _hist.get(a2, [])
+				hl.append("f%d act '%s' mode %s why %s dt %.3f weight %.2f target %.2f rate %.2f active %s ticks %d delta %.3f sim_full %s" % [Engine.get_process_frames(), a2.act, L.mode, L.trace_why, L.trace_dt, L.layer.weight, L.layer._target, L.layer._rate, L.layer.active, L.layer.ticks, L.layer.last_delta, L.body.sim_full])
+				if hl.size() > 25:
+					hl.pop_front()
+				_hist[a2] = hl
 			var av: Array = acts.get(a2, ["", "", 0])
 			if String(av[1]) != String(a2.act):
 				acts[a2] = [av[1], a2.act, Engine.get_process_frames()]
@@ -97,6 +106,10 @@ func _initialize() -> void:
 						counts[key] = int(counts.get(key, 0)) + 1
 						if int(counts[key]) <= 3:
 							var av2: Array = acts.get(a2, ["", "", 0])
+							if a2.link.mode == "move" and not _dumped.has(a2) and _dumped.size() < 3:
+								_dumped[a2] = true
+								for hline in _hist.get(a2, []):
+									_say("   %s %s" % [who, hline])
 							_say("f%d %s: %s, act '%s' (after '%s', %d frames ago), link mode '%s', layer weight %.2f, grip %s, pose_every %d, vel %.1f" % [Engine.get_process_frames(), who, p, a2.act, av2[0], Engine.get_process_frames() - int(av2[2]), a2.link.mode, a2.link.layer.weight, a2.body.grip, a2.link.pose_every, a2.vel.length()])
 					var ft := WsgNoteChecks.feet(body)
 					if last_feet.has(id):
