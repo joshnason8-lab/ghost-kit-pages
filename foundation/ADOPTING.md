@@ -1199,6 +1199,101 @@ Measure and report your per-process speed (`speed` in the report) and the nightl
 only advances with animation playback can't run faster than 1×; if that caps you, report it, and move that logic onto
 the game clock.
 
+**Read poses inside `skeleton_updated` (since 1ef240f).** After a frame, the bones are back to the clip's pose: no
+planted feet, no hips' lift, no pose layers. On the test hurler that is 14 cm out. Before this fix, WsgSim read the
+feet and the T/A-pose there, so every slip it reported was the clip's own. It now reads them as the skeleton finishes
+the drawn pose. Your own checks must do the same: connect to `body.skeleton.skeleton_updated`, or use
+`WsgWorldRules.drive`.
+
+**Pass your AI's asked-for velocity to `WsgLocomotor.drive`.** Pass the AI's wanted velocity, not the body's own. The
+demo passed the body's own velocity as the wanted one, so a start from standing picked the walk's start clip up to a
+jog. Its stride was too short for the body, and the feet slid 3–5 cm a step.
+
+## 5.18 The world rules: wsg_world_check (every game, in CI)
+
+`docs/WORLD_RULES.md` is the list. In every game and every mode:
+- props are solid;
+- the crowd sits or stands properly, facing the play;
+- planted feet slide 2 cm a step at most, with no toe-up;
+- no T-pose, A-pose or block figure appears;
+- officials are real people, dressed as officials;
+- key sounds stay crisp at a distance;
+- the loading overlay is up in the tap's frame;
+- the joystick is camera-relative on every camera;
+- nothing licensed is in a Web build.
+
+One entry point checks them all on your own code: `tools/wsg/world_check.gd`, vendored by `sync_foundation.sh`. Its
+hooks are `res://game/world.gd`:
+
+```gdscript
+# res://game/world.gd
+extends WsgWorldGame
+
+func game_name() -> String: return "netball"
+func prop_registry() -> String: return "res://game/prop_runs.gd"        # your prop_audit registry (§5.15)
+func crowd_registry() -> String: return "res://game/crowd_venues.gd"    # your crowd_audit registry (§5.1)
+func modes() -> Array: return ["match", "practice", "shoot-out", "watch AI"]
+func start_mode(mode: String, parent: Node) -> void:                   # this call IS the tap: not awaited
+	var menu := Main.new()                                              # your real start code, under PARENT
+	parent.add_child(menu)
+	menu.start(mode)                                                    # must put WsgLoading.cover up at once
+func officials(mode: String) -> int: return 0 if mode == "practice" else 2
+func walker(parent: Node) -> Array:                                     # one of your players, as in a match
+	var p := Player.new(Team.HOME, 4)
+	parent.add_child(p)
+	return [p.body, p.loco]
+func key_sounds() -> Array: return ["post", "whistle", "net", "score"]
+func audio(parent: Node) -> WsgAudio: return Sound.make_audio(parent)  # yours, as you set it up
+func stick_map() -> Callable: return Callable(Player, "stick_to_world")   # (stick, camera, body pos) -> world dir
+func cameras(mode: String, root: Node) -> Array: return root.find_children("*", "Camera3D", true, false)
+```
+
+Some hooks have defaults:
+- `find_bodies` and `find_officials` find every `WsgBody` and `WsgOfficial`, plus nodes in the group `wsg_official`.
+- `play_seconds` is 6.
+
+**A rule you leave unwired fails** ("not wired"). A rule the owner has excused goes in `exceptions()` with their note:
+`{"crowd": "2026-11-05: no crowd in practice (the owner)"}`. The report prints it.
+
+**CI** (after your export, so the Web pack can be read):
+
+```yaml
+      - run: xvfb-run -a godot --path <game> --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --web-pck build/web/index.pck
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: world-check, path: "${{ runner.temp }}/world" }
+```
+
+Use `--only feet,pose,...` for a quick local run. `--web-pck` is only needed if you export for the Web.
+
+The check writes `WORLD_CHECK.md`: one line a rule with what broke it, and what it measured. What each rule measures:
+
+| Rule | What it measures |
+|---|---|
+| feet | Your walker driven along the match path (walk, jog, a quarter turn, run, stop). Each step's worst slip must be 2 cm at most. |
+| pose | Every mode played after its loading, every body and official read as drawn. |
+| officials | The count, a `WsgBody`, and a kit of their own (not a player's material or colour). |
+| sounds | `WsgAudio.bright_kinds`. |
+| loading | The overlay in the tap's own frame, then down. |
+| joystick | `WsgNoteChecks.joystick` on each mode's cameras. |
+| web | The Web presets' `exclude_filter`, plus the pack's file table. |
+| props, crowd | Your `prop_audit` and `crowd_audit`, run by the check. |
+
+The foundation's own world is `tests/world_demo/world.gd`. It passes every rule, and `tests/world_check_test.sh` shows
+that each fault fails its own rule and only that rule.
+
+**The planter keeps feet to 2 cm a step (since 1ef240f). Sync before you wire `feet`.**
+- It holds the ball of the foot once it is down.
+- Heel-off rolls over the ball.
+- A foot beyond the leg's reach takes a step of its own rather than sliding.
+- A planted foot holds its direction up to 40° of twist.
+
+On the test hurler's match path, the worst step is now:
+
+| | walk | jog | jog, turned | run | stop |
+|---|---|---|---|---|---|
+| Worst step (cm) | 1.5 | 0.3 | 0.9 | 0.2 | 1.0 |
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

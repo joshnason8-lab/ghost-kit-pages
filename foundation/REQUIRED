@@ -6,3 +6,4 @@
 0422175	2026-11-03	solid_props.gd	class_name WsgSolidProps	The owner: nobody walks through a table or bench; the ball bounces off them.
 ad83891	2026-11-03	loading.gd	static func warm_scene(	The owner: a loading delay that looks frozen. Loading v2: shader warm-up, settle, prewarm.
 a24408b	2026-11-03	loading.gd	a node the game frees during the warm-up is skipped	A node freed during the warm-up stopped it warming anything (Hurling 0.23).
+1ef240f	2026-11-03	sim/sim.gd	shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body)]	WsgSim measured the clip, not the drawn feet (every slip it reported); the planter to 2 cm a step (world rule: feet).

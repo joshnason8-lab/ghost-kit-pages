@@ -473,3 +473,18 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     - nightly 2,000 matches in 422 s on 4 cores (x165); smoke 62 in 25 s;
     - with 6 animated WsgBodies x21;
     - the demo's foot slip with retargeting AI is 7-8.5 cm a step (for item 5's planter work).
+    - (The 7-8.5 cm was the clip's, not the drawn feet: WsgSim read poses after the frame. Fixed in 1ef240f.)
+- **5 (1ef240f + the world-check commit): the world rules.** docs/WORLD_RULES.md, one entry point
+  tools/world_check.gd (wsg_world_check) on a game's res://game/world.gd (WsgWorldGame hooks), WsgWorldRules (feet,
+  pose, officials, sounds, loading, joystick, web; props and crowd through the game's own audits). An unwired rule
+  fails; an excused one needs the owner's note. tests/world_demo/world.gd passes all; tests/world_check_test.sh shows
+  each fault (no overlay, a T-posed player, an official in a player's kit, the planter off, a dulled post, a
+  world-fixed stick, a Web preset or pack with licensed data, an unwired game) fails its own rule only. ADOPTING §5.18.
+  - Planter (1ef240f): the ball held once down, heel-off over the ball, a step of its own when beyond the leg's reach,
+    40 degrees of twist held. Match path worst step (cm) walk 1.1->1.5, jog 2.4->0.3, turned 3.2->0.9, run 2.4->0.2,
+    stop 1.2->1.0 (the world rule: 2). With the planter's own contacts 12.1/2.4/6.9/6.3/5.0 -> 2.7/0.3/1.7/0.2/1.0.
+  - WsgSim's demo (crude AI: facing snapped to velocity, up to 265 deg/s on a planted foot), 40 seeds, 80 bodies:
+    15 matches with a step over 2 cm (2.1-4.6, one 7.0). The ones traced are steep heel strikes in sharp turns: the toe
+    7-10 cm up sweeps 2-3 cm while it flattens about the held ankle, then the heel lifts. Not loosened; a heel pivot
+    tried for it made the match path worse (walk 2.05) and was dropped.
+  - Tried and dropped: easing the toe back on release (kept it low and sliding: walk 3.75).
