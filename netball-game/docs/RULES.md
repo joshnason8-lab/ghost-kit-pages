@@ -146,7 +146,8 @@ corrected in round two.
   attacking circle may not be shot. `Rules.INFRINGEMENTS`, `award`, `takers`; `from_free` stops the shot.
 - **Penalty pass**: for obstruction, contact, intimidation; taken where the infringer stood. The **penalised player
   stands out of play beside the thrower** until the ball is released (2024: unless she has been suspended or ordered
-  off). In the game she walks to the thrower's side and stands still with her arms down (`Poses.out_of_play`).
+  off). In the game she walks to the thrower's side, square to the thrower's line to the goal she attacks (never in
+  it), and stands still with her arms down (`Poses.out_of_play`).
   Test: `_rules_in_play` ("the penalised player is out of play until the pass").
 - **Penalty pass or shot**: a penalty in the goal circle the fouled team attacks, taken by its GS or GA, may be a
   pass or a shot. `award` sets `shot`. Test: `_rules`.
@@ -162,6 +163,8 @@ corrected in round two.
 - **Advantage (R7)**: the umpire plays on when stopping would cost the fouled team, calling "Advantage" and the
   infringement. In the game: a penalty against the defence while the attacking team's shooter has the ball in her
   circle is played as advantage more often than not (`Match._infringe`); the HUD shows "Advantage" and the call.
+  The offender then steps clear of the player she infringed, about 2 m to the side and a little back, never between
+  her and the goal, until the ball has gone (`TeamAI.give_way`). Test: `_advantage_clear`.
 
 ## Scoring (R9)
 

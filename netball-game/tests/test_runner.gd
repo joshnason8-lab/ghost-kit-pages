@@ -37,6 +37,15 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "ball" in OS.get_cmdline_user_args():
+		# (Only the ball, the nets and advantage: tests/test_runner.tscn -- ball)
+		_ball_flight()
+		await _ball_in_play()
+		await _net_sway()
+		await _advantage_clear()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -47,11 +56,15 @@ func _ready() -> void:
 	await _about_pages()
 	_rules()
 	_footwork()
+	_ball_flight()
 	_sim()
 	_cup()
 	_league()
 	await _matches()
 	await _rules_in_play()
+	await _ball_in_play()
+	await _net_sway()
+	await _advantage_clear()
 	await _motion()
 	await _mocap()
 	await _gait_steps()
@@ -299,6 +312,245 @@ func _footwork() -> void:
 	f.land("l")
 	f.hop("l")
 	check(f.fault == "footwork", "a hop: footwork")
+
+
+## The ball flies as a ball does (Ball.plan): gravity at 9.81 m/s², its speed across the floor constant through each
+## leg, from the hands to the catch; a chest pass at 8-14 m/s, a long shoulder pass no harder than 17; a lob 1.5-3 m
+## over the hands, hanging over a second, slower across than a chest pass; a bounce pass off the floor; a shot
+## released at 45-55 degrees from 3 m out and more (steeper under the post), dropping into the ring.
+func _ball_flight() -> void:
+	var dt := 1.0 / 30.0
+	var hand := Vector3(0.0, 1.35, 0.0)
+	var cases := [["chest", 3.0], ["chest", 6.0], ["chest", 9.0], ["chest", 12.0], ["shoulder", 11.0], ["shoulder", 16.0],
+		["shoulder", 21.0], ["lob", 4.0], ["lob", 7.0], ["lob", 10.0], ["bounce", 3.5], ["bounce", 5.5], ["shot", 0.6],
+		["shot", 2.0], ["shot", 3.0], ["shot", 4.0], ["shot", 4.85]]
+	var ring := Court.ring_centre(1) + Vector3(0, 0.05, 0)
+	var chest_vh := {}
+	for c: Array in cases:
+		var kind: String = c[0]
+		var d: float = c[1]
+		var from := hand
+		var to := Vector3(d * 0.96, 1.3, d * 0.28)
+		match kind:
+			"lob":
+				to.y = 2.05
+			"bounce":
+				to.y = 0.95
+			"shot":
+				from = ring + Vector3(-d * 0.8, 0.0, d * 0.6)
+				from.y = 2.45
+				to = ring
+		var pl := Ball.plan(kind, from, to)
+		var dur := float(pl.dur)
+		var name := "%s %.1f m" % [kind, d]
+		check(Ball.plan_at(pl, 0.0).distance_to(from) < 0.001 and Ball.plan_at(pl, 1.0).distance_to(to) < 0.001,
+			"ball: a %s pass leaves the hands and arrives where it is caught" % name)
+		# Sampled as the game samples it (30 a second): the second difference of its height is gravity; its speed
+		# across the floor the same each step (except across a bounce pass's bounce).
+		var ys: Array = []
+		var flats: Array = []
+		var n := int(dur / dt)
+		var acc_bad := 0.0
+		var vh_spread := 0.0
+		for i in n + 1:
+			ys.append(Ball.plan_at(pl, i * dt / dur))
+		var bounce_i := int(float(pl.bounce) * dur / dt) if float(pl.bounce) > 0.0 else -10
+		for i in range(1, n):
+			if absi(i - bounce_i) <= 1:
+				continue
+			var a: float = (ys[i + 1].y - 2.0 * ys[i].y + ys[i - 1].y) / (dt * dt)
+			acc_bad = maxf(acc_bad, absf(a + Ball.G) / Ball.G)
+		for i in n:
+			if absi(i - bounce_i) <= 1:
+				continue
+			flats.append(Vector2(ys[i + 1].x - ys[i].x, ys[i + 1].z - ys[i].z).length() / dt)
+		if flats.size() > 1 and float(pl.bounce) < 0.0:
+			vh_spread = (flats.max() - flats.min()) / maxf(flats.max(), 0.01)
+		check(acc_bad < 0.02, "ball: %s, its vertical acceleration is gravity, -9.81 m/s² (off by %.1f%%)" % [name, acc_bad * 100.0])
+		check(vh_spread < 0.01, "ball: %s, its speed across the floor constant in flight (spread %.1f%%)" % [name, vh_spread * 100.0])
+		var v0 := Ball.plan_vel(pl, 0.0)
+		var vh := Vector2(v0.x, v0.z).length()
+		var apex := maxf(v0.y, 0.0) * maxf(v0.y, 0.0) / (2.0 * Ball.G)
+		print("  ball: %-14s %.2f s, released at %.1f m/s (%.1f across, %.0f deg), %.2f m over the hands at the top" %
+			[name, dur, v0.length(), vh, rad_to_deg(atan2(v0.y, vh)), apex])
+		match kind:
+			"chest":
+				check(v0.length() >= 8.0 and v0.length() <= 14.0, "ball: %s at 8-14 m/s (%.1f)" % [name, v0.length()])
+				chest_vh[d] = vh
+			"shoulder":
+				check(v0.length() >= 11.0 and v0.length() <= 17.5, "ball: %s at 11-17.5 m/s (%.1f)" % [name, v0.length()])
+			"lob":
+				check(apex >= 1.5 and apex <= 3.0, "ball: %s, 1.5-3 m over the hands at the top (%.2f)" % [name, apex])
+				check(dur >= 1.0 and dur <= 1.7, "ball: %s hangs 1-1.7 s (%.2f)" % [name, dur])
+				var chest := Ball.plan("chest", from, Vector3(to.x, 1.3, to.z))
+				var cv := Ball.plan_vel(chest, 0.0)
+				check(vh < Vector2(cv.x, cv.z).length() * 0.75, "ball: %s, slower across the floor than a chest pass (%.1f m/s)" % [name, vh])
+			"bounce":
+				var k := float(pl.bounce)
+				var down := Ball.plan_vel(pl, k - 0.001)
+				var up := Ball.plan_vel(pl, k + 0.001)
+				var e := up.y / maxf(-down.y, 0.01)
+				check(k > 0.3 and k < 0.8 and absf(Ball.plan_at(pl, k).y - Ball.R) < 0.002 and down.y < -2.0 and e > 0.6 and e < 0.95,
+					"ball: %s meets the floor and comes up off it (%.0f%% of the way, down %.1f m/s, up %.1f)" % [name, k * 100.0, -down.y, up.y])
+			"shot":
+				var ang := rad_to_deg(atan2(v0.y, vh))
+				var v1 := Ball.plan_vel(pl, 1.0)
+				var entry := rad_to_deg(atan2(-v1.y, Vector2(v1.x, v1.z).length()))
+				if d >= 3.0:
+					check(ang >= 45.0 and ang <= 55.0, "ball: %s released at 45-55 degrees (%.0f)" % [name, ang])
+				else:
+					check(ang >= 55.0 and ang <= 85.0, "ball: %s under the post, a steeper arc (%.0f degrees)" % [name, ang])
+				check(v1.y < 0.0 and entry >= 38.0 and apex + from.y - to.y >= 0.44, "ball: %s drops into the ring from above (%.0f degrees, top %.2f m over it)" % [name, entry, apex + from.y - to.y])
+	# The ball itself, stepped as in a match: a lob falls at g.
+	var b := Ball.new()
+	add_child(b)
+	var ys2: Array = []
+	b.throw("lob", hand, Vector3(7.0, 2.05, 1.0))
+	while b.f_t + dt <= b.f_dur:
+		b.step(dt)
+		ys2.append(b.position.y)
+	var worst := 0.0
+	for i in range(1, ys2.size() - 1):
+		worst = maxf(worst, absf((ys2[i + 1] - 2.0 * ys2[i] + ys2[i - 1]) / (dt * dt) + Ball.G))
+	check(ys2.size() > 25 and worst < Ball.G * 0.02, "ball: stepped frame by frame, a lob falls at g (worst %.2f m/s² off, %d frames)" % [worst, ys2.size()])
+	b.free()
+
+
+## In a match the passes fly as Ball.plan says: frame by frame, each pass in the air falls at g and keeps its speed
+## across the floor; the flight times follow the kind and length (lobs hang longest).
+func _ball_in_play() -> void:
+	var m := _study_match(36)
+	await _wait_live(m)
+	var flights := {}
+	var cur: Array = []
+	var cur_kind := ""
+	var bad_acc := 0.0
+	var bad_vh := 0.0
+	var steps := 0
+	for f in 900:
+		await frames(1)
+		var flying: bool = m.ball.state == "flight" and m.pass_info.has("to") and m.ball.f_t <= m.ball.f_dur and m.speed == 1
+		if flying and m.ball.f_bounce < 0.0:
+			if cur.is_empty():
+				cur_kind = String(m.pass_info.kind)
+			cur.append(m.ball.position)
+		elif not cur.is_empty():
+			for i in range(1, cur.size() - 1):
+				var a: float = (cur[i + 1].y - 2.0 * cur[i].y + cur[i - 1].y) * 900.0
+				bad_acc = maxf(bad_acc, absf(a + Ball.G) / Ball.G)
+				var h0 := Vector2(cur[i].x - cur[i - 1].x, cur[i].z - cur[i - 1].z).length()
+				var h1 := Vector2(cur[i + 1].x - cur[i].x, cur[i + 1].z - cur[i].z).length()
+				bad_vh = maxf(bad_vh, absf(h1 - h0) / maxf(h0, 0.001))
+				steps += 1
+			flights[cur_kind] = int(flights.get(cur_kind, 0)) + 1
+			cur = []
+	check(steps > 20 and bad_acc < 0.02, "ball in play: passes fall at g frame by frame (%d steps, worst %.1f%% off)" % [steps, bad_acc * 100.0])
+	check(steps > 20 and bad_vh < 0.01, "ball in play: and keep their speed across the floor (worst %.1f%% change a frame)" % [bad_vh * 100.0])
+	check(flights.size() >= 1, "ball in play: passes seen (%s)" % [flights])
+	m.queue_free()
+	await frames(2)
+
+
+## The nets are rope: a goal swings and ripples the net it drops through, then it settles; the other net is still. In
+## every venue, by the glow shader's uniforms (no draw call of its own).
+func _net_sway() -> void:
+	for venue in ["arena", "hall", "outdoor"]:
+		var m := _study_match(37, {"venue": venue})
+		await _wait_live(m)
+		var guard := 0
+		while (m.holder == null or m.phase != "live") and guard < 600:
+			await frames(1)
+			guard += 1
+		var t := m.holder.team if m.holder else 0
+		var gs: Player = m.player_at(t, "GS")
+		m.pass_info = {}
+		m._release_holder()
+		gs.p = Court.goal_post(gs.dir) + Vector2(-gs.dir * 2.5, 0.8)
+		gs.vel = Vector2.ZERO
+		gs.target = gs.p
+		m._give(gs)
+		m.ai._decide[gs] = 99.0
+		m.shoot()
+		m.shot_info.goal = true
+		var s := 1 if gs.dir > 0 else 0
+		var peak := 0.0
+		var other := 0.0
+		var goal_f := -1
+		var stuck := 0.0
+		for f in 210:
+			await frames(1)
+			if goal_f < 0 and m.phase == "goal":
+				goal_f = f
+			var n: Dictionary = m.arena.nets[s]
+			peak = maxf(peak, (n.sw as Vector2).length())
+			other = maxf(other, (m.arena.nets[1 - s].sw as Vector2).length())
+			if goal_f >= 0 and f > goal_f + 150:
+				stuck = maxf(stuck, (n.sw as Vector2).length())
+		var sw: Array = m.arena._glow_mat.get_shader_parameter("net_swing")
+		print("  net: %s, a goal swings its foot %.1f cm; 5 s on, %.1f mm" % [venue, peak * 100.0, stuck * 1000.0])
+		check(goal_f >= 0 and peak > 0.02 and peak <= Arena.NET_MAX + 0.001,
+			"%s: a goal swings the net (%.1f cm at its foot)" % [venue, peak * 100.0])
+		check(stuck < 0.004, "%s: then it settles within five seconds (%.1f mm)" % [venue, stuck * 1000.0])
+		check(other < 0.001, "%s: the other net is still" % venue)
+		check(sw.size() == 2, "%s: the glow shader is given the nets' swing" % venue)
+		m.queue_free()
+		await frames(2)
+
+
+## Advantage on a contact (R7): the defender who made it steps clear of the shooter: past 1.5 m within a second and
+## a half, and not between her and the post.
+func _advantage_clear() -> void:
+	var m := _study_match(38)
+	await _wait_live(m)
+	var guard := 0
+	while (m.holder == null or m.phase != "live") and guard < 600:
+		await frames(1)
+		guard += 1
+	var t := m.holder.team if m.holder else 0
+	for k in 2:
+		var gs: Player = m.player_at(t, "GS" if k == 0 else "GA")
+		var gk: Player = m.player_at(1 - t, "GK" if k == 0 else "GD")
+		var post := Court.goal_post(gs.dir)
+		m.pass_info = {}
+		m.shot_info = {}
+		m._release_holder()
+		gs.p = post + Vector2(-gs.dir * (3.0 if k == 0 else 2.2), 1.2 if k == 0 else -3.0)
+		gs.vel = Vector2.ZERO
+		gs.target = gs.p
+		m._give(gs)
+		m.ai._decide[gs] = 99.0
+		var u := (post - gs.p).normalized()
+		gk.p = gs.p + u * 0.7
+		gk.vel = Vector2.ZERO
+		gk.target = gk.p
+		await frames(1)
+		m.hold_t = 0.0
+		m._advantage("contact", gk)
+		var when := -1.0
+		for f in 60:
+			await frames(1)
+			m.hold_t = 0.0
+			if when < 0.0 and gk.p.distance_to(gs.p) > 1.5:
+				when = (f + 1) / 30.0
+		print("  advantage: the %s past 1.5 m from the %s in %.2f s, %.1f m after 2 s" % [gk.pos, gs.pos, when, gk.p.distance_to(gs.p)])
+		var rel := gk.p - gs.p
+		var along := rel.dot(u)
+		var across := absf(rel.cross(u))
+		var between := along > 0.0 and along < gs.p.distance_to(post) and across < 1.0
+		check(m.holder == gs and when > 0.0 and when <= 1.5, "advantage: the %s steps clear of the %s (past 1.5 m in %.2f s, %.1f m after 2 s)"
+			% [gk.pos, gs.pos, when, gk.p.distance_to(gs.p)])
+		check(not between, "advantage: and not between the %s and the post (%.1f m along, %.1f across)" % [gs.pos, along, across])
+	# Once the shooter lets the ball go, she plays on.
+	m.ai._decide.clear()
+	var free_again := false
+	for f in 120:
+		await frames(1)
+		if m.ai._give_way.is_empty():
+			free_again = true
+			break
+	check(free_again, "advantage: once the ball has gone she is back in play")
+	m.queue_free()
+	await frames(2)
 
 
 ## Matches played out in numbers: real scores.
