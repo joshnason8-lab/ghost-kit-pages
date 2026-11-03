@@ -190,13 +190,12 @@ func _village() -> void:
 	_mesh(dark.commit(), dm, "doors")
 	# Benches for the people along the court, a little way back from the side lines.
 	var benches := Geo.new(1.0)
-	for s in [-1.0, 1.0]:
-		var x := -28.0
-		while x < 28.0:
-			benches.box(Vector3(x + 1.5, 0.42, s * 5.2), Vector3(3.0, 0.08, 0.35), Color("6b5440"))
-			benches.box(Vector3(x + 0.3, 0.2, s * 5.2), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
-			benches.box(Vector3(x + 2.7, 0.2, s * 5.2), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
-			x += _rng.randf_range(5.0, 9.0)
+	for bn in village_benches():
+		var x: float = bn[0]
+		var s: float = bn[1]
+		benches.box(Vector3(x + 1.5, BENCH_TOP - 0.04, s * BENCH_Z), Vector3(3.0, 0.08, BENCH_DEPTH), Color("6b5440"))
+		benches.box(Vector3(x + 0.3, 0.2, s * BENCH_Z), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
+		benches.box(Vector3(x + 2.7, 0.2, s * BENCH_Z), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
 	var bm := StandardMaterial3D.new()
 	bm.vertex_color_use_as_albedo = true
 	bm.vertex_color_is_srgb = true
@@ -225,12 +224,12 @@ func _festival() -> void:
 	# Stands down the far side: stepped rows on a frame, and a shade awning at each end.
 	var stands := Geo.new(2.0)
 	var steel := Geo.new(2.0)
-	var rows := 7
+	var rows := STAND_ROWS
 	for s in [-1.0]:
 		for r in rows:
-			var z: float = s * (6.0 + r * 0.8)
-			var y := 0.45 + r * 0.42
-			stands.box(Vector3(0, y - 0.04, z), Vector3(52.0, 0.1, 0.8), Color(0.78, 0.76, 0.72))
+			var z: float = s * (STAND_Z0 + 0.4 + r * STAND_TREAD)
+			var y := STAND_RISE * (r + 1)
+			stands.box(Vector3(0, y - 0.05, z), Vector3(52.0, 0.1, STAND_TREAD), Color(0.78, 0.76, 0.72))
 			stands.box(Vector3(0, y * 0.5, z + s * 0.38), Vector3(52.0, y, 0.06), Color(0.62, 0.6, 0.58))
 		for k in 14:
 			var x := -26.0 + k * 4.0
@@ -499,54 +498,84 @@ const TERRACE_RISE := 0.35                   # how much higher each row stands
 const TERRACE_Y0 := Court.WALL_H + 0.5       # the first row: the top of the coping
 
 
-func spectator_spots() -> Array:
+## The village's benches along both sides: [x of the bench's start, side]. Fixed (its own dice), so the crowd that sits
+## on them (crowd_venue) and the benches drawn always agree.
+const BENCH_Z := 5.2             # the bench's middle, across (m)
+const BENCH_TOP := 0.46          # its seat (m)
+const BENCH_DEPTH := 0.35
+const BENCH_LEN := 3.0
+static func village_benches() -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5201
 	var out := []
-	match id:
-		"village":
-			for s in [-1.0, 1.0]:
-				var x := -29.0
-				while x < 29.0:
-					for row in 3:
-						out.append(Vector3(x + _rng.randf_range(-0.2, 0.2), 0.0, s * (4.6 + row * 0.75 + _rng.randf_range(0.0, 0.3))))
-					x += _rng.randf_range(0.55, 0.9)
-			for s in [-1.0, 1.0]:
-				for k in 30:
-					out.append(Vector3(s * _rng.randf_range(32.0, 36.0), 0.0, _rng.randf_range(-6.0, 6.0)))
-		"festival":
-			for r in 7:
-				var x := -25.5
-				while x < 25.5:
-					out.append(Vector3(x + _rng.randf_range(-0.1, 0.1), 0.45 + r * 0.42, -(6.0 + r * 0.8 + 0.05)))
-					x += 0.6
-			var x2 := -29.0
-			while x2 < 29.0:
-				for row in 2:
-					out.append(Vector3(x2 + _rng.randf_range(-0.2, 0.2), 0.0, 4.4 + row * 0.75))
-				x2 += 0.6
-			for s in [-1.0, 1.0]:
-				for k in 40:
-					out.append(Vector3(s * _rng.randf_range(33.0, 41.0), 0.0, _rng.randf_range(-7.0, 7.0)))
-		_:
-			# On the platforms on top of each structure, and behind the end courts' walls.
-			for s in [-1.0, 1.0]:
-				var x := -17.0
-				while x < 17.0:
-					for row in TERRACE_ROWS:
-						# On the middle of the row's step (_stone_court's terraces), on its top.
-						var z: float = Court.TALUD_Z + 1.2 + (row + 0.5) * TERRACE_D
-						out.append(Vector3(x + _rng.randf_range(-0.15, 0.15), TERRACE_Y0 + row * TERRACE_RISE, s * z))
-					x += 0.62
-				for k in 60:
-					out.append(Vector3(s * _rng.randf_range(Court.END_HALF_L + 1.6, Court.END_HALF_L + 5.0), 0.0, _rng.randf_range(-8.0, 8.0)))
+	for s in [-1.0, 1.0]:
+		var x := -28.0
+		while x < 28.0:
+			out.append([x, s])
+			x += rng.randf_range(5.0, 9.0)
 	return out
+
+
+## The festival's stand on the far side: rows of steps, sat on as bleachers (feet on the step below).
+const STAND_ROWS := 7
+const STAND_Z0 := 5.6            # the front of its first step (m, across)
+const STAND_TREAD := 0.8
+const STAND_RISE := 0.42
+
+
+## The venue's spectators as the shared foundation's crowd placement declares them (WsgCrowdVenue: every fan seated on
+## a seat or standing on a floor, facing the play; audited by tools/wsg/crowd_audit.gd through game/crowd_venues.gd):
+## the village's benches with people standing behind them, the festival's stand sat on as a bleacher, the stone courts'
+## terraces stood on; standing room at the ends of the earth courts. (The stone courts' ends had people standing at
+## ground level behind the 3 m end walls, where no one could see them or be seen: gone.)
+static func crowd_venue(venue_id: String) -> WsgCrowdVenue:
+	var classic := String(DB.venue(venue_id).rules) == "classic"
+	var hl := Court.END_HALF_L if classic else Court.ULAMA_HALF_L
+	var hw := Court.ALLEY_HALF_W if classic else Court.ULAMA_HALF_W
+	var v := WsgCrowdVenue.new(Vector3.ZERO, Vector2(hl * 2.0, hw * 2.0))
+	match venue_id:
+		"village":
+			for bn in village_benches():
+				var x: float = bn[0]
+				var s: float = bn[1]
+				# The row's front edge 0.45 m in front of the bench, so the seat stands at the back of a 0.8 m tread.
+				var zf := s * (BENCH_Z - BENCH_DEPTH * 0.5 - 0.45)
+				v.add({"name": "bench %.0f %s" % [x, "N" if s > 0 else "S"], "a": Vector3(x + 0.1, 0, zf), "b": Vector3(x + BENCH_LEN - 0.1, 0, zf),
+					"rows": 1, "tread": 0.8, "seat": "bench", "height": BENCH_TOP, "depth": BENCH_DEPTH, "pitch": 0.55, "stand": 0.1})
+			for s in [-1.0, 1.0]:
+				# Standing behind the benches (never in them).
+				v.add({"name": "standing " + ("N" if s > 0 else "S"), "a": Vector3(-29, 0, s * (BENCH_Z + 0.45)), "b": Vector3(29, 0, s * (BENCH_Z + 0.45)),
+					"rows": 2, "tread": 0.75, "seat": "floor", "pitch": 0.75})
+				v.add({"name": "end " + ("E" if s > 0 else "W"), "a": Vector3(s * 32.0, 0, -6), "b": Vector3(s * 32.0, 0, 6),
+					"rows": 3, "tread": 1.2, "seat": "floor", "pitch": 0.8})
+		"festival":
+			v.add({"name": "stand", "a": Vector3(-25.5, 0, -(STAND_Z0 - STAND_TREAD)), "b": Vector3(25.5, 0, -(STAND_Z0 - STAND_TREAD)),
+				"rows": STAND_ROWS, "tread": STAND_TREAD, "rise": STAND_RISE, "seat": "step", "pitch": 0.55, "stand": 0.08})
+			v.add({"name": "near side", "a": Vector3(-29, 0, 4.4), "b": Vector3(29, 0, 4.4), "rows": 2, "tread": 0.75, "seat": "floor", "pitch": 0.6})
+			for s in [-1.0, 1.0]:
+				v.add({"name": "shade " + ("E" if s > 0 else "W"), "a": Vector3(s * 33.0, 0, -7), "b": Vector3(s * 33.0, 0, 7),
+					"rows": 5, "tread": 1.6, "seat": "floor", "pitch": 0.8})
+		_:
+			for s in [-1.0, 1.0]:
+				var z: float = s * (Court.TALUD_Z + 1.2)
+				v.add({"name": "terraces " + ("N" if s > 0 else "S"), "a": Vector3(-17, TERRACE_Y0, z), "b": Vector3(17, TERRACE_Y0, z),
+					"rows": TERRACE_ROWS, "tread": TERRACE_D, "rise": TERRACE_RISE, "seat": "terrace", "pitch": 0.62})
+	return v
+
+
+## Where people are (the crowd's feet and seats), as placed.
+func spectator_spots() -> Array:
+	return crowd.spots if crowd else []
 
 
 func _crowd(home: Color, away: Color) -> void:
 	crowd = Crowd.new()
 	add_child(crowd)
 	var palette := [home, away, Color("f2efe6"), Color("2a2a2e")]
-	crowd.build(spectator_spots(), Game.crowd_density(), palette, hash(id) % 1000)
+	crowd.build_venue(crowd_venue(id), Game.crowd_density(), palette, hash(id) % 1000)
 	crowd.set_light({"day": 1.0, "dusk": 0.8, "night": 0.4}.get(time(), 1.0))
+	if sun:
+		WsgCrowd3D.set_sun(sun.global_basis.z if sun.is_inside_tree() else sun.basis.z)
 
 
 # ---------------------------------------------------------------- helpers

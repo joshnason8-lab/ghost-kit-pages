@@ -228,7 +228,17 @@ void vertex() {
 	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	// The person faces the play (Crowd.facing_at); seen from behind, draw them from behind (Crowd.seen_from_behind).
 	vec3 look = vec3(focus.x + (data.y - 0.5) * 3.0 - world.x, 0.0, focus.z - world.z);
-	vec3 facing = length(look) > 0.01 ? normalize(look) : vec3(0.0, 0.0, 1.0);
+	// Within MAX_TURN of the way their place faces (the shared crowd placement's: toward the court, square-ish).
+	vec3 base = normalize(vec3(MODEL_MATRIX[2].x, 0.0, MODEL_MATRIX[2].z));
+	vec3 facing = base;
+	if (length(look) > 0.01) {
+		vec3 l = normalize(look);
+		float ang = atan(base.x * l.z - base.z * l.x, dot(base, l));
+		ang = clamp(ang, -0.87, 0.87);
+		float c = cos(ang);
+		float s = sin(ang);
+		facing = vec3(base.x * c - base.z * s, 0.0, base.x * s + base.z * c);
+	}
 	vec3 to_cam = CAMERA_POSITION_WORLD - world;
 	back = dot(facing, vec3(to_cam.x, 0.0, to_cam.z)) < 0.0 ? 1.0 : 0.0;
 	world += right * (VERTEX.x + sway * VERTEX.y) + vec3(0.0, VERTEX.y * (1.0 + breathe) + jump, 0.0);
@@ -248,14 +258,72 @@ void fragment() {
 	return _mat
 
 
-## Fills the spots with people (density 0-1 of them).
+## The people of a venue as the shared foundation places them (WsgCrowdVenue, Venue.crowd_venue): every place it
+## gives, density (0-1) of them filled. Those standing are this crowd's own townspeople (the sheet), on their floor,
+## each turned from the way their place faces toward the play as it moves (at most MAX_TURN off it); those seated
+## (benches, a bleacher) are the shared fans' seated cards (WsgCrowdCards: the only seated figures there are), sized to
+## their seat and dressed and coloured as people here are. Both one draw call each.
+const MAX_TURN := 0.87       # rad (50 degrees): WsgCrowdVenue.MAX_TURN
+const CARD_LIFT := 1.35      # the seated cards' light against this sheet's
+## The seated fans' looks (sRGB, dark to light): the brown skin tones and black and grey hair of the people at these
+## courts, and their clothes: jeans, dark and khaki trousers, white cotton; shirts the teams' colours, white, and the
+## bright colours of a festival.
+const LOOK_SKIN := [Color(0.3, 0.19, 0.13), Color(0.4, 0.26, 0.18), Color(0.49, 0.32, 0.22), Color(0.58, 0.4, 0.28), Color(0.66, 0.47, 0.34)]
+const LOOK_HAIR := [Color(0.05, 0.045, 0.04), Color(0.09, 0.07, 0.06), Color(0.15, 0.11, 0.08), Color(0.62, 0.61, 0.59)]
+const LOOK_LEGS := [Color(0.08, 0.08, 0.09), Color(0.16, 0.2, 0.33), Color(0.24, 0.33, 0.5), Color(0.55, 0.5, 0.4), Color(0.86, 0.84, 0.78)]
+const SHIRTS := [Color(0.95, 0.93, 0.88), Color(0.95, 0.93, 0.88), Color(0.78, 0.18, 0.15), Color(0.2, 0.62, 0.62), Color(0.93, 0.74, 0.2),
+	Color(0.85, 0.4, 0.55), Color(0.35, 0.55, 0.3)]
+var placed := {}             # WsgCrowdVenue.place()'s, for the tests and the audit
+var seated: Array = []       # the places filled with a seated card (indices into placed)
+var cards: WsgCrowdCards
+
+
+func build_venue(venue: WsgCrowdVenue, density: float, palette: Array, seed_ := 1) -> void:
+	placed = venue.place(seed_)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_ + 7
+	var stand: Array[Vector3] = []
+	var stand_f: Array[Vector3] = []
+	seated = []
+	var shirts := []
+	for i in placed.spots.size():
+		var col: Color = palette[rng.randi() % 2] if rng.randf() < 0.35 and palette.size() >= 2 else SHIRTS[rng.randi() % SHIRTS.size()]
+		shirts.append(col)
+		if rng.randf() >= density:
+			continue
+		if float(placed.seat[i]) > 0.0:
+			seated.append(i)
+		else:
+			stand.append(placed.spots[i])
+			stand_f.append(placed.facings[i])
+	_fill(stand, stand_f, rng)
+	if cards:
+		cards.queue_free()
+		cards = null
+	if not seated.is_empty() and WsgCrowdCards.available():
+		cards = WsgCrowdCards.new()
+		add_child(cards)
+		cards.build(placed, PackedInt32Array(seated), seed_, shirts)
+		if palette.size() >= 2:
+			cards.set_teams(palette[0], palette[1])
+		cards.set_looks(LOOK_SKIN, LOOK_HAIR, LOOK_LEGS)
+
+
+## Fills the spots with people (density 0-1 of them), each facing the play from where they stand.
 func build(p_spots: Array, density: float, _palette: Array, seed_ := 1) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
 	var keep: Array[Vector3] = []
+	var fs: Array[Vector3] = []
 	for s in p_spots:
 		if rng.randf() < density:
 			keep.append(s)
+			fs.append(facing_at(s))
+	_fill(keep, fs, rng)
+
+
+## The standing people's MultiMesh: each at their spot, the card's own turn the way their place faces.
+func _fill(keep: Array[Vector3], fs: Array[Vector3], rng: RandomNumberGenerator) -> void:
 	spots = keep
 	facings = []
 	xforms = []
@@ -268,7 +336,7 @@ func build(p_spots: Array, density: float, _palette: Array, seed_ := 1) -> void:
 	mm.mesh = q
 	mm.instance_count = keep.size()
 	for i in keep.size():
-		var f := facing_at(keep[i])
+		var f: Vector3 = fs[i]
 		facings.append(f)
 		var t := Transform3D(Basis(Vector3.UP, atan2(f.x, f.z)), keep[i])
 		xforms.append(t)
@@ -307,6 +375,8 @@ func _process(delta: float) -> void:
 			_excite = maxf(0.0, _excite - delta * 0.5)
 		m.set_shader_parameter("excite", _excite)
 		m.set_shader_parameter("focus", focus)
+		# The seated fans (the shared cards) get up and sit down with the rest.
+		WsgCrowd3D.set_excite(_excite)
 
 
 ## The crowd goes up (k: 0-1, how much): at once, held a moment, then dying down over a couple of seconds.
@@ -329,3 +399,5 @@ static func watch(x: float, half_len: float) -> void:
 
 static func set_light(k: float) -> void:
 	material().set_shader_parameter("light_k", k)
+	# The shared fans' cards are painted darker than this crowd's townspeople: lifted to sit beside them.
+	WsgCrowd3D.set_light(k * CARD_LIFT)

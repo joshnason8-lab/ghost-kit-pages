@@ -609,15 +609,25 @@ func _crowd_faces() -> void:
 			var v := Venue.new()
 			add_child(v)
 			v.build(id, Court.new(String(DB.venue(id).rules)))
+			# Placed by the shared foundation (WsgCrowdVenue): each faces the court's nearest part (at most 50 degrees off
+			# square to their row), the standing and the seated alike.
 			var worst := 1.0
 			var n := v.crowd.spots.size()
+			var cv := Venue.crowd_venue(id)
 			for i in n:
 				var p: Vector3 = v.crowd.spots[i]
-				var to := Vector3(-p.x, 0, -p.z).normalized()
+				var near := cv.nearest_play(p)
+				var to := Vector3(near.x - p.x, 0, near.z - p.z).normalized()
 				worst = minf(worst, (v.crowd.facings[i] as Vector3).dot(to))
 				var t: Transform3D = v.crowd.xforms[i]
 				var f := Vector3(t.basis.z.x, 0, t.basis.z.z).normalized()
 				worst = minf(worst, f.dot(to))
+			for i in v.crowd.seated:
+				var p: Vector3 = v.crowd.placed.spots[i]
+				var near := cv.nearest_play(p)
+				var to := Vector3(near.x - p.x, 0, near.z - p.z).normalized()
+				worst = minf(worst, (v.crowd.placed.facings[i] as Vector3).dot(to))
+			var people := n + v.crowd.seated.size()
 			# Wherever the play is along the court, the people in the side stands look into the court, never away.
 			var away := 0
 			for fx in [-v.court.half_l(), 0.0, v.court.half_l()]:
@@ -628,8 +638,15 @@ func _crowd_faces() -> void:
 						if f.z * signf(p.z) > -0.05:
 							away += 1
 			check(away == 0, "Crowd: at %s (graphics %d) the side stands watch the play wherever it is (%d look away)" % [id, g, away])
-			check(n > 40, "Crowd: %s at graphics %d has people (%d)" % [id, g, n])
-			check(worst > 0.7, "Crowd: everyone at %s (graphics %d) faces the court (worst %.2f)" % [id, g, worst])
+			check(people > 40, "Crowd: %s at graphics %d has people (%d)" % [id, g, people])
+			# Seated where there are seats (the village's benches, the festival's stand), on them as the shared audit
+			# measures it: each at their seat's height, in front of it (never cut by it), facing the play.
+			if id in ["village", "festival"]:
+				var cards: WsgCrowdCards = v.crowd.cards
+				var res: Dictionary = cards.audit(cv, v.crowd.placed) if cards else {}
+				check(cards != null and v.crowd.seated.size() > 10 and (res.get("fails", ["no cards"]) as Array).is_empty(),
+					"Crowd: at %s (graphics %d) %d sit on the seats, as the shared audit has it (%s)" % [id, g, v.crowd.seated.size(), str(res.get("fails", "no cards"))])
+			check(worst > 0.6, "Crowd: everyone at %s (graphics %d) faces the court (worst %.2f)" % [id, g, worst])
 			if n > 0:
 				var p0: Vector3 = v.crowd.spots[0]
 				var f0: Vector3 = v.crowd.facings[0]
