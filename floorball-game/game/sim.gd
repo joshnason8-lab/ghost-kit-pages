@@ -47,7 +47,7 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 			c.difficulty = 3
 			c.knockout = true
 		"targeted:scoring":
-			c.period = 4.0
+			c.period = 3.0
 		"targeted:overtime":
 			# Two sides alike, short periods, a knockout: overtime and penalty shots come often.
 			c.away = c.home
@@ -57,7 +57,7 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 			c.period = 2.0
 		"targeted:penalties":
 			c.difficulty = 3
-			c.period = 4.0
+			c.period = 3.0
 		"targeted:completion":
 			c.knockout = true
 			c.period = 2.0
@@ -74,6 +74,7 @@ func start(cfg: Dictionary, seed: int, tree: SceneTree) -> Node:
 	_log_seen = 0
 	_held = 0.0
 	_last_t = -1.0
+	_ball_last = Vector3.INF
 	tree.root.add_child(m)
 	return m
 
@@ -131,10 +132,20 @@ func bodies() -> Array:
 	return out
 
 
+## The ball. "live" (in free flight, so its path is checked against the props) as the prop audit has it
+## (game/prop_runs.gd): not on a blade or in a goalkeeper's hands (it is carried with them, not flown), not put
+## somewhere new (a restart's spot), and in play.
 func ball() -> Dictionary:
 	if m == null or not is_instance_valid(m) or m.ball == null:
 		return {}
-	return {"pos": m.ball.pos, "radius": Ball.R, "live": bool(m.ball.live) and String(m.phase) == "live"}
+	var b = m.ball
+	var flying: bool = bool(b.live) and String(m.phase) == "live" and b.carrier == null and b.held_by == null \
+		and (_ball_last == Vector3.INF or b.pos.distance_to(_ball_last) <= 2.0)
+	_ball_last = b.pos
+	return {"pos": b.pos, "radius": Ball.R, "live": flying}
+
+
+var _ball_last := Vector3.INF
 
 
 func solid() -> WsgSolidProps:

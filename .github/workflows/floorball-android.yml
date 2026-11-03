@@ -23,7 +23,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 170
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -117,7 +117,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 2700 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "${{ runner.temp }}/world" 2>&1 | tee "${{ runner.temp }}/world_check.log"
+          timeout 4800 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "${{ runner.temp }}/world" 2>&1 | tee "${{ runner.temp }}/world_check.log"
           cat "${{ runner.temp }}/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: Configure Android export

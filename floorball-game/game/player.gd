@@ -246,6 +246,11 @@ func step(dt: float) -> void:
 ## The foundation's body: posed on this man's frames only (pose_every, set by the match by his distance from the
 ## camera), carried along with him between them (its modifiers run when it is posed: WsgBody.set_manual).
 func _pose_link(dt: float) -> void:
+	# (Outside WsgSim's sampled quarter - WsgBody.set_sim_full(false), a simulated match only - nothing reads the drawn
+	# body: it is carried along, not posed.)
+	if not link.body.sim_full:
+		link.follow()
+		return
 	_link_dt += dt
 	_lod_skip += 1
 	if _lod_skip >= pose_every or respawned:
@@ -360,10 +365,15 @@ func _animate(dt: float) -> void:
 		p.upperarm_r = Vector3(-150, 0, -20)
 		p.forearm_l = Vector3(-10, 0, 0)
 		p.forearm_r = Vector3(-10, 0, 0)
-	body.apply(p)
+	# (The game's own body only feeds the drawn one: outside WsgSim's sampled quarter it is not posed. The play's
+	# blade, _blade, is worked out all the same.)
+	var drawn := link == null or link.body.sim_full
+	if drawn:
+		body.apply(p)
 	if role != "G" and role != "R":
 		_stick(dt, t)
-	body.sync()
+	if drawn:
+		body.sync()
 
 
 ## A footstep as a foot comes down in the captured cycle: your player's, and those of the players near the ball (where

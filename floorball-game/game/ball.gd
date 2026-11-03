@@ -386,9 +386,27 @@ func _collide_goals(prev: Vector3) -> void:
 		# Posts: vertical cylinders at (gx, +-hw).
 		for side: float in [-1.0, 1.0]:
 			var post := Vector2(gx, hw * side)
-			var d := Vector2(pos.x, pos.z) - post
 			var rr := R + 0.024
-			if d.length() < rr and pos.y < Rules.GOAL_H + R:
+			# Swept: a shot covers half a metre in a step, more than the post is wide - where its way first meets the
+			# post, not only where it ended (WsgSim found a ball through a post).
+			var a := Vector2(prev.x, prev.z)
+			var b := Vector2(pos.x, pos.z)
+			var ab := b - a
+			if (a - post).length() >= rr and ab.length_squared() > 1e-8:
+				var f := a - post
+				var qa := ab.dot(ab)
+				var qb := 2.0 * f.dot(ab)
+				var qc := f.dot(f) - rr * rr
+				var disc := qb * qb - 4.0 * qa * qc
+				if disc >= 0.0:
+					var tt := (-qb - sqrt(disc)) / (2.0 * qa)
+					if tt >= 0.0 and tt <= 1.0 and lerpf(prev.y, pos.y, tt) < Rules.GOAL_H + R:
+						var at := a + ab * tt
+						pos.x = at.x
+						pos.z = at.y
+						pos.y = lerpf(prev.y, pos.y, tt)
+			var d := Vector2(pos.x, pos.z) - post
+			if d.length() < rr + 0.0005 and pos.y < Rules.GOAL_H + R:
 				var n := d.normalized()
 				pos.x = post.x + n.x * rr
 				pos.z = post.y + n.y * rr

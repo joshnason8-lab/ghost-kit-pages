@@ -1,16 +1,39 @@
 # WsgSim in CI (from tools/wsg/sim_ci.yml, ADOPTING 5.17): the game's own matches played headless by game/sim.gd,
 # every failure kept with its seed to replay. The smoke batch (about 50 seeds and every targeted case) on a manual run;
 # the nightly batch sharded over 16 parallel jobs, merged into one report. Artifacts only - never inside the project.
-# Not on every push yet: a floorball match runs about 3x real time headless (20 bodies on the shared foundation's
-# rig), so the smoke batch takes over an hour - the lead's speed levers come first.
+# On every push, a reduced smoke (the lead, 2026-11-03): each targeted case once and a few random and extreme seeds,
+# sharded 4 ways, under 10 minutes; the full smoke (with the determinism check) on a manual run, the nightly on schedule.
 name: Floorball Unleashed · simulation (WsgSim)
 on:
+  push:
+    paths: ['floorball-game/**', '.github/workflows/floorball-sim.yml']
   schedule:
     - cron: '17 2 * * *'
   workflow_dispatch:
 env:
   GAME_DIR: floorball-game
 jobs:
+  quick:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {shard: [0, 1, 2, 3]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: 4.7.2, use-dotnet: false}
+      - name: Licensed data (the game's real animation)
+        run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
+        env: {ASSETS_REPO_TOKEN: '${{ secrets.ASSETS_REPO_TOKEN }}'}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - run: sh $GAME_DIR/tools/wsg/rng_lint.sh
+      # Seeds 1-8, one kind each (seed % 8): random, extreme and random shortened, then every targeted case.
+      - run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim" --from 1 --count 8 --shard ${{ matrix.shard }}/4 --kinds targeted:scoring,random,extreme,random,targeted:overtime,targeted:penalties,targeted:completion,targeted:fetch_behind_prop
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: 'sim-quick-${{ matrix.shard }}', path: '${{ runner.temp }}/sim'}
   smoke:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
