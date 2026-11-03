@@ -63,6 +63,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		cfg["short"] = not kind.begins_with("targeted:") and seed % 4 != 0 and bool(opts.get("length_mix", false))
 	# Any stray global randf in the game is at least the same for the same seed (rng_lint finds them).
 	seed(seed)
+	WsgAutoTier.off = true
 	var out := {"ok": true, "seed": seed, "kind": kind, "config": cfg, "failures": [], "hashes": []}
 	var t_wall := Time.get_ticks_usec()
 	var fps := float(opts.get("fps", FPS))

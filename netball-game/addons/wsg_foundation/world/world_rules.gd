@@ -62,6 +62,9 @@ static func drive(tree: SceneTree, body: WsgBody, loco: WsgLocomotor, segments: 
 			body.position = pos
 			loco.drive(DT, Vector3(vel.x, 0, vel.y), facing, Vector3(want.x, 0, want.y))
 			await tree.process_frame
+			# (A body the game advances itself - set_manual - is posed only when advanced: Hurling's hung the walk.)
+			if body.manual:
+				body.call_deferred("advance", DT)
 			await body.skeleton.skeleton_updated
 			on_frame.call(t, si)
 			# (Out of skeleton_updated before the next drive: poses set inside it are undone.)
