@@ -1,7 +1,7 @@
 // The Low crowd (WsgCrowdCards): each fan a flat card from one atlas (tools/bake_cards.gd), all in one draw call.
 // A card stands where the venue puts the fan (WsgCrowdVenue: seated on their seat's height, standing on their floor),
 // turned toward the camera about the vertical but never more than turn off the way the fan faces (the play), so the
-// stands still look at the game. Seated fans get up as the excitement passes their own point and the keen ones
+// stands still look at the game; from behind a fan (a camera behind a stand) the card shows their back. Seated fans get up as the excitement passes their own point and the keen ones
 // cheer, as the 3D crowd's do; shirts take the team colours or the game's per-spot shirts, and skin, hair and the
 // legs' clothes the game's palettes (set_looks), from the mask atlas.
 shader_type spatial;
@@ -9,6 +9,10 @@ render_mode unshaded, cull_disabled, world_vertex_coords;
 
 uniform sampler2D atlas : filter_linear_mipmap, repeat_disable;
 uniform sampler2D mask : filter_linear_mipmap, repeat_disable;
+// The same fans from behind (a camera behind a stand sees their backs, never their fronts mirrored).
+uniform sampler2D back_atlas : filter_linear_mipmap, repeat_disable;
+uniform sampler2D back_mask : filter_linear_mipmap, repeat_disable;
+uniform bool has_back = false;
 uniform int cols = 6;
 uniform int rows = 3;
 uniform int poses = 3;                 // cells a fan: sit, stand, cheer
@@ -31,6 +35,7 @@ uniform int n_legs = 0;
 
 varying vec2 cell_uv;
 varying flat int fan;
+varying flat int from_behind;
 varying vec3 shirt;
 varying float seat_light;
 varying vec3 skin_c;
@@ -52,6 +57,11 @@ void vertex() {
 	f = normalize(vec3(f.x, 0.0, f.z));
 	vec3 to = CAMERA_POSITION_WORLD - origin;
 	to = normalize(vec3(to.x, 0.0, to.z) + f * 0.001);
+	// Seen from behind (with back art): the card shows the fan's back, turned toward the camera from behind.
+	from_behind = has_back && dot(f, to) < 0.0 ? 1 : 0;
+	if (from_behind == 1) {
+		f = -f;
+	}
 	// Turned from the fan's facing toward the camera about up, at most turn.
 	float a = clamp(atan(f.z * to.x - f.x * to.z, dot(f, to)), -turn, turn);
 	vec3 dir = vec3(f.x * cos(a) + f.z * sin(a), 0.0, -f.x * sin(a) + f.z * cos(a));
@@ -102,11 +112,11 @@ vec3 as_written(vec3 c) {
 }
 
 void fragment() {
-	vec4 t = texture(atlas, cell_uv);
+	vec4 t = from_behind == 1 ? texture(back_atlas, cell_uv) : texture(atlas, cell_uv);
 	if (t.a < 0.5) {
 		discard;
 	}
-	vec4 m = texture(mask, cell_uv);
+	vec4 m = from_behind == 1 ? texture(back_mask, cell_uv) : texture(mask, cell_uv);
 	vec3 c = t.rgb;
 	if (skin_c.x >= 0.0) {
 		c = mix(c, recolour(t.rgb, ref_skin[fan], skin_c), m.g);

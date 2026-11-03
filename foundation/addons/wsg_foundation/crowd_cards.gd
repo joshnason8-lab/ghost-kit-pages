@@ -10,7 +10,9 @@ extends Node3D
 ##   cards.build(venue.place(seed))                        # Low: every place; Medium/High: crowd3d.placed and the
 ##   cards.set_teams(home, away)                           # spots crowd3d did not draw (build(placed, rest))
 ##
-## Your own card art instead of the shared fans: use_art(atlas, mask, layout) before build() (layout as cards.json:
+## Seen from behind (a camera behind a stand), a card shows the fan's back (crowd/cards_back.png; your own: use_art's
+## back and back_mask), turned toward the camera from behind.
+## Your own card art instead of the shared fans: use_art(atlas, mask, layout[, back, back_mask]) before build() (layout as cards.json:
 ## {"cols", "rows", "size": [w, h] m a cell, "poses": 3 (sit, stand, cheer), "fans": {name: {"seat": the seat's height
 ## in the cell, m}}}; mask: R shirt, G skin, B hair, A legs' clothes, or a blank one).
 
@@ -26,6 +28,8 @@ var placed_cards: Array = []
 var _layout := {}
 var _atlas: Texture2D
 var _mask: Texture2D
+var _back: Texture2D        # the same cells from behind (none: the front is shown from behind too)
+var _back_mask: Texture2D
 var _excite := 0.0
 ## How bright the cards are drawn (1: as the 3D fans; a game whose own crowd was painted brighter can match it).
 var brightness := 1.0:
@@ -39,10 +43,12 @@ static func available() -> bool:
 	return ResourceLoader.exists(DIR + "cards.png") and FileAccess.file_exists(DIR + "cards.json")
 
 
-func use_art(atlas: Texture2D, mask: Texture2D, layout: Dictionary) -> void:
+func use_art(atlas: Texture2D, mask: Texture2D, layout: Dictionary, back: Texture2D = null, back_mask: Texture2D = null) -> void:
 	_atlas = atlas
 	_mask = mask
 	_layout = layout
+	_back = back
+	_back_mask = back_mask
 
 
 func _art() -> void:
@@ -50,6 +56,9 @@ func _art() -> void:
 		_layout = JSON.parse_string(FileAccess.get_file_as_string(DIR + "cards.json"))
 		_atlas = load(DIR + "cards.png")
 		_mask = load(DIR + "cards_mask.png")
+		if ResourceLoader.exists(DIR + "cards_back.png"):
+			_back = load(DIR + "cards_back.png")
+			_back_mask = load(DIR + "cards_back_mask.png")
 
 
 ## The cards for these places (WsgCrowdVenue.place()'s dictionary; which: the indices to draw, none: all). shirts and
@@ -108,6 +117,10 @@ func build(placed: Dictionary, which := PackedInt32Array(), seed := 0, shirts: A
 	material.shader = load("res://addons/wsg_foundation/crowd_card.gdshader")
 	material.set_shader_parameter("atlas", _atlas)
 	material.set_shader_parameter("mask", _mask)
+	material.set_shader_parameter("has_back", _back != null)
+	if _back != null:
+		material.set_shader_parameter("back_atlas", _back)
+		material.set_shader_parameter("back_mask", _back_mask if _back_mask != null else _mask)
 	material.set_shader_parameter("cols", int(_layout.cols))
 	material.set_shader_parameter("rows", int(_layout.rows))
 	var poses: Variant = _layout.get("poses", 3)

@@ -301,8 +301,12 @@ cards.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.l
 Each card's fan is sized to their seat (the seat of the trousers on it; lifted onto a stool or a wall top, the legs
 hanging), stands just in front of the seat so it never cuts through, and turns toward the camera at most 35 degrees
 off the way the fan faces (the play). They get up and cheer with `WsgCrowd3D.set_excite` like the 3D fans and wear
-the same shirts and looks. Your own card art instead: `cards.use_art(atlas, mask, layout)` before `build` (layout as
-`crowd/cards.json`; the cards are baked by `tools/bake_cards.gd` from the authored crowd). This replaces your own
+the same shirts and looks. Seen from behind (a camera behind a stand, a third-person camera round a ring) a card
+shows the fan's back (`crowd/cards_back.png`), turned toward the camera from behind, never the front mirrored. Your
+own card art instead: `cards.use_art(atlas, mask, layout, back, back_mask)` before `build` (layout as
+`crowd/cards.json`; back and back_mask optional, the same cells from behind; the shared cards are baked by
+`tools/bake_cards.gd` from each fan's whole textured model in the authored crowd poses). `cards.brightness` matches
+your old crowd's; each spot's shirt Color is drawn exactly. This replaces your own
 billboard crowd: drop it, or keep its art through `use_art`.
 
 **3. Register it for the audit**: `res://game/crowd_venues.gd`:

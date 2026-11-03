@@ -141,4 +141,31 @@ func _card_faces() -> Array:
 		if features < FACE_DETAIL:
 			fails.append("cards: %s %s has a featureless face (detail %.3f, under %.3f)" % [cell.fan, cell.pose, features, FACE_DETAIL])
 	print("cards: every cell's head at least %.0f%% skin, detail at least %.3f (a face, not a blob)" % [worst * 100.0, least_detail])
+	# From behind (cards_back.png): the same cells, each its own picture, not the front mirrored (what a card showed a
+	# camera behind a stand before: Kabaddi's near stand) - the mean colour difference against the front flipped.
+	if not ResourceLoader.exists(WsgCrowdCards.DIR + "cards_back.png"):
+		fails.append("cards: no back views (cards_back.png): a camera behind a stand would see faces")
+		return fails
+	var back := (load(WsgCrowdCards.DIR + "cards_back.png") as Texture2D).get_image()
+	back.decompress()
+	var least_diff := INF
+	for n in layout.cells.size():
+		var cell: Dictionary = layout.cells[n]
+		var x0: int = (n % int(layout.cols)) * cw
+		var y0: int = (n / int(layout.cols)) * chh
+		var diff := 0.0
+		var count := 0
+		for y in range(0, chh, 2):
+			for x in range(0, cw, 2):
+				var b: Color = back.get_pixel(x0 + x, y0 + y)
+				var f: Color = atlas.get_pixel(x0 + cw - 1 - x, y0 + y)
+				if b.a < 0.5 and f.a < 0.5:
+					continue
+				diff += absf(b.r - f.r) + absf(b.g - f.g) + absf(b.b - f.b) + absf(b.a - f.a)
+				count += 1
+		var d := diff / maxf(1, count)
+		least_diff = minf(least_diff, d)
+		if d < 0.15:
+			fails.append("cards: %s %s from behind is the front mirrored (difference %.2f)" % [cell.fan, cell.pose, d])
+	print("cards: from behind, every cell its own picture (least difference from the front mirrored %.2f)" % least_diff)
 	return fails

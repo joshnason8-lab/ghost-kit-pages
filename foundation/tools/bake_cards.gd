@@ -8,7 +8,8 @@ extends SceneTree
 ## carries a face in three or four vertex colours, and on a card a dark-haired or bearded head read as the back of
 ## one (Pok Ta Pok's Low, 2026-11-03). The parts (the mask) come from the crowd's figure in the same pose.
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 -s tools/bake_cards.gd
-## Writes crowd/cards.png (RGBA: the fan, alpha its outline), crowd/cards_mask.png (R the shirt, G skin, B hair, A the
+## Writes crowd/cards.png (RGBA: the fan, alpha its outline) and crowd/cards_back.png (the same from behind, and its
+## cards_back_mask.png), crowd/cards_mask.png (R the shirt, G skin, B hair, A the
 ## legs' clothes: each pixel's share; drawn in two passes, the legs' on their own) and
 ## crowd/cards.json ({"cell": [w, h] px, "size": [w, h] m, "cols", "cells": [{"fan", "pose"}], "poses"}).
 
@@ -49,6 +50,8 @@ func _initialize() -> void:
 	var rows := int(ceil(float(cells.size()) / cols))
 	var atlas := Image.create(CELL.x * cols, CELL.y * rows, false, Image.FORMAT_RGBA8)
 	var mask := Image.create(CELL.x * cols, CELL.y * rows, false, Image.FORMAT_RGBA8)
+	var back := Image.create(CELL.x * cols, CELL.y * rows, false, Image.FORMAT_RGBA8)
+	var back_mask := Image.create(CELL.x * cols, CELL.y * rows, false, Image.FORMAT_RGBA8)
 	for n in cells.size():
 		var c: Dictionary = cells[n]
 		var mesh := _pose_mesh(c.fan, POSES[c.pose][0], POSES[c.pose][1], md)
@@ -62,31 +65,43 @@ func _initialize() -> void:
 		var hw := body.bone_world("Head").origin + Vector3(0, 0.09, 0)
 		c["head"] = [roundi((hw.x / SIZE.x + 0.5) * CELL.x), roundi((1.0 - hw.y / SIZE.y) * CELL.y), roundi(0.09 / SIZE.y * CELL.y)]
 		mi.visible = false
-		for k in 3:
-			await process_frame
-		var col := vp.get_texture().get_image()
-		col.convert(Image.FORMAT_RGBA8)
-		shots.append(col)
-		body.queue_free()
-		mi.visible = true
-		for mode in [1, 2]:
-			mat.set_shader_parameter("mode", mode)
+		# Each view: [colours, mask pass 1, mask pass 2] from in front, then from behind (the fan turned round: a
+		# camera behind a stand sees their backs - WsgCrowdCards shows these then).
+		var views := [[], []]
+		for view in 2:
+			body.rotation.y = PI * view
 			for k in 3:
 				await process_frame
-			var img := vp.get_texture().get_image()
-			img.convert(Image.FORMAT_RGBA8)
-			shots.append(img)
-		atlas.blit_rect(shots[0], Rect2i(Vector2i.ZERO, CELL), at)
-		# The mask: the shirt, skin and hair from the second pass, the legs' clothes (the third's red) as its alpha.
-		var m := Image.create(CELL.x, CELL.y, false, Image.FORMAT_RGBA8)
-		for y in CELL.y:
-			for x in CELL.x:
-				var a: Color = shots[1].get_pixel(x, y)
-				var b: Color = shots[2].get_pixel(x, y)
-				m.set_pixel(x, y, Color(a.r, a.g, a.b, b.r if shots[0].get_pixel(x, y).a > 0.0 else 0.0))
-		mask.blit_rect(m, Rect2i(Vector2i.ZERO, CELL), at)
+			var col := vp.get_texture().get_image()
+			col.convert(Image.FORMAT_RGBA8)
+			views[view].append(col)
+		body.queue_free()
+		mi.visible = true
+		for view in 2:
+			mi.rotation.y = PI * view
+			for mode in [1, 2]:
+				mat.set_shader_parameter("mode", mode)
+				for k in 3:
+					await process_frame
+				var img := vp.get_texture().get_image()
+				img.convert(Image.FORMAT_RGBA8)
+				views[view].append(img)
+		mi.rotation.y = 0.0
+		for view in 2:
+			var sh: Array = views[view]
+			(atlas if view == 0 else back).blit_rect(sh[0], Rect2i(Vector2i.ZERO, CELL), at)
+			# The mask: the shirt, skin and hair from the second pass, the legs' clothes (the third's red) as its alpha.
+			var m := Image.create(CELL.x, CELL.y, false, Image.FORMAT_RGBA8)
+			for y in CELL.y:
+				for x in CELL.x:
+					var a: Color = sh[1].get_pixel(x, y)
+					var b: Color = sh[2].get_pixel(x, y)
+					m.set_pixel(x, y, Color(a.r, a.g, a.b, b.r if sh[0].get_pixel(x, y).a > 0.0 else 0.0))
+			(mask if view == 0 else back_mask).blit_rect(m, Rect2i(Vector2i.ZERO, CELL), at)
 	atlas.save_png(ProjectSettings.globalize_path(OUT + "cards.png"))
 	mask.save_png(ProjectSettings.globalize_path(OUT + "cards_mask.png"))
+	back.save_png(ProjectSettings.globalize_path(OUT + "cards_back.png"))
+	back_mask.save_png(ProjectSettings.globalize_path(OUT + "cards_back_mask.png"))
 	var f := FileAccess.open(OUT + "cards.json", FileAccess.WRITE)
 	# Each fan's seat height (as drawn: their own units) and own colours of their parts (set_looks shades from them).
 	var fan_info := {}
