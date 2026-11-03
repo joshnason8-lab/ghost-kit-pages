@@ -28,7 +28,7 @@ if [ -d "$GAME/addons/wsg_foundation" ]; then
 fi
 rm -rf "$GAME/addons/wsg_foundation"
 mv "$GAME/addons/wsg_foundation.new" "$GAME/addons/wsg_foundation"
-for f in sync_foundation.sh check_foundation.sh fetch_assets.sh bake_clips.sh bake_clips.gd bake_actorcore.gd bake_crowd.gd crowd_mocap.gd bake_character.sh bake_character.gd toonbody_to_scene.gd cloth_drape.gd cloth_weights.gd crowd_audit.gd; do
+for f in sync_foundation.sh check_foundation.sh fetch_assets.sh bake_clips.sh bake_clips.gd bake_actorcore.gd bake_crowd.gd crowd_mocap.gd bake_character.sh bake_character.gd toonbody_to_scene.gd cloth_drape.gd cloth_weights.gd crowd_audit.gd prop_audit.gd; do
 	cp "$HERE/$f" "$GAME/tools/wsg/"
 done
 rm -rf "$GAME/tools/wsg/blender"

@@ -442,3 +442,11 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     the longest 1.1–1.8 s.
   - Doubling batches after one quick frame merged compiles (2.6 s), so batches now grow only after three quick
     frames in a row.
+- 2cd59a7: play_at bright_kinds (a 4 kHz ping at 50 m: a step -16.8 dB, a post 0.0); WsgCrowd3D.build_async /
+  build_venue_async (the same crowd, a checkpoint every 64 fans); deep seats: the legs' outline below the seat in
+  front of its edge, square to the seat (seat_dir; Kabaddi's dome fan5); sole_tilt on the full mesh.
+- WsgSolidProps (the owner's "nobody walks through a table or bench; the ball bounces off"): solid_props.gd (add /
+  register / skip; push_out, penetration, free_spot, steer with a per-body memo, move, path; sweep / bounce with
+  materials and the floor as a prop; make_bodies; debug_mesh), prop_audit.gd (WsgPropAudit), tools/prop_audit.gd
+  (a game's registry: venues() + run(); JSON + close-up sheets; refuses an output inside the project),
+  tests/solid_props_test.gd, tests/prop_runs.gd, ADOPTING §5.15. Inventories in from Kho Kho, Pok Ta Pok, Floorball.

@@ -855,6 +855,116 @@ The foundation's test (`tests/loading_test.gd`) checks the following, with timin
 - a prewarmed file is taken without a second request;
 - a 20 ms load closes at once.
 
+## 5.15 Solid props: WsgSolidProps (every game, every venue)
+
+The owner: "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should
+also bounce off these items. Every asset was built to be a tangible object."
+
+`WsgSolidProps` (addons/wsg_foundation/solid_props.gd) is a venue's props as simple solid shapes, plus the questions
+your own movement code asks of them. Your bodies and ball move by your own integrators, not Godot physics, so it is a
+query set. It is cheap on Low: a 2 m grid, with boxes, upright cylinders and capsules only.
+
+**1. Declare every prop where your builder puts it.** This is the same code that places the mesh or MultiMesh
+instance:
+```gdscript
+var solid := WsgSolidProps.new()
+solid.add({"name": "officials' table", "kind": "box", "position": base, "yaw": yaw, "size": Vector3(1.8, 0.76, 0.8), "material": "wood"})
+solid.add({"name": "pole", "kind": "cylinder", "position": base, "radius": 0.0475, "height": 1.225, "material": "wood"})
+solid.add({"name": "crossbar", "kind": "capsule", "a": left_top, "b": right_top, "radius": 0.024, "material": "metal"})
+solid.add({"name": "plexiglass", "kind": "panel", "xf": Transform3D(basis, centre), "size": Vector3(2, 0.95, 0.01), "material": "glass"})
+solid.add({"name": "court", "kind": "floor", "y": 0.0, "material": "wood"})   # the ball's floor: see 3
+solid.skip("centre logo", "a decal on the floor")                              # not solid, and why
+```
+- A box takes `xf` (its centre and turn), or `position` (its base's centre) plus `yaw`.
+- Use `"ball": false` or `"walk": false` when only one of the two applies, such as a net that bodies may brush.
+- Materials, as restitution and friction, with the hit sound's kind:
+
+  | material | restitution | friction | hit sound |
+  |---|---|---|---|
+  | wood | 0.55 | 0.30 | hit |
+  | metal | 0.70 | 0.15 | clang |
+  | plastic | 0.60 | 0.25 | hit |
+  | padding | 0.25 | 0.55 | bounce |
+  | net | 0.10 | 0.80 | net |
+  | fabric | 0.15 | 0.70 | bounce |
+  | stone | 0.60 | 0.35 | hit |
+  | concrete | 0.60 | 0.40 | hit |
+  | glass | 0.75 | 0.10 | hit |
+  | plaster | 0.50 | 0.40 | hit |
+  | earth | 0.35 | 0.60 | bounce |
+
+`solid.register(root)` takes the props from a scene instead. Each MeshInstance3D, and each MultiMesh instance, becomes
+its own turned box. It guesses the material from the name.
+- It leaves out anything flat (lines, decals), anything wider than 20 m (the ground, a stadium shell), and names like
+  ground, floor, pitch or crowd.
+- A node opts out with meta `wsg_solid` = false and a `wsg_solid_reason` (or the group `wsg_not_solid`). The reason is
+  kept in `solid.skipped` and the audit reports it.
+
+**2. Bodies (players, officials, substitutes, coaches): every body's movement step goes through it.**
+```gdscript
+var m := solid.move(pos, vel, dt, RADIUS, HEIGHT, goal, memo)   # steered round, moved, pushed out
+pos = m[0]
+locomotor.drive(dt, m[1], facing)                               # WsgLocomotor animates what really moved
+target = solid.free_spot(target, RADIUS)                        # an AI spot inside a bench: the nearest free one
+var way := solid.path(pos, bench_seat, RADIUS)                  # out-of-play walks: waypoints round the props
+```
+- `move()` is `steer()`, then the step, then `push_out()`.
+- `steer()` turns the velocity, keeping its speed, toward whichever of 12 directions goes most your way with nothing
+  in reach for 1.6 m (or less, if the goal is nearer).
+- `memo` is one Dictionary per body that you keep between frames. It holds the side the body chose round what's in its
+  way, so it goes on round a 5 m bench instead of dithering at its middle.
+- `push_out()` is the final resolve: whatever else moved the body (a tackle, a celebration), it ends outside every
+  prop.
+- A prop whose top is under 12 cm above the feet does not stop anyone (a mat, a cable cover). A crossbar over the head
+  doesn't either.
+- Where your rules let a body cross something, mark that part `"walk": false`. Floorball's substitution zone is a
+  step-over.
+
+**3. The ball, at any speed.** Call this instead of `pos += vel * dt`:
+```gdscript
+var r := solid.bounce(ball_pos, ball_vel, BALL_R, dt, func(hit): au.play_at(knock, hit.pos, -4.0, 1.0, hit.sound))
+ball_pos = r.pos
+ball_vel = r.vel
+```
+It sweeps the ball along its whole step, so a 60 m/s shot at a 2 cm pane bounces back. At each prop it meets, it
+applies that material's restitution and friction, and passes your callback the `material`, its `sound` kind (crisp
+at a distance, §5.8), `speed` and `pos`.
+
+**Register your floor (`"kind": "floor"`)** rather than clamping after `bounce()`. A clamp after it can lift a ball
+that went under a prop's base up through the prop. That was the only way the test's 3,000 throws got through anything.
+
+**4. Godot physics.** `solid.make_bodies(parent)` builds the same props as StaticBody3D colliders on layer 9
+(`PROPS_LAYER`), each with its material's bounce and friction. Give your bodies' masks that layer, and turn on
+`continuous_cd` on your ball's RigidBody3D.
+
+**5. The audit: tools/prop_audit.gd.** Your registry (see `tests/prop_runs.gd`) gives `static func venues()` and a
+coroutine `run(venue, seed, seconds, audit, tree)`. The coroutine plays a Watch-AI match at that venue at sim speed,
+and on every frame calls:
+- `audit.body(who, pos, radius, height)`;
+- `audit.ball(pos, radius)`;
+- `audit.ball_reset()` when you put the ball somewhere new;
+- `audit.tick(dt)`.
+
+Then run:
+```
+xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 2 120
+```
+- It fails on any body more than 2 cm into a prop, and on any ball step that passed through one.
+- It writes prop_audit.json and a sheet per venue: close-ups of the worst cases from two sides, with the props' wire
+  boxes in yellow and the body or ball in red.
+- **It refuses an output folder inside the project.** Put it in CI.
+
+**What the foundation's test shows** (`tests/solid_props_test.gd`):
+- 24 walkers sent at goals straight through a bench, table, pole, pane or net all arrive, with none ever inside;
+- paths round the bench and the table are clear;
+- 3,000 random throws up to 50 m/s produce 15,049 bounces and none through a prop;
+- the net gives back 2 of 20 m/s;
+- the audit catches a walk through the bench and balls through the props when nothing stops them;
+- 38 bodies moving among the props cost 1.1 ms a frame on a desktop.
+
+**Next step:** measure that cost on your A16. It only climbs when bodies are near props; far from them, a `steer()` is a
+grid lookup.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →
