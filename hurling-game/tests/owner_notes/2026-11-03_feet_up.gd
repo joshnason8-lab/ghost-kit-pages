@@ -4,7 +4,7 @@ extends WsgOwnerNote
 const NOTE := {"id": "2026-11-03-feet-up", "game": "hurling", "date": "2026-11-03", "version": "Hurling 0.21.0", "words": "Regression: the feet are pointing upward again everywhere."}
 const Kit := preload("res://tests/note_kit.gd")
 
-## Every body as drawn (players and officials) through 4 s of live play: a foot at rest on the grass (heel down, the
+## Every body as drawn (players and officials) through 12 s of live play: a foot at rest on the grass (heel down, the
 ## foot still) lies flat on it - the toe no more than 2.5 cm up at any time - and on the whole the feet are flat (the
 ## median toe within 1.5 cm of the grass). A heel striking the grass, its toe coming down after it, is in every step.
 func check() -> void:
@@ -39,7 +39,7 @@ func check() -> void:
 					if rise > st.worst:
 						st.worst = rise
 						st.who = who)])
-	await Kit.frames(tree, 120)
+	await Kit.frames(tree, 360)
 	for c in cbs:
 		Kit.unwatch(c[0], c[1])
 	var r: Array = st.rises
