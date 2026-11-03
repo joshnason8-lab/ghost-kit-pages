@@ -286,18 +286,28 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # Published safely (ADOPTING 5.19): the new release, whole, under a tag of its own first - if this fails, the
-          # old release is untouched; only then is the old one deleted and the new one moved onto the tag (seconds
-          # apart). Floorball's delete-then-create hit a 403 and left its tag empty for an hour.
-          NEXT="$TAG-next-$GITHUB_RUN_ID"
-          gh release create "$NEXT" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Pok Ta Pok Rivals ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK32")"
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
-          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+          # Published in place (as Hurling's 6bad1840): since 2026-11-03 the token is refused new tag names (403
+          # "Resource not accessible by integration" on every release create, the safe swap's temporary tag included).
+          # So the existing release is kept and its assets replaced: the new APKs uploaded first, then the old ones
+          # removed, then the title and notes - a failure at any step leaves a whole, installable beta. The tag stays
+          # where it was; the notes name the commit built. Only with no release at all is one created (a new tag).
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            OLD=$(gh release view "$TAG" --json assets -q '.assets[].name')
+            gh release upload "$TAG" "$APK" "$APK32" --clobber
+            NOW=$(gh release view "$TAG" --json assets -q '.assets[].name')
+            echo "$NOW" | grep -qx "$(basename "$APK")"
+            echo "$NOW" | grep -qx "$(basename "$APK32")"
+            for a in $OLD; do
+              if [ "$a" != "$(basename "$APK")" ] && [ "$a" != "$(basename "$APK32")" ]; then
+                gh release delete-asset "$TAG" "$a" --yes || true
+              fi
+            done
+            gh release edit "$TAG" --title "Pok Ta Pok Rivals ${VERSION} (latest beta)" --notes-file notes.md --prerelease --latest=false
+          else
+            gh release create "$TAG" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Pok Ta Pok Rivals ${VERSION} (latest beta)" --notes-file notes.md
+          fi
+          gh release view "$TAG" --json name,assets -q '.name, .assets[].name'
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot
