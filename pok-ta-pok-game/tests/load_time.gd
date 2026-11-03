@@ -32,18 +32,23 @@ func _ready() -> void:
 		await RenderingServer.frame_post_draw
 		var t0 := Time.get_ticks_usec()
 		Game.start_match(cfg)
+		var overlay := WsgLoading.current() != null
 		var built := Time.get_ticks_usec() - t0
 		var last := t0
 		var worst := 0
 		var first := -1
-		for f in 90:
+		for f in 240:
 			await RenderingServer.frame_post_draw
+			if OS.has_environment("LOAD_SHOTS") and r == runs[0] and f in [0, 3, 6, 9]:
+				get_viewport().get_texture().get_image().save_jpg("%s/load_%d.jpg" % [OS.get_environment("LOAD_SHOTS"), f], 0.85)
 			var now := Time.get_ticks_usec()
 			worst = maxi(worst, now - last)
 			last = now
-			if first < 0 and Game.current != null and Game.current.is_inside_tree() and Game.current.get("cam") != null:
+			var m: Node = Game.current
+			if first < 0 and m != null and m.get("built") == true and WsgLoading.current() == null:
 				first = now - t0
-		print("LOAD %-32s tap->first frame %5d ms   longest frame %5d ms   (built in %d ms, drawn in the rest)" % [r[0], first / 1000, worst / 1000, built / 1000])
+				break
+		print("LOAD %-32s overlay up in the tap's frame %s (%d ms)   tap->playing %5d ms   longest frame %4d ms" % [r[0], overlay, built / 1000, first / 1000, worst / 1000])
 		Game.goto_menu()
 		for i in 30:
 			await get_tree().process_frame

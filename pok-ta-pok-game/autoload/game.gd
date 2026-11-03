@@ -326,12 +326,55 @@ func goto_menu() -> void:
 ## config keys: home, away (team ids), venue (DB.VENUES id), user_team (0, 1 or -1 for none), mode ("quick"|"cup"
 ## |"watch"|"attract"|"test"), rules ("ulama"|"classic"), side (players a side), stage (a line naming the game),
 ## length (real minutes, 0 for none), seed, difficulty.
+## A match from a menu (quick, Watch AI, the tournament, play again): the shared loading overlay (WsgLoading) comes up
+## in the frame of the tap, the screen's buttons go off, and the match is built in steps under it, the bar moving, so
+## on a slow phone the game never looks frozen (the owner, 0.6.7). Headless (the tests) or with no screen up, built at
+## once as before.
 func start_match(config: Dictionary) -> void:
-	var s: Script = load("res://game/match.gd")
-	var m: Node = s.new()
-	m.config = config
-	Sfx.music(false)
-	_swap(m)
+	if WsgLoading.busy():
+		return
+	var host := current if current and is_instance_valid(current) else null
+	if host == null or DisplayServer.get_name() == "headless" or bool(config.get("attract", false)):
+		var sc: Script = load("res://game/match.gd")
+		var mm: Node = sc.new()
+		mm.config = config.duplicate(true)
+		Sfx.music(false)
+		_swap(mm)
+		return
+	# Up in this frame, before anything is loaded or made.
+	var ld := WsgLoading.cover(host, host.find_children("*", "BaseButton", true, false), load_look())
+	ld.log_label = "match " + String(config.get("mode", "quick"))
+	ld.request(["res://game/match.gd", "res://game/hud.gd"])
+	var made := {}
+	ld.step("Match", func():
+		var m: Node = (ld.res("res://game/match.gd") as Script).new()
+		m.config = config.duplicate(true)
+		m.config.deferred = true
+		made.m = m
+		Sfx.music(false)
+		_swap(m), 0.5)
+	ld.step("Venue", func(): await made.m.build_venue(ld), 5.0)
+	ld.step("Players", func(): await made.m.build_sides(ld), 3.0)
+	ld.step("Ready", func(): await made.m.build_rest(ld), 1.0)
+	# Its first frame drawn under the overlay (the camera's first look at everything: the GPU's first use of each
+	# material), not after it has gone.
+	ld.step("Draw", func():
+		await get_tree().process_frame
+		await get_tree().process_frame, 1.0)
+	if not await ld.run():
+		return
+	ld.done()
+
+
+## The loading overlay in the game's own colours, icon, font and words.
+func load_look() -> Dictionary:
+	var look := {"dim": Color(C_BG, 0.97), "text": C_INK, "bar": C_SAFFRON, "bar_back": C_PANEL_HI, "spinner": C_GOLD,
+		"title": tr("LOADING")}
+	if ResourceLoader.exists("res://assets/icon/icon_192.png"):
+		look.logo = load("res://assets/icon/icon_192.png")
+	if theme and theme.default_font:
+		look.font = theme.default_font
+	return look
 
 
 func on_match_finished(result: Dictionary) -> void:

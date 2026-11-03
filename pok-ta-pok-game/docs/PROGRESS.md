@@ -262,6 +262,16 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
 - **0.6.6-beta: feet flat on Medium and High.** The shared foundation synced to b073334 and its WsgFootFlat taken:
   the stocky player's rig model stands 3.4 degrees toe-up and the judge's 6.3 (sole_tilt), and every move showed the
   toes off the ground; now turned down, a planted heel kept on the ground. The lean and tall players stand flat.
+- **0.6.7-beta: a loading screen on Start** (the owner, for every game: "when you click start game there is a loading
+  delay ... long enough on the slow phone that users might think the game has frozen"). Every way into a match (a
+  quick match, Watch AI, the tournament, play again) goes through Game.start_match, which now puts the shared
+  foundation's loading overlay (WsgLoading, edebcd5) up in the frame of the tap, in the game's colours with its ring
+  icon and its own "Sweeping the court...", turns the screen's buttons off, loads the match's scripts on the loader's
+  thread and builds the match in steps (Venue, Players, Ready, Draw), a frame drawn between the parts so the bar
+  moves. Before, the whole build was one frozen frame (0.26-0.94 s on a desktop at Low, 1.3-6 s for the first match
+  after launch; tests/load_time.gd). The match's first draw (the GPU's first use of everything) happens under the
+  overlay. Tested (input_test): a real tap puts it up by the next frame with the button off, a second tap starts
+  nothing, the bar only goes forward to the end, the match comes up built.
 
 ## Next
 

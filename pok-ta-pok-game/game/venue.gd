@@ -33,22 +33,37 @@ func build(p_id: String, p_court: Court, home_colour := Color.WHITE, away_colour
 	info = DB.venue(id)
 	court = p_court
 	_rng.seed = hash(id)
+	# Under the loading overlay (WsgLoading, after Start), a frame is drawn between the parts so the bar moves; without
+	# it (the tests, the match behind the menus) it is built straight through.
+	var ld := WsgLoading.current()
 	scenery = Scenery.new(String(info.time))
 	add_child(scenery)
 	_environment()
+	if ld:
+		await ld.checkpoint()
 	match id:
 		"village":
 			_earth_court()
+			if ld:
+				await ld.checkpoint()
 			_village()
 		"festival":
 			_earth_court()
+			if ld:
+				await ld.checkpoint()
 			_festival()
 		_:
 			_stone_court()
+			if ld:
+				await ld.checkpoint()
 			_forest()
 			if id == "night":
 				_torches()
+	if ld:
+		await ld.checkpoint()
 	scenery.commit()
+	if ld:
+		await ld.checkpoint()
 	_crowd(home_colour, away_colour)
 
 

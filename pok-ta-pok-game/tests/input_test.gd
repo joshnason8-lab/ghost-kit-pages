@@ -13,6 +13,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	await _scrolling()
 	await _real_pages()
+	await _loading()
 	print("input_test: %d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures > 0 else 0)
 
@@ -129,3 +130,52 @@ func _move(at: Vector2, held := true) -> void:
 	e.global_position = at
 	e.button_mask = MOUSE_BUTTON_MASK_LEFT if held else 0
 	get_viewport().push_input(e)
+
+
+## Start (the owner: "users might think the game has frozen"): a real tap on "To the court" puts the loading overlay
+## up by the next frame with the screen's buttons off, a second tap starts nothing, the bar only goes forward and
+## reaches the end, and the match comes up built.
+func _loading() -> void:
+	var keep := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	Game.show_screen("res://ui/quick_setup.gd")
+	await frames(10)
+	var go: Button = null
+	for b in Game.current.find_children("*", "Button", true, false):
+		if (b as Button).text == tr("TO_THE_COURT"):
+			go = b
+	check(go != null, "the quick match screen has its start button")
+	if go == null:
+		return
+	var at := go.get_global_rect().get_center()
+	for pressed in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.position = at
+		ev.global_position = at
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+	await get_tree().process_frame
+	var ld := WsgLoading.current()
+	check(ld != null and go.disabled, "the loading overlay is up the frame after the tap, the start button off")
+	if ld == null:
+		return
+	check(WsgLoading.cover(Game.current, [], {}) == ld, "a second tap starts no second load")
+	var seen: Array[float] = []
+	ld.progressed.connect(func(f: float, _l: String): seen.append(f))
+	var n := 0
+	while WsgLoading.current() != null and n < 30 * 30:
+		await get_tree().process_frame
+		n += 1
+	var forward := true
+	for i in range(1, seen.size()):
+		if seen[i] < seen[i - 1] - 0.0001:
+			forward = false
+	check(seen.size() >= 4 and forward and not seen.is_empty() and seen.back() >= 0.999,
+		"the bar moves forward to the end (%d steps: %s)" % [seen.size(), str(seen.map(func(x): return snappedf(x, 0.01)))])
+	var m: Node = Game.current
+	check(m != null and m.get("built") == true and m.is_processing(), "the match is built and under way")
+	Game.goto_menu()
+	await frames(5)
+	Game.settings.graphics = keep
+

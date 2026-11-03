@@ -71,17 +71,53 @@ func _ready() -> void:
 	for k in 2:
 		tstats[k] = {"rayas": 0, "dead": 0, "end": 0, "won_out": 0, "won_touch": 0, "ring": 0, "faults_touch": 0, "faults_out": 0,
 			"strikes": 0, "dives": 0, "serves": 0}
+	if bool(config.get("deferred", false)):
+		# Started from a menu: built in steps under the loading overlay (Game.start_match calls build), the match
+		# still until it is.
+		set_process(false)
+		return
+	build(null)
+
+
+## Everything the match is made of: the venue and its crowd, the ball, the judges, both sides, the camera, the HUD.
+## LD (the loading overlay, WsgLoading): a frame drawn between the parts, so the bar moves and nothing freezes; null:
+## straight through (the tests, the match behind the menus).
+var built := false
+func build(ld: WsgLoading) -> void:
+	if ld:
+		await build_venue(ld)
+		await build_sides(ld)
+		await build_rest(ld)
+	else:
+		build_venue(null)
+		build_sides(null)
+		build_rest(null)
+
+
+## The venue, its crowd and the ball and judges.
+func build_venue(ld: WsgLoading) -> void:
+	var vid := String(config.get("venue", "village"))
 	var home := DB.team(String(config.get("home", "ESC")))
 	var away := DB.team(String(config.get("away", "LLA")))
 	venue = Venue.new()
 	add_child(venue)
-	venue.build(vid, court, home.c1, away.c1)
+	if ld:
+		await venue.build(vid, court, home.c1, away.c1)
+		await ld.checkpoint(0.8)
+	else:
+		venue.build(vid, court, home.c1, away.c1)
 	ball = Ball.new()
 	add_child(ball)
 	ball.setup(court, String(venue.info.floor))
 	officials = Officials.new()
 	add_child(officials)
 	officials.build(court)
+	if ld:
+		await ld.checkpoint(1.0)
+
+
+## Both sides' players and their brains.
+func build_sides(ld: WsgLoading) -> void:
 	var side := int(config.get("side", Rules.default_side(rules)))
 	if not (side in Rules.side_sizes(rules)):
 		side = Rules.default_side(rules)
@@ -105,6 +141,8 @@ func _ready() -> void:
 			add_child(p)
 			p.set_lod(lod)
 			ps.append(p)
+			if ld:
+				await ld.checkpoint(float(k * roster.size() + i + 1) / float(2 * roster.size()))
 		var lvl := level if k != user_team else 1
 		if user_team < 0:
 			lvl = clampi(level, 1, 2)
@@ -116,6 +154,12 @@ func _ready() -> void:
 			(ps[i] as Player).global_position = court.clamp_feet(spot + Vector3(-Rules.dir(k) * 2.0, 0, (3.5 if not court.classic() else 3.0) * (1.0 if i % 2 == 0 else -1.0)))
 		teams.append({"id": tid, "players": ps, "ai": ai})
 	officials.set_lod(lod)
+	if ld:
+		await ld.checkpoint(1.0)
+
+
+## The replays' keeper, the server, the camera, the HUD, the sound, the copal offering.
+func build_rest(ld: WsgLoading) -> void:
 	if FoundationLink.enabled():
 		# The foundation's bodies as drawn, kept for the replays (as long as the game keeps its own, every frame).
 		wsg_replay = WsgReplay.new()
@@ -150,6 +194,8 @@ func _ready() -> void:
 		Crowd.bake(self)
 	phase = P.INTRO
 	phase_t = 0.0
+	if ld:
+		await ld.checkpoint(0.5)
 	# On the Yucatán stone courts the game opens with an offering of copal (Ritual).
 	if bool(config.get("ritual", not attract and String(config.get("mode", "")) != "test")) and venue and venue.id in RITUAL_VENUES:
 		ritual = Ritual.new()
@@ -159,6 +205,8 @@ func _ready() -> void:
 			hud.banner(tr("RITUAL_COPAL"), Game.C_GOLD)
 		if not attract:
 			Sfx.crowd(0.12)
+	built = true
+	set_process(true)
 
 
 const RITUAL_VENUES := ["stone", "night"]
