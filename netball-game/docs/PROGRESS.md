@@ -289,6 +289,27 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
   `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
+- **The arena's bowl is real people** (the owner: "most of the crowd is still just squares"). The lower and upper
+  tiers all round were a slope with people painted on by VenueLook's stand shader; now each row is a tread and a
+  riser, a plastic seat (pan, edge, back; one back a seat on Medium/High, one strip on Low) along the back of it,
+  stairs every 8 m and down each corner's mitre (Arena._bowl_tier, all in the venue's lit draw call), declared as
+  WsgCrowdVenue sections (CrowdVenues.bowl: a side of a tier or a band of its rows, seats 0.43 m high, 0.33 deep,
+  backs 0.32; each row to its own mitre; no places on the stairs). Crowd fills them: on Medium the lower tier
+  behind the courtside stands in 3D, on High also the far upper tier's front rows ("solid"), the rest as the
+  foundation's cards, one draw call; Low all cards. The bowl has its own density (0.7/0.8/0.9: a full house), people
+  darken going up as the stands fade into the night, the near-camera hide looks only round the camera. Nothing is
+  painted any more (STAND is unused; the hall's back rows are empty tip-up seats, as at a league match). Foundation
+  synced to 2cd59a7 and the licensed crowd baked again (version 3); the cards' sheets now import VRAM-compressed
+  with mipmaps (our .import files: vendor.sh keeps a game's). People (TV seed 4): arena Low 4,803 cards; Medium
+  5,270 (601 3D); High 5,956 (1,175 3D). perf_probe peaks, draw calls/primitives and video memory, before -> after:
+  arena Low 99/53.9k 41.8 MB -> 99/68.9k 33.6 MB, Medium 128/367k 69.0 -> 132/610k 75.0, High 167/637k 89.5 ->
+  171/1,111k 95.5; hall Low 100/72.4k 41.6 -> 100/72.4k 32.6 MB, Medium and High unchanged; park Low 99/56.9k 48.7
+  -> 99/56.9k 39.7 MB, Medium unchanged, High 194/864k as at 0.9.0. crowd_audit passes every venue at Medium and High (the arena in three sheets: courtside,
+  lower tier, upper tier). `_crowd_facing`: on High the arena now has cards (the bowl's far rows) beside its 3D
+  people. Still as before: the courtside metal stands' rows 2-5 empty (knees in the chair backs); the shared cards
+  have no look or clap poses, so only the 3D people turn to the ball and clap in time (Crowd calls the cards'
+  watch_ball and clap, ready for art that has them). High's far upper rows in 3D cost about 200k triangles of its
+  1.11M ("solid" 2 -> 0 in CrowdVenues.bowl makes them cards).
 
 ## Next
 

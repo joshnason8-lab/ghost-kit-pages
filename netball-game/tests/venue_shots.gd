@@ -64,6 +64,9 @@ func _ready() -> void:
 					close.look_at_from_position(c[0], c[1], Vector3.UP)
 					close.current = true
 					await frames(20)
+					# (A replay of the goal ending meanwhile takes the view back to the broadcast camera.)
+					close.make_current()
+					await frames(3)
 					await shot("%s_%s_%s" % [v, lv, c[2]])
 					close.queue_free()
 					m.cam.current = true
