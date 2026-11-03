@@ -180,11 +180,14 @@ func _cards(placed: Dictionary, seed_: int) -> WsgCrowdCards:
 			keep.append(i)
 	# Shirts: a few in the home side's colours, the rest in what people wear any day (EVERYDAY).
 	var shirts: Array = []
+	var everyday := 0
 	for i in placed.spots.size():
 		var fan := not home_colors.is_empty() and rng.randf() < Crowd.SUPPORTERS
+		everyday += 0 if fan else (1 if keep.has(i) else 0)
 		shirts.append(home_colors[rng.randi_range(0, home_colors.size() - 1)] if fan else EVERYDAY[rng.randi_range(0, EVERYDAY.size() - 1)])
 	var cards := WsgCrowdCards.new()
 	cards.build(placed, keep, seed_, shirts)
+	cards.set_meta("everyday", everyday)   # for the tests: how many of the drawn wear everyday clothes
 	cards.set_looks(SKIN, HAIR, LEGS)
 	return cards
 

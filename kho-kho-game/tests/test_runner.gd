@@ -586,28 +586,35 @@ func _grounds() -> void:
 			check((we.environment.sky != null) == outdoor, "graphics %d, %s: %s" % [g, v, "a photographed sky" if outdoor else "no sky indoors"])
 			var mms := {}
 			for mmi in a.find_children("*", "MultiMeshInstance3D", true, false):
-				if mmi is Crowd:
+				if mmi is Crowd or mmi.get_parent() is WsgCrowdCards:
 					continue
 				var mesh: Mesh = (mmi as MultiMeshInstance3D).multimesh.mesh
 				mms[mesh.resource_name if mesh.resource_name != "" else str(mesh.get_instance_id())] = (mmi as MultiMeshInstance3D).multimesh.instance_count
 			check(mms.size() >= (3 if outdoor else 1), "graphics %d, %s: the shared assets placed (%d kinds)" % [g, v, mms.size()])
+			# The people (the shared crowd's cards, placed by VenueCrowd): each faces the play, the nearest part of the
+			# court drawn in a third, as the foundation's audit measures it (FACING_MAX 35 degrees; 40 here).
 			var people := 0
 			var astray := 0
-			for c in a.find_children("*", "Crowd", true, false):
-				var cr := c as Crowd
-				check(cr.xforms.size() == cr.multimesh.instance_count, "graphics %d, %s: a transform for every spectator" % [g, v])
-				for x in cr.xforms:
-					var t := cr.global_transform * x
+			var everyday := 0
+			var fv := WsgCrowdVenue.new(Vector3.ZERO, Vector2(a.f.length, a.f.width))
+			for c in a.find_children("*", "WsgCrowdCards", true, false):
+				var cards := c as WsgCrowdCards
+				everyday += int(cards.get_meta("everyday", 0))
+				if cards.get_parent() == a.near_side:
+					continue
+				for pc in cards.placed_cards:
+					var t: Transform3D = cards.global_transform * (pc[1] as Transform3D)
 					var fwd := Vector3(t.basis.z.x, 0.0, t.basis.z.z).normalized()
-					var to_c := Vector3(-t.origin.x, 0.0, -t.origin.z).normalized()
+					var to := fv.nearest_play(t.origin, minf(a.f.length, a.f.width) / 3.0) - t.origin
+					to = Vector3(to.x, 0.0, to.z).normalized()
 					people += 1
-					if fwd.dot(to_c) <= 0.7:
+					if rad_to_deg(fwd.angle_to(to)) > 40.0:
 						astray += 1
-			check(people > 0 and astray == 0, "graphics %d, %s: all %d spectators face the court (%d astray)" % [g, v, people, astray])
+			check(people > 0 and astray == 0, "graphics %d, %s: all %d spectators face the play (%d astray)" % [g, v, people, astray])
 			# The near side (the owner: blank behind the pole): built, with people on it, drawn only for that camera.
 			var near_people := 0
-			for c in a.near_side.find_children("*", "Crowd", true, false):
-				near_people += (c as Crowd).xforms.size()
+			for c in a.near_side.find_children("*", "WsgCrowdCards", true, false):
+				near_people += (c as WsgCrowdCards).placed_cards.size()
 			var built := a.near_side.find_children("*", "MeshInstance3D", true, false).size()
 			check(near_people > 20 and built > 0 and not a.near_side.visible,
 				"graphics %d, %s: the near side built (%d people), hidden until the camera behind the pole" % [g, v, near_people])
@@ -619,13 +626,8 @@ func _grounds() -> void:
 			have.sort()
 			want.sort()
 			check(have == want, "graphics %d, %s: dressed with %s (want %s)" % [g, v, have, want])
-			var everyday := 0
-			for c in a.find_children("*", "Crowd", true, false):
-				var mm: MultiMesh = (c as Crowd).multimesh
-				for i in mm.instance_count:
-					if mm.get_instance_custom_data(i).a > 0.0:
-						everyday += 1
-			check(people > 0 and float(everyday) / people > 0.7, "graphics %d, %s: %d of %d spectators in everyday clothes" % [g, v, everyday, people])
+			var drawn := people + near_people
+			check(drawn > 0 and float(everyday) / drawn > 0.7, "graphics %d, %s: %d of %d spectators in everyday clothes" % [g, v, everyday, drawn])
 			if a.kind == "village":
 				var chairs: int = a._chairs.size()
 				check(chairs > 0 and (g != Game.GFX_LOW or chairs < 60), "graphics %d, village: chairs under the front row (%d)" % [g, chairs])
