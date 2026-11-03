@@ -21,6 +21,7 @@ func check() -> void:
 	var h: Node = await Harness.make(tree)
 	for g in [Game.GFX_LOW, Game.GFX_MEDIUM, Game.GFX_HIGH]:
 		Game.settings.graphics = g
+		WsgFoundation.tier = g      # (as the game sets it at start: the 3D crowd is built at most at the tier)
 		for venue in ["arena", "hall", "outdoor"]:
 			var r: Dictionary = await Crowd3.count(h, venue)
 			var what := "%s, %s" % [["Low", "Medium", "High"][g], venue]
