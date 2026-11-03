@@ -63,6 +63,15 @@ func _initialize() -> void:
 		if c == "sit_clap" and apart > 0.12:
 			fails.append("sit_clap: the hands do not meet (%.2f m apart)" % apart)
 	fails.append_array(_looks(spots, facings))
+	# Shirts: white, off-white, pale blue and plain colours come back near what was asked (the old hash could not make
+	# white or pale ones: white came out mint), and the codes stay clear of the old ones (< 1).
+	for want in [Color(0.95, 0.94, 0.9), Color(1, 1, 1), Color(0.7, 0.8, 0.95), Color(0.8, 0.1, 0.1), Color(0.1, 0.3, 0.8), Color(0.95, 0.75, 0.1)]:
+		var code := WsgCrowd3D.shirt_palette_code(want)
+		var got := WsgCrowd3D.shirt_palette(int((code - 1.0) * 256.0))
+		var err := Vector3(got.r - want.r, got.g - want.g, got.b - want.b).length()
+		if code < 1.0 or err > 0.15:   # (a hue between two of the twenty: gold for amber)
+			fails.append("shirts: %s comes back %s (code %.4f, off by %.2f)" % [want, got, code, err])
+	print("shirts: white comes back %s" % WsgCrowd3D.shirt_palette(int((WsgCrowd3D.shirt_palette_code(Color(0.95, 0.94, 0.9)) - 1.0) * 256.0)))
 	fails.append_array(_seats(true))
 	if _seats(false).is_empty():
 		fails.append("seats: the old placement (no lift, no room) passes the seat check: it checks nothing")

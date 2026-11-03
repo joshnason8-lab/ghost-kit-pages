@@ -175,7 +175,7 @@ void vertex() {
 	n = turn_y(n, vec3(0.0), head * UV2.y);
 	// Getting up from a seat: forward off it as they rise (not a terrace's, always up).
 	if (INSTANCE_CUSTOM.g > 0.0) {
-		p.z += stand_fwd * up;
+		p.z += stand_fwd * smoothstep(0.0, 0.5, up);   // (the step first: a fan half up is already clear of the seat)
 	}
 	VERTEX = p;
 	NORMAL = n;
@@ -189,7 +189,22 @@ void vertex() {
 	float folds = clamp(dot(COLOR.rgb, vec3(0.3, 0.59, 0.11)) * 1.15, 0.5, 1.0);
 	vec3 own = mix(vec3(0.5), 0.5 + 0.5 * cos(6.2832 * (r5 + vec3(0.0, 0.33, 0.67))), 0.45) * 0.75;
 	vec3 shirt = r4 < 0.55 ? team : own;
-	if (code > 0.0005) {
+	if (code >= 1.0) {
+		// WsgCrowd3D.shirt_palette: 16 greys, then 20 hues x 3 saturations x 4 values.
+		int i = clamp(int((code - 1.0) * 256.0), 0, 255);
+		if (i < 16) {
+			shirt = vec3(float(i) / 15.0);
+		} else {
+			int k = i - 16;
+			float h = float(k % 20) / 20.0;
+			int si = k / 20 % 3;
+			float sat = si == 0 ? 0.3 : (si == 1 ? 0.6 : 0.95);
+			int vi = k / 60;
+			float val = vi == 0 ? 0.35 : (vi == 1 ? 0.55 : (vi == 2 ? 0.75 : 0.95));
+			shirt = val * mix(vec3(1.0), clamp(abs(fract(h + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, 0.0, 1.0), sat);
+		}
+	} else if (code > 0.0005) {
+		// (The old hash code, as the games' cut-outs decode it.)
 		shirt = vec3(fract(code * 7.13), fract(code * 3.77), fract(code * 5.31));
 		shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
 	}
