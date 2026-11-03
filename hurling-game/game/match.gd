@@ -1135,7 +1135,7 @@ func _out_of_goals(pl: Player) -> void:
 		for o: Vector2 in outs:
 			if o.distance_to(q) < best.distance_to(q):
 				best = o
-		pl.global_position = Vector3(best.x, p.y, best.y)
+		pl.put(Vector3(best.x, p.y, best.y))
 
 
 func _jog(pl: Player, target: Vector3) -> float:
@@ -1591,7 +1591,7 @@ func _take_stance(a: Player, spot: Vector3) -> void:
 	var d := _attack_dir(a.team)
 	var to_goal := Vector3(Pitch.HALF_L * d - spot.x, 0, -spot.z).normalized()
 	a.measure_free_bas()
-	a.global_position = free_stand(spot, a.team)
+	a.put(free_stand(spot, a.team))
 	a.vel = Vector3.ZERO
 	a.want_vel = Vector3.ZERO
 	a.yaw = atan2(to_goal.x, to_goal.z)
@@ -2736,7 +2736,7 @@ func _place_for_throw_in(snap: bool) -> void:
 		ball.place(Vector3.ZERO)
 		for pl in all_players():
 			var p: Player = pl
-			p.position = _throw_in_spot(p)
+			p.put(_throw_in_spot(p))
 			p.vel = Vector3.ZERO
 			p.yaw = atan2(dir(p.team), 0.0)
 			p.body.rotation.y = p.yaw
@@ -2967,7 +2967,7 @@ func _run_subs() -> void:
 		var old_id := String(off.data.id)
 		off.take_over(pd, _look(k, pd, int(pd.line) == DB.POS_GK))
 		off.tire_k = clock_k
-		off.global_position = Vector3(clampf(off.global_position.x, -20.0, 20.0), 0, -Pitch.HALF_W - 1.5)
+		off.put(Vector3(clampf(off.global_position.x, -20.0, 20.0), 0, -Pitch.HALF_W - 1.5))
 		off.vel = Vector3.ZERO
 		carries[off] = Rules.Carry.new()
 		pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
@@ -3074,7 +3074,7 @@ func _shootout_next() -> void:
 	for tm in teams:
 		for pl in tm.players:
 			if pl != taker:
-				pl.global_position = _shootout_spot(pl)
+				pl.put(_shootout_spot(pl))
 				pl.vel = Vector3.ZERO
 	if last != null and is_instance_valid(last):
 		last.stop_action()
@@ -3088,7 +3088,7 @@ func _shootout_next() -> void:
 	taker.action_t = 1.0
 	var keep := keeper_of(1 - k)
 	if keep != null:
-		keep.global_position = _shootout_spot(keep)
+		keep.put(_shootout_spot(keep))
 		keep.vel = Vector3.ZERO
 	PlacedAim.low_view(_pen_view, spot, taker.global_position, _shootout_goal_dir())
 	_pen_view.make_current()

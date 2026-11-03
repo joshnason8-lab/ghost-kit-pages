@@ -48,16 +48,16 @@ func _place_umpires() -> void:
 		var u: Player = umpires[i]
 		var s := -1.0 if i < 2 else 1.0
 		var zs := -1.0 if i % 2 == 0 else 1.0
-		u.position = Vector3((Pitch.HALF_L + 0.6) * s, 0, (Pitch.POST_GAP * 0.5 + 1.0) * zs)
+		u.put(Vector3((Pitch.HALF_L + 0.6) * s, 0, (Pitch.POST_GAP * 0.5 + 1.0) * zs))
 		u.face_to = Vector3(0, 0, u.position.z * 0.5)
 		u.yaw = atan2(-s, 0.0)
 
 
 func place_for_throw_in() -> void:
-	referee.position = Vector3(0, 0, 3.0)
+	referee.put(Vector3(0, 0, 3.0))
 	referee.vel = Vector3.ZERO
-	linesmen[0].position = Vector3(0, 0, -Pitch.HALF_W - 1.5)
-	linesmen[1].position = Vector3(0, 0, Pitch.HALF_W + 1.5)
+	linesmen[0].put(Vector3(0, 0, -Pitch.HALF_W - 1.5))
+	linesmen[1].put(Vector3(0, 0, Pitch.HALF_W + 1.5))
 	_place_umpires()
 
 

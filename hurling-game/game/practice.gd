@@ -113,7 +113,7 @@ func _ready() -> void:
 	for q in all_players():
 		if q != taker:
 			(q as Player).visible = false
-			(q as Player).global_position = Vector3(-dir(0) * Pitch.HALF_L, 0, -Pitch.HALF_W - 30.0)
+			(q as Player).put(Vector3(-dir(0) * Pitch.HALF_L, 0, -Pitch.HALF_W - 30.0))
 	officials.referee.visible = false
 	for l in officials.linesmen:
 		(l as Player).visible = false

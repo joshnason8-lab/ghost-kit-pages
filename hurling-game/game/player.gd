@@ -262,6 +262,13 @@ func top_speed() -> float:
 
 ## The one place his position changes. want_vel is clamped to his top speed; his velocity moves toward it at his
 ## acceleration (faster when braking); he turns toward the way he runs (or toward face_to) at a person's rate.
+## Put him at P, straight there (a restart's spot, back out of a goal): his legs told (FoundationLink.put_down).
+func put(p: Vector3) -> void:
+	global_position = p
+	if link:
+		link.put_down()
+
+
 func integrate(dt: float, now: float) -> void:
 	if down(now):
 		want_vel = Vector3.ZERO

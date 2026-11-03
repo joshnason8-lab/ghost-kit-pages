@@ -306,6 +306,15 @@ var _left_grip := [0.016, 1.0, []]
 var _on_handle := false
 var mode_since := 0.0          # when the mode last changed (the game's own move began or ended)
 var _at := Vector3.INF
+
+
+## The game has put its player somewhere new (a restart's spot, an umpire back on his, out of a goal): the planted
+## feet are let go, not held where they were (WsgFootPlanter.reset: a snap held stretches the legs and catches up, and
+## WsgSim reads it as a cut, not a slide).
+func put_down() -> void:
+	if loco:
+		loco.planter.reset()
+	_at = player.global_position
 var _hold_w := 0.0
 var _dt := 1.0 / 60.0
 
