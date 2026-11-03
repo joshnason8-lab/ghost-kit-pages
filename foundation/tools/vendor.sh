@@ -15,6 +15,17 @@ rm -rf "$GAME/addons/wsg_foundation.new/data"
 if [ -d "$GAME/addons/wsg_foundation/data" ]; then
 	mv "$GAME/addons/wsg_foundation/data" "$GAME/addons/wsg_foundation.new/data"
 fi
+# The game's own import settings for the addon's files (the foundation does not keep *.import: Godot writes them per
+# project) carried over for every file still there, so a sync does not delete and regenerate them (Sepak Takraw:
+# the cards' .png.import churned on every sync).
+if [ -d "$GAME/addons/wsg_foundation" ]; then
+	(cd "$GAME/addons/wsg_foundation" && find . -name '*.import' -not -path './data/*') | while read -r imp; do
+		src="${imp%.import}"
+		if [ -e "$GAME/addons/wsg_foundation.new/$src" ] && [ ! -e "$GAME/addons/wsg_foundation.new/$imp" ]; then
+			cp "$GAME/addons/wsg_foundation/$imp" "$GAME/addons/wsg_foundation.new/$imp"
+		fi
+	done
+fi
 rm -rf "$GAME/addons/wsg_foundation"
 mv "$GAME/addons/wsg_foundation.new" "$GAME/addons/wsg_foundation"
 for f in sync_foundation.sh check_foundation.sh fetch_assets.sh bake_clips.sh bake_clips.gd bake_actorcore.gd bake_crowd.gd crowd_mocap.gd bake_character.sh bake_character.gd toonbody_to_scene.gd cloth_drape.gd cloth_weights.gd crowd_audit.gd; do
