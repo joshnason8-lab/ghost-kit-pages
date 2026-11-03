@@ -489,7 +489,9 @@ func _run_setup(_dt: float) -> void:
 	taker.target = spot
 	taker.want_speed = 4.5
 	var there := taker.p.distance_to(spot) < 0.35
-	if there and ball.state != "held":
+	# (A ball tossed on to her is hers once it has come down, not out of the air above her.)
+	var down := not (ball.state == "dead" and ball._moving and ball.carrier == null and ball.pos.y > Ball.R + 0.05)
+	if there and down and ball.state != "held":
 		taker.target = taker.p
 		_give(taker, false)
 		from_free = String(restart.kind) == Rules.FREE or (String(restart.kind) == Rules.PENALTY and not bool(restart.shot))
