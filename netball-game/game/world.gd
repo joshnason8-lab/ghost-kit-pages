@@ -16,7 +16,7 @@ func _init() -> void:
 
 ## Put off, the lead's word (tiers only, until the fix lands, at the latest 18:00 UTC today).
 func deferred() -> Dictionary:
-	return {"tiers": ["2026-11-03T18:00Z", "Medium 128–132 vs 125 draw calls, High park 194 vs 180; Low unaffected; fix in progress (lead approved 11:10Z)"]}
+	return {"tiers": ["2026-11-03T18:00Z", "full-detail bodies Medium 24/14, High 26/22 (players+umpires+reserves); draw calls and triangles inside budget; Low unaffected; fix in progress (lead approved 11:10Z)"]}
 
 
 func game_name() -> String:
