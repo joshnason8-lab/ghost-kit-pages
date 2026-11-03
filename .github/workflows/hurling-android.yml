@@ -208,6 +208,21 @@ jobs:
           timeout 1500 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 2 120 2>&1 | tee prop_audit.log
           if grep -q "SCRIPT ERROR" prop_audit.log; then grep -A4 "SCRIPT ERROR" prop_audit.log; exit 1; fi
 
+      - name: World check (the rules every game's world keeps, docs/WORLD_RULES.md)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee world_check.log
+          if grep -q "SCRIPT ERROR" world_check.log; then grep -A4 "SCRIPT ERROR" world_check.log; exit 1; fi
+
+      - name: World check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
+          if-no-files-found: ignore
+
       - name: Props audit close-ups (on a failure)
         if: failure()
         uses: actions/upload-artifact@v4

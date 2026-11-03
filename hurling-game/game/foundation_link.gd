@@ -84,6 +84,8 @@ func _ready() -> void:
 	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW and not bool(toon.look.get("full_detail", false)) else 0
 	body = WsgBody.new(WsgBody.load_character(DIR, prefix), null, lod)
 	add_child(body)
+	if player.role != "":
+		body.add_to_group("wsg_official")      # (the world check's: an official, not a player)
 	body.set_manual(true)
 	body.visible = false        # till its first pose (a frame of the rig's T-pose with the hurley otherwise)
 	body.scale = toon.scale

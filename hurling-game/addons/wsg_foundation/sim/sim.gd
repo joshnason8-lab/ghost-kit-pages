@@ -88,6 +88,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var phase := ""
 	var moved := {}           # name -> [position, seconds hardly moving]
 	var feet := {}            # name -> [frames, ankle rest, toe rest]
+	var shown := {}           # body id -> [feet, T/A-pose] as last drawn ([] once used)
 	# Sampled pose (the lead's speed default): a quarter of the bodies posed in full (planter IK, layers, helpers),
 	# a different quarter each seed; the rest keep their animation, bones and foot contacts (WsgBody.set_sim_full).
 	# The feet and pose checks follow the full quarter.
@@ -189,10 +190,20 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				var body := wb as WsgBody
 				if not feet.has(nm):
 					feet[nm] = [[], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y]
-				(feet[nm][0] as Array).append(WsgNoteChecks.feet(body))
-				var pose := WsgNoteChecks.t_or_a_pose(body)
-				if pose != "":
-					_fail(out, "pose", "%s stands in a %s" % [nm, pose], t, frame, st, events)
+				# The pose as it is drawn, read as the skeleton finishes it: read here, after the frame, the bones are
+				# back to the clip's (no planted feet, no hips' lift, no layers - 14 cm out on the test hurler, and
+				# every slip the clip's own).
+				var id := body.get_instance_id()
+				if not shown.has(id):
+					shown[id] = []
+					body.skeleton.skeleton_updated.connect(func():
+						shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body)])
+				var seen: Array = shown[id]
+				if not seen.is_empty():
+					shown[id] = []
+					(feet[nm][0] as Array).append(seen[0])
+					if seen[1] != "":
+						_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
 		var bd := game.ball()
 		if not bd.is_empty():
 			var bp: Vector3 = bd.get("pos", Vector3.ZERO)

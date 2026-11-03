@@ -3234,6 +3234,17 @@ func stick_axes(at = null) -> Array:
 	if view == null:
 		view = cam.camera
 	var p: Vector3 = at if at is Vector3 else (active.global_position if active != null and is_instance_valid(active) else ball.global_position)
+	var axes := screen_axes(view, p)
+	if not axes.is_empty():
+		return axes
+	# Off the screen (or a view along the grass): the camera's facing.
+	var yaw := view_yaw()
+	var fwd := Vector3(sin(yaw), 0, cos(yaw))
+	return [Vector3(-fwd.z, 0, fwd.x), -fwd]
+
+
+## The grass directions right and down on VIEW's screen at P: [right, down] (unit), or [] off the screen.
+static func screen_axes(view: Camera3D, p: Vector3) -> Array:
 	p.y = 0.0
 	if not view.is_position_behind(p):
 		var sp := view.unproject_position(p)
@@ -3248,10 +3259,22 @@ func stick_axes(at = null) -> Array:
 			if right.length() > 0.001 and down.length() > 0.001:
 				# Each scaled to unit length: a stick pushed diagonally runs him diagonally on screen.
 				return [right.normalized(), down.normalized()]
-	# Off the screen (or a view along the grass): the camera's facing.
-	var yaw := view_yaw()
-	var fwd := Vector3(sin(yaw), 0, cos(yaw))
-	return [Vector3(-fwd.z, 0, fwd.x), -fwd]
+	return []
+
+
+## The game's stick mapping on its own (the world check's): the stick J (x right, y down) as a way on the grass for
+## a man at AT seen through VIEW - as _cam_dir, without the blend over a cut.
+static func stick_world(j: Vector2, view: Camera3D, at: Vector3) -> Vector3:
+	if j.length() <= 0.05:
+		return Vector3.ZERO
+	var axes := screen_axes(view, at)
+	if axes.is_empty():
+		var b := view.global_transform.basis
+		var f := Vector3(-b.z.x, 0, -b.z.z) + Vector3(b.y.x, 0, b.y.z)
+		f = f.normalized() if f.length() > 0.001 else Vector3(0, 0, 1)
+		axes = [Vector3(-f.z, 0, f.x), -f]
+	var d: Vector3 = axes[0] * j.x + axes[1] * j.y
+	return d.normalized() if d.length() > 0.001 else Vector3.ZERO
 
 
 ## Where the ray through a point on the screen meets the grass (INF if it never does).
