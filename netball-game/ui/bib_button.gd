@@ -39,13 +39,7 @@ func _draw() -> void:
 	if is_hovered() and not on:
 		fill = fill.lightened(0.12)
 	var ink := Game.C_ON_ACCENT if on else Game.C_INK
-	# The tabard: shoulders with a scooped neck, straight down, a rounded hem.
-	var neck := w * 0.22
-	var pts := PackedVector2Array([
-		Vector2(x0 + w * 0.12, top), Vector2(x0 + w * 0.5 - neck, top), Vector2(x0 + w * 0.5, top + h * 0.16),
-		Vector2(x0 + w * 0.5 + neck, top), Vector2(x0 + w * 0.88, top), Vector2(x0 + w, top + h * 0.2),
-		Vector2(x0 + w, top + h * 0.9), Vector2(x0 + w * 0.9, top + h), Vector2(x0 + w * 0.1, top + h),
-		Vector2(x0, top + h * 0.9), Vector2(x0, top + h * 0.2)])
+	var pts := tabard(x0, top, w, h)
 	if code == "TEAM":
 		pts = PackedVector2Array([Vector2(x0, top + 8), Vector2(x0 + 8, top), Vector2(x0 + w - 8, top), Vector2(x0 + w, top + 8),
 			Vector2(x0 + w, top + h - 8), Vector2(x0 + w - 8, top + h), Vector2(x0 + 8, top + h), Vector2(x0, top + h - 8)])
@@ -62,6 +56,16 @@ func _draw() -> void:
 	var tw := font.get_string_size(letters, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var asc := font.get_ascent(fs)
 	draw_string(font, Vector2(x0 + (w - tw) * 0.5, top + h * 0.6 + asc * 0.32), letters, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
+
+
+## The tabard: shoulders with a scooped neck, straight down, a rounded hem (also How to Play's position courts).
+static func tabard(x0: float, top: float, w: float, h: float) -> PackedVector2Array:
+	var neck := w * 0.22
+	return PackedVector2Array([
+		Vector2(x0 + w * 0.12, top), Vector2(x0 + w * 0.5 - neck, top), Vector2(x0 + w * 0.5, top + h * 0.16),
+		Vector2(x0 + w * 0.5 + neck, top), Vector2(x0 + w * 0.88, top), Vector2(x0 + w, top + h * 0.2),
+		Vector2(x0 + w, top + h * 0.9), Vector2(x0 + w * 0.9, top + h), Vector2(x0 + w * 0.1, top + h),
+		Vector2(x0, top + h * 0.9), Vector2(x0, top + h * 0.2)])
 
 
 ## For the fit audit: the letters' width at the size drawn, and the room.

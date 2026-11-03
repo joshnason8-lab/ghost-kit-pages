@@ -225,6 +225,18 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   The shared foundation's Low driver (WsgToonDriver) is to be wired after body.apply in Player._animate and
   Umpire.advance; Player.anim_layer says which of her is the game's.
 
+- How to Play's positions (the owner: "the court graphics don't show the positions, it's just the same image over
+  and over"). Cause: each card's AreaMap was a 184 x 92 court whose only difference from the next was a lime tint
+  over one to three thirds (circles a 25 px semicircle), with no player on it: seven near-identical little courts,
+  nothing saying where she stands or which way she goes. Now `ui/position_court.gd` (PositionCourt), drawn from
+  Rules.AREAS and Rules.OPPOSITE: the court in thirds with both circles, 256 x 128 at 1280 x 720; her areas lit lime,
+  the others dark; her bib (the home rail's tabard, shared as `BibButton.tabard`) with her letters at a typical spot,
+  her opposite number's coral bib beside her, goal-side when she defends; the post she attacks ringed in coral and a
+  gold arrow under the court the way her team attacks. No words added (the letters are the cards' own). Test
+  `_howto_positions`: each court's lit areas are Rules.AREAS, both bibs onside and apart, no two alike, the page has
+  the seven; in a window (`xvfb-run ... test_runner.tscn -- howto`) the pictures are rendered and each third and
+  circle sampled lit or dim, and all 21 pairs differ.
+
 ## Next
 
 1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the

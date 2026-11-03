@@ -25,6 +25,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "howto" in OS.get_cmdline_user_args():
+		# (Only How to Play's position courts, their pictures too in a window: xvfb-run ... test_runner.tscn -- howto)
+		await _howto_positions()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -69,6 +75,7 @@ func _ready() -> void:
 	await _replays()
 	await _low_unchanged()       # (again, the foundation available: Low draws exactly what it did)
 	FoundationLink.off = true
+	await _howto_positions()
 	Game.settings = keep
 	Game.delete_cup()
 	print("test_runner: %d checks, %d failures" % [checks, failures])
@@ -2104,6 +2111,82 @@ func _watch_ai() -> void:
 			var s := tr(k)
 			check(s != k and s != "" and (pair[0] == "en" or s != String(en[k])), "watch: %s in %s (%s)" % [k, pair[0], s])
 	TranslationServer.set_locale("en")
+
+
+## How to Play's positions: each of the seven has its own court (owner: "the same image over and over"), drawn from
+## the game's rules: the areas lit are the ones Rules.AREAS gives her, her bib and her opposite number's stand onside,
+## apart, and no two positions' pictures are alike. In a window (not headless) the pictures themselves are rendered
+## and read: each third and circle lit or dimmed as her areas say, and two positions' pictures differ.
+func _howto_positions() -> void:
+	var all_areas := PositionCourt.AREA_ORDER.duplicate()
+	all_areas.sort()
+	var seen := {}
+	for pos in Rules.POSITIONS:
+		var lay := PositionCourt.layout(pos)
+		var lit: Array = lay.lit.duplicate()
+		lit.sort()
+		var want: Array = Rules.AREAS[pos].duplicate()
+		want.sort()
+		check(lit == want, "howto: %s's court lights her areas %s (lit %s)" % [pos, want, lit])
+		var both: Array = lay.lit + lay.dim
+		both.sort()
+		check(both == all_areas, "howto: %s's court dims every other area" % pos)
+		check(lay.opp == Rules.OPPOSITE[pos], "howto: %s's opposite number is the %s" % [pos, Rules.OPPOSITE[pos]])
+		check(not Rules.offside(pos, lay.at, 1) and Court.area_of(lay.at, 1) in lay.lit,
+			"howto: %s's bib stands in her areas (%s)" % [pos, lay.at])
+		check(not Rules.offside(lay.opp, lay.opp_at, -1), "howto: %s's opposite number stands in hers (%s)" % [pos, lay.opp_at])
+		check(absf(lay.at.y - lay.opp_at.y) >= 4.9, "howto: %s's two bibs do not cover each other" % pos)
+		check(int(lay.attacks) == 1, "howto: %s's team attacks to the right, as every court shows" % pos)
+		var sig := "%s|%s|%s" % [lay.lit, lay.at, lay.opp]
+		check(not seen.has(sig), "howto: %s's court differs from %s's" % [pos, seen.get(sig, "")])
+		seen[sig] = pos
+	# The screen: seven courts, one per position, in the rules' order.
+	var s := Game.show_screen("res://ui/howto_screen.gd", {"tab": 1})
+	await frames(3)
+	var courts := []
+	for c in s.find_children("*", "PositionCourt", true, false):
+		courts.append((c as PositionCourt).pos)
+	check(courts == Rules.POSITIONS, "howto: the positions page draws a court for each position (%s)" % [courts])
+	if DisplayServer.get_name() == "headless":
+		return
+	# The pictures, rendered: the middle of each third near the side line (clear of the bibs), and each circle by
+	# its edge: lime where she may go, dark where she may not.
+	var shots := {}
+	for pos in Rules.POSITIONS:
+		var vp := SubViewport.new()
+		vp.size = Vector2i(472, 278)
+		vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		add_child(vp)
+		var pc := PositionCourt.make(pos)
+		pc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		vp.add_child(pc)
+		await frames(3)
+		await RenderingServer.frame_post_draw
+		var img := vp.get_texture().get_image()
+		vp.queue_free()
+		if img == null:
+			check(false, "howto: %s's court renders" % pos)
+			continue
+		shots[pos] = img
+		var h := minf(img.get_height() / 1.18, img.get_width() * 0.5)
+		var o := Vector2((img.get_width() - h * 2.0) * 0.5, (img.get_height() - h * 1.18) * 0.5)
+		var probes := {Court.A_DEF_THIRD: Vector2(-Court.THIRD, -6.1), Court.A_CENTRE: Vector2(0.0, -6.1),
+			Court.A_ATT_THIRD: Vector2(Court.THIRD, -6.1), Court.A_DEF_CIRCLE: Vector2(-10.8, -0.2),
+			Court.A_ATT_CIRCLE: Vector2(10.8, -0.2)}
+		for area in probes:
+			var m: Vector2 = probes[area]
+			var px := o + Vector2(m.x + Court.HALF_L, m.y + Court.HALF_W) * (h / Court.WIDTH)
+			var c := img.get_pixelv(Vector2i(px))
+			var lime := c.g > 0.65 and c.r > 0.5 and c.b < 0.4
+			var dark := c.g < 0.3 and c.r < 0.25
+			var want_lit := Rules.may_enter(pos, area)
+			check(lime if want_lit else dark, "howto: %s's %s drawn %s (%s)" % [pos, area, "lit" if want_lit else "dim", c])
+	if shots.size() == Rules.POSITIONS.size():
+		for i in Rules.POSITIONS.size():
+			for j in range(i + 1, Rules.POSITIONS.size()):
+				var a: Image = shots[Rules.POSITIONS[i]]
+				var b: Image = shots[Rules.POSITIONS[j]]
+				check(a.get_data() != b.get_data(), "howto: %s's and %s's pictures differ" % [Rules.POSITIONS[i], Rules.POSITIONS[j]])
 
 
 ## The first button under n whose text is t.
