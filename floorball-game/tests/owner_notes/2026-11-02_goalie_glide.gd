@@ -46,7 +46,9 @@ func check() -> void:
 						var e: Array = kf[side]
 						if float(e[2]) >= 0.0:
 							up += 1
-						elif prev.has(side) and Vector2((e[0] as Vector3).x - (prev[side] as Vector3).x, (e[0] as Vector3).z - (prev[side] as Vector3).z).length() > 0.005:
+							prev.erase(side)   # (stepping: where it lands is its new place)
+							continue
+						if prev.has(side) and Vector2((e[0] as Vector3).x - (prev[side] as Vector3).x, (e[0] as Vector3).z - (prev[side] as Vector3).z).length() > 0.005:
 							slid += 1
 						prev[side] = e[0]
 					if up == 2:
