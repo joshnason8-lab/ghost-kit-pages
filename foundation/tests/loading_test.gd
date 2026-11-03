@@ -183,6 +183,22 @@ func _initialize() -> void:
 	if screen.get_camera_3d() != game_cam or scene.find_children("*", "Camera3D", true, false).size() != 1:
 		fails.append("the game's camera was not put back, or the warm-up's camera stayed")
 	# And as a step: the overlay goes opaque for it, and its numbers are in the log line.
+	# A node freed by the game during the warm-up (a prop swapped out, a body removed): the rest still warmed, put back.
+	var scene2 := _warm_scene()
+	screen.add_child(scene2)
+	var victim := scene2.get_node("Own3")
+	var st2: Dictionary = await WsgLoading.warm_scene(scene2, func(_f: float):
+		if is_instance_valid(victim):
+			victim.free())
+	var restored := true
+	for g in scene2.find_children("*", "GeometryInstance3D", true, false):
+		if (g as GeometryInstance3D).layers == 0:
+			restored = false
+	print("warm-up with a node freed in it: %s, layers put back %s" % [st2, restored])
+	if int(st2.get("looks", 0)) != 9 or not restored:
+		fails.append("a node freed during the warm-up: %s, put back %s" % [st2, restored])
+	scene2.queue_free()
+
 	# 3D stays off from the first step to the warm-up, so a scene swapped in by an earlier step is not drawn whole.
 	var l5 := WsgLoading.cover(menu)
 	var off := []

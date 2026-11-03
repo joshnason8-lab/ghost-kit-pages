@@ -134,6 +134,15 @@ func _ball(s: WsgSolidProps) -> void:
 	var bar := s.bounce(Vector3(0, 1.6, -8), Vector3(0, 15, 0), 0.11, 0.1)
 	if (bar.vel as Vector3).y >= 0.0:
 		fails.append("a ball up into the crossbar went on up: %s" % bar.vel)
+	# A netball ring (0.2 m, 11 mm tube) at 3.05 m: a ball (0.11) dropped through its middle goes through; one onto the
+	# tube comes off it.
+	var ring := WsgSolidProps.new()
+	ring.add_ring({"centre": Vector3(0, 3.05, 0), "radius": 0.2, "tube": 0.011})
+	var through := ring.bounce(Vector3(0, 3.6, 0), Vector3(0, -6, 0), 0.11, 0.2)
+	var onto := ring.bounce(Vector3(0.2, 3.6, 0), Vector3(0, -6, 0), 0.11, 0.2)
+	print("a ring: dropped through the middle %s (%d hits); onto the tube %s, %s m/s" % [through.pos, through.hits.size(), onto.pos, onto.vel])
+	if through.hits.size() != 0 or onto.hits.size() == 0 or (onto.vel as Vector3).y <= 0.0:
+		fails.append("the ring: through the middle %d hits, onto the tube %s" % [through.hits.size(), onto.vel])
 	# 3,000 random throws, up to 50 m/s, under gravity, 2 s each at 30 fps: never through a prop (the audit), never
 	# left inside one.
 	var audit := WsgPropAudit.new(s)

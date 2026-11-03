@@ -892,6 +892,10 @@ solid.skip("centre logo", "a decal on the floor")                              #
   | glass | 0.75 | 0.10 | hit |
   | plaster | 0.50 | 0.40 | hit |
   | earth | 0.35 | 0.60 | bounce |
+  | chainlink | 0.30 | 0.50 | clang |
+
+A ring (netball, basketball, a stone ring on a wall) is `solid.add_ring({"centre": c, "radius": 0.2, "tube": 0.011,
+"axis": Vector3.UP})`, a loop of capsules. A ball through its middle passes; one onto the tube comes off it.
 
 `solid.register(root)` takes the props from a scene instead. Each MeshInstance3D, and each MultiMesh instance, becomes
 its own turned box. It guesses the material from the name.

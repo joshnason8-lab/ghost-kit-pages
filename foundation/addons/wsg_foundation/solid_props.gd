@@ -51,6 +51,7 @@ const MATERIALS := {
 	"glass": {"restitution": 0.75, "friction": 0.10, "sound": "hit"},
 	"plaster": {"restitution": 0.50, "friction": 0.40, "sound": "hit"},
 	"earth": {"restitution": 0.35, "friction": 0.60, "sound": "bounce"},
+	"chainlink": {"restitution": 0.30, "friction": 0.50, "sound": "clang"},
 }
 
 ## Every prop: {name, kind ("box" | "cylinder" | "capsule"), material, ball (a ball bounces off it), walk (bodies keep
@@ -137,6 +138,28 @@ func add(spec: Dictionary) -> int:
 	_index(i)
 	_pack(i)
 	return i
+
+
+## A ring (a netball or basketball ring, a stone ring on a wall): SEGMENTS capsules round CENTRE, RADIUS out to the
+## tube's middle, TUBE thick, in the plane square to AXIS (up: a level ring). A ball through its middle passes; one on
+## the tube bounces off it. spec: name, centre, radius, tube, axis (Vector3.UP), segments (16), material ("metal"),
+## ball (true), walk (false: overhead). Returns the capsules' indices.
+func add_ring(spec: Dictionary) -> PackedInt32Array:
+	var c: Vector3 = spec.get("centre", Vector3.ZERO)
+	var r := float(spec.get("radius", 0.2))
+	var axis: Vector3 = (spec.get("axis", Vector3.UP) as Vector3).normalized()
+	var u := axis.cross(Vector3.RIGHT if absf(axis.dot(Vector3.RIGHT)) < 0.9 else Vector3.FORWARD).normalized()
+	var v := axis.cross(u)
+	var n := int(spec.get("segments", 16))
+	var out := PackedInt32Array()
+	for k in n:
+		var a0 := TAU * k / n
+		var a1 := TAU * (k + 1) / n
+		out.append(add({"name": String(spec.get("name", "ring")), "kind": "capsule",
+			"a": c + (u * cos(a0) + v * sin(a0)) * r, "b": c + (u * cos(a1) + v * sin(a1)) * r,
+			"radius": float(spec.get("tube", 0.01)), "material": String(spec.get("material", "metal")),
+			"ball": bool(spec.get("ball", true)), "walk": bool(spec.get("walk", false))}))
+	return out
 
 
 ## A prop deliberately not solid, and why (a ground decal, a banner overhead): kept in `skipped` for the audit's report.
