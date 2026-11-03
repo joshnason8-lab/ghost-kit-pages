@@ -62,6 +62,7 @@ func _initialize() -> void:
 			fails.append("%s: the feet are %.2f m off the ground" % [c, low])
 		if c == "sit_clap" and apart > 0.12:
 			fails.append("sit_clap: the hands do not meet (%.2f m apart)" % apart)
+	fails.append_array(_looks(spots, facings))
 	fails.append_array(_seats(true))
 	if _seats(false).is_empty():
 		fails.append("seats: the old placement (no lift, no room) passes the seat check: it checks nothing")
@@ -69,6 +70,66 @@ func _initialize() -> void:
 		printerr("FAIL: ", f)
 	print("CROWD TEST: ", "PASS" if fails.is_empty() else "FAIL (%d)" % fails.size())
 	quit(0 if fails.is_empty() else 1)
+
+
+## Looks: every fan has its parts (skin, hair, the legs' clothes) marked as crowd.json counts them, hair is never
+## the shirt (long hair took the team's colour), set_looks reaches every material, and fan_weights picks the fans in
+## those shares.
+func _looks(spots: Array, facings: Array) -> Array:
+	var fails := []
+	var md := WsgCrowd3D.meta()
+	for f in md.fans:
+		var lk: Dictionary = md.fans[f].get("looks", {})
+		if lk.is_empty():
+			fails.append("looks: %s has no parts (a crowd baked before them: run tools/wsg/fetch_assets.sh again)" % f)
+			continue
+		var mesh: ArrayMesh = load(WsgCrowd3D.DIR + f + "_crowd.res")
+		var arr := mesh.surface_get_arrays(0)
+		var uv: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV]
+		var col: PackedColorArray = arr[Mesh.ARRAY_COLOR]
+		var n := [0, 0, 0, 0]
+		var hair_shirt := 0
+		for v in uv.size():
+			var part := int(round(uv[v].y * 4.0))
+			n[part] += 1
+			if part == 2 and col[v].a > 0.01:
+				hair_shirt += 1
+		var want := [int(lk.skin[3]), int(lk.hair[3]), int(lk.legs[3])]
+		print("looks %-5s skin %d, hair %d, legs %d of %d" % [f, n[1], n[2], n[3], uv.size()])
+		if [n[1], n[2], n[3]] != want:
+			fails.append("looks: %s's mesh marks %s, crowd.json says %s" % [f, str([n[1], n[2], n[3]]), str(want)])
+		if n[1] < 5 or n[2] < 5 or n[3] < 20:
+			fails.append("looks: %s has too few parts marked (%s)" % [f, str(n)])
+		if hair_shirt > 0:
+			fails.append("looks: %s has %d hair vertices taking the shirt's colour" % [f, hair_shirt])
+	var crowd := WsgCrowd3D.new()
+	root.add_child(crowd)
+	crowd.fan_weights = {"fan2": 4.0, "fan5": 4.0}
+	crowd.build(spots, facings, 1.0, 3, true, 2, Vector3.ZERO)
+	var women := 0
+	var all := 0
+	for m in crowd.meshes:
+		var nm := String(m.multimesh.mesh.resource_path.get_file())
+		all += m.multimesh.instance_count
+		if nm.begins_with("fan2_") or nm.begins_with("fan5_"):
+			women += m.multimesh.instance_count
+	var share := float(women) / maxf(1, all)
+	var expect: float = 8.0 / (8.0 + md.fans.size() - 2)
+	print("fan_weights {fan2: 4, fan5: 4}: %.2f of %d fans are fan2 or fan5 (expected %.2f)" % [share, all, expect])
+	if absf(share - expect) > 0.05:
+		fails.append("fan_weights: %.2f of the fans are fan2/fan5, expected %.2f" % [share, expect])
+	crowd.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
+	for m in crowd.materials:
+		if int(m.get_shader_parameter("n_skins")) != WsgCrowd3D.LOOKS.skin.size() \
+				or int(m.get_shader_parameter("n_hairs")) != WsgCrowd3D.LOOKS.hair.size() \
+				or int(m.get_shader_parameter("n_legs")) != WsgCrowd3D.LOOKS.legs.size():
+			fails.append("set_looks: a material did not get the palettes")
+			break
+	crowd.set_looks()
+	if int(crowd.materials[0].get_shader_parameter("n_skins")) != 0:
+		fails.append("set_looks(): the palettes were not cleared")
+	crowd.free()
+	return fails
 
 
 ## Seats: [seat over the feet, the step behind's height, how far behind the feet it rises] (m).

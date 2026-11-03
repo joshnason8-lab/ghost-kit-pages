@@ -7,6 +7,7 @@
 //   unison (clap_sync);
 //   heads and shoulders turn to the ball (smoothed by the crowd), each fan a little their own way;
 //   shirts take a team's colours, or the colour the game gives each fan (as its cut-outs beside them);
+//   skin, hair and trousers each fan's own from the game's palettes (set_looks), if it gives them;
 //   lit as the games light their people (a cel light from sun_dir, not the scene's lights: the same on every
 //   renderer and tier, no sky colour cast, cheap) and by their seat's baked light (under a roof, darker).
 // Works on the Compatibility (GLES3) and Mobile (Vulkan) renderers; colours are written as the games' cut-outs write
@@ -36,6 +37,18 @@ uniform vec4 team_b : source_color = vec4(0.8, 0.15, 0.1, 1.0);
 uniform float light = 1.0;           // the ground's light (night, shade)
 uniform vec3 sun_dir = vec3(0.35, 0.85, 0.4);   // where the light comes from (the game's sun)
 uniform float shade = 0.72;          // the side away from it
+// Looks (WsgCrowd3D.set_looks): each fan's skin, hair and the legs' clothes from a game's palettes (dark to light;
+// none given: as the fan was made). The part of the fan each vertex is: UV.y (tools/bake_crowd.gd REGIONS); ref_*:
+// this fan's own colour of that part, which the new colour is shaded from.
+uniform vec3 ref_skin = vec3(0.8, 0.6, 0.5);
+uniform vec3 ref_hair = vec3(0.3, 0.2, 0.1);
+uniform vec3 ref_legs = vec3(0.2, 0.25, 0.4);
+uniform vec3 skins[8];
+uniform int n_skins = 0;
+uniform vec3 hairs[8];
+uniform int n_hairs = 0;
+uniform vec3 legs[8];
+uniform int n_legs = 0;
 
 varying vec3 colour;
 varying vec3 wn;
@@ -63,6 +76,15 @@ void clip_at(vec4 clip, float s, int col, out vec3 p, out vec3 n) {
 	float w = f - f0;
 	p = mix(texel(vat_pos, col, clip.x + f0), texel(vat_pos, col, clip.x + f1), w);
 	n = mix(texel(vat_nrm, col, clip.x + f0), texel(vat_nrm, col, clip.x + f1), w) * 2.0 - 1.0;
+}
+
+float luma(vec3 c) {
+	return dot(c, vec3(0.3, 0.59, 0.11));
+}
+
+// The colour c (of a part whose own colour is ref) made tgt, its shading (lighter and darker than ref) kept.
+vec3 recolour(vec3 c, vec3 ref, vec3 tgt) {
+	return tgt * clamp(luma(c) / max(luma(ref), 0.04), 0.6, 1.35);
 }
 
 vec3 turn_y(vec3 v, vec3 pivot, float a) {
@@ -152,7 +174,22 @@ void vertex() {
 		shirt = vec3(fract(code * 7.13), fract(code * 3.77), fract(code * 5.31));
 		shirt = mix(shirt, vec3(dot(shirt, vec3(0.33))), 0.3) * 0.9;
 	}
-	vec3 base = COLOR.rgb * (0.85 + 0.3 * r2);
+	// Their own skin, hair and trousers (a darker skin mostly with darker hair: the palettes run dark to light).
+	vec3 own_c = COLOR.rgb;
+	int part = int(UV.y * 4.0 + 0.5);
+	if (part > 0) {
+		int si = min(int(hash(id * 13.7) * float(n_skins)), n_skins - 1);
+		if (part == 1 && n_skins > 0) {
+			own_c = recolour(COLOR.rgb, ref_skin, skins[si]);
+		} else if (part == 2 && n_hairs > 0) {
+			float dark = n_skins > 0 && luma(skins[si]) < 0.4 ? 0.5 : 1.0;
+			int hi = min(int(hash(id * 17.3) * float(n_hairs) * dark), n_hairs - 1);
+			own_c = recolour(COLOR.rgb, ref_hair, hairs[hi]);
+		} else if (part == 3 && n_legs > 0) {
+			own_c = recolour(COLOR.rgb, ref_legs, legs[min(int(hash(id * 19.1) * float(n_legs)), n_legs - 1)]);
+		}
+	}
+	vec3 base = own_c * (0.85 + 0.3 * r2);
 	// (The shirt's edge firm: the mask fades across the low-poly figure's big triangles. Nothing past 0.9: pale skin
 	// times each fan's variety went past white - the hands in a seated fan's lap.)
 	colour = min(mix(base, shirt * folds, smoothstep(0.2, 0.55, COLOR.a)), vec3(0.9));

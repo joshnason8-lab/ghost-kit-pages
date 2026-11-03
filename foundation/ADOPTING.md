@@ -226,6 +226,22 @@ fans' heads) - under a roof darker; give it to your billboards too. Measured on 
   `crowd3d.watch_ball(ball_position)`.
 - Rhythmic clapping playing: `crowd3d.clap(claps_per_second, unison_0_to_1, seconds)` (Kabaddi has these numbers).
 
+**Your crowd's people** (no draw calls, no CPU: all in the crowd's shader). The six shared fans are fan2 and fan5
+(women), fan, fan3 (older), fan4 and fan6 (men). Two calls make them many people and your sport's crowd:
+```gdscript
+crowd3d.fan_weights = {"fan2": 4.0, "fan5": 4.0}     # before build(): how often each is picked (Netball: mostly women)
+crowd3d.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
+```
+`set_looks(skin, hair, legs)` gives each fan their own skin tone, hair colour (a beard with it) and trousers, skirt or
+shorts, picked from your lists (Colors, sRGB, dark to light, up to 8 each); the fan's own shading is kept. A darker
+skin mostly gets the darker half of the hair list. `WsgCrowd3D.LOOKS` is a broad set: give your own lists for your
+crowd (Kabaddi's or Kho Kho's mostly darker skin and black hair; Netball's more fair and blonde). An empty list keeps
+that part as made; never calling either leaves the crowd exactly as it was. Shirts are unchanged (`set_teams`,
+`shirts`). The parts are marked by `bake_crowd.gd` (each vertex skin, hair or legs, by its bones, place and colour)
+in the committed crowd and in your licensed one when `tools/wsg/fetch_assets.sh` bakes it: **run fetch_assets again
+after the sync** (a crowd baked before has no parts, and the looks then do nothing). Since this bake, long hair down
+a fan's back (fan2's, fan5's) no longer takes the shirt's team colour.
+
 **Flags in the stands** (`WsgFlags`): `flags.build([[spot, facing, first colour, second colour], ...])` - fans
 holding a two-colour flag, flying harder with the crowd's excitement (WsgCrowd3D's: nothing more to call), two draw
 calls for all of them; `WsgFlags.count_for(want)` keeps a budget phone to half and none on its Low. Hurling puts

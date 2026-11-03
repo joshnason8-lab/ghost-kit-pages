@@ -375,3 +375,11 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   `addons/wsg_foundation/data/*` in exclude_filter. Done: Kabaddi (the lead checked the live Netlify .pck), Pok Ta
   Pok, Netball (9597dfe), Kho Kho (f005432), Floorball, Hurling (c28aa4f). Sepak Takraw: not yet on f4e4067 (asked
   2026-11-02 23:55). No CI job exports Web; no game reports a Web export made with data/ present.
+- **Crowd looks** (Netball's owner: "the crowd isn't real people"; the lead's go for the no-credit option, Meshy fans
+  wait on the owner): bake_crowd marks each fan vertex skin, hair (and beard) or legs' clothes (UV.y; by bones, place,
+  hue - the face is 3-4 vertices, so skin is the hands' hue, not their RGB; long hair grown from the head's along the
+  mesh's edges; the beige-trouser trap closed by brightness), crowd_vat.gdshader recolours them per fan from a
+  game's palettes keeping the shading (`WsgCrowd3D.set_looks`, `LOOKS`), and `fan_weights` sets each fan's share
+  (fan2 and fan5 are the women). No draw calls, no CPU; nothing changes without the calls. Found: fan2's and fan5's
+  long hair was weighted to the spine and so took the shirt's team colour - hair is never shirt now. crowd_test checks
+  the parts, hair-not-shirt, set_looks and the weights (0.68 against 0.67). ADOPTING §5.
