@@ -106,7 +106,8 @@ func _ready() -> void:
 	touch = TouchControls.new()
 	root.add_child(touch)
 	touch.action.connect(func(id): action.emit(id))
-	touch.visible = int(m.user_team) >= 0
+	# Watching the computer play: no joystick, only SKIP to pass the copal (and a tap to pass a replay).
+	touch.stick = int(m.user_team) >= 0
 	_dev = UI.label("", "MutedLabel", 15, Game.C_GOLD)
 	_dev.position = Vector2(sm.x + 6, 132)
 	_dev.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -118,7 +119,7 @@ func _ready() -> void:
 
 
 func joystick() -> Vector2:
-	return touch.joystick if touch and touch.visible else Vector2.ZERO
+	return touch.joystick if touch and touch.visible and touch.stick else Vector2.ZERO
 
 
 func set_buttons(ids: Array) -> void:
@@ -458,7 +459,7 @@ func show_pause(on: bool) -> void:
 	elif not on and _pause != null:
 		_pause.queue_free()
 		_pause = null
-		touch.visible = int(m.user_team) >= 0
+		touch.visible = true
 
 
 ## "Escuinapa hold 3 rayas", "Level", or the points.

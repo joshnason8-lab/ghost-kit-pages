@@ -98,6 +98,7 @@ today. How to Play's "Words" card says where the name comes from.
 
 - **The crowd's look.** Figures are rendered from the game's own bodies: everyday clothes, straw hats and caps. Does a
   Sinaloa village crowd look like this?
-- **The festival court's papel picado.** It is a general Mexican festive touch, not specific to ulama.
+- **The festival court's papel picado.** It was a general Mexican festive touch, not specific to ulama; taken down
+  in 0.6.8 (it hung in the way of the play).
 - **Music.** The menus are quiet. Music, if added, should come from the region and be credited, never "generic
   ancient".

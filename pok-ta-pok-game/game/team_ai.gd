@@ -127,7 +127,7 @@ func _plan(path: Array) -> void:
 			continue
 		var kind := ""
 		var grounded: bool = path[i][1]
-		if pt.y >= 0.42 and pt.y < 1.15:
+		if pt.y >= 0.42 and pt.y < Player.HIP_H + Player.STRIKE_MAX_UP - 0.05:
 			kind = "hip"
 		elif pt.y >= Player.STRIKE_MIN_Y + 0.02 and pt.y < 0.42 and not grounded:
 			# A low ball still in the air: a player sinks right down for it, not quite a dive. (Only below the hip: an

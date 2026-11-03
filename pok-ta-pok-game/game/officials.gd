@@ -24,7 +24,8 @@ func build(court: Court) -> void:
 		var j := Body.new(look)
 		var at := Vector3(0.0, 0.0, s * 3.4)
 		if court.classic():
-			at = Vector3(0.6 * s, Court.WALL_H, s * (Court.TALUD_Z + 0.9))
+			# On the coping along the wall's top (Venue._stone_court: 0.5 m over the wall), not sunk in it.
+			at = Vector3(0.6 * s, Court.WALL_H + 0.5, s * (Court.TALUD_Z + 0.9))
 		add_child(j)
 		j.position = at
 		var yaw := atan2(-at.x * 0.0, -at.z)   # facing across the court

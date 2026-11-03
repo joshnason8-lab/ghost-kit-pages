@@ -12,6 +12,8 @@ const HIP_H := 0.7            # how high his hip meets the ball in a hip strike 
 const DIVE_H := 0.24          # and in a dive, on the ground
 const REACH := 0.62           # how far from his hip the ball can be and still be met
 const STRIKE_MIN_Y := 0.34    # standing, the hip cannot get under a ball lower than this (its centre, m): dive for it
+const STRIKE_MAX_UP := 0.12   # nor one higher than this over HIP_H: in the strike his hip sinks to 0.54-0.61 m, so a
+                              # ball any higher meets his belly or chest (the owner, 0.6.8: "hitting too high on body")
 const BODY_R := 0.16          # his body, for the ball touching it (R6)
 
 enum A { NONE, STRIKE, DIVE, SERVE, CELEBRATE, DEJECTED }

@@ -23,6 +23,7 @@ var _keys := {}
 var _paras := {}             # id -> TextParagraph (its label, fitted to the circle)
 var edit := false            # Move buttons: drags move the buttons instead of pressing them
 var tap_skips := false       # a replay is showing: a tap anywhere passes it (SKIP)
+var stick := true            # the joystick (off when watching the computer play: only SKIP, for the copal and replays)
 static var key_hints := true # the keyboard's keys beside the buttons on a computer (off for the store's pictures)
 static var touch_seen := false   # a thumb has touched the screen: no keyboard here to hint at
 var last_fired := ""             # the last button pressed (the playtest hook reads it)
@@ -159,7 +160,7 @@ func _input(event: InputEvent) -> void:
 				_fire("SKIP")
 				get_viewport().set_input_as_handled()
 				return
-			if on_left and _joy_touch < 0 and e.position.y > 110.0:
+			if stick and on_left and _joy_touch < 0 and e.position.y > 110.0:
 				_joy_touch = e.index
 				_joy_base = e.position
 				_joy_knob = e.position
@@ -189,13 +190,13 @@ func _input(event: InputEvent) -> void:
 				_fire(String(shown[i]))
 			elif ke.physical_keycode == KEY_Q and "SWITCH" in ids:
 				_fire("SWITCH")
-			elif ke.physical_keycode == KEY_ESCAPE:
+			elif ke.physical_keycode == KEY_ESCAPE and stick:
 				Game.go_back()
 		_keys_to_joystick()
 
 
 func _keys_to_joystick() -> void:
-	if _joy_touch >= 0:
+	if _joy_touch >= 0 or not stick:
 		return
 	var v := Vector2.ZERO
 	if _keys.get(KEY_A, false) or _keys.get(KEY_LEFT, false):
@@ -235,8 +236,9 @@ func _draw() -> void:
 		rest.x = size.x - rest.x
 	var base := _joy_base if _joy_touch >= 0 else rest
 	var knob := _joy_knob if _joy_touch >= 0 else rest
-	draw_arc(base, JOY_R, 0, TAU, 48, Color(Game.C_INK, 0.28 if _joy_touch >= 0 else 0.12), 3.0, true)
-	draw_circle(knob, 34.0, Color(Game.C_INK, 0.7 if _joy_touch >= 0 else 0.18))
+	if stick:
+		draw_arc(base, JOY_R, 0, TAU, 48, Color(Game.C_INK, 0.28 if _joy_touch >= 0 else 0.12), 3.0, true)
+		draw_circle(knob, 34.0, Color(Game.C_INK, 0.7 if _joy_touch >= 0 else 0.18))
 	# The buttons.
 	for i in _layout().size():
 		var b: Array = _layout()[i]

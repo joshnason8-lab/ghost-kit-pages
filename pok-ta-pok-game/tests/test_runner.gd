@@ -42,6 +42,7 @@ func _ready() -> void:
 	_sim()
 	await _crowd_faces()
 	await _stance()
+	await _judges_stand()
 	await _mocap()
 	_sounds()
 	_levels()
@@ -639,6 +640,16 @@ func _crowd_faces() -> void:
 							away += 1
 			check(away == 0, "Crowd: at %s (graphics %d) the side stands watch the play wherever it is (%d look away)" % [id, g, away])
 			check(people > 40, "Crowd: %s at graphics %d has people (%d)" % [id, g, people])
+			# Nobody stands where a player can run (the owner: no one walks through anything).
+			var in_play := 0
+			var all_spots: Array = v.crowd.spots.duplicate()
+			for i in v.crowd.seated:
+				all_spots.append(v.crowd.placed.spots[i])
+			for p in all_spots:
+				var bnd: Array = v.court.bounds_at(Vector3(p.x, 0, p.z))
+				if p.y < 0.5 and p.x > bnd[0] - 0.3 and p.x < bnd[1] + 0.3 and p.z > bnd[2] - 0.3 and p.z < bnd[3] + 0.3:
+					in_play += 1
+			check(in_play == 0, "Crowd: at %s (graphics %d) no one stands where the players run (%d do)" % [id, g, in_play])
 			# Seated where there are seats (the village's benches, the festival's stand), on them as the shared audit
 			# measures it: each at their seat's height, in front of it (never cut by it), facing the play.
 			if id in ["village", "festival"]:
@@ -655,6 +666,26 @@ func _crowd_faces() -> void:
 			v.queue_free()
 			await frames(1)
 	Game.settings.graphics = keep
+
+
+## The judges stand on something, not in it: on the earth by the court; on the stone courts on the coping along the
+## wall's top (its top 0.5 m over the wall), not sunk half a metre into it.
+func _judges_stand() -> void:
+	for rules in ["ulama", "classic"]:
+		var c := Court.new(rules)
+		var o := Officials.new()
+		add_child(o)
+		o.build(c)
+		var ok := true
+		for j in o.judges:
+			var y: float = (j as Node3D).position.y
+			if rules == "classic":
+				ok = ok and is_equal_approx(y, Court.WALL_H + 0.5)
+			else:
+				ok = ok and is_equal_approx(y, 0.0) and absf((j as Node3D).position.z) > c.half_w_at(0.0) + 0.6
+		check(ok and o.judges.size() == 2, "Judges (%s): standing on the ground or the coping, out of the play" % rules)
+		o.queue_free()
+		await frames(1)
 
 
 # ---------------------------------------------------------------- the Yucatán stone courts
@@ -944,6 +975,9 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 ## rolling the ball on the serve, it should set up for bouncing"): every serve comes down and bounces up off the
 ## ground, never rolled along it; through two minutes of an AI match the ball is met with the hip standing far more
 ## often than dived for on the ground, and rallies go on.
+const SERVE_TOSS_MIN := 1.6   # the serve goes up at least this high (m; the owner, 0.6.8: "toss the ball up higher")
+
+
 func _ai_plays(venue: String, rules: String) -> void:
 	var m: Node = load("res://game/match.gd").new()
 	m.config = {"home": "ESC" if rules == "ulama" else "PIS", "away": "LLA" if rules == "ulama" else "VAL", "venue": venue, "rules": rules,
@@ -958,6 +992,7 @@ func _ai_plays(venue: String, rules: String) -> void:
 	var first_top := 0.0
 	var landed := false
 	var rallies := []
+	var tossed := []           # each serve's highest point before it first comes down (m)
 	for f in 30 * 120:
 		await get_tree().process_frame
 		if m.phase == m.P.OVER:
@@ -970,10 +1005,13 @@ func _ai_plays(venue: String, rules: String) -> void:
 			watch = m.rally == 0 and m.phase == m.P.LIVE
 			if watch:
 				serves += 1
+				tossed.append(0.0)
 			first_top = 0.0
 			landed = false
 		if watch and not m.ball.held:
 			var y: float = m.ball.pos.y - Ball.RADIUS
+			if not landed:
+				tossed[-1] = maxf(float(tossed[-1]), y)
 			if not landed and y < 0.02:
 				landed = true
 				if m.ball.grounded:
@@ -986,7 +1024,12 @@ func _ai_plays(venue: String, rules: String) -> void:
 	var rayas: int = m.log_rayas.size()
 	check(serves >= 3 and rolled == 0 and low_bounce <= serves / 4,
 		"%s: the serve bounces up off the ground, never rolled (%d serves, %d rolled, %d bounced under 0.4 m)" % [venue, serves, rolled, low_bounce])
+	var low_toss := tossed.filter(func(h): return float(h) < SERVE_TOSS_MIN)
+	check(not tossed.is_empty() and low_toss.is_empty(), "%s: the serve is tossed up high (lowest %.1f m, highest %.1f m)" % [venue,
+		float(tossed.min()) if not tossed.is_empty() else 0.0, float(tossed.max()) if not tossed.is_empty() else 0.0])
 	check(st > dv * 1.5 and st >= 20, "%s: the computer meets the ball with the hip, not on the ground (%d strikes, %d dives in 2 min)" % [venue, st, dv])
+	check(float(m.top_strike) <= Player.STRIKE_MAX_UP + 0.001,
+		"%s: and at the hip, never the belly or chest (highest %.2f m over the hip)" % [venue, float(m.top_strike)])
 	var why := {}
 	for r in m.log_rayas:
 		why[r[1]] = int(why.get(r[1], 0)) + 1
@@ -1108,7 +1151,9 @@ func _watch_ai() -> void:
 	add_child(m)
 	await frames(2)
 	check(m.watching() and m.cam.mode == Game.CAM_TV, "Watch AI: the broadcast camera, not the player's own (end) camera")
-	check(m.hud != null and m.hud.speed_button != null and not m.hud.touch.visible, "Watch AI: a speed button, no controls")
+	await frames(2)
+	check(m.hud != null and m.hud.speed_button != null and not m.hud.touch.stick and (m.hud.touch.ids as Array).is_empty(),
+		"Watch AI: a speed button, no controls (no joystick, no buttons)")
 	check(m.hud != null and m.hud.score_line() != "", "Watch AI: the score on the board")
 	var guard := 0
 	while m.phase != m.P.LIVE and guard < 30 * 20:
@@ -1149,6 +1194,23 @@ func _watch_ai() -> void:
 	m.hud.speed_button.pressed.emit()
 	check(int(m.speed) == 1 and m.hud.speed_button.text == tr("SPEED_1"), "Watch AI: and back to 1x")
 	m.queue_free()
+	await frames(2)
+	# The copal can be passed when watching too (the owner, 0.6.8): a SKIP button while it burns, and it works.
+	var mr: Node = load("res://game/match.gd").new()
+	mr.config = {"home": "PIS", "away": "VAL", "venue": "stone", "rules": "classic", "user_team": -1, "seed": 6,
+		"length": 0.0, "mode": "watch", "difficulty": 2, "ritual": true}
+	add_child(mr)
+	await frames(3)
+	var tc: TouchControls = mr.hud.touch
+	check(mr.in_ritual() and tc.is_visible_in_tree() and tc.ids == ["SKIP"], "Watch AI: a SKIP button over the copal")
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_SPACE
+	key.pressed = true
+	tc._input(key)
+	await frames(2)
+	check(not mr.in_ritual(), "Watch AI: SKIP passes the copal")
+	check((tc.ids as Array).is_empty(), "Watch AI: and the button goes with it")
+	mr.queue_free()
 	await frames(2)
 	Game.settings.camera = keep
 

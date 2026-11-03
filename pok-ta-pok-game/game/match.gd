@@ -432,7 +432,7 @@ func _launch_serve() -> void:
 		v = Vector3(d * cos(ang) * sp, sin(ang) * sp, (zt - hand.z) / maxf(1.0, dist / 3.0))
 	else:
 		var dist := rng.randf_range(10.0, 17.0) if not court.classic() else rng.randf_range(7.0, 11.0)
-		var ang := deg_to_rad(40.0)
+		var ang := deg_to_rad(SERVE_HIGH_ANGLE)
 		var sp := sqrt(Ball.GRAVITY * dist / sin(2.0 * ang))
 		v = Vector3(d * cos(ang) * sp, sin(ang) * sp, (zt - hand.z) / maxf(1.0, dist / 6.0))
 	ball.launch(hand, v, serve_team, server)
@@ -769,7 +769,11 @@ func _set_user(p: Player) -> void:
 
 ## The left thumb moves your player (the one going for the ball, or the one who will); the buttons strike.
 func _user_input() -> void:
-	if user_team < 0 or hud == null:
+	if hud == null:
+		return
+	if user_team < 0:
+		# Watching the computer play: the copal can be passed too (the owner, 0.6.8).
+		hud.set_buttons(["SKIP"] if in_ritual() else [])
 		return
 	var ai: TeamAI = teams[user_team].ai
 	if phase == P.LIVE and ai.taker != null and ai.taker != user_player and not user_player.busy() and not one_player():
@@ -896,9 +900,10 @@ func ai_ring_shot(p: Player) -> int:
 
 var serve_bounced := true    # the bounced serve has come down (its receivers wait for it to: TeamAI)
 const BOTE_LAND := Vector2(1.4, 3.2)     # how far past the analco the bounced serve first comes down (m)
-const BOTE_ANGLE := Vector2(36.0, 46.0)  # thrown up and over, so it comes down hard enough to rise to the hip
+const BOTE_ANGLE := Vector2(50.0, 58.0)  # thrown well up and over (the owner, 0.6.8: higher), down hard enough to rise to the hip
+const SERVE_HIGH_ANGLE := 52.0   # arriba, the full serve: tossed high (the owner, 0.6.8; was 40)
 const ABAJO_LAND := Vector2(1.5, 4.0)     # the earth's low serve: how far past the analco it first comes down (m)
-const ABAJO_ANGLE := Vector2(24.0, 32.0)  # its arc: low, underarm, to skip up off the earth to the receivers' hips
+const ABAJO_ANGLE := Vector2(42.0, 50.0)  # its arc: tossed up underarm (the owner, 0.6.8: higher), to come up off the earth to the hips
 
 
 const RING_SHOT_X := Vector2(4.0, 12.0)   # how far from the middle a ring shot can be struck from (m)
@@ -1062,7 +1067,14 @@ func _contacts() -> void:
 				_told_low = true
 				hud.banner(tr("TOO_LOW_DIVE"), Game.C_GOLD)
 			continue
+		if not serve_bounced and pl.team != serve_team and not pl.user:
+			# The computer plays the bounced serve off the bounce: its hip, swung for the ball coming up, lets the ball
+			# dropping steeply onto the same spot (the high toss, 0.6.8) go by until it has come down.
+			continue
 		var hip := pl.hip_point()
+		if pl.action == Player.A.STRIKE and ball.pos.y > hip.y + Player.STRIKE_MAX_UP:
+			# Still above his waist: the hip meets the ball at the hip, not with the belly or chest; it must come down.
+			continue
 		var reach := Player.REACH + (0.12 if pl.user and int(Game.settings.assist) > 0 else 0.0)
 		var d := ball.pos.distance_to(hip)
 		if d <= reach:
@@ -1088,7 +1100,12 @@ func _contacts() -> void:
 				return
 
 
+var top_strike := -INF   # the highest over his hip a standing hip has met the ball this match (m; the tests read it)
+
+
 func _strike(p: Player, window: float, off: float) -> void:
+	if p.action == Player.A.STRIKE:
+		top_strike = maxf(top_strike, ball.pos.y - p.hip_point().y)
 	var quality := clampf(window * 0.55 + (1.0 - off) * 0.45, 0.05, 1.0)
 	var aim := p.action_aim
 	var from := ball.pos

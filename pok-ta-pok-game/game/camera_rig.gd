@@ -11,7 +11,7 @@ extends Node3D
 ## The court-side camera, per court: how steeply it looks down (degrees), its narrowest and widest angle of view
 ## (vertical, degrees), the least and most court it frames to either side of the play (m), and, on the stone court,
 ## the line it stays on (just out from the near wall's top, in front of the terraces).
-const TV_ULAMA := {"pitch": 30.0, "fov_lo": 34.0, "fov_hi": 52.0, "w_lo": 8.0, "w_hi": 15.0, "d_lo": 11.0, "d_hi": 22.0}
+const TV_ULAMA := {"pitch": 30.0, "fov_lo": 34.0, "fov_hi": 52.0, "w_lo": 8.0, "w_hi": 15.0, "d_lo": 11.0, "d_hi": 25.0}
 const TV_CLASSIC := {"pitch": 47.0, "fov_lo": 46.0, "fov_hi": 64.0, "w_lo": 9.0, "w_hi": 16.5, "d_lo": 10.0, "d_hi": 20.0, "z": 7.0}
 const NEAR := 13.0      # m along the court from the ball: the players it keeps in the picture
 const MARGIN := 2.5     # m of court kept beyond the outermost of them

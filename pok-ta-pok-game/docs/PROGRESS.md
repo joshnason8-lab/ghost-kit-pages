@@ -272,6 +272,18 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   after launch; tests/load_time.gd). The match's first draw (the GPU's first use of everything) happens under the
   overlay. Tested (input_test): a real tap puts it up by the next frame with the button off, a second tap starts
   nothing, the bar only goes forward to the end, the match comes up built.
+- **0.6.8-beta: the owner's notes on 0.6.7.**
+  - *"Ball is hitting too high on body."* In the strike the body's hip sinks to 0.54-0.61 m (measured on the
+    skeleton through the strike's window), but a ball was met anywhere within 0.62 m of a point 0.7 m up, so up to
+    the chest. Now a standing hip only meets a ball no higher than 0.82 m (Player.STRIKE_MAX_UP); a higher one must
+    come down. The computer plans its hip strikes in that band too. Rallies got no shorter (match_sim).
+  - *"Skip the copal on AI match watching."* Watch AI shows SKIP over the copal (and a tap passes a replay, as in a
+    match); no joystick and no other buttons.
+  - *"Toss the ball up higher on serve."* The low and stone serves are thrown at 42-50 and 50-58 degrees (were 24-32
+    and 36-46), the full serve at 52 (was 40): 2-5.5 m up; still landing short and bouncing to the receivers' hips.
+  - *"Get rid of the festival court flags."* The papel picado over the near side is gone.
+  - Also: the stone courts' judges stand on the wall's coping (they were sunk 0.5 m into it), and the village's
+    standing crowd at the ends is pulled back off the ground the players run on.
 
 ## Next
 

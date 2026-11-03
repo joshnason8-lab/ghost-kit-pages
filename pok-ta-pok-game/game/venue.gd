@@ -5,8 +5,7 @@ extends Node3D
 ##   village   a village court in southern Sinaloa at dusk: the taste of packed earth, a scratched analco and chivos,
 ##             low painted houses with flat roofs, rain trees, coconut palms, agave and dry grass; people along the
 ##             sides on benches and chairs.
-##   festival  the same earth court by day at a festival: stands down one side, shade awnings at the ends, papel picado
-##             strung over the people.
+##   festival  the same earth court by day at a festival: stands down one side, shade awnings at the ends.
 ##   stone     a restored stone court in the Yucatán forest (the classic court, reconstructed): the I-shaped alley,
 ##             the sloped benches and walls, the rings, a pyramid over the trees and a stela at each end.
 ##   night     that court by torchlight.
@@ -256,7 +255,8 @@ func _festival() -> void:
 	sm.metallic = 0.5
 	sm.roughness = 0.5
 	_mesh(steel.commit(), sm, "steel")
-	# Awnings at the ends (canvas on poles) and papel picado strung along the near side over the standing crowd.
+	# Awnings at the ends (canvas on poles). (The papel picado strung along the near side is gone: it hung in the way of
+	# the play, the owner, 0.6.8.)
 	var cloth := Geo.new(2.0)
 	var cols := [Color("c8452c"), Color("e0a43a"), Color("3fae7a"), Color("4fa3b8"), Color("b04a8a"), Color("f2efe6")]
 	for s in [-1.0, 1.0]:
@@ -266,15 +266,6 @@ func _festival() -> void:
 			cloth.box(Vector3(cx, 3.0, cz), Vector3(4.6, 0.06, 4.6), cols[(k + (2 if s > 0 else 0)) % cols.size()])
 			for q in [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]]:
 				cloth.box(Vector3(cx + q[0], 1.5, cz + q[1]), Vector3(0.08, 3.0, 0.08), Color(0.55, 0.55, 0.56))
-	var x := -30.0
-	var i := 0
-	while x < 30.0:
-		var c: Color = cols[i % cols.size()]
-		var z := 6.4
-		var sag := 0.35 * sin(fposmod(x, 6.0) / 6.0 * PI)
-		cloth.quad(Vector3(x, 4.4 - sag, z), Vector3(x + 0.34, 4.4 - sag, z), Vector3(x + 0.34, 3.95 - sag, z), Vector3(x, 3.95 - sag, z), c)
-		x += 0.5
-		i += 1
 	var cm := StandardMaterial3D.new()
 	cm.vertex_color_use_as_albedo = true
 	cm.vertex_color_is_srgb = true
@@ -561,7 +552,8 @@ static func crowd_venue(venue_id: String) -> WsgCrowdVenue:
 				# Standing behind the benches (never in them).
 				v.add({"name": "standing " + ("N" if s > 0 else "S"), "a": Vector3(-29, 0, s * (BENCH_Z + 0.45)), "b": Vector3(29, 0, s * (BENCH_Z + 0.45)),
 					"rows": 2, "tread": 0.75, "seat": "floor", "pitch": 0.75})
-				v.add({"name": "end " + ("E" if s > 0 else "W"), "a": Vector3(s * 32.0, 0, -6), "b": Vector3(s * 32.0, 0, 6),
+				# Beyond where a player can run (Court.bounds_at: 32.7 m), so no one stands in them.
+				v.add({"name": "end " + ("E" if s > 0 else "W"), "a": Vector3(s * 33.2, 0, -6), "b": Vector3(s * 33.2, 0, 6),
 					"rows": 3, "tread": 1.2, "seat": "floor", "pitch": 0.8})
 		"festival":
 			v.add({"name": "stand", "a": Vector3(-25.5, 0, -(STAND_Z0 - STAND_TREAD)), "b": Vector3(25.5, 0, -(STAND_Z0 - STAND_TREAD)),
