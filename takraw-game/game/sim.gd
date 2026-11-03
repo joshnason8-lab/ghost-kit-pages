@@ -181,9 +181,10 @@ func ball() -> Dictionary:
 	# (In play: flying, or loose and still moving - not in a replay, which moves it along the rally's path again from
 	# its start, and not at rest, put down where it lies: fetch().)
 	var moving := b.flying or (b.loose and b.vel.length() > 0.05)
-	# (Where it went this frame, step by step - off a wall and back inside one frame - for the audit to sweep each step:
-	# Ball.path, if the ball moved this frame.)
-	var path: Array = Array(b.path) if b.path_frame == Engine.get_process_frames() else []
+	# (Where it went in its last step, step by step - off a wall and back inside one frame - for the audit to sweep each
+	# step: Ball.path, if the ball moved in the frame just played. WsgSim reads the game as a frame begins, before the
+	# match's _process: the ball's last step was the frame before.)
+	var path: Array = Array(b.path) if Engine.get_process_frames() - b.path_frame <= 1 else []
 	return {"pos": b.global_position, "radius": Ball.RADIUS, "live": moving and int(m.state) != int(m.S.REPLAY), "path": path}
 
 
