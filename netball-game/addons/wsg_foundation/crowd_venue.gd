@@ -130,7 +130,7 @@ func place(seed := 0) -> Dictionary:
 	rng.seed = seed
 	var out := {"spots": [], "facings": [], "seat": PackedFloat32Array(), "anchor_seat": [], "back": PackedFloat32Array(),
 		"section": PackedInt32Array(), "floor": PackedFloat32Array(), "dangle": [], "half_depth": PackedFloat32Array(),
-		"front": PackedFloat32Array(), "obstacles": []}
+		"front": PackedFloat32Array(), "seat_dir": PackedVector3Array(), "obstacles": []}
 	for si in sections.size():
 		var s: Dictionary = sections[si]
 		var fr := frame(s)
@@ -171,6 +171,18 @@ func place(seed := 0) -> Dictionary:
 					back = s.depth * 0.5
 				elif s.rise > 0.0 and risers_left > 0:
 					back = riser_at - seat_front - s.depth * 0.5
+				# How far the toes may reach in front of the middle of the seat: to the step's edge (rows that rise: the
+				# feet stay on the tread), else on a flat floor to the seat (its back) of the row in front, or the barrier
+				# in front of the first row; nothing in front: no limit. (Kabaddi's chairs on flat ground had the toes
+				# held on a tread that has no edge, pushing fans forward on their seats.)
+				var toe_room: float = seat_front + s.depth * 0.5
+				if s.rise <= 0.0:
+					if r > 0:
+						toe_room = s.tread - s.depth * 0.5 - (0.04 if s.back > 0.0 else 0.0)
+					elif s.has("barrier"):
+						toe_room = seat_front + s.depth * 0.5 + float(s.barrier.get("gap", 0.35)) - 0.05
+					else:
+						toe_room = INF
 				for i in n:
 					var x: float = (i + 0.5) * length / n
 					var mid: Vector3 = row0 + along * x + away * (seat_front + s.depth * 0.5)
@@ -181,7 +193,7 @@ func place(seed := 0) -> Dictionary:
 						_spot(out, si, feet, facing_at(s, feet), 0.0, false, INF, row0.y)
 					else:
 						_spot(out, si, Vector3(mid.x, row0.y, mid.z), facing_at(s, mid), seat_top - row0.y, true, back, row0.y,
-							s.depth * 0.5, seat_front + s.depth * 0.5)
+							s.depth * 0.5, toe_room, -away)
 			else:
 				# One line of fans a tread, or more on a deep one (a floor): STAND_GAP from the front, 0.6 m apart,
 				# none nearer the back than a body's depth.
@@ -202,7 +214,8 @@ func place(seed := 0) -> Dictionary:
 
 
 func _spot(out: Dictionary, si: int, p: Vector3, f: Vector3, seat: float, anchor: bool, back: float, floor_y: float,
-		half_depth := 0.0, front := INF) -> void:
+		half_depth := 0.0, front := INF, seat_dir := Vector3.ZERO) -> void:
+	out.seat_dir.append(seat_dir)
 	out.half_depth.append(half_depth)
 	out.front.append(front)
 	out.spots.append(p)
@@ -236,6 +249,8 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 	var pl: Dictionary = crowd.placed
 	var md := WsgCrowd3D.meta()
 	var out := {"fans": 0, "fails": [], "sections": {}, "worst": {}}
+	if int(md.get("version", 0)) < WsgCrowd3D.BAKE_VERSION:
+		out.fails.append("the crowd's data (%s) was baked before version %d (its frames not grounded: seated soles up to 7 cm under the floor): bake it again - FORCE=1 tools/wsg/fetch_assets.sh" % [WsgCrowd3D.DIR, WsgCrowd3D.BAKE_VERSION])
 	for s in venue.sections:
 		out.sections[s.name] = {"fans": 0, "hips": [INF, -INF], "feet": [INF, -INF], "inside": 0.0, "facing": 0.0, "backwards": 0}
 	# The frames tried: the first and middle of sitting and of clapping seated; standing, clapping standing and cheering.
@@ -302,7 +317,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 			var lp: Vector3 = oxf.affine_inverse() * xf.origin
 			var sz: Vector3 = ob.size
 			if absf(lp.x) < sz.x * 0.5 + 1.0 and absf(lp.z) < sz.z * 0.5 + 1.0 and lp.y > -sz.y * 0.5 - 2.2 and lp.y < sz.y * 0.5 + 0.3:
-				near.append([oxf.affine_inverse() * xf, sz * 0.5, ob.what])
+				near.append([oxf.affine_inverse() * xf, sz * 0.5, ob.what, oxf.origin])
 		var deepest := 0.0
 		var deep_what := ""
 		var fwd_up := float(crowd.stand_fwd.get(fan, 0.0)) if seated else 0.0
@@ -335,7 +350,7 @@ static func audit(crowd: WsgCrowd3D, venue: WsgCrowdVenue, per_section := 40) ->
 							deepest = dd
 							deep_what = "%s (%s)" % [ob[2], pose]
 							if OS.has_environment("AUDIT_DEBUG"):
-								deep_what += " fan-local %s, obstacle-local %s" % [str(p), str(lp)]
+								deep_what += " fan-local %s, obstacle-local %s, obstacle at %s, fan at %s" % [str(p), str(lp), str(ob[3]), str(xf.origin)]
 				var fe := lowest - floor_y
 				sec.feet = [minf(sec.feet[0], fe), maxf(sec.feet[1], fe)]
 				if fe < FEET_TOL[0] or (fe > FEET_TOL[1] and not (dangle and pose != "stand")):
