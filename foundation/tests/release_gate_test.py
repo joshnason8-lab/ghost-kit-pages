@@ -26,6 +26,27 @@ def ecfg(version):
     return b"ECFG" + struct.pack("<I", 2) + body
 
 
+def manifest(name, code):
+    """A binary AndroidManifest.xml (AXML, UTF-16 strings) whose <manifest> carries android:versionCode (an int) and
+    android:versionName, as aapt2 writes them."""
+    strs = ["versionCode", "versionName", "manifest", "http://schemas.android.com/apk/res/android", name]
+    data, offs = b"", []
+    for t in strs:
+        offs.append(len(data))
+        data += struct.pack("<H", len(t)) + t.encode("utf-16-le") + b"\0\0"
+    data += b"\0" * ((4 - len(data) % 4) % 4)
+    hdr = 28
+    pool = struct.pack("<IIIII", len(strs), 0, 0, hdr + 4 * len(strs), 0) + struct.pack("<%dI" % len(offs), *offs) + data
+    pool = struct.pack("<HHI", 0x0001, hdr, 8 + len(pool)) + pool
+    resmap = struct.pack("<HHI", 0x0180, 8, 16) + struct.pack("<II", 0x0101021B, 0x0101021C)
+    attrs = struct.pack("<IIIHBBI", 3, 0, 0xFFFFFFFF, 8, 0, 0x10, code) + struct.pack("<IIIHBBI", 3, 1, 4, 8, 0, 0x03, 4)
+    ext = struct.pack("<IIHHHHHH", 0xFFFFFFFF, 2, 20, 20, 2, 0, 0, 0)
+    elem = struct.pack("<II", 1, 0xFFFFFFFF) + ext + attrs
+    elem = struct.pack("<HHI", 0x0102, 16, 8 + len(elem)) + elem
+    body = pool + resmap + elem
+    return struct.pack("<HHI", 0x0003, 8, 8 + len(body)) + body
+
+
 def ctex(w, h, data_format, image_format, size):
     head = b"GST2" + struct.pack("<IIIIi", 1, w, h, 0, -1) + b"\0" * 12 + struct.pack("<I", data_format)
     head += struct.pack("<HHII", w, h, 0, image_format)
@@ -57,7 +78,7 @@ def main():
     cert = hashlib.sha256(der).hexdigest().upper()
     big = os.urandom(200 * 1024)
     base = {
-        "AndroidManifest.xml": b"x",
+        "AndroidManifest.xml": manifest("1.2.3-beta", 12),
         "assets/project.binary": ecfg("1.2.3-beta"),
         "assets/addons/wsg_foundation/data/mobility.res": b"stand-in, not the data",
         "assets/addons/wsg_foundation/data/actorcore.res": b"stand-in, not the data",
@@ -133,9 +154,27 @@ def main():
         print("%-26s exit %d, failed %s %s" % ("pack " + pname, code, failed or "nothing", "ok" if ok else "WRONG"))
         if not ok:
             fails.append(pname)
-    # The size diff against the previous release.
+    # Newer: above the release now on the tag - a lower one passes; the same version again, the same name with a new
+    # code, or a lower code fails (Floorball republished 0.9.8 as 0.9.8: Obtainium never offered it).
+    for pname, pver, pcode, bad in [("published lower", "1.2.2-beta", 11, False), ("same version again", "1.2.3-beta", 12, True),
+            ("same name, new code", "1.2.3-beta", 11, True), ("code not above", "1.2.2-beta", 12, True),
+            ("beta above release", "1.2.3", 11, True)]:
+        pub = os.path.join(tmp, "pub.apk")
+        if os.path.exists(pub):
+            os.remove(pub)
+        files = dict(base)
+        files["AndroidManifest.xml"] = manifest(pver, pcode)
+        build(pub, files, key)
+        code, failed, out = run(os.path.join(tmp, "out_pub"), "--apk", clean, "--cert", cert, "--version", "1.2.3-beta", "--published", pub)
+        ok = (failed == ["newer"]) if bad else (code == 0 and "versionCode 12" in out)
+        print("%-26s exit %d, failed %s %s" % (pname, code, failed or "nothing", "ok" if ok else "WRONG"))
+        if not ok:
+            fails.append(pname)
+            print(out)
+    # The size diff against the previous release (also the one published, when no --published).
     prev = os.path.join(tmp, "prev.apk")
     files = dict(base)
+    files["AndroidManifest.xml"] = manifest("1.2.2-beta", 11)
     files["assets/music.oggvorbisstr"] = os.urandom(50 * 1024)
     build(prev, files, key)
     code, failed, out = run(os.path.join(tmp, "out_size"), "--apk", clean, "--cert", cert, "--version", "1.2.3-beta", "--previous", prev)

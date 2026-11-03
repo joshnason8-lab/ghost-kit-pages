@@ -1419,6 +1419,7 @@ any of these fail:
 | clean | No tests, docs, tools, audit output or contact sheets in the export. |
 | textures | No texture over 2 MB that isn't GPU-compressed (ETC2/ASTC). |
 | files | No non-game files (`.blend`, `.psd`, `.fbx`, `.zip`, `.py`, `.sh`, `.md`, `.log`…), and no file of 64 KB or more twice. |
+| newer | The APK's `versionName` and `versionCode` (read from its manifest) are both above the APK now published on the release's tag (`--published`, else `--previous`). Obtainium offers an update only for a higher version: Floorball republished new code as 0.9.8 over 0.9.8, and an owner on 0.9.8 never got it. With no published APK (the tag's first release) it passes with a warning. |
 | size | Never fails. The size against the previous release, and the 20 files that grew most. |
 
 ```yaml
@@ -1431,6 +1432,10 @@ any of these fail:
         if: always()
         with: { name: release-gate, path: "${{ runner.temp }}/gate" }
 ```
+
+The `gh release download` line fetches the APK now on your tag: that is what `newer` compares against (as
+`--previous`). Keep it before the gate, and bump both `version/name` and `version/code` in your Android preset for
+every release, a rebuild of the same code included.
 
 It runs on GitHub's Ubuntu runner (`python3`, `cryptography` and the Android SDK's apksigner are already there).
 `--allow gate_allow.txt` excuses paths; each line is `<glob>`, a tab, then the owner's note. The report lists them.
