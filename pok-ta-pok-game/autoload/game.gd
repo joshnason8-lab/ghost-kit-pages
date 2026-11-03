@@ -330,11 +330,14 @@ func goto_menu() -> void:
 ## in the frame of the tap, the screen's buttons go off, and the match is built in steps under it, the bar moving, so
 ## on a slow phone the game never looks frozen (the owner, 0.6.7). Headless (the tests) or with no screen up, built at
 ## once as before.
+var overlay_headless := false   # (the owner's loading note, tests/owner_notes: the overlay's way in, headless too)
+
+
 func start_match(config: Dictionary) -> void:
 	if WsgLoading.busy():
 		return
 	var host := current if current and is_instance_valid(current) else null
-	if host == null or DisplayServer.get_name() == "headless" or bool(config.get("attract", false)):
+	if host == null or (DisplayServer.get_name() == "headless" and not overlay_headless) or bool(config.get("attract", false)):
 		var sc: Script = load("res://game/match.gd")
 		var mm: Node = sc.new()
 		mm.config = config.duplicate(true)

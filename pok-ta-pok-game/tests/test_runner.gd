@@ -13,9 +13,13 @@ const SCREENS := ["res://ui/main_menu.gd", "res://ui/quick_setup.gd", "res://ui/
 
 var failures := 0
 var checks := 0
+var only := false           # set by an owner note (tests/note_run.gd): no full run, it calls the measurements it needs
+var log: Array = []          # every check made: [passed, what] (the owner notes read it)
 
 
 func _ready() -> void:
+	if only:
+		return
 	Game.main = self
 	Game.settings.sound = false
 	Game.settings.coach = false
@@ -70,6 +74,7 @@ func _ready() -> void:
 
 func check(ok: bool, what: String) -> void:
 	checks += 1
+	log.append([ok, what])
 	if ok and OS.has_environment("TEST_VERBOSE"):
 		print("ok: ", what)
 	if not ok:

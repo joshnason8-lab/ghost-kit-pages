@@ -31,8 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Shared foundation up to date? (a warning only)
+      # Fails without a commit the foundation requires (foundation/REQUIRED); merely behind its latest, a warning.
+      - name: Shared foundation (fails without a required commit)
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
+      # The owner's notes are kept as tests for good: none listed in tests/owner_notes/INDEX.json may ever go.
+      - name: Owner notes never removed
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
 
       - uses: actions/setup-java@v4
         with:
@@ -118,6 +123,13 @@ jobs:
         run: |
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      # Every note the owner has given, a test of the very symptom they saw (tests/owner_notes/), with their words.
+      - name: Owner notes
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          WSG_NOTES_STRICT=1 timeout 2400 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee notes.log
 
       # The props round each court are solid (the owner: nobody walks through a bench, the ball bounces off it): at every
       # venue a Watch-AI match, then balls struck at the props with the game's own ball; fails on anybody 2 cm into a

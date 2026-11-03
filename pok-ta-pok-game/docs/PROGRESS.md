@@ -299,6 +299,16 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
     the frames come in smooth (ld.done) before the match's clock starts; the menu loads the next match's files on the
     loader's thread. Desktop software GL at Low: the longest frozen frame of a cold first match 291 ms (was 1.3-6 s
     in one frame); warm, 83-200 ms.
+- **0.6.10-beta: the owner's notes kept as tests for good.** The shared foundation synced to 877bcd9 (WsgOwnerNote).
+  Every note the owner has given on this game is a test in tests/owner_notes/ with the owner's own words, the date
+  and the version (INDEX.json, 18 notes): the crowd facing the play, the stone court fans' legs, the court-side
+  camera, the A-pose and the rigid stance, the block-figure elder, the joystick on every camera, the shared
+  foundation on the A16, floating players, the AI barely returning, the rubber ball's bounce, the rolled serve, the
+  loading delay, the solid props, the hip height, the copal skip when watching, the higher serve toss and the
+  festival flags. Each measures the symptom over its whole range, mostly with the test suite's own measurements
+  (tests/note_run.gd: a match run once however many notes read it). CI runs them strictly (no skips) and fails if a
+  note ever listed is gone (owner_notes_guard.sh), and fails without a commit the foundation requires
+  (check_foundation.sh, no longer a warning only).
 
 ## Next
 
