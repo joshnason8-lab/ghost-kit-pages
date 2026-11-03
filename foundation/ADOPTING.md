@@ -1252,6 +1252,9 @@ Some hooks have defaults:
 - `find_bodies` and `find_officials` find every `WsgBody` and `WsgOfficial`, plus nodes in the group `wsg_official`.
 - `play_seconds` is 6.
 
+**From 2026-11-03 12:00 UTC a failing rule fails your build.** Before then the check reports the same failures but
+exits 0 with a warning. That gives you the morning to write `world.gd` without turning a beta already in CI red.
+
 **A rule you leave unwired fails** ("not wired"). A rule the owner has excused goes in `exceptions()` with their note:
 `{"crowd": "2026-11-05: no crowd in practice (the owner)"}`. The report prints it.
 
@@ -1333,6 +1336,11 @@ If you truly must ship without one, set `FOUNDATION_REQUIRED_SKIP: "<commit>:<th
 the reason. Being merely behind the branch's latest is still only a warning.
 The foundation's own session pushes each update to every adopted game's pilot or game branch, under that game's
 rules (a pilot branch until the owner has passed the game's pilot), and says so to the lead, who checks each release.
+
+**A required commit can take effect later.** If its date in REQUIRED is a UTC time, such as `2026-11-03T12:00Z`, it
+is required from then. Before that, `check_foundation.sh` only warns, so a beta already in flight isn't turned red;
+sync the commit into your next build. 1ef240f (the planter, and WsgSim reading the drawn pose) is required from
+2026-11-03 12:00 UTC.
 
 ## 7. Check before you push
 

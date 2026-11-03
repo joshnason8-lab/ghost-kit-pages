@@ -8,6 +8,11 @@ extends SceneTree
 ## (their own sheets under DIR/props, DIR/crowd; the crowd's sheet wants a display: xvfb-run and --rendering-driver
 ## opengl3, as crowd_audit). Writes DIR/WORLD_CHECK.md and DIR/world_check.json; exits 1 if any rule fails.
 ## DIR must be outside the project (an export would pack it).
+## A failure fails the build from ENFORCED_FROM (UTC; the lead: each game has the morning of 2026-11-03 to write its
+## world.gd): before it the report is the same but the exit is 0, with a warning. WSG_WORLD_ENFORCE=1 enforces it now
+## (the check's own test); WSG_NOW=2026-11-03T12:00Z judges by another time.
+
+const ENFORCED_FROM := "2026-11-03T12:00Z"
 
 const RULES := ["props", "crowd", "feet", "pose", "officials", "sounds", "loading", "joystick", "web"]
 
@@ -90,6 +95,11 @@ func _initialize() -> void:
 	print("WORLD CHECK: %s (%d rules, %d failed) - %s" % ["PASS" if failed.is_empty() else "FAIL", results.size(), failed.size(), abs_out.path_join("WORLD_CHECK.md")])
 	sv.queue_free()
 	await process_frame
+	var now := OS.get_environment("WSG_NOW") if OS.has_environment("WSG_NOW") else Time.get_datetime_string_from_system(true).substr(0, 16) + "Z"
+	if not failed.is_empty() and OS.get_environment("WSG_WORLD_ENFORCE") != "1" and now < ENFORCED_FROM:
+		print("::warning::world_check: %d rules fail; the world check fails the build from %s (now %s) - fix them before then" % [failed.size(), ENFORCED_FROM, now])
+		quit(0)
+		return
 	quit(0 if failed.is_empty() else 1)
 
 

@@ -4,6 +4,7 @@
 #   sh tests/world_check_test.sh
 cd "$(dirname "$0")/.."
 OUT="${TMPDIR:-/tmp}/wsg_world_check_test"
+export WSG_WORLD_ENFORCE=1
 rm -rf "$OUT"
 mkdir -p "$OUT"
 RULES=feet,pose,officials,sounds,loading,joystick,web
