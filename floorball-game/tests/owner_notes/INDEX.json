@@ -1,0 +1,245 @@
+{
+ "about": "Floorball Unleashed: the owner's notes, each a test for good (tools/wsg/owner_notes.gd runs them; tests/note_lib.gd is their shared help). Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-10-22-game-name",
+   "file": "2026-10-22_game_name.gd",
+   "game": "floorball",
+   "date": "2026-10-22",
+   "version": "0.1",
+   "words": "Change the game name to Floorball Unleashed"
+  },
+  {
+   "id": "2026-10-22-no-numbers-over-heads",
+   "file": "2026-10-22_no_numbers_over_heads.gd",
+   "game": "floorball",
+   "date": "2026-10-22",
+   "version": "0.1",
+   "words": "No need for the number of the player over the heads."
+  },
+  {
+   "id": "2026-10-22-passive-play",
+   "file": "2026-10-22_passive_play.gd",
+   "game": "floorball",
+   "date": "2026-10-22",
+   "version": "0.1",
+   "words": "the cpu just kept passing it back and forth on their side for quite some time before even trying to be offensive. passive play seems to be too often"
+  },
+  {
+   "id": "2026-10-29-arena-text-language",
+   "file": "2026-10-29_arena_text_language.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.8.2",
+   "words": "Make sure any text around the arena's match the phones language."
+  },
+  {
+   "id": "2026-10-29-barely-swings",
+   "file": "2026-10-29_barely_swings.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.9",
+   "words": "the player barely swings in the mini game it looks bad"
+  },
+  {
+   "id": "2026-10-29-crowd-watching",
+   "file": "2026-10-29_crowd_watching.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.8.2",
+   "words": "Make sure the crowd is actually watching the game."
+  },
+  {
+   "id": "2026-10-29-graphics-vulkan",
+   "file": "2026-10-29_graphics_vulkan.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.8.2",
+   "words": "Here is a big one. Where floorball is played is richer areas around the world. We should upgrade the graphics to better phones. Reference the Hurling Heroes session, we upgraded to Vulkan I believe and made all the graphics better. Do that. If you need to use Meshy to create better players etc do that."
+  },
+  {
+   "id": "2026-10-29-holding-stick-up-close",
+   "file": "2026-10-29_holding_stick_up_close.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.9",
+   "words": "reference how hurling session did their hands holding the Hurley, the player doesn’t look like he’s holding the stick when up close"
+  },
+  {
+   "id": "2026-10-29-menu-not-kid-like",
+   "file": "2026-10-29_menu_not_kid_like.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.9",
+   "words": "The menu is too kid like, make it more serious, no silly font"
+  },
+  {
+   "id": "2026-10-29-penalty-camera-button",
+   "file": "2026-10-29_penalty_camera_button.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.9",
+   "words": "remove the other camera angle button for the penalty mini game"
+  },
+  {
+   "id": "2026-10-29-stick-flat-base",
+   "file": "2026-10-29_stick_flat_base.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.9",
+   "words": "the stick looks like it’s flat at the base where you hit the ball "
+  },
+  {
+   "id": "2026-10-29-watch-ai-match",
+   "file": "2026-10-29_watch_ai_match.gd",
+   "game": "floorball",
+   "date": "2026-10-29",
+   "version": "0.8.2",
+   "words": "Have a watch an AI match like the other games."
+  },
+  {
+   "id": "2026-11-02-ai-not-shooting",
+   "file": "2026-11-02_ai_not_shooting.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "AI doesn't seem interested in actually shooting at the goal."
+  },
+  {
+   "id": "2026-11-02-goal-camera-joystick",
+   "file": "2026-11-02_goal_camera_joystick.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "If you switch to the camera view for from the angle of the goal the movement goes all wrong on the joystick."
+  },
+  {
+   "id": "2026-11-02-goalie-glide",
+   "file": "2026-11-02_goalie_glide.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "The goalie is not on skates he shouldn't glide."
+  },
+  {
+   "id": "2026-11-02-gym-lights",
+   "file": "2026-11-02_gym_lights.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "Lights in the gym aren't attached to anything on the ceiling, looks weird, just remove them."
+  },
+  {
+   "id": "2026-11-02-hit-sound",
+   "file": "2026-11-02_hit_sound.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "Need a better sound when the ball is hit this sounds like a nintendo sound."
+  },
+  {
+   "id": "2026-11-02-holding-stick-wrong",
+   "file": "2026-11-02_holding_stick_wrong.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.1-beta",
+   "words": "holding stick wrong"
+  },
+  {
+   "id": "2026-11-02-one-hand-running",
+   "file": "2026-11-02_one_hand_running.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.1-beta",
+   "words": "I’m watching real video I see players running with the stick in only one hand"
+  },
+  {
+   "id": "2026-11-02-penalty-contort",
+   "file": "2026-11-02_penalty_contort.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "Then coming back to shoot again his body contorts horribly."
+  },
+  {
+   "id": "2026-11-02-penalty-stutter",
+   "file": "2026-11-02_penalty_stutter.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "Attached is a video of the penalty kick. The running is a weird stutter."
+  },
+  {
+   "id": "2026-11-02-running-natural",
+   "file": "2026-11-02_running_natural.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "HOnestly the running looked better before the shared foundation we need to fix this to make it look natural."
+  },
+  {
+   "id": "2026-11-02-thumbs-up",
+   "file": "2026-11-02_thumbs_up.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "Hand holding the stick is still awful. their thumbs should be up and the knuckles under the stick facing downward."
+  },
+  {
+   "id": "2026-11-02-timeout-nothing",
+   "file": "2026-11-02_timeout_nothing.gd",
+   "game": "floorball",
+   "date": "2026-11-02",
+   "version": "0.9.2-beta",
+   "words": "Click timeout pretty much does nothing."
+  },
+  {
+   "id": "2026-11-03-goalie-hold-loop",
+   "file": "2026-11-03_goalie_hold_loop.gd",
+   "game": "floorball",
+   "date": "2026-11-03",
+   "version": "0.9.6-beta",
+   "words": "A critical error happens in game where the goalie seems to just hold the ball when the players are too close and doesn't release. He releases and grabs over and over."
+  },
+  {
+   "id": "2026-11-03-mini-game-user-runs",
+   "file": "2026-11-03_mini_game_user_runs.gd",
+   "game": "floorball",
+   "date": "2026-11-03",
+   "version": "0.9.6-beta",
+   "words": "MIni game have the user run, don't have the player automatically run toward the goal. That happens and I do nothing and the player plays on his own."
+  },
+  {
+   "id": "2026-11-03-penalty-feet-floor",
+   "file": "2026-11-03_penalty_feet_floor.gd",
+   "game": "floorball",
+   "date": "2026-11-03",
+   "version": "0.9.6-beta",
+   "words": "Regression. the player on the penalty mini games feet are under the floor."
+  },
+  {
+   "id": "2026-11-03-remove-timeout",
+   "file": "2026-11-03_remove_timeout.gd",
+   "game": "floorball",
+   "date": "2026-11-03",
+   "version": "0.9.6-beta",
+   "words": "Just get rid of the time out since it does nothing."
+  },
+  {
+   "id": "2026-11-03-shots-low",
+   "file": "2026-11-03_shots_low.gd",
+   "game": "floorball",
+   "date": "2026-11-03",
+   "version": "0.9.6-beta",
+   "words": "All shots on goal are towards the ground, the ball doesn't lift much. When you're running and plan to shoot the joystick position should factor in to where the ball goes height wise. Unless you have a better idea."
+  },
+  {
+   "id": "2026-11-03-wrists-straight",
+   "file": "2026-11-03_wrists_straight.gd",
+   "game": "floorball",
+   "date": "2026-11-03",
+   "version": "0.9.3-beta",
+   "words": "Grip is still bad. Look at this image, see how the wrists are straight and not looking almost broken?"
+  }
+ ]
+}
