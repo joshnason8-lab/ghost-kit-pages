@@ -280,10 +280,10 @@ static func local_rot(v) -> Quaternion:
 	return Basis.from_euler(Vector3(deg_to_rad(e.x), deg_to_rad(e.y), deg_to_rad(e.z)), EULER_ORDER_YXZ).get_rotation_quaternion()
 
 
-## Puts the model in the pose.
-func apply(p: Dictionary) -> void:
+## Puts the model in the pose. DT: the game's step (s) since the last, for the planted feet's steps.
+func apply(p: Dictionary, dt := 1.0 / 30.0) -> void:
 	if plant_feet and skeleton != null and link == null:
-		p = _planted(p)
+		p = _planted(p, dt)
 	pose = p
 	if skeleton == null:
 		return
@@ -296,16 +296,26 @@ func apply(p: Dictionary) -> void:
 
 ## A foot on the floor stays where it was put down (0.15.3; the owner: "players still gliding a lot"). While a foot is
 ## down, the pose's thigh, knee and foot are turned (two-bone IK on the rig) to keep it there as he moves and turns,
-## until it lifts or he has gone PLANT_REACH past it (then it is put down again where it is). The strides alone left
+## until it lifts or he has gone PLANT_REACH past it (then he steps: the foot up and over to where his stride has it,
+## over STEP_TIME, a foot at a time; 0.15.13 - it was put straight down there, a jump). The strides alone left
 ## the standing foot sliding, a stride captured in one place being no stride at another speed or turning. Low: the
 ## shared foundation's own planter places the feet of the bodies it draws (Medium and High).
-func _planted(p: Dictionary) -> Dictionary:
+func _planted(p: Dictionary, dt: float) -> Dictionary:
 	var r := _rig
 	if _my_cal.is_empty():
 		_my_cal = _leg_cal(r)
 	var cal := _my_cal
 	var xf := global_transform
 	var air := float(p.get("y", 0.0)) > 0.05   # (off the floor; a captured move's feet, plant 0, are on it where they are)
+	dt = maxf(dt, 1.0 / 240.0)
+	var at := global_position
+	_went = Vector3.ZERO
+	if _was_at != Vector3.INF and at.distance_to(_was_at) < 0.5:
+		_went = Vector3((at.x - _was_at.x) / dt, 0.0, (at.z - _was_at.z) / dt)
+	elif _was_at != Vector3.INF:
+		_locks = [null, null]   # (put somewhere new - a restart, a substitution: his feet go with him)
+		_step = [-1.0, -1.0]
+	_was_at = at
 	r.solve_legs(p)   # (the legs only: what this needs, a tenth of the bones)
 	var solved_for := [p]
 	var out := p
@@ -319,14 +329,22 @@ func _planted(p: Dictionary) -> Dictionary:
 		# little over the floor: no letting go and putting down again every frame).
 		var down := not air and a.y < float(cal.ground[leg]) + PLANT_HEIGHT * (2.0 if _locks[leg] != null else 1.0)
 		var w_now := xf * a
+		if not down and not air and float(_step[leg]) >= 0.0:
+			# (a step the stride lifts the foot in the middle of is finished, not dropped where it was: the foot then
+			# came down and slid back along the floor to the stride's)
+			down = true
 		if not down:
 			_locks[leg] = null
+			_step[leg] = -1.0
 			_ease[leg] = maxf(0.0, float(_ease[leg]) - PLANT_EASE)
 			if float(_ease[leg]) <= 0.0 or _last_t[leg] == null:
 				continue
-			# (lifting: the correction let go over a few frames, not at once)
+			# (lifting: the correction let go over a few frames, not at once - and gone by the time the foot is
+			# EASE_HIGH up: turned on a leg a move raises - a blocker's, a kicker's - the IK threw it about, 0.67 m in a
+			# frame, the jitter test)
 			var t0: Vector3 = _last_t[leg]
-			var te := a.lerp(Vector3(t0.x, a.y, t0.z), smoothstep(0.0, 1.0, float(_ease[leg])))
+			var k := smoothstep(0.0, 1.0, float(_ease[leg])) * clampf(1.0 - (a.y - float(cal.ground[leg])) / EASE_HIGH, 0.0, 1.0)
+			var te := a.lerp(Vector3(t0.x, a.y, t0.z), k)
 			if (te - a).length() > IK_CLOSE:
 				out = _leg_ik(out, leg, te, cal, r)
 			continue
@@ -334,9 +352,45 @@ func _planted(p: Dictionary) -> Dictionary:
 			_locks[leg] = w_now
 		var lock: Vector3 = _locks[leg]
 		var t := xf.affine_inverse() * Vector3(lock.x, w_now.y, lock.z)
-		if Vector2(t.x - a.x, t.z - a.z).length() > PLANT_REACH:
-			_locks[leg] = w_now   # (stretched as far as a leg goes: put down again where the stride has it)
+		var off := Vector2(t.x - a.x, t.z - a.z).length()
+		if off > CUT:
+			# (further than any step: the foot goes with him)
+			_locks[leg] = w_now
+			_step[leg] = -1.0
 			t = a
+			off = 0.0
+		# (slowly - a blocker in his crouch edging along the net, a stance under a move whose legs stand still - he
+		# shuffles: shorter steps, a foot at a time; held to a full reach, both feet went at once, a hop)
+		var slow := _went.length() < SHUFFLE_SPEED
+		var reach := SHUFFLE_REACH if slow else PLANT_REACH
+		if float(_step[leg]) < 0.0 and (not slow or float(_step[1 - leg]) < 0.0) and off > reach:
+			# (stretched as far as a leg goes: he steps, the foot up and over to where the stride has it - put straight
+			# down there, it jumped 32-68 cm in a frame, 456 times in five minutes of a match: WsgNoteChecks jump_cm)
+			_step[leg] = 0.0
+			_step_from[leg] = lock
+			_step_land[leg] = null
+		if float(_step[leg]) >= 0.0:
+			_step[leg] = minf(1.0, float(_step[leg]) + dt / STEP_TIME)
+			var s: float = _step[leg]
+			# (up before across and across before down, onto his stride's foot as it is then, and never further from
+			# it than STEP_REACH, about the most the IK turns a leg well: aimed where the stride had it as the step
+			# began, a runner's foot came down up to 0.9 m behind him, the leg thrown back to reach it - the jitter test)
+			# Then down where it got to, not following the stride's foot down (that slid over the floor).
+			var from: Vector3 = _step_from[leg]
+			var w: Vector3
+			if s < STEP_ACROSS:
+				w = Vector3(w_now.x, 0.0, w_now.z) + Vector3(from.x - w_now.x, 0.0, from.z - w_now.z).limit_length(STEP_REACH) * (1.0 - smoothstep(0.25, STEP_ACROSS, s))
+			else:
+				if _step_land[leg] == null:
+					_step_land[leg] = w_now
+				var land: Vector3 = _step_land[leg]
+				w = Vector3(w_now.x, 0.0, w_now.z) + Vector3(land.x - w_now.x, 0.0, land.z - w_now.z).limit_length(LAND_REACH)
+			# (as high as the stride has it if that is higher: a stride lifting the foot behind him is not held down)
+			w.y = maxf(w_now.y, float(cal.ground[leg]) * xf.basis.get_scale().y + global_position.y + STEP_LIFT * sin(PI * s))
+			t = xf.affine_inverse() * w
+			if s >= 1.0:
+				_step[leg] = -1.0
+				_locks[leg] = Vector3(w.x, w_now.y, w.z)
 		_ease[leg] = 1.0
 		_last_t[leg] = t
 		if (t - a).length() > IK_CLOSE:
@@ -391,11 +445,25 @@ const PLANT_HEIGHT := 0.03   # m: an ankle this close to its height standing is 
 const IK_CLOSE := 0.004      # m: an ankle this close to where it is kept needs no turning
 const PLANT_REACH := 0.32    # m: a planted foot let go when his stride would have it this far from where it is
 const PLANT_EASE := 0.2      # of a correction let go each frame (five frames)
+const STEP_TIME := 0.2       # s: a foot stretched to PLANT_REACH stepping to where his stride has it
+const STEP_LIFT := 0.10      # m: how high it comes up in that step
+const SHUFFLE_REACH := 0.16  # m: PLANT_REACH for a body going slower than SHUFFLE_SPEED (m/s)
+const SHUFFLE_SPEED := 1.0
+const STEP_ACROSS := 0.7     # of a step: across by here, then straight down
+const LAND_REACH := 0.16     # m: and coming down, from it (further, let go soon after it jolted - the jitter test)
+const STEP_REACH := 0.45     # m: the furthest a stepping foot is from where his stride has it
+const EASE_HIGH := 0.3       # m: a foot let go is all the stride's own this far over its height standing
+const CUT := 1.0             # m: a planted foot this far from his stride's is not stepped from: it goes with him
 
 var plant_feet := false      # (Player, Officials) a foot on the floor stays put: _planted
 var _locks: Array = [null, null]     # each foot's place on the floor while it is down (world), or null
 var _last_t: Array = [null, null]    # where the last correction put each ankle (the body's space)
 var _ease: Array = [0.0, 0.0]        # 1 .. 0: a correction being let go
+var _step: Array = [-1.0, -1.0]      # 0 .. 1: through a step from its lock to where the stride has it; -1: none
+var _step_from: Array = [Vector3.ZERO, Vector3.ZERO] # where that step left (world)
+var _step_land: Array = [null, null]                 # and where it comes down, once across (world)
+var _went := Vector3.ZERO            # how fast he went over the floor last frame (world, m/s)
+var _was_at := Vector3.INF
 var _my_cal := {}
 static var _cal := {}
 

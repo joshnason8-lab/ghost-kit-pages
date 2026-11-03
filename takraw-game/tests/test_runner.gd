@@ -862,6 +862,77 @@ func _no_glide_in_play() -> void:
 			[["block"], 0.35, "getting into position to block"], [["chest", "header", "sila", "thigh"], 0.35, "getting to the ball"]]:
 		var s: Array = share.call(row[0])
 		check(float(s[1]) > 3.0 and float(s[0]) < float(row[1]), "no gliding %s: %.0f%% of %.0f m slid (under %.0f%%)" % [row[2], 100.0 * float(s[0]), float(s[1]), 100.0 * float(row[1])])
+	_no_foot_jumps_low()
+
+
+## On Low (the Galaxy A16's), a foot kept on the floor as he moves past it steps on when his leg has reached as far as
+## it goes (RealBody._planted, 0.15.13); before, it was put down a stride on in one frame, a jump of 32-68 cm. The
+## foundation's jump measure (WsgNoteChecks.foot_slip's jump_cm: a foot low over the floor, the smaller of the change in
+## its move into a frame and out of it, the smaller of its heel's and its toe's), every frame of every player for a
+## minute: over 25 cm at most JUMPS_LOW times (0.15.12: 129, worst 64 cm; 0.15.13: 1, worst 28 cm).
+const JUMPS_LOW := 10
+
+
+func _no_foot_jumps_low() -> void:
+	var keep: int = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_LOW
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15,
+		"user_team": -1, "demo": true, "seed": 7, "mode": "quick"}
+	add_child(m)
+	var runs := {}    # player -> [[L ankle, L toe, R ankle, R toe] each frame of the run he is in]
+	var done: Array = []
+	var bones := ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]
+	for i in 30 * 60:
+		m._process(1.0 / 30.0)
+		m.set("_start_replay_after", -1.0)
+		for side in 2:
+			for pp in m.players_on(side):
+				var pl: Player = pp
+				var sk: Skeleton3D = pl.body.skeleton
+				var fe: Array = bones.map(func(n): return sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_" + n)).origin)
+				var run: Array = runs.get(pl, [])
+				# (a new run when he is put somewhere new: a restart)
+				if not run.is_empty() and Vector2((fe[0] as Vector3).x - (run[-1][0] as Vector3).x, (fe[0] as Vector3).z - (run[-1][0] as Vector3).z).length() > 1.5:
+					done.append(run)
+					run = []
+				run.append(fe)
+				runs[pl] = run
+	done.append_array(runs.values())
+	m.queue_free()
+	remove_child(m)
+	Game.settings.graphics = keep
+	var jumps := 0
+	var worst := 0.0
+	var frames := 0
+	for run: Array in done:
+		frames += run.size()
+		for side in 2:
+			var rest := [INF, INF]
+			for f: Array in run:
+				for e in 2:
+					rest[e] = minf(float(rest[e]), (f[side * 2 + e] as Vector3).y)
+			for k in range(2, run.size() - 1):
+				var low := true
+				for j in range(k - 2, k + 2):
+					if minf((run[j][side * 2] as Vector3).y - float(rest[0]), (run[j][side * 2 + 1] as Vector3).y - float(rest[1])) >= WsgNoteChecks.LOW:
+						low = false
+						break
+				if not low:
+					continue
+				var jmp := INF
+				for e in 2:
+					var p1: Vector3 = run[k - 2][side * 2 + e]
+					var p2: Vector3 = run[k - 1][side * 2 + e]
+					var p3: Vector3 = run[k][side * 2 + e]
+					var p4: Vector3 = run[k + 1][side * 2 + e]
+					var into := Vector2(p3.x - 2.0 * p2.x + p1.x, p3.z - 2.0 * p2.z + p1.z).length()
+					var out := Vector2(p4.x - 2.0 * p3.x + p2.x, p4.z - 2.0 * p3.z + p2.z).length()
+					jmp = minf(jmp, minf(into, out))
+				worst = maxf(worst, jmp)
+				jumps += int(jmp > 0.25)
+	check(frames > 9000 and jumps <= JUMPS_LOW, "on Low a foot steps, never put down a stride on in a frame: %d jumps over 25 cm in a minute of a regu (at most %d; worst %.0f cm; %d player-frames)" % [
+		jumps, JUMPS_LOW, 100.0 * worst, frames])
 
 
 ## The owner: "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball

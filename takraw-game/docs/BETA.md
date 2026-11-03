@@ -15,6 +15,13 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.13: **on Low, a player's foot steps instead of jumping.** On Low (where the Galaxy A16 plays), a foot
+kept on the floor as a player moved past it used to be put down again a stride on in a single frame, a jump of 32 to
+68 cm that read as a slide; that happened over 450 times in five minutes of a match. Now the foot lifts and steps
+there, one foot at a time when he edges along slowly (a blocker in his crouch, a player shuffling under the ball):
+nine such jumps are left in the same five minutes. Worth watching the blocker shuffling along the net, players
+getting under the ball, and turns at a run.
+
 New in 0.15.12: **no T-pose in the replays** (Medium and High). A player or official who had not moved yet when a
 point began could show for a moment with his arms straight out in the slow-motion replay; now every body in a replay is
 as it was drawn. Behind the scenes, a new beta is now put up before the old one comes down, so this page is never left

@@ -670,6 +670,46 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## On Low, a foot steps instead of jumping (0.15.13)
+
+The owner, playing on Low (the Galaxy A16): players still glide getting into position to spike or block, going for
+the ball, and in the blocker's folded crouch. On Low the players are the game's own bodies, and their feet are kept
+on the floor by RealBody's own planter (`_planted`): a foot down is held where it landed (two-bone IK) until it
+lifts. But when he had moved PLANT_REACH (32 cm) past it, it was put down again where his stride had it, in a single
+frame. In a seeded regu, read from the drawn feet frame by frame, that came to 456 jumps of a low foot over 25 cm
+(WsgNoteChecks.foot_slip's jump_cm, up to 68 cm) in five minutes of play.
+
+Three ways for Low were measured (2 x 150 s of a seeded regu, every player; CPU a desktop headless):
+
+| Low | a frame | glide share | jumps over 25 cm |
+|---|---|---|---|
+| RealBody's planter (0.15.12) | 1.9-2.0 ms | 10% | 456 |
+| the foundation's bodies on Low (FoundationLink) | 3.2-3.5 ms | 35% | 679 |
+| the foundation's WsgFootPlanter on RealBody's skeleton | 1.6 ms | 19% | 6 |
+
+(Glide share: of the distance players moved at 0.5 m/s or more with a foot on the floor in both frames, how much
+with that foot sliding faster than half his speed.) The foundation's bodies are worse on Low as they run today, and
+cost about +4-6 ms a frame on an A16. Its planter on our skeleton (a subclass naming our bones) costs nothing and
+ends the jumps, but slides more: a foot it lets go of while still flat eases back to the stride's along the floor.
+The Foundation has that, and a bone map for its planter, to take further; until then:
+
+- **A foot stretched to PLANT_REACH steps** (STEP_TIME 0.2 s): up (STEP_LIFT 10 cm), across onto his stride's foot by
+  0.7 of the step, then straight down, never further from the stride's foot than STEP_REACH (45 cm) on the way
+  (further, the IK threw the leg back) or LAND_REACH (16 cm) coming down. A step the stride lifts the foot in the
+  middle of is finished, as high as the stride has it.
+- **Slowly** (under 1 m/s: a blocker in his crouch edging along the net, a stance under a move whose legs stand
+  still), he shuffles: SHUFFLE_REACH 16 cm, a foot at a time.
+- A foot let go is the stride's own by the time it is EASE_HIGH (30 cm) up: a correction still easing out on a leg a
+  move raises (a blocker's) threw it 0.67 m in a frame (the jitter test).
+- Put somewhere new (a restart), his feet go with him; the planter now steps on the match's own time step.
+
+After, the same matches: **9 jumps over 25 cm** (from 456; worst 38 cm from 68), the planted step's slip the same
+(90th percentile 2.3 cm), CPU the same. The glide share goes from 10% to 14% (from 51 to 63 m of 734 m moved): a
+foot in the first and last frames of its step, and a foot let go, count while they are within 3 cm of the floor. The
+snap itself had counted too, but only once per re-plant. test_runner pins it: on Low, a minute of a regu, at most 10
+jumps over 25 cm (1 now, worst 28 cm; 129 before, worst 64 cm). The jitter test (every hand, foot and head under 0.85 m/frame^2)
+passes on Low and High.
+
 ## What the first full WsgSim smoke found (0.15.9)
 
 The first smoke batch to finish in CI (on 0.15.8, 65 matches) failed 31. Every failure was traced frame by frame:

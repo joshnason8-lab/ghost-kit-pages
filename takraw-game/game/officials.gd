@@ -242,7 +242,7 @@ func _pose(o: One, dt: float, ball: Vector3, live: bool) -> void:
 	if o.sig_w > 0.0:
 		for bone in o.sig:
 			p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), o.sig[bone], o.sig_w)
-	o.body.apply(p)
+	o.body.apply(p, dt)
 	var l := o.body.link
 	if l:
 		# The shared foundation's body: the motion capture standing and stepping (his head on the ball), the game's arms

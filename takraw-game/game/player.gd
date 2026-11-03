@@ -382,7 +382,7 @@ func tick(dt: float, now: float) -> void:
 	body.rotation.y = _yaw + yaw_add
 	body.position.y = lift
 	_shadow.scale = Vector3.ONE * clampf(1.0 - lift * 0.4, 0.5, 1.0)
-	body.apply(p)
+	body.apply(p, dt)
 	if body.link:
 		_drive_link(dt, speed)
 
