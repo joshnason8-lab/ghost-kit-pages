@@ -412,18 +412,22 @@ func start_match(config: Dictionary) -> void:
 	var shell := Arena.shell_path(String(config.get("arena", "dome")))
 	ld.request(["res://game/match.gd"] + ([shell] if ResourceLoader.exists(shell) else []))
 	ld.step(tr("LOADING"), func(): await _build_match(config, ld), 4.0)
-	# Then a few frames of the match running under the overlay: its first drawing (the camera on the court, every
-	# material's shaders made for the GPU - seconds on a slow phone, and no frame can be cut there) happens behind it.
-	# (Steps of their own, so the overlay times each frame as a frame, not as work.)
-	ld.step(tr("LOADING"), func(): get_tree().paused = false, 0.3)
-	for i in 2:
-		ld.step(tr("LOADING"), func(): pass, 0.3)
+	# Its shaders made for the GPU behind the overlay, a batch of its looks a frame (WsgLoading v2: no 3D is drawn
+	# from the first step until here, so the match is never first drawn whole - seconds in one frame on a slow phone).
+	ld.warm(func(): return current, tr("LOADING"))
 	# The tree holds still while the match is half built (nothing runs on it between the slices); the overlay runs on.
 	get_tree().paused = true
-	var ok: bool = await ld.run()
+	await ld.run()
 	get_tree().paused = false
-	if ok:
-		ld.done()
+	# Up until the frames come smooth (the match's first frames still meet cold resources), then it fades.
+	await ld.done()
+
+
+## The ground the player is likely to play next (the quick match's chosen one): its files loaded on a thread while
+## they are still on the menu, so the load after Play takes them as they are (WsgLoading.prewarm).
+func prewarm_match(arena_id: String) -> void:
+	var shell := Arena.shell_path(arena_id)
+	WsgLoading.prewarm(["res://game/match.gd"] + ([shell] if ResourceLoader.exists(shell) else []))
 
 
 ## Turned off by the tests that start a match and look at it in the same frame.

@@ -483,3 +483,24 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   of a frozen menu.
 - test_runner: the overlay up in the tap's frame with the buttons off, one load for two taps, the bar only forward,
   the match built under it, the tree running again after, and the match playing.
+
+## 0.14.6: solid props, loading v2, a smaller APK (foundation 8f688ff)
+
+- **Foundation 8f688ff** (required commits checked in CI: check_foundation.sh fails on a missing one).
+- **Solid props** (WsgSolidProps, ADOPTING 5.15; the owner: nobody ever walks through a table or a bench): Arena.solid
+  holds every ground's props where their builders put them - both benches (7.8 x 0.42 x 0.4 at z +-9.12), the LED
+  boards (panels), the stands' first step, the monsoon's tarp posts, the beach's umbrella poles, every chair and stool
+  under the venue's seats and the scorers' chairs; Officials adds the scorers' table. Athlete.drive steers every body's
+  wanted velocity round them (solid.steer, before it accelerates: steering after left him crawling along a bench at
+  0.45 m/s) and pushes each step out of them (push_out; one memo each, the seek target as its goal). Out players walk to
+  free_spot in front of their bench place and then sit on it (sitting is not walking); revived, they come forward off
+  the seat as they rise (_rise_off_seat, every frame). game/prop_runs.gd + tools/wsg/prop_audit.gd in CI: 2 Watch-AI
+  matches a ground, 403,444 body frames, none inside a prop (it first found the revived players standing up inside
+  the bench). test_runner: the village's props registered, a player sent at the bench goes round it.
+- **Loading v2**: ld.warm draws the match's looks a batch a frame behind the overlay (no 3D drawn from the first step
+  until then), await ld.done() holds until frames settle (3 under 50 ms, 3 s cap), Game.prewarm_match loads the chosen
+  ground's files on a thread from the quick-match screen. On this machine's software GL each warm frame costs about
+  250 ms, so tap-to-play grew to 10-18 s here (40 warm frames, settle never under 50 ms); the longest frame fell to
+  0.2-2.3 s. A phone's frames are a tenth of that: the A16 numbers are still to come.
+- **APK**: the sixteen-person crowd sheets drawn at 0.75 of the render (only the far stands are cards on Medium and
+  High), their masks at 0.375 and without alpha (ETC2 RGB): the four textures from 27 MB to 8.6 MB.

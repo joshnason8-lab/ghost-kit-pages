@@ -62,6 +62,11 @@ func _official(rng: RandomNumberGenerator, i: int, pos: Vector3) -> Athlete:
 
 func _table(pos: Vector3) -> void:
 	var sign_at := pos + Vector3(0.36, 0.5, 0)
+	# Solid (WsgSolidProps): nobody walks through it - the trestle table (1.7 m along the side line) or the desk (2.2 m).
+	if m.arena.solid:
+		var local: bool = m.arena.arena_id in ["village", "monsoon", "beach"]
+		m.arena.solid.add({"name": "scorers' table", "kind": "box", "position": pos,
+			"size": Vector3(0.76, 0.76, 1.7) if local else Vector3(0.7, 0.74, 2.2), "material": "wood"})
 	if m.arena.arena_id in ["village", "monsoon", "beach"]:
 		# At a local ground, a wooden trestle table (assets/scenery), the scorers' sign on a cloth tied along its front.
 		var low := int(Game.settings.graphics) == Game.GFX_LOW

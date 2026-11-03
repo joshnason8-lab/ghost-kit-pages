@@ -33,6 +33,7 @@ POSES = ["sit", "stand", "cheer", "sit_clap", "stand_clap", "sit_look_l", "sit_l
 SEATED = ("sit", "sit_clap", "sit_look_l", "sit_look_r")
 SEAT = 0.42          # m: every adult's seat in the cell (a stand's seat is 0.44-0.45 m)
 UNDER_FEET = 0.02    # m under the feet in render_crowd's cells
+SCALE = {"_hi": (0.75, 0.375)}   # the sixteen-person sheets' pixels and their masks', of the render's
 
 
 def cells(img, cw, ch, col, row):
@@ -82,14 +83,23 @@ def pack(dirn, info, seats, people, sources, suffix):
                 sheets["back_mask"].paste(place(cells(src["back_mask"], cw, ch, col, r), s, down), at)
         name = os.path.splitext(os.path.basename(p["file"]))[0].replace("_rigged", "")
         fans[name] = {"seat": round(SEAT if adult else own_seat, 3)}
-    sheets["front"].save(os.path.join(dirn, "cards%s.webp" % suffix), quality=92, method=6)
-    sheets["back"].save(os.path.join(dirn, "cards%s_back.webp" % suffix), quality=92, method=6)
+    # The sixteen-person sheets are compressed for the GPU (Medium and High) and were the APK's biggest growth (four
+    # 6.8 MB textures, 0.14.4): drawn at SCALE[suffix] of the render (only the far stands are cards there; the near
+    # fans are 3D), and their masks at half that again, without an alpha channel (GPU-compressed at half the size).
+    scale, mask_scale = SCALE.get(suffix, (1.0, 1.0))
+    def sized(img, k):
+        if k == 1.0:
+            return img
+        return img.resize((round(cols * cw * k), round(rows * ch * k)), Image.LANCZOS)
+    sized(sheets["front"], scale).save(os.path.join(dirn, "cards%s.webp" % suffix), quality=92, method=6)
+    sized(sheets["back"], scale).save(os.path.join(dirn, "cards%s_back.webp" % suffix), quality=92, method=6)
     for k, name in (("mask", "cards%s_mask.png"), ("back_mask", "cards%s_back_mask.png")):
-        # R the shirt; G, B (skin, hair) and A (legs) empty: kept as drawn.
-        m = np.array(sheets[k])
-        rgba = np.zeros(m.shape + (4,), np.uint8)
-        rgba[..., 0] = m
-        Image.fromarray(rgba, "RGBA").save(os.path.join(dirn, name % suffix), optimize=True)
+        # R the shirt; G, B (skin, hair) empty: kept as drawn. No alpha: the cards read it as the legs' clothes, which
+        # they recolour only with set_looks (ours keep their own).
+        m = np.array(sized(sheets[k], mask_scale))
+        rgb = np.zeros(m.shape + (3,), np.uint8)
+        rgb[..., 0] = m
+        Image.fromarray(rgb, "RGB").save(os.path.join(dirn, name % suffix), optimize=True)
     layout = {"cols": cols, "rows": rows, "size": [round(cell_w, 4), cell_h], "poses": POSES, "fans": fans}
     with open(os.path.join(dirn, "cards%s.json" % suffix), "w") as f:
         json.dump(layout, f, indent=1)

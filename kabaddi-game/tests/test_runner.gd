@@ -641,6 +641,7 @@ func _run() -> void:
 	_check_sounds()
 
 	await _loading_overlay()
+	await _solid_props()
 
 	# 8. Captured motion clips load and play on an athlete.
 	var clip := MocapClip.load_file("res://tests/fixtures/walk_clip.json")
@@ -2298,5 +2299,34 @@ func _loading_overlay() -> void:
 	await frames(20)
 	check(m.phase != "" and is_instance_valid(m.hud) and m.hud.visible, "the match plays after the overlay")
 	Game.loading_overlay = false
+	Game.goto_menu()
+	await frames(3)
+
+
+## The owner: "There will NEVER be a time when a player or referee should walk through a table or bench". Each ground's
+## props are solid (WsgSolidProps, Arena.solid): the benches, the scorers' table, every chair and stool, the boards, the
+## stands' front, the posts and poles; a player sent straight at the bench goes round it to the far side, never in it;
+## an out player walks to the bench and sits on it, and when revived stands forward off it.
+func _solid_props() -> void:
+	Game.start_match({"home": "MUM", "away": "PUN", "arena": "village", "mode": "quick", "length": 0, "difficulty": 1, "autoplay": true, "autoplay_no_report": true})
+	var m: Node = Game.current
+	await frames(2)
+	var s: WsgSolidProps = m.arena.solid
+	var names: Array = s.props.map(func(p): return String(p.name))
+	check(names.count("bench") == 2 and names.has("scorers' table") and names.count("monobloc_chair") >= 40
+		and names.count("folding_stool") >= 10 and names.count("scorer's chair") == 2 and Athlete.solid == s,
+		"village: its benches, scorers' table, chairs and stools are solid (%d props)" % names.size())
+	var a := Athlete.new()
+	a.setup(DB.team("MUM").squad[0], 0, Color.TEAL, Color.WHITE, false)
+	add_child(a)
+	a.position = Vector3(0.4, 0, Arena.HALF_L + 1.6)
+	var goal := Vector3(0.0, 0, Arena.HALF_L + 3.6)   # straight through the bench (z 9.12) to behind it
+	var worst := 0.0
+	for i in 240:
+		a.seek(goal, 3.0, 1.0 / 30.0)
+		worst = maxf(worst, float(s.penetration(a.position, Athlete.PROP_R)[0]))
+	check(worst <= 0.02 and a.position.distance_to(goal) < 0.6,
+		"a player sent straight at the bench goes round it (never more than %.3f m in) to the far side (%.2f m off)" % [worst, a.position.distance_to(goal)])
+	a.queue_free()
 	Game.goto_menu()
 	await frames(3)

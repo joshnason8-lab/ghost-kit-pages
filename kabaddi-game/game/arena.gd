@@ -36,6 +36,9 @@ var _clap := [0.0, 2.6, 0.0]   # what the crowd is clapping along to (clap)
 var _clap_t := 0.0
 var _clap_share := 0.0
 var _banner_labels := []
+## The ground's props as solid shapes (WsgSolidProps, ADOPTING 5.15: the owner - "There will NEVER be a time when a
+## player or referee should walk through a table or bench"): every body's step goes round them (Athlete.drive).
+var solid: WsgSolidProps
 
 
 ## A body drawn a second time (its material's next pass), flattened onto the floor along the sun's light and see-through
@@ -76,6 +79,8 @@ const BAKE_SKY := {"beach": 0.45}
 func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text: String, ld: WsgLoading = null) -> void:
 	_banner_key = banner_text
 	arena_id = p_arena_id if p_arena_id in ["stadium", "village", "monsoon", "beach"] else "dome"
+	solid = WsgSolidProps.new()
+	_solid_props()
 	_env()
 	if ld:
 		await ld.checkpoint(0.08)
@@ -103,6 +108,48 @@ func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text
 		if (l as Label3D).text == banner:
 			l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 			_banner_labels.append(l)
+
+
+## Each ground's fixed props where its builders put them (_court's benches, _stand_boxes, _ad_boards, the posts and
+## poles); the seats are added where _venue_seats puts them, the scorers' table where Officials puts it.
+const BOARDS := {"dome": [8.6, 10.2], "stadium": [9.0, 11.0]}
+const STANDS := {"dome": [9.6, 11.2], "stadium": [13.0, 15.0], "monsoon": [10.5, 10.5]}
+
+
+func _solid_props() -> void:
+	solid.add({"name": "court", "kind": "floor", "y": 0.0, "material": "wood"})
+	for sgn in [-1.0, 1.0]:
+		# The bench in each sitting block: its seat over its legs (one box), at its builder's place (_court).
+		solid.add({"name": "bench", "kind": "box", "position": Vector3(0, 0, sgn * (HALF_L + 2.62)),
+			"size": Vector3(7.8, 0.42, 0.4), "material": "wood"})
+	if BOARDS.has(arena_id):
+		var b: Array = BOARDS[arena_id]
+		for seg in _board_segments(float(b[0]), float(b[1])):
+			solid.add({"name": "LED board", "kind": "panel", "xf": Transform3D(Basis(Vector3.UP, float(seg[2])), seg[0]),
+				"size": Vector3(maxf(seg[1].x, seg[1].z), 0.9, 0.12), "material": "plastic"})
+	if STANDS.has(arena_id):
+		# The stands' first step all round (the rest are behind and above it).
+		var ix: float = STANDS[arena_id][0]
+		var iz: float = STANDS[arena_id][1]
+		for sgn in [-1.0, 1.0]:
+			solid.add({"name": "stand", "kind": "box", "position": Vector3(sgn * (ix + 0.45), 0, 0), "size": Vector3(0.9, 0.45, iz * 2.0),
+				"material": "concrete"})
+			solid.add({"name": "stand", "kind": "box", "position": Vector3(0, 0, sgn * (iz + 0.45)), "size": Vector3(ix * 2.0 + 1.8, 0.45, 0.9),
+				"material": "concrete"})
+	match arena_id:
+		"monsoon":
+			for z in [-11.0, -5.5, 0.0, 5.5, 11.0]:
+				for x in [-10.0, -15.0]:
+					solid.add({"name": "tarp post", "kind": "box", "position": Vector3(x, 0, z), "size": Vector3(0.18, 4.0, 0.18),
+						"material": "metal"})
+		"beach":
+			for p in [Vector3(-12, 0, 6), Vector3(13, 0, -3), Vector3(10, 0, 9)]:
+				solid.add({"name": "umbrella pole", "kind": "cylinder", "position": p, "radius": 0.04, "height": 2.4,
+					"material": "metal"})
+			solid.skip("umbrella canopies", "2.4 m up: over everyone's head")
+		"village":
+			solid.skip("huts, temple and trees", "16 m and more from the court, past the standing crowd")
+	solid.skip("crowd", "spectators are not obstacles in play (behind the boards, chairs and stands)")
 
 
 ## The baked fixed parts of a ground (assets/grounds/<id>/<id>.tscn), for the loader's thread to fetch ahead.
@@ -693,6 +740,8 @@ func _venue_seats(placed: Dictionary, extra_chairs := []) -> void:
 			lists[kind] = []
 			colours[kind] = []
 		lists[kind].append([placed.spots[i], yaw])
+		solid.add({"name": kind, "kind": "box", "position": placed.spots[i], "yaw": yaw,
+			"size": Vector3(0.46, 0.85, 0.5) if kind == "monobloc_chair" else Vector3(0.36, 0.45, 0.36), "material": "plastic"})
 		colours[kind].append(_seat_colour(rng) if kind == "monobloc_chair" else Color.WHITE)
 	if not extra_chairs.is_empty():
 		if not lists.has("monobloc_chair"):
@@ -700,6 +749,8 @@ func _venue_seats(placed: Dictionary, extra_chairs := []) -> void:
 			colours["monobloc_chair"] = []
 		for c in extra_chairs:
 			lists["monobloc_chair"].append(c)
+			solid.add({"name": "scorer's chair", "kind": "box", "position": c[0], "yaw": c[1], "size": Vector3(0.46, 0.85, 0.5),
+				"material": "plastic"})
 			colours["monobloc_chair"].append(_seat_colour(rng))
 	for kind in lists:
 		_seats(kind, lists[kind], colours[kind])

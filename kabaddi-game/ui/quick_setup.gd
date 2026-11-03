@@ -241,6 +241,7 @@ func _ground_card(id: String, name: String) -> Button:
 
 
 func _mark_ground() -> void:
+	Game.prewarm_match(arena)
 	for id in _ground_cards:
 		var card: Button = _ground_cards[id]
 		card.get_node("Ring").visible = id == arena

@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Shared foundation up to date? (a warning only)
+      - name: Shared foundation (fails if a required commit is missing; behind the latest only warns)
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
 
       - uses: actions/setup-java@v4
@@ -86,6 +86,12 @@ jobs:
       - name: Smoke test (screens, cup, career, full AI match)
         working-directory: ${{ env.PROJECT_DIR }}
         run: timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
+
+      # The owner: nobody ever walks through a table, a bench, a chair or a board. A Watch-AI match at every ground,
+      # every body on its feet checked against the ground's solid props each frame (WsgSolidProps, ADOPTING 5.15).
+      - name: Props audit (no body inside a prop, every ground)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 90
 
       - name: Configure Android export
         env:

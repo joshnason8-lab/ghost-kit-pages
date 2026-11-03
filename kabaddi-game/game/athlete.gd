@@ -182,6 +182,8 @@ func ground_pos() -> Vector3:
 
 
 func set_state(s: String, length := 0.0, wait_first := 0.0) -> void:
+	if state == "sit" and s != "sit":
+		_off_seat = true   # getting up from the bench: he comes forward off it first (_step)
 	if s != "holding":
 		hold_style = ""
 		haul = 0.0
@@ -263,8 +265,12 @@ func drive(desired: Vector3, dt: float, rate := -1.0) -> void:
 		desired += avoid
 	drove = true
 	drives += 1
+	# Round the props on his way: the way he means to go turned (at its speed) toward the clear way most like it, so
+	# he accelerates along it rather than into the prop (WsgSolidProps.steer; he keeps to the side he chose).
+	if solid != null and desired.length() > 0.05 and float(solid.penetration(position, PROP_R)[0]) <= 0.01:
+		desired = solid.steer(position, desired, PROP_R, 1.8, _goal, _prop_memo)
 	vel = vel.move_toward(desired, (accel if rate < 0.0 else rate) * dt)
-	position += vel * dt
+	_step(dt)
 	# He turns the way he is going while it is the way he means to go: stepped aside by someone (avoid) with nowhere he
 	# means to go, he does not turn to it (one stood still and stepped aside and back was turned to and fro with each step,
 	# tests/motion_audit); pulling up from a sprint to go back, he faces the way he was running until he is going back.
@@ -272,15 +278,56 @@ func drive(desired: Vector3, dt: float, rate := -1.0) -> void:
 		facing = facing.slerp(vel.normalized(), clampf(dt * 10.0, 0.0, 1.0)).normalized()
 
 
+## The ground's props (WsgSolidProps, set by the match): nobody walks through a bench, a table, a chair, a board.
+static var solid: WsgSolidProps
+const PROP_R := 0.28   # a body's radius among the props
+var _prop_memo := {}   # the side he chose round a long prop (WsgSolidProps.steer keeps to it)
+var _goal := Vector3.INF
+var _off_seat := false # up from the bench, still over it: stepping forward off it
+
+
+## The step itself: round the props on his way (steered, keeping his speed), never into one. One already in a prop
+## (sat on the bench, or put there) walks out of it as he means to, not jumped out.
+func _step(dt: float) -> void:
+	if solid == null:
+		position += vel * dt
+		return
+	if float(solid.penetration(position, PROP_R)[0]) > 0.01:
+		if not _off_seat:
+			position += vel * dt
+		return   # (getting up off the bench: _rise_off_seat moves him, every frame)
+	_off_seat = false
+	# (steered in drive) moved, and never into one: pushed out of anything he would still touch.
+	var to := solid.push_out(position + vel * dt, PROP_R, 1.8)
+	var real := (to - position) / dt if dt > 0.0 else vel
+	real.y = 0.0
+	position = to
+	vel = real.limit_length(maxf(vel.length(), 0.5))
+
+
+## Sat on the bench his hips were over the seat and his feet in front: standing, he comes forward onto them (about
+## 0.4 m) as he rises, every frame until he is clear of it, whether or not anyone drives him meanwhile.
+func _rise_off_seat(dt: float) -> void:
+	if not _off_seat or solid == null or state == "sit":
+		return
+	if float(solid.penetration(position, PROP_R)[0]) <= 0.01:
+		_off_seat = false
+		return
+	position = position.move_toward(solid.free_spot(position, PROP_R), 2.4 * dt)
+
+
 func seek(target: Vector3, speed: float, dt: float, arrive := 0.6) -> void:
+	_goal = target
 	var to := target - position
 	to.y = 0
 	var d := to.length()
 	if d < 0.05:
+		_goal = Vector3.INF
 		drive(Vector3.ZERO, dt)
 		return
 	var s := speed * clampf(d / arrive, 0.0, 1.0)
 	drive(to / d * s, dt)
+	_goal = Vector3.INF
 
 
 func face_toward(p: Vector3, dt: float, rate := 8.0) -> void:
@@ -301,6 +348,7 @@ func turn_toward(p: Vector3, dt: float, max_rate: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_rise_off_seat(delta)
 	st_t += delta
 	cooldown = maxf(0.0, cooldown - delta)
 	reach_t = maxf(0.0, reach_t - delta)

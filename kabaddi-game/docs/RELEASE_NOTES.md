@@ -1,4 +1,12 @@
-**New in 0.14.5: a loading screen the moment you tap Play.** Tapping Play, Watch, a cup or season fixture or a lesson
+**New in 0.14.6: nobody walks through the furniture, and a smoother start.**
+- **Solid props**: players and officials walk round the benches, the scorers' table, the chairs and stools, the
+  boards and the stands instead of through them. Out players walk to the front of the bench and sit on it; when
+  revived they stand forward off it. Checked in every ground over whole matches.
+- **Loading**: the match is drawn for the first time behind the loading screen, a little at a time, and the screen
+  stays until play runs smoothly; the next match's ground starts loading while you choose it.
+- **A smaller download**: the crowd's Medium and High pictures take a third of the space (the APK about 19 MB smaller).
+
+**In 0.14.5: a loading screen the moment you tap Play.** Tapping Play, Watch, a cup or season fixture or a lesson
 now dims the screen at once with "Loading…", a spinner, a bar that fills as the match is built, and a tip to read; the
 buttons stop answering so a second tap can't start a second match. On a slow phone the wait no longer looks like the
 game has frozen.

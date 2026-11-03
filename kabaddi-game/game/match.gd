@@ -231,6 +231,7 @@ func _ready() -> void:
 	add_child(arena)
 	var banner := "LEAGUE_NAME" if DB.team(config.home).kind == "league" else "MENU_CUP"
 	await arena.build(String(config.get("arena", "dome")), kit[0], kit[1], banner, ld)
+	Athlete.solid = arena.solid   # every body's step goes round the ground's props
 	if ld:
 		await ld.checkpoint(0.35)
 
@@ -463,6 +464,8 @@ func _set_phase(p: String) -> void:
 
 
 func _exit_tree() -> void:
+	if Athlete.solid == (arena.solid if arena else null):
+		Athlete.solid = null
 	FoundationLink.in_match = false
 	FoundationLink.frozen = false
 	Engine.time_scale = 1.0   # Watch AI's 2x ends with the match
@@ -988,8 +991,9 @@ func _to_bench(a: Athlete, dt: float) -> void:
 	var off := spot - a.position
 	off.y = 0
 	if a.state == "sit":
+		# Sitting is not walking: eased onto his place on the bench (the bench is solid only to those on their feet).
 		a.vel = Vector3.ZERO
-		if off.length() > 0.35:
+		if off.length() > 0.8:
 			a.set_state("walk")
 		else:
 			a.position += off * minf(1.0, dt * 2.0)
@@ -998,8 +1002,12 @@ func _to_bench(a: Athlete, dt: float) -> void:
 	a.lock_facing = false
 	if a.state != "walk":
 		a.set_state("walk")
-	a.seek(spot, 3.3 if phase == "setup" and off.length() > 3.0 else 2.6, dt, 0.5)   # a jog when the next raid waits
-	if off.length() < 0.2:
+	# He walks round the props to just in front of his place on the bench (the spot clear of it), then sits.
+	var stand := arena.solid.free_spot(spot, Athlete.PROP_R) if arena.solid else spot
+	var to_stand := stand - a.position
+	to_stand.y = 0
+	a.seek(stand, 3.3 if phase == "setup" and off.length() > 3.0 else 2.6, dt, 0.5)   # a jog when the next raid waits
+	if to_stand.length() < 0.2:
 		a.vel = Vector3.ZERO
 		a.set_state("sit")
 
