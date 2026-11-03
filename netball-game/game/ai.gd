@@ -26,6 +26,7 @@ var _give_way := {}         # player -> [whom she infringed, seconds left]: step
 const JOG := 2.8            # m/s: back to the spots after a goal (nobody sprints; the taking C hurries, Match)
 const HUDDLE_R := 1.05      # m: the ring of seven at a break
 const HUDDLE_PACE := 3.6    # m/s: off to the huddle
+const CLEAR_R := 0.95       # m: the nearest an opponent stands to the landing foot of the player with the ball
 
 
 func _init(p_match) -> void:
@@ -185,8 +186,81 @@ func think(dt: float) -> void:
 			if _rejoin(pl):
 				continue
 			_play(pl, dt)
+	keep_clear()
 	if m.phase == "live":
 		_slips(dt)
+
+
+## Obstruction (R16) is defending from closer than 0.9 m to the landing foot of the player with the ball; at a free
+## or penalty pass or a throw-in everyone stands where the umpire puts them, the penalised player out of play beside
+## the thrower (Match). So while an opponent holds the ball, or a restart's spot is being set up, nobody of the other
+## side goes within CLEAR_R of that foot (or spot): a place nearer is moved out to CLEAR_R, and a way to it across
+## that ring goes round it (clear_path). (Your own player goes where you take her, and the umpire calls you.)
+func keep_clear() -> void:
+	var c := Vector2.INF
+	var t := -1
+	var kind := String(m.restart.get("kind", ""))
+	if m.holder and m.phase == "live":
+		c = m.holder.landing
+		t = m.holder.team
+	elif m.phase == "setup" and kind != Rules.CENTRE and kind != "":
+		c = m.holder.landing if m.holder else Vector2(m.restart.get("spot", m.restart.at))
+		t = int(m.restart.to)
+	for s in 2:
+		for pl: Player in m.players[s]:
+			pl.keep_out = Vector3.ZERO
+	if t < 0:
+		return
+	for pl: Player in m.players[1 - t]:
+		if pl == me or pl.suspended > 0.0 or _give_way.has(pl):
+			continue
+		# (The penalised player, out of play, goes round her wider, to her place beside her.)
+		var r := Rules.OUT_OF_PLAY_GAP - 0.2 if pl.away() else CLEAR_R
+		pl.target = clear_path(pl.pos, pl.dir, pl.p, pl.target, c, r)
+		pl.keep_out = Vector3(c.x, c.y, r - 0.02)
+
+
+## How near the nearest opponent of the player with the ball (in play or out of it) stands to her landing foot (m).
+func nearest_opponent(h: Player) -> float:
+	var best := INF
+	for o: Player in m.players[1 - h.team]:
+		if o.suspended <= 0.0:
+			best = minf(best, o.p.distance_to(h.landing))
+	return best
+
+
+## Where a player (pos, attacking toward dir) at p heads for `to` without coming within r of c: `to` itself moved out
+## to r (round the ring to ground she may stand on); from inside the ring, straight out first; and a straight way
+## across the ring replaced by a step round it, 40 degrees at a time.
+static func clear_path(pos: String, dir: int, p: Vector2, to: Vector2, c: Vector2, r: float) -> Vector2:
+	var rel := to - c
+	if rel.length() < r:
+		var d := rel if rel.length() > 0.05 else p - c
+		to = ring_spot(pos, dir, c, d.normalized() if d.length() > 0.05 else Vector2(-dir, 0), r + 0.03)
+	var mine := p - c
+	var ml := mine.length()
+	if ml < r - 0.02:
+		var out := mine / ml if ml > 0.05 else (to - c).normalized()
+		return ring_spot(pos, dir, c, out, r + 0.08)
+	# The nearest the straight way comes to c.
+	var seg := to - p
+	var k := clampf((c - p).dot(seg) / maxf(seg.length_squared(), 1e-6), 0.0, 1.0)
+	if (p + seg * k).distance_to(c) < r - 0.02:
+		var turn := clampf(mine.angle_to(to - c), -0.7, 0.7)
+		var q := Rules.onside_point(pos, c + mine.rotated(turn) / ml * maxf(ml, r + 0.05), dir, 0.05)
+		if q.distance_to(c) >= r - 0.02:
+			return q
+	return to
+
+
+## A spot r from c, as near the direction want as her areas allow (pos, attacking toward dir).
+static func ring_spot(pos: String, dir: int, c: Vector2, want: Vector2, r: float) -> Vector2:
+	for i in 10:
+		for sgn: float in [1.0, -1.0]:
+			var q := Rules.onside_point(pos, c + want.rotated(sgn * i * PI / 9.0) * r, dir, 0.05)
+			if q.distance_to(c) >= r - 0.02:
+				return q
+	return c + want * r
 
 
 ## Advantage played on her contact or obstruction (R7): the offender steps clear of the player she infringed, two
@@ -232,6 +306,8 @@ func _out_of_play(pl: Player) -> void:
 		pl.out_until = 0.0
 		pl.set_act("ready")
 		return
+	if m.restart.get("out") == pl:
+		pl.target = m.restart.get("out_at", pl.target)   # (keep_clear may send her round the thrower on the way)
 	pl.want_speed = 3.0
 	pl.look_on = true
 	pl.look_at_p = m.ball.court_pos()
@@ -523,11 +599,11 @@ func _defend(pl: Player, _dt: float) -> void:
 	var own_goal := Court.goal_post(-pl.dir)
 	var b: Vector2 = m.ball.court_pos()
 	if mark == m.holder:
-		# Defend the ball: arms over it from 0.9 m (a little more on the lower levels), between her and the goal.
+		# Defend the ball: arms over it from 0.9 m (a little more on the lower levels), between her and the goal (or
+		# as near that as her areas let her: never nearer than 0.9 m, keep_clear).
 		var from := mark.landing
-		var gap := Court.DEFEND_DIST + lerpf(0.25, 0.04, clampf(sharp(pl.team) - 0.7, 0.0, 0.42) / 0.42)
-		var to := from + (own_goal - from).normalized() * gap
-		pl.target = Rules.onside_point(pl.pos, to, pl.dir, 0.05)
+		var gap := maxf(CLEAR_R + 0.03, Court.DEFEND_DIST + lerpf(0.25, 0.04, clampf(sharp(pl.team) - 0.7, 0.0, 0.42) / 0.42))
+		pl.target = ring_spot(pl.pos, pl.dir, from, (own_goal - from).normalized(), gap)
 		pl.want_speed = 4.0
 		pl.look_at_p = from
 		pl.set_act("defend_shot" if mark.pos in ["GS", "GA"] and Court.in_circle(mark.landing, mark.dir) else "defend")

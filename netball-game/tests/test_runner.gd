@@ -40,9 +40,12 @@ func _ready() -> void:
 	if "ball" in OS.get_cmdline_user_args():
 		# (Only the ball, the nets and advantage: tests/test_runner.tscn -- ball)
 		_ball_flight()
+		_ball_uncaught()
 		await _ball_in_play()
+		await _ball_free_in_play()
 		await _net_sway()
 		await _advantage_clear()
+		await _restart_spacing()
 		await _two_goal_lead()
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
@@ -58,14 +61,17 @@ func _ready() -> void:
 	_rules()
 	_footwork()
 	_ball_flight()
+	_ball_uncaught()
 	_sim()
 	_cup()
 	_league()
 	await _matches()
 	await _rules_in_play()
 	await _ball_in_play()
+	await _ball_free_in_play()
 	await _net_sway()
 	await _advantage_clear()
+	await _restart_spacing()
 	await _two_goal_lead()
 	await _motion()
 	await _mocap()
@@ -453,10 +459,17 @@ func _ball_in_play() -> void:
 	await frames(2)
 
 
-## The nets are rope: a goal swings and ripples the net it drops through, then it settles; the other net is still. In
-## every venue, by the glow shader's uniforms (no draw call of its own).
+## The nets are rope: a goal whips the net it drops through (its foot out 18 cm and more, enough to see from the TV
+## camera's wide shot), ripples and billows it, then it settles; the other net is still. A shot off the ring shakes
+## it (12 cm and more). In every venue, on Low as on High, by the glow shader's uniforms (no draw call of its own).
 func _net_sway() -> void:
-	for venue in ["arena", "hall", "outdoor"]:
+	var was: int = int(Game.settings.graphics)
+	for run: Array in [["arena", "goal", Game.GFX_HIGH], ["hall", "goal", Game.GFX_HIGH], ["outdoor", "goal", Game.GFX_HIGH],
+			["arena", "goal", Game.GFX_LOW], ["arena", "miss", Game.GFX_HIGH], ["hall", "miss", Game.GFX_LOW]]:
+		var venue: String = run[0]
+		var goal: bool = run[1] == "goal"
+		Game.settings.graphics = int(run[2])
+		var lv := "Low" if int(run[2]) == Game.GFX_LOW else "High"
 		var m := _study_match(37, {"venue": venue})
 		await _wait_live(m)
 		var guard := 0
@@ -473,30 +486,430 @@ func _net_sway() -> void:
 		m._give(gs)
 		m.ai._decide[gs] = 99.0
 		m.shoot()
-		m.shot_info.goal = true
+		m.shot_info.goal = goal
 		var s := 1 if gs.dir > 0 else 0
 		var peak := 0.0
+		var ripple := 0.0
+		var billow := 0.0
 		var other := 0.0
-		var goal_f := -1
+		var hit_f := -1
 		var stuck := 0.0
+		var shader_peak := 0.0
 		for f in 210:
 			await frames(1)
-			if goal_f < 0 and m.phase == "goal":
-				goal_f = f
+			if hit_f < 0 and (m.phase == "goal" or m.shot_info.get("rebound", false) or (m.ball.state == "loose" and not goal)):
+				hit_f = f
 			var n: Dictionary = m.arena.nets[s]
 			peak = maxf(peak, (n.sw as Vector2).length())
+			ripple = maxf(ripple, float(n.amp))
+			billow = maxf(billow, float(n.bil))
 			other = maxf(other, (m.arena.nets[1 - s].sw as Vector2).length())
-			if goal_f >= 0 and f > goal_f + 150:
+			var u: Array = m.arena._glow_mat.get_shader_parameter("net_swing")
+			shader_peak = maxf(shader_peak, Vector2((u[s] as Vector4).x, (u[s] as Vector4).y).length())
+			if hit_f >= 0 and f > hit_f + 150:
 				stuck = maxf(stuck, (n.sw as Vector2).length())
-		var sw: Array = m.arena._glow_mat.get_shader_parameter("net_swing")
-		print("  net: %s, a goal swings its foot %.1f cm; 5 s on, %.1f mm" % [venue, peak * 100.0, stuck * 1000.0])
-		check(goal_f >= 0 and peak > 0.02 and peak <= Arena.NET_MAX + 0.001,
-			"%s: a goal swings the net (%.1f cm at its foot)" % [venue, peak * 100.0])
-		check(stuck < 0.004, "%s: then it settles within five seconds (%.1f mm)" % [venue, stuck * 1000.0])
-		check(other < 0.001, "%s: the other net is still" % venue)
-		check(sw.size() == 2, "%s: the glow shader is given the nets' swing" % venue)
+		var what := "a goal" if goal else "a shot off the ring"
+		print("  net: %s, %s, %s swings its foot %.1f cm (ripple %.1f cm, billow %.1f cm); 5 s on, %.1f mm" % [venue, lv, what, peak * 100.0, ripple * 100.0, billow * 100.0, stuck * 1000.0])
+		if goal:
+			check(hit_f >= 0 and peak >= 0.18 and peak <= Arena.NET_MAX + 0.001 and ripple >= 0.03 and billow >= 0.03,
+				"%s, %s: a goal whips the net (%.1f cm at its foot, ripple %.1f cm, billow %.1f cm)" % [venue, lv, peak * 100.0, ripple * 100.0, billow * 100.0])
+		else:
+			check(hit_f >= 0 and peak >= 0.12, "%s, %s: a shot off the ring shakes the net (%.1f cm at its foot)" % [venue, lv, peak * 100.0])
+		check(absf(shader_peak - peak) < 0.002, "%s, %s: the glow shader is given the swing (%.1f cm)" % [venue, lv, shader_peak * 100.0])
+		check(stuck < 0.004, "%s, %s: then it settles within five seconds (%.1f mm)" % [venue, lv, stuck * 1000.0])
+		check(other < 0.001, "%s, %s: the other net is still" % [venue, lv])
+		check(String((m.arena._glow_mat as ShaderMaterial).shader.code).contains("net_billow"), "%s, %s: the nets move in the one glow shader" % [venue, lv])
 		m.queue_free()
 		await frames(2)
+	Game.settings.graphics = was
+
+
+## No throw crosses the floor faster than a real one (Ball.FLAT_MAX, about 17 m/s at most), however long; a long
+## shoulder pass is a high throw (20 m: 1.2-1.5 s in the air, its top 2-3 m over the hands). A pass nobody catches
+## carries on along its own parabola, is let go at its own speed (as Match lets it go), falls at g, lands where that
+## parabola meets the floor (never further than its flight carries it) and bounces and rolls to a stop; a ball in the
+## air when the whistle goes falls the same way (Ball.dead, moving), and a dead ball put on its spot stays there.
+func _ball_uncaught() -> void:
+	var dt := 1.0 / 30.0
+	var hand := Vector3(0.0, 1.6, 0.0)
+	var fastest := 0.0
+	var fast_name := ""
+	for kind: String in ["chest", "shoulder", "lob", "bounce"]:
+		for i in 30:
+			var d := 1.0 + i
+			var to := Vector3(d * 0.8, 2.05 if kind == "lob" else (0.95 if kind == "bounce" else 1.3), d * 0.6)
+			var pl := Ball.plan(kind, hand, to)
+			for k: float in [0.0, 0.3, 0.7, 0.999]:
+				var v := Ball.plan_vel(pl, k)
+				var flat := Vector2(v.x, v.z).length()
+				if flat > fastest:
+					fastest = flat
+					fast_name = "%s %.0f m" % [kind, d]
+	check(fastest <= 17.0, "ball: no pass crosses the floor faster than 17 m/s, 1-30 m of every kind (fastest %.1f, a %s)" % [fastest, fast_name])
+	for d: float in [15.0, 20.0, 25.0]:
+		var sh := Ball.plan("shoulder", Vector3(0, 1.9, 0), Vector3(d, 1.4, 0))
+		var v0 := Ball.plan_vel(sh, 0.0)
+		var apex := v0.y * v0.y / (2.0 * Ball.G)
+		print("  ball: shoulder %.0f m: %.2f s, %.1f m/s across, %.2f m over the hands at the top" % [d, float(sh.dur), Vector2(v0.x, v0.z).length(), apex])
+		if d == 20.0:
+			check(float(sh.dur) >= 1.2 and float(sh.dur) <= 1.5 and apex >= 2.0 and apex <= 3.0,
+				"ball: a 20 m shoulder pass is in the air 1.2-1.5 s, its top 2-3 m over the hands (%.2f s, %.2f m)" % [float(sh.dur), apex])
+	# Nobody catches it.
+	for c: Array in [["chest", 7.0], ["shoulder", 18.0], ["lob", 9.0], ["bounce", 5.0]]:
+		var kind: String = c[0]
+		var d: float = c[1]
+		var b := Ball.new()
+		add_child(b)
+		var lands: Array = []
+		var fc := {"f": 0, "at": []}
+		b.bounced.connect(func(at: Vector3, _sp: float):
+			lands.append(at)
+			fc.at.append(fc.f))
+		var from := hand
+		var to := Vector3(d, 2.05 if kind == "lob" else (0.95 if kind == "bounce" else 1.3), 1.0)
+		b.throw(kind, from, to)
+		var lg: Array = b.f_legs[b.f_legs.size() - 1]
+		var p0: Vector3 = lg[1]
+		var v0: Vector3 = lg[2]
+		var tl := (v0.y + sqrt(v0.y * v0.y + 2.0 * Ball.G * (p0.y - Ball.R))) / Ball.G
+		var meet := Vector2(p0.x + v0.x * tl, p0.z + v0.z * tl)   # where its parabola meets the floor
+		var ps: Array = []
+		var let_go := false
+		for f in 360:
+			fc.f = f
+			b.step(dt)
+			if b.state == "flight" and b.f_t >= b.f_dur:
+				b.loose(b.pos, b.velocity())   # (as Match lets a pass she did not reach go)
+				let_go = true
+			ps.append(b.pos)
+		var worst := 0.0
+		var n := 0
+		for i in range(1, ps.size() - 1):
+			if minf(minf(ps[i - 1].y, ps[i].y), ps[i + 1].y) <= Ball.R + 0.01 or fc.at.has(i) or fc.at.has(i + 1) or (kind == "bounce" and absf(i * dt - b.f_dur * b.f_bounce) < 0.1):
+				continue
+			worst = maxf(worst, absf((ps[i + 1].y - 2.0 * ps[i].y + ps[i - 1].y) / (dt * dt) + Ball.G) / Ball.G)
+			n += 1
+		# (A bounce pass's first touch is its planned bounce: its landing is the next.)
+		var first: Vector3 = lands[1 if kind == "bounce" else 0] if lands.size() > (1 if kind == "bounce" else 0) else Vector3.INF
+		var at := Vector2(first.x, first.z)
+		var reach := Vector2(from.x, from.z).distance_to(meet)
+		var rest: Vector3 = ps[ps.size() - 1]
+		var still: bool = (ps[ps.size() - 1] as Vector3).distance_to(ps[ps.size() - 2]) < 0.0005
+		check(let_go and n > 10 and worst < 0.02, "ball: a %s nobody catches falls at g all the way down (%d frames, worst %.1f%% off)" % [kind, n, worst * 100.0])
+		check(first != Vector3.INF and at.distance_to(meet) < 0.3 and Vector2(from.x, from.z).distance_to(at) <= reach + 0.3,
+			"ball: and lands where its flight's parabola meets the floor, within its range (%.2f m off; %.1f m out of %.1f)" % [at.distance_to(meet), Vector2(from.x, from.z).distance_to(at), reach])
+		check(lands.size() >= 2 and still and absf(rest.y - Ball.R) < 0.002, "ball: then bounces (%d times) and rolls to a stop on the floor" % lands.size())
+		b.free()
+	# The whistle with the ball in the air: dead, it carries on and falls; put on a spot, it stays.
+	var b2 := Ball.new()
+	add_child(b2)
+	b2.throw("shoulder", hand, Vector3(16.0, 1.4, 0.0))
+	for f in 8:
+		b2.step(dt)
+	var v_then := b2.velocity()
+	b2.dead(b2.pos, true)
+	var ys: Array = []
+	for f in 150:
+		b2.step(dt)
+		ys.append(b2.pos)
+	var bad := 0.0
+	for i in range(1, 12):
+		bad = maxf(bad, absf((ys[i + 1].y - 2.0 * ys[i].y + ys[i - 1].y) / (dt * dt) + Ball.G) / Ball.G)
+	check(bad < 0.02 and absf((ys[1].x - ys[0].x) / dt - v_then.x) < 0.2 and absf(ys[ys.size() - 1].y - Ball.R) < 0.002,
+		"ball: the whistle with it in the air: it goes on as it was going, falls at g (%.1f%% off) and comes to rest on the floor" % [bad * 100.0])
+	b2.dead(Vector3(0, Ball.R, 0))
+	b2.step(dt)
+	check(b2.pos == Vector3(0, Ball.R, 0), "ball: a dead ball put on its spot stays there")
+	b2.free()
+
+
+## In a match: every frame the ball is free (in flight, loose, or dead and still falling) it falls at g, except in a
+## net (the cords hold it) or as it meets the floor; no pass crosses the floor faster than 17 m/s; nothing holds it in
+## the air (it hung where it was when the whistle went, before). Then a pass to nobody and a whistle in mid-pass.
+func _ball_free_in_play() -> void:
+	var m := _study_match(39)
+	await _wait_live(m)
+	var top := {"flat": 0.0}
+	m.game_event.connect(func(k, _info):
+		if k == "pass":
+			var v: Vector3 = m.ball.flight_vel(0.0)
+			top.flat = maxf(float(top.flat), Vector2(v.x, v.z).length()))
+	var hist: Array = []
+	var n := {"flight": 0, "loose": 0, "dead": 0}
+	var off := {"flight": 0, "loose": 0, "dead": 0}
+	var worst := 0.0
+	var hung := 0
+	var fr := {"f": 0, "at": []}
+	m.ball.bounced.connect(func(_at, _sp): fr.at.append(fr.f))
+	for f in 2400:
+		fr.f = f + 1
+		await frames(1)
+		var b: Ball = m.ball
+		hist.append([b.state, b.position, m.phase, b.f_kind, b.f_t > b.f_dur, b.f_bounce, b.f_t / maxf(b.f_dur, 0.001), b._moving])
+		if hist.size() < 3:
+			continue
+		var a: Array = hist[-3]
+		var bb: Array = hist[-2]
+		var c: Array = hist[-1]
+		if b.state == "dead" and not b._moving and b.carrier == null and b.position.y > 0.3:
+			hung += 1
+		if not (a[0] == bb[0] and bb[0] == c[0] and a[2] == c[2]) or a[0] == "held" or c[2] == "replay":
+			continue
+		if a[0] == "dead" and not (a[7] and c[7]):
+			continue
+		var p0: Vector3 = a[1]
+		var p1: Vector3 = bb[1]
+		var p2: Vector3 = c[1]
+		if minf(minf(p0.y, p1.y), p2.y) <= Ball.R + 0.01 or p0.distance_to(p2) < 0.001 or fr.at.has(f) or fr.at.has(f + 1):
+			continue
+		if c[3] == "shot" and c[4]:
+			continue   # (a shot stops on the ring: Match takes it on)
+		if float(c[5]) > 0.0 and absf(float(bb[6]) - float(c[5])) < 0.08:
+			continue   # (a bounce pass's bounce)
+		var in_net := false
+		for s: int in [-1, 1]:
+			var rc := Court.ring_centre(s)
+			if Vector2(p1.x - rc.x, p1.z - rc.z).length() < Court.RING_R + 0.05 and p1.y < rc.y + 0.1 and p1.y > rc.y - 0.6:
+				in_net = true
+		if in_net:
+			continue
+		var acc := (p2.y - 2.0 * p1.y + p0.y) * 900.0
+		n[a[0]] += 1
+		var e := absf(acc + Ball.G) / Ball.G
+		worst = maxf(worst, e)
+		if e > 0.02:
+			off[a[0]] += 1
+	check(n.flight > 200 and n.loose + n.dead > 20 and off.flight + off.loose + off.dead == 0,
+		"ball in play: free, it falls at g every frame (checked %s; off by more than 2%%: %s, worst %.1f%%)" % [n, off, worst * 100.0])
+	check(float(top.flat) > 5.0 and float(top.flat) <= 17.0, "ball in play: no pass faster across the floor than 17 m/s (fastest %.1f)" % float(top.flat))
+	check(hung == 0, "ball in play: never left hanging in the air at a whistle (%d frames)" % hung)
+	# A pass to nobody (she is back by the thrower): on along its own parabola past the catch, let go at its own
+	# speed, down where that parabola meets the floor (unless someone takes it first), at g all the way.
+	for trial in 2:
+		var guard := 0
+		while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard < 900:
+			await frames(1)
+			guard += 1
+		var h: Player = m.holder
+		m.ai._decide[h] = 99.0
+		var to: Player = null
+		for o: Player in m.players[h.team]:
+			if o != h and not o.away() and o.p.distance_to(h.p) > 4.0 and o.p.distance_to(h.p) < 14.0 and (to == null or o.p.distance_to(h.p) > to.p.distance_to(h.p)):
+				to = o
+		if to == null:
+			check(false, "ball in play: a team-mate to pass to")
+			break
+		m.restart["cp_done"] = true
+		m.throw_pass(to, "shoulder" if trial == 0 else "chest")
+		m.pass_info.cut = null
+		var from := m.ball.f_from
+		var lg: Array = m.ball.f_legs[0]
+		var p00: Vector3 = lg[1]
+		var v00: Vector3 = lg[2]
+		var tl := (v00.y + sqrt(v00.y * v00.y + 2.0 * Ball.G * (p00.y - Ball.R))) / Ball.G
+		var meet := Vector2(p00.x + v00.x * tl, p00.z + v00.z * tl)
+		var reach := Vector2(from.x, from.z).distance_to(meet)
+		to.p = Rules.onside_point(to.pos, h.p + (h.p - to.p).normalized() * 1.5, to.dir, 0.3)
+		to.vel = Vector2.ZERO
+		var off_arc := 0.0
+		var land := {"at": Vector3.INF}
+		var on_floor := func(at: Vector3, _sp: float):
+			if land.at == Vector3.INF:
+				land.at = at
+		m.ball.bounced.connect(on_floor)
+		var k := 0
+		var let_go := false
+		while k < 75 and (m.ball.state == "flight" or m.ball.state == "loose") and land.at == Vector3.INF:
+			await frames(1)
+			k += 1
+			to.target = to.p
+			if m.ball.state == "loose":
+				let_go = true
+			if m.ball.state == "held" or land.at != Vector3.INF:
+				break
+			var want := p00 + v00 * (k / 30.0) + Vector3(0, -0.5 * Ball.G * (k / 30.0) * (k / 30.0), 0)
+			off_arc = maxf(off_arc, m.ball.position.distance_to(want))
+		m.ball.bounced.disconnect(on_floor)
+		var first: Vector3 = land.at
+		var at := Vector2(first.x, first.z) if first != Vector3.INF else Vector2.INF
+		var how := "lands %.2f m off the floor point, %.1f m out of %.1f" % [at.distance_to(meet), Vector2(from.x, from.z).distance_to(at), reach] if first != Vector3.INF else "taken first"
+		check(let_go and off_arc < 0.03 and (first == Vector3.INF or (at.distance_to(meet) < 0.35 and Vector2(from.x, from.z).distance_to(at) <= reach + 0.35)),
+			"ball in play: a pass to nobody flies on along its arc (%.3f m off it) and comes down within its range (%s)" % [off_arc, how])
+	# A whistle in mid-pass: the ball carries on and falls.
+	var guard2 := 0
+	while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard2 < 900:
+		await frames(1)
+		guard2 += 1
+	var h2: Player = m.holder
+	m.ai._decide[h2] = 99.0
+	var to2: Player = null
+	for o: Player in m.players[h2.team]:
+		if o != h2 and not o.away() and (to2 == null or o.p.distance_to(h2.p) > to2.p.distance_to(h2.p)) and o.p.distance_to(h2.p) < 14.0:
+			to2 = o
+	m.restart["cp_done"] = true
+	m.throw_pass(to2, "chest")
+	m.pass_info.cut = null
+	await frames(3)
+	var y0 := m.ball.position.y
+	var someone: Player = m.players[1 - h2.team][2]
+	m._infringe("offside", someone, someone.p)
+	var ys: Array = []
+	var bounces: Array = []
+	m.ball.bounced.connect(func(_at, _sp): bounces.append(m.phase))
+	var low := INF
+	var stop_f := 0
+	while m.ball.state == "dead" and bounces.is_empty() and stop_f < 75:
+		await frames(1)
+		stop_f += 1
+		ys.append(m.ball.position)
+		low = minf(low, m.ball.position.y)
+	check(ys.size() > 10 and y0 > 0.8 and low < 0.35 and not bounces.is_empty() and (ys[1] as Vector3).distance_to(ys[0]) > 0.05,
+		"ball in play: the whistle in mid-pass: the ball goes on and falls to the floor, play stopped (from %.2f m, down to %.2f m and bouncing in %d frames)" % [y0, low, stop_f])
+	# A whistle with the ball in her hands: she keeps it through the stoppage, then hands it on to the thrower (a toss
+	# that lands and bounces, or the thrower is she): never left in the air.
+	var guard3 := 0
+	while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard3 < 900:
+		await frames(1)
+		guard3 += 1
+	var h3: Player = m.holder
+	m.ai._decide[h3] = 99.0
+	m._infringe("held_ball", h3, h3.p)
+	var in_hands := 0
+	var stop_n := 0
+	var floating := 0
+	var handed := false
+	var tossed := {"n": 0}
+	var on_floor := func(_at, _sp): tossed.n += 1
+	m.ball.bounced.connect(on_floor)
+	for f in 150:
+		await frames(1)
+		if m.phase == "stop":
+			stop_n += 1
+			if m.ball.carrier == h3 and m.ball.position.distance_to(h3.hand_point()) < 0.05:
+				in_hands += 1
+		if m.ball.state == "dead" and m.ball.carrier == null and not m.ball._moving and m.ball.position.y > 0.3:
+			floating += 1
+		if m.ball.state == "held":
+			handed = true
+			break
+	m.ball.bounced.disconnect(on_floor)
+	m.ai._decide.clear()
+	check(stop_n > 10 and in_hands == stop_n and floating == 0 and handed and (tossed.n > 0 or m.holder == h3),
+		"ball in play: a whistle with the ball in her hands: she keeps it (%d of %d frames), then hands it on (%d bounces; %d frames in the air on its own)" % [in_hands, stop_n, tossed.n, floating])
+	m.queue_free()
+	await frames(2)
+
+
+## Whether the ball met the floor between three frames (it came down to them and went up after).
+static func _bounce_between(a: Vector3, b: Vector3, c: Vector3) -> bool:
+	return b.y < 0.6 and b.y - a.y < 0.0 and c.y - b.y > 0.0
+
+
+## Penalty and free passes and throw-ins, as the umpire sets them: the penalised player stands out of play beside the
+## thrower, 1.2-1.5 m off her (not touching, not crowding her) and never in front of her; nobody else of her side
+## within 0.9 m of the thrower's landing foot from the whistle to the pass (obstruction, the game's own rule); in open
+## play the AI never sets a defender nearer the ball than that, and stays out (TeamAI.keep_clear).
+func _restart_spacing() -> void:
+	var bad := 0
+	var tried := 0
+	var cramped := 0
+	var worst := ""
+	for i in 11:
+		for j in 9:
+			var spot := Vector2(-14.0 + 2.8 * i, -7.2 + 1.8 * j)
+			for td: int in [-1, 1]:
+				for pos: String in Rules.POSITIONS:
+					if Rules.offside(pos, spot, -td):
+						continue
+					tried += 1
+					var q := Rules.out_of_play_spot(pos, -td, spot, td)
+					var u := (Court.goal_post(td) - spot).normalized()
+					var d := q.distance_to(spot)
+					if d < 1.2 or d > 1.55 or (q - spot).dot(u) > 0.3 or Rules.offside(pos, q, -td):
+						# (Wrong unless no such place exists there: a corner of her areas by a line.)
+						var could := false
+						for a in 72:
+							for r: float in [1.2, 1.3, 1.4, 1.5]:
+								var c := Rules.onside_point(pos, spot + Vector2.from_angle(TAU * a / 72.0) * r, -td, 0.05)
+								if c.distance_to(spot) >= 1.2 and c.distance_to(spot) <= 1.55 and (c - spot).dot(u) <= 0.3:
+									could = true
+						if could:
+							bad += 1
+							worst = "%s at %s: %.2f m, %.2f in front" % [pos, spot, d, (q - spot).dot(u)]
+						else:
+							cramped += 1
+	check(bad == 0, "penalty: the penalised player's place beside the thrower is 1.2-1.5 m off her, not in front, on her own ground, all over the court (%d of %d wrong: %s; %d where none fits)" % [bad, tried, worst, cramped])
+	var m := _study_match(41)
+	await _wait_live(m)
+	for kind: String in ["contact", "held_ball", "throw_in", "contact", "obstruction"]:
+		var guard := 0
+		while (m.holder == null or m.phase != "live" or m.shot_info.has("by") or (m.holder.pos in ["GS", "GA"] and Court.in_circle(m.holder.landing, m.holder.dir))) and guard < 1200:
+			await frames(1)
+			guard += 1
+		var h: Player = m.holder
+		if h == null:
+			check(false, "restarts: a player with the ball")
+			break
+		m.ai._decide[h] = 99.0
+		var dm: Player = m.ai.marker_of(h)
+		if kind == "throw_in":
+			m._award(Rules.throw_in(1 - h.team, Vector2(clampf(h.p.x, -12.0, 12.0), Court.HALF_W)), null, "throw_in")
+		elif kind == "held_ball":
+			m._infringe("held_ball", h, h.p)   # (a free pass to the other side, where she stands)
+		else:
+			dm.p = h.landing + (Court.goal_post(-dm.dir) - h.landing).normalized() * 1.0
+			m._infringe(kind, dm, dm.p)
+		m.ai._decide.clear()   # (the taker passes when she would)
+		guard = 0
+		while m.phase != "live" and guard < 400:
+			await frames(1)
+			guard += 1
+		var taker: Player = m.holder
+		var out: Player = m.restart.get("out")
+		var out_d := INF
+		var out_front := -INF
+		var near := INF
+		var frames_n := 0
+		while m.holder == taker and taker != null and m.phase == "live" and frames_n < 150:
+			var u := (Court.goal_post(taker.dir) - taker.landing).normalized()
+			if out:
+				out_d = minf(out_d, out.p.distance_to(taker.landing))
+				out_front = maxf(out_front, (out.p - taker.landing).dot(u))
+			for o: Player in m.players[1 - taker.team]:
+				if o != out and o.suspended <= 0.0:
+					near = minf(near, o.p.distance_to(taker.landing))
+			await frames(1)
+			frames_n += 1
+		var what := String(m.restart.get("kind", ""))
+		print("  restart: %s (%s): penalised player %s m off, %s m in front; nearest other %.2f m; %d frames to the pass" % [kind, what,
+			"%.2f" % out_d if out else "-", "%.2f" % out_front if out else "-", near, frames_n])
+		check(taker != null and frames_n > 0, "restart after %s: taken (%s)" % [kind, what])
+		if what == Rules.PENALTY:
+			check((out == null and dm.suspended > 0.0) or out != null and out_d >= 1.15 and out_d <= 1.55 and out_front <= 0.3,
+				"restart after %s: the penalised player beside the thrower, 1.2-1.5 m off, not in front (%.2f m, %.2f in front)" % [kind, out_d, out_front])
+		check(near >= Court.DEFEND_DIST, "restart after %s (%s): nobody else within 0.9 m of the thrower until the pass (%.2f m)" % [kind, what, near])
+		m.ai._decide.clear()
+	# Open play: no AI defender is sent nearer than 0.9 m to the ball, and after a second of holding none is there.
+	var aimed := INF
+	var held_close := 0
+	var held_n := 0
+	for f in 900:
+		await frames(1)
+		var h: Player = m.holder
+		if h == null or m.phase != "live":
+			continue
+		for o: Player in m.players[1 - h.team]:
+			if o.away() or o.suspended > 0.0 or m.ai._give_way.has(o):
+				continue
+			aimed = minf(aimed, o.target.distance_to(h.landing))
+			if m.hold_t > 1.0:
+				held_n += 1
+				if o.p.distance_to(h.landing) < Court.DEFEND_DIST:
+					held_close += 1
+	check(aimed >= Court.DEFEND_DIST, "open play: no defender is sent within 0.9 m of the ball (nearest %.2f m)" % aimed)
+	check(held_n > 100 and held_close <= held_n / 100, "open play: after a second's hold, no defender within 0.9 m (%d of %d)" % [held_close, held_n])
+	m.queue_free()
+	await frames(2)
 
 
 ## Advantage on a contact (R7): the defender who made it steps clear of the shooter: past 1.5 m within a second and
@@ -1320,7 +1733,10 @@ func _cp_drive() -> void:
 	# Through play: the GS posts (stands holding, arm out) when the ball is in her goal third.
 	var posts := 0
 	var deep := 0
-	for f in 1800:
+	# (Till 300 such frames are seen, or three minutes: a few dozen frames are too few to judge a share by.)
+	for f in 5400:
+		if deep >= 300:
+			break
 		await frames(1)
 		if m.phase != "live":
 			continue
