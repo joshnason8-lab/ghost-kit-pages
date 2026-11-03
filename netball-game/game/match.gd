@@ -287,6 +287,9 @@ func _reserves(ld: WsgLoading = null) -> void:
 				var l := FoundationLink.new(b, b, "reserve")
 				root.add_child(l)
 				l.update(1.0 / 60.0, Vector2.ZERO, Vector2.ZERO, PI, "")
+				# (On the bench, always the light mesh: the tier's full-detail bodies are the players' and umpires'.)
+				if l.body:
+					l.body.set_detail(false)
 			made += 1
 			if ld:
 				await ld.checkpoint(float(made) / all)    # the loading overlay: a frame between reserves
@@ -1580,7 +1583,30 @@ func _rank_detail(dt: float) -> void:
 				var d: float = who.global_position.distance_to(camp)
 				who.pose_every = 1 if d < float(near[0]) else (2 if d < float(near[1]) else 3)
 	if not bodies.is_empty():
-		WsgFoundation.rank_detail(bodies, camp)
+		_rank_full(bodies, camp)
+
+
+## The players' and umpires' full detail: the nearest to the camera, WsgFoundation.full_bodies() of them at most (the
+## tier's cap), the rest on the light mesh. A body near the cut keeps what it has (it changes only when its place in
+## the order moves two or more), so none flickers between the two meshes as the play moves.
+func _rank_full(bodies: Array, camp: Vector3) -> void:
+	var n := WsgFoundation.full_bodies()
+	var order := bodies.duplicate()
+	order.sort_custom(func(a, b): return (a as Node3D).global_position.distance_squared_to(camp) < (b as Node3D).global_position.distance_squared_to(camp))
+	var want := []
+	for i in order.size():
+		var b: WsgBody = order[i]
+		if i < n - 1 or (i <= n and b.full):
+			want.append(b)
+	# (At most the cap, nearest first; any place left, the next nearest.)
+	want = want.slice(0, n)
+	for b in order:
+		if want.size() >= n:
+			break
+		if not want.has(b):
+			want.append(b)
+	for b: WsgBody in order:
+		b.set_detail(want.has(b))
 
 
 ## Metres from the camera within which a player is posed every frame, and every second (beyond: every third), by
