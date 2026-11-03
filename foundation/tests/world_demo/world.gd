@@ -113,6 +113,13 @@ func stick_map() -> Callable:
 	return func(st: Vector2, cam: Camera3D, at: Vector3) -> Vector3: return WsgNoteChecks.stick_world(st, cam, at)
 
 
+## (--bad pose_excused: the same rest pose as --bad pose, declared by design - counted, not failed.)
+func pose_excuse(body: Node) -> String:
+	if bad == "pose_excused" and body.has_meta("demo_rest"):
+		return "a test: the rest pose by design"
+	return ""
+
+
 func cameras(_mode: String, root: Node) -> Array:
 	return root.find_children("*", "Camera3D", true, false)
 
@@ -168,7 +175,8 @@ class DemoMatch:
 			var a := t * 0.5 + i * PI
 			var vel := Vector3(-sin(a), 0, cos(a)) * 2.5
 			b.position = Vector3(cos(a), 0, sin(a)) * 5.0
-			if i == 0 and _bad == "pose":
+			if i == 0 and _bad in ["pose", "pose_excused"]:
+				b.set_meta("demo_rest", true)
 				b.set_manual(true)
 				b.reset_pose()
 				continue

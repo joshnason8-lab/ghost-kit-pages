@@ -31,6 +31,9 @@ done
 # A walker the game advances itself (set_manual) is walked, not waited on for ever (Hurling's hung the feet rule).
 # A mode freeing the last one's match (as a tap does): the later rules go on, and the check finishes (Hurling's and
 # Floorball's stopped on a freed body and never printed WORLD CHECK).
+# A pose the game declares by design (WsgWorldGame.pose_excuse) is counted, not failed (Kho Kho's pole turn).
+run pose_excused --only pose --bad pose_excused || { echo "world_check_test: a pose the game excuses failed the pose rule"; tail -8 "$OUT/pose_excused.log"; FAIL=1; }
+grep -q "excused by the game (a test: the rest pose by design)" "$OUT/pose_excused/WORLD_CHECK.md" 2>/dev/null || grep -q "excused by the game" "$OUT/pose_excused.log" || { echo "world_check_test: an excused pose is not counted in the pose rule's lines"; FAIL=1; }
 run freed --only pose,officials,loading,joystick --bad freed
 code=$?
 if [ $code != 0 ] || ! grep -q "^WORLD CHECK: PASS" "$OUT/freed.log"; then

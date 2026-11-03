@@ -1326,6 +1326,9 @@ func set_tier(t: int) -> void:                                          # as the
 Some hooks have defaults:
 - `find_bodies` and `find_officials` find every `WsgBody` and `WsgOfficial`, plus nodes in the group `wsg_official`.
 - `play_seconds` is 6.
+- `pose_excuse(body) -> String` is "": a pose the lead or owner ruled designed (Kho Kho's pole turn: one hand on the
+  pole, the other arm out) returns its reason while the body holds it, and the pose rule counts it instead of failing
+  ("excused by the game (why): N frames") - as `bodies()`' `pose_excuse` in WsgSim.
 
 **From 2026-11-03 12:00 UTC a failing rule fails your build.** Before then the check reports the same failures but
 exits 0 with a warning. That gives you the morning to write `world.gd` without turning a beta already in CI red.
@@ -1577,6 +1580,10 @@ A rig whose bones all share a prefix needs no map: `pl.bone_prefix = "mixamorig_
 then the prefix). Your own rule for a foot being down, if you have one, replaces the planter's gate:
 `pl.contact_fn = func(foot: int, ankle: Vector3, toe: Vector3, was_down: bool) -> bool: ...` (world positions as the
 pose has them, before planting). The test covers both.
+
+**Read the planted feet as drawn.** The planter is a SkeletonModifier3D: its result exists only while the skeleton is
+drawn, inside `skeleton_updated`. A check that steps a match with `_process()` and no frames drawn reads the pose
+without it (Sepak Takraw's jitter and Low jump checks did).
 
 ## 5.20 The downloadable High pack: WsgAssetPack (games with a High pack)
 

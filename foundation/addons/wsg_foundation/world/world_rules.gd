@@ -209,7 +209,7 @@ static func play_modes(game: WsgWorldGame, parent: Node) -> Array:
 		parent.add_child(holder)
 		await tree.process_frame
 		var m := {"mode": mode, "root": holder, "cover_frame": -1, "load_frames": 0, "bodies": [], "officials": [],
-			"poses": {}, "blocks": {}, "cams": []}
+			"poses": {}, "pose_excused": {}, "blocks": {}, "cams": []}
 		var f0 := Engine.get_process_frames()
 		game.start_mode(mode, holder)
 		if _covering(holder):
@@ -232,11 +232,11 @@ static func play_modes(game: WsgWorldGame, parent: Node) -> Array:
 			var bodies := game.find_bodies(holder)
 			var offs := game.find_officials(holder)
 			for b: WsgBody in bodies:
-				_watch(b, b.name, m, want, hooked)
+				_watch(game, b, b.name, m, want, hooked)
 			for o: Node in offs:
 				var ob: Variant = o.get("body") if o.get("body") is WsgBody else (o if o is WsgBody else null)
 				if ob:
-					_watch(ob, "official " + o.name, m, want, hooked)
+					_watch(game, ob, "official " + o.name, m, want, hooked)
 				var why := WsgNoteChecks.block_figure(o)
 				if why != "":
 					m.blocks["official " + o.name] = why
@@ -272,8 +272,9 @@ static func _covering(under: Node) -> bool:
 	return ld != null and ld.is_inside_tree() and ld.visible
 
 
-## Records BODY's T/A-pose as drawn (inside skeleton_updated) on the frames WANT.on is set.
-static func _watch(body: WsgBody, name: String, m: Dictionary, want: Dictionary, hooked: Dictionary) -> void:
+## Records BODY's T/A-pose as drawn (inside skeleton_updated) on the frames WANT.on is set - unless the game declares
+## that pose by design then (WsgWorldGame.pose_excuse: counted with its reason, not failed).
+static func _watch(game: WsgWorldGame, body: WsgBody, name: String, m: Dictionary, want: Dictionary, hooked: Dictionary) -> void:
 	var id := body.get_instance_id()
 	if hooked.has(id):
 		return
@@ -282,7 +283,11 @@ static func _watch(body: WsgBody, name: String, m: Dictionary, want: Dictionary,
 		if want.on and is_instance_valid(body):
 			var p := WsgNoteChecks.t_or_a_pose(body)
 			if p != "":
-				m.poses[name] = p)
+				var why := game.pose_excuse(body)
+				if why != "":
+					m.pose_excused[why] = int(m.pose_excused.get(why, 0)) + 1
+				else:
+					m.poses[name] = p)
 
 
 ## pose: no body in any mode stands in a T- or A-pose, and none is a block figure (primitive shapes, no skinned body).
@@ -297,6 +302,8 @@ static func pose(game: WsgWorldGame, modes: Array) -> Dictionary:
 			r.fails.append("%s: no bodies found (find_bodies)" % m.mode)
 		for n in m.poses:
 			r.fails.append("%s: %s stands in a %s" % [m.mode, n, m.poses[n]])
+		for why in m.get("pose_excused", {}):
+			r.lines.append("%s: excused by the game (%s): %d frames" % [m.mode, why, m.pose_excused[why]])
 		for n in m.blocks:
 			r.fails.append("%s: %s is a block figure: %s" % [m.mode, n, m.blocks[n]])
 	return _close(r)
