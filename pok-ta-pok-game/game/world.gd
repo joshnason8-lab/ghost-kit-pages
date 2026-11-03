@@ -106,6 +106,39 @@ func walker(parent: Node) -> Array:
 	return [b.link.body, b.link.loco]
 
 
+## The players as Low draws them (the owner plays at Low, ADOPTING 5.21): the game's own body (game/body.gd), posed
+## from the capture by WsgToonDriver as Player._drive_toon poses it - the clip's feet, not the planter's (the driver
+## poses from the hidden rig's skeleton, no IK). Moved and turned by the game each frame, then the driver; the feet read
+## from its skeleton as drawn (no modifiers on it), the ball of the foot as the mocap feet test reads it.
+func walker_low(parent: Node) -> Variant:
+	if not WsgToonDriver.available():
+		return null
+	var was := FoundationLink.in_match
+	FoundationLink.in_match = false   # (the game's own body: no shared rig on it at Low)
+	var b := Body.new({"kind": "ulama", "skin": DB.SKINS[1], "hair": DB.HAIRS[0], "team": Color("b8352b"), "trim": Color("e9c46a"),
+		"height": 1.74, "build": 0.6, "seed": 3})
+	parent.add_child(b)
+	FoundationLink.in_match = was
+	if b.skeleton == null:
+		return null
+	var toon := WsgToonDriver.new(b.skeleton, {}, {"rng": RandomNumberGenerator.new(), "offset": 1})
+	toon.set_override(0.0, [], 0.0)
+	var drive := func(dt: float, vel: Vector3, facing: float) -> void:
+		b.position += vel * dt
+		b.rotation.y = facing
+		toon.update(dt, vel, facing, vel)
+		if b.rigged:
+			b.rigged.follow(b)
+	var feet := func() -> Array:
+		var out := []
+		for sd in ["l", "r"]:
+			var g := b.skeleton.global_transform * b.skeleton.get_bone_global_pose(b.bone("foot_" + sd))
+			out.append(g.origin)
+			out.append(g * Vector3(0, -0.025, 0.14))
+		return out
+	return [b, drive, feet]
+
+
 ## The moments' sounds: the ball off a hip, its bounce, the ring, the judges' call. (The game plays its own through
 ## Sfx, not positioned in the world - never dulled by distance; the kinds stand here for when it moves to WsgAudio.)
 func key_sounds() -> Array:

@@ -419,6 +419,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   the ring an oval). The store and trailer tools await Game.start_match (a coroutine since loading v2: they had held
   the last match, freed, and crashed at the second shot).
 
+- **0.6.26-beta: the world check measures the Low players' feet; shared foundation d70ac7d1.** world.gd's walker_low
+  (ADOPTING 5.21) gives the world check the players as Low draws them - the game's own body posed from the capture by
+  WsgToonDriver - and their feet slide: 7-15 cm a step on the walk, the jog and the turn (the toon copies the clip's
+  feet; the shared rig's planter never reaches it). The rule is deferred until 2026-11-08 12:00 UTC; the fix (the
+  driver carrying the planted feet, or a planter on the toon) is asked of the foundation. The pelota maya revival
+  waits on its sources (the hosts are outside this environment's network) or the lead's word on the rally point.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
