@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.0-beta
+
+- **Rope nets that sway**: the ball bulges the net as it drops through and the net swings and settles; a ball off
+  the ring stirs it.
+- **Real ball flight**: every pass and shot flies under real gravity; lobs float high and hang for over a second (and
+  the receiver leaps to take them), chest passes are quick and flat, shots arc into the ring.
+- **Advantage**: when the umpire plays on after contact, the defender steps out of the way.
+- **The crowd sits and stands properly** in every venue, on every level: seated fans in their seats, standing fans
+  behind the fences, all facing the play; Low now has crowd figures too.
+- Fixed: a knockout match level after extra time never ended.
+
 ## New in 0.8.9-beta
 
 - **No more floating** on Medium and High: the players' and umpires' feet stay planted every step, at any speed.
