@@ -46,6 +46,16 @@ jobs:
         run: godot --headless --path $GAME_DIR --import || true
       - name: Every random roll from the seed
         run: sh $GAME_DIR/tools/wsg/rng_lint.sh $GAME_DIR/game $GAME_DIR/autoload $GAME_DIR/ui
+      # Matches the rules check once broke a law in (tests/kho_rules_check.gd), played again on every push: fast seeds
+      # 279 and 298 ("too fast", 13 m/s: a runner pushed out of a kneeling chaser by his whole frame's run, 0.12.7).
+      - name: Rules-check cases (every one that ever broke)
+        run: |
+          cd $GAME_DIR
+          for sd in 279 298; do
+            KK_SEED0=$sd KK_CHECK=1 timeout 900 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 1 fast > "$RUNNER_TEMP/rules_$sd.log" 2>&1
+            grep -E "RULE BROKEN|^RULES" "$RUNNER_TEMP/rules_$sd.log"
+            grep -q "^RULES: 0 broken" "$RUNNER_TEMP/rules_$sd.log" || exit 1
+          done
       - name: Determinism (each seed twice, frame for frame)
         run: godot --headless --fixed-fps 30 --path $GAME_DIR -s res://tools/wsg/sim.gd -- determinism --game res://game/sim.gd --seeds 2
 

@@ -2161,10 +2161,16 @@ func _separate(dt := 1.0 / 30.0) -> void:
 		for sq in squares:
 			if sq == active or not (sq as Athlete).act in ["sit", ""] or (sq as Athlete).vel.length() > 0.5:
 				continue
-			# A kneeling chaser does not move: a runner who ran into him this frame is put back out all the way (at
-			# most his own frame's run - he slides round him, no jump), or at full speed he went half through (the
-			# owner: "like they are ghosts").
-			_push_apart(d, sq, BODY_SEATED, 1.0, PUSH_MAX + d.vel.length() * dt)
+			# A kneeling chaser does not move: a runner who ran into him this frame is put back out by as far as he ran
+			# toward him (he slides round him), or at full speed he went half through (the owner: "like they are
+			# ghosts"). Only the run toward him: the whole frame's run, pushed out sideways, doubled his speed for a
+			# frame (13 m/s: WsgSim's rules check, fast format, seeds 279 and 298).
+			var off: Vector3 = d.position - (sq as Athlete).position
+			off.y = 0.0
+			var toward := 0.0
+			if off.length() > 0.001:
+				toward = maxf(0.0, -d.vel.dot(off / off.length())) * dt
+			_push_apart(d, sq, BODY_SEATED, 1.0, PUSH_MAX + toward)
 	for i in movers.size():
 		for k in range(i + 1, movers.size()):
 			_push_apart(movers[i], movers[k], BODY_STANDING, 0.5)
