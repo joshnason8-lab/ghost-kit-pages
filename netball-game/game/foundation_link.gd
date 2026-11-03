@@ -83,6 +83,10 @@ func _ready() -> void:
 	legacy.torso_r = 0.085      # the forearms kept out of the chest (the game's poses are for its slimmer figure)
 	if kind != "reserve":
 		loco = WsgLocomotor.attach(body)
+		# Its idle fidgets from dice of its own, not the global ones (cosmetic either way; a seeded match then looks
+		# the same every time it is played: docs/SIM.md).
+		loco.rng = RandomNumberGenerator.new()
+		loco.rng.seed = hash([kind, who.get("pos"), who.get("team")])
 		legacy.lift_after = loco.planter.hips_offset
 		feet = FeetLayer.new()
 		feet.name = "GameFeet"

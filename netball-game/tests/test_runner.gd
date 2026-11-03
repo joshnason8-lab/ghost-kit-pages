@@ -1667,6 +1667,26 @@ func _league() -> void:
 	var back = Game.get_league()
 	check(back != null and back.champion == l.champion and back.fixtures.size() == 28, "the season saves and loads")
 	Game.delete_league()
+	# Seeded (docs/SIM.md): a season from a seed draws and plays out the same every time, and one saved part way goes
+	# on as it would have.
+	var runs := []
+	for k in 3:
+		var s := League.create("SKF", 77)
+		s.sim_next()
+		if k == 2:
+			s = League.from_dict(JSON.parse_string(JSON.stringify(s.to_dict())))
+		s.sim_next()
+		runs.append(JSON.stringify(JSON.parse_string(JSON.stringify([s.teams, s.fixtures]))))   # (numbers as a load reads them)
+	check(runs[0] == runs[1] and runs[1] == runs[2], "a season from a seed: the same draw and results, saved and loaded part way too")
+	var cups := []
+	for k in 3:
+		var c := Cup.create("ENG", 78)
+		c.sim_next()
+		if k == 2:
+			c = Cup.from_dict(JSON.parse_string(JSON.stringify(c.to_dict())))
+		c.sim_next()
+		cups.append(JSON.stringify(JSON.parse_string(JSON.stringify(c.fixtures))))
+	check(cups[0] == cups[1] and cups[1] == cups[2], "a cup from a seed: the same results, saved and loaded part way too")
 
 
 ## Pausing and going back (playtest: the pause button sat off screen; Esc did nothing in a browser; Back with the
