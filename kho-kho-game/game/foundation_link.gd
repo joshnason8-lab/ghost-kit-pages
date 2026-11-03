@@ -99,6 +99,7 @@ func _ready() -> void:
 	body.skeleton.add_child(layer)
 	body.skeleton.move_child(layer, 0)
 	loco = WsgLocomotor.attach(body)
+	loco.cut_from_heading = true   # cuts from the way he was going (ADOPTING: set with every foundation sync)
 	layer.lift_after = loco.planter.hips_offset
 	gb.mesh.visible = false
 	# The game's skeleton has its final pose (the clips, then its own dive, head turn and grip) once its update has

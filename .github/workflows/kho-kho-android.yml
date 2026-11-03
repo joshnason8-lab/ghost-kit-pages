@@ -110,6 +110,14 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn 2>&1 | grep -E "graphics|venue"
 
+      # The owner's rule for every ground's crowd (the foundation's ADOPTING 5.1): every fan on their seat, not in it,
+      # soles on the floor, facing the play. Fails the build if any venue (game/crowd_venues.gd) fails.
+      - name: Crowd audit (every ground, seated and standing, 3D and Low cards)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "$RUNNER_TEMP/crowd_audit" 2>&1 | grep -E "PASS|FAIL|CROWD AUDIT"
+
       # The beta's signing key: the owner's (repository secret BETA_KEYSTORE_B64, a PKCS12 keystore, alias
       # androiddebugkey, passwords "android"), the same on every build, so each beta installs over the last. Without
       # the secret (a fork) a throwaway key is made, and updates will not install over earlier builds.

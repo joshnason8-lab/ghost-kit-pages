@@ -79,6 +79,21 @@ func _init(toon_skeleton: Skeleton3D, rig_joints: Dictionary, p_face := Quaterni
 	_hips_k = (joints["Hips"] as Vector3).y / maxf(_hips_rest.y, 0.01)
 
 
+## An arm-maker only (sound_arm: an elbow bent forward in its hinge, the hand where it was put), for a WsgPoseLayer's
+## `arms` in a game with no 17-bone skeleton to read: its holds (hold, hold_point) then reach with anatomical arms,
+## which the rig's drivers keep, instead of raw two-bone ones they turn. Both hands' turns are kept (held). Not for
+## read(). (Kho Kho's FoundationLink._arm_maker.)
+##   layer.arms = WsgLegacyPose.arm_maker(body.joints)
+static func arm_maker(rig_joints: Dictionary) -> WsgLegacyPose:
+	var hips_only := Skeleton3D.new()
+	hips_only.add_bone("hips")
+	hips_only.set_bone_rest(0, Transform3D(Basis(), rig_joints["Hips"]))
+	var lp := WsgLegacyPose.new(hips_only, rig_joints)
+	lp.held = {"Left": true, "Right": true}
+	lp.sk = null
+	hips_only.free()
+	return lp
+
 ## The pose now on the game's skeleton, as the rig's local turns (and "@hips": the hips' offset from the rest).
 func read() -> Dictionary:
 	# The game's turns, its own corrections taken out, through its hierarchy (every rest rotation the identity).

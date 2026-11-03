@@ -102,6 +102,8 @@ var _detail_t := 0.0
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
 	Crowd.watch_target = Vector3.INF
+	WsgCrowd3D.set_excite(0.0)
+	WsgCrowd3D.set_tension(0.0)
 	FoundationLink.in_match = false
 	FoundationLink.frozen = false
 	FoundationLink.paused = false
@@ -754,6 +756,9 @@ func _play(dt: float) -> void:
 	_crowd_roar(dt)
 	if arena.crowd:
 		Crowd.set_excite(maxf(0.75 * exp(-_cheer_t / 2.5), 0.4 * _tension))
+		# The shared crowd's cards get up and cheer by the foundation's excitement.
+		WsgCrowd3D.set_excite(0.75 * exp(-_cheer_t / 2.5))
+		WsgCrowd3D.set_tension(_tension)
 	# The crowd's drums: up with an out, settling back as the chase goes on.
 	_drum_t -= dt
 	if _drum_t <= 0.0 and not attract:

@@ -10,7 +10,7 @@ extends Node3D
 var venue := "maidan"
 var fmt := KhoRules.CLASSIC
 var f := {}
-var crowd: Crowd
+var crowd: WsgCrowdCards   # the people round the ground: the shared crowd's cards, placed by VenueCrowd
 var home_colors: Array = []
 var _lit: Geo
 var _glow: Geo
@@ -54,12 +54,10 @@ func _ready() -> void:
 	_field()
 	_poles()
 	_table()
-	var spots: Array = []
 	match kind:
 		"village":
 			_env(Color("2a2140"), Color("d27a4e"), Color(0.78, 0.66, 0.7), 0.85, Vector3(-22, -30, 0), Color(1.0, 0.8, 0.68),
 				"qwantani_dusk_2_puresky", 1.0, 40.0)
-			spots = _ground_crowd(low)
 			_huts()
 			_string_lights(low)
 			_greenery(low, true)
@@ -67,23 +65,29 @@ func _ready() -> void:
 		"school":
 			_env(Color("6ea7e0"), Color("dbe8f0"), Color(0.8, 0.82, 0.86), 1.1, Vector3(-55, 30, 0), Color(1.0, 0.97, 0.9),
 				"qwantani_noon_puresky", 1.0, 150.0)
-			spots = _ground_crowd(low, true)
 			_school()
 			_greenery(low, false)
 		"arena":
 			_env(Color("0c0f18"), Color("1a2030"), Color(0.62, 0.64, 0.72), 1.0, Vector3(-65, 20, 0), Color(1.0, 0.98, 0.95))
-			spots = _stands(14 if not low else 9, true)
+			_stands(14 if not low else 9, true)
 			_roof_lights()
 		"stadium":
 			_env(Color("060914"), Color("161c33"), Color(0.5, 0.52, 0.62), 0.95, Vector3(-70, -15, 0), Color(1.0, 0.93, 0.8),
 				"kloppenheim_02_puresky", 0.32, 150.0)
-			spots = _stands(16 if not low else 10, false)
+			_stands(16 if not low else 10, false)
 			_floodlights()
 			_skyline(low, 80.0, 6 if not low else 4)
 	if kind != "arena":
-		spots.append_array(_tournament(low))
+		_tournament(low)
 	if kind == "village":
-		spots.append_array(_stage(low))
+		_stage(low)
+	# The people: placed by the shared crowd from what VenueCrowd declares (seats, standing room, barricades), a chair
+	# or a bench under each seated one at the front.
+	var v := VenueCrowd.build(kind, f, low, "main")
+	var placed := v.place(hash(venue))
+	var seats: Array = VenueCrowd.props(v, placed)
+	_chairs.append_array(seats[0])
+	_benches.append_array(seats[1])
 	add_child(_ground.commit(ground_material(kind, f)))
 	add_child(_lit.commit(Geo.material(true)))
 	add_child(_glow.commit(Geo.material(false)))
@@ -99,10 +103,8 @@ func _ready() -> void:
 		Props.place(self, "seating/monobloc_chair", _chairs)
 	if not _benches.is_empty():
 		Props.place(self, "seating/painted_bench", _benches)
-	if not spots.is_empty():
-		crowd = Crowd.new()
-		crowd.build(spots, Game.crowd_density(), home_colors, hash(venue), kind in ["arena", "stadium"])
-		add_child(crowd)
+	crowd = _cards(placed, hash(venue))
+	add_child(crowd)
 	_near_side(low)
 
 
@@ -116,7 +118,6 @@ func _near_side(low: bool) -> void:
 	near_side.visible = false
 	add_child(near_side)
 	var g := Geo.new()
-	var spots: Array = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 23
 	if kind in ["arena", "stadium"]:
@@ -130,10 +131,6 @@ func _near_side(low: bool) -> void:
 			var d := r * 0.85
 			var hgt := 0.45 + r * 0.45
 			g.box(Vector3(0, hgt - 0.22, W + d), Vector3(L * 2 + d * 2, 0.45, 0.85), seat if r % 2 == 0 else riser)
-			var x := -L - d + 0.4
-			while x < L + d:
-				spots.append(Vector3(x, hgt, W + d + SEAT_BACK))
-				x += 0.62
 		var back := W + rows * 0.85 + 0.5
 		g.wall(Vector3(L + rows, 0, back), Vector3(-L - rows, 0, back), 0.0, rows * 0.45 + 4.0, Color("151a28") if indoor else Color("23262e"))
 		if indoor:
@@ -142,16 +139,8 @@ func _near_side(low: bool) -> void:
 				var x0 := -L + i * (L * 2.0 / 12.0)
 				g.box(Vector3(x0 + L / 12.0, 0.45, bz), Vector3(L * 2.0 / 12.0 - 0.1, 0.9, 0.08), [Color("2f86c9"), Color("f2e6c8"), Color("ff8a1f")][i % 3])
 	else:
-		# The crowd along the middle of the near side (its ends have theirs already: _ground_crowd), at a barricade.
-		var L: float = f.length * 0.5 + f.lobby + 1.0
+		# The crowd along the middle of the near side (its ends are the main crowd's: VenueCrowd), at a barricade.
 		var W: float = f.width * 0.5 + f.lobby + 1.0
-		for r in (3 if low else 5):
-			var d := 1.0 + r * 0.9
-			var step := 0.75 if r == 1 else 0.6
-			var x := -9.0
-			while x <= 9.0:
-				spots.append(Vector3(x + rng.randf_range(-0.2, 0.2), 0.0, W + d))
-				x += step
 		var keep := _lit
 		_lit = g
 		_barricade(Vector3(-8.5, 0, f.width * 0.5 + f.lobby + 1.4), Vector3(8.5, 0, f.width * 0.5 + f.lobby + 1.4), low)
@@ -167,10 +156,34 @@ func _near_side(low: bool) -> void:
 			g.box(p + Vector3(0.62, 6.05, 0), Vector3(1.2, 0.8, 0.02), flag_cols[i % flag_cols.size()], 0.25 * sin(float(i) * 1.3), false)
 	if not g.verts.is_empty():
 		near_side.add_child(g.commit(Geo.material(true)))
-	if not spots.is_empty():
-		var c := Crowd.new()
-		c.build(spots, Game.crowd_density(), home_colors, hash(venue) + 7, kind in ["arena", "stadium"])
-		near_side.add_child(c)
+	near_side.add_child(_cards(VenueCrowd.build(kind, f, low, "near").place(hash(venue) + 7), hash(venue) + 7))
+
+
+## A crowd's cards (one draw call): the people at the places given, as many as the graphics level draws, the home
+## side's colours on a share of them, and the looks of a crowd here (mostly darker skin, black hair).
+const SKIN := [Color("4a2e20"), Color("5e3a28"), Color("714630"), Color("85543a"), Color("986446"), Color("ab7655")]
+const HAIR := [Color("0c0b0a"), Color("15110e"), Color("1f1914"), Color("2c241c"), Color("4a4a4a")]
+const LEGS := [Color("23252c"), Color("2f3340"), Color("3d3a36"), Color("4a3e30"), Color("1e2a44"), Color("d8d2c4")]
+
+
+func _cards(placed: Dictionary, seed_: int) -> WsgCrowdCards:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_
+	var keep := PackedInt32Array()
+	var density := Game.crowd_density()
+	for i in placed.spots.size():
+		if rng.randf() < density:
+			keep.append(i)
+	# Shirts: a few in the home side's colours, the rest in what people wear any day (Crowd.CLOTHES: whites and pale
+	# shirts most, as at the real matches).
+	var shirts: Array = []
+	for i in placed.spots.size():
+		var fan := not home_colors.is_empty() and rng.randf() < Crowd.SUPPORTERS
+		shirts.append(home_colors[rng.randi_range(0, home_colors.size() - 1)] if fan else Crowd.CLOTHES[rng.randi_range(0, Crowd.CLOTHES.size() - 1)])
+	var cards := WsgCrowdCards.new()
+	cards.build(placed, keep, seed_, shirts)
+	cards.set_looks(SKIN, HAIR, LEGS)
+	return cards
 
 
 ## Shows or hides the near side (the match: the camera behind the pole sees it, the others stand in it).
@@ -417,52 +430,6 @@ func _table() -> void:
 
 
 # ---------------------------------------------------------------- the places
-
-## People round a ground: on the far side on white plastic chairs in front (on benches, at the school); at the ends
-## and on the near side the front row standing at the barricades, as at the real matches; sitting on the earth
-## behind them, then standing, four or five deep.
-func _ground_crowd(low: bool, kids := false) -> Array:
-	var spots := []
-	var L: float = f.length * 0.5 + f.lobby + 1.0
-	var W: float = f.width * 0.5 + f.lobby + 1.0
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	var rows := 3 if low else 5
-	for r in rows:
-		var d := 1.0 + r * 0.9
-		var seat := r == 0          # the front row: chairs (benches at the school)
-		# Chairs only on the far side, which the camera faces (a low chair is 618 triangles); at the ends and on the
-		# near side the front row stands at the barricade.
-		var at_rail := seat
-		var ground := r == 1        # the next: standing close behind them (no longer sitting on the earth: the sheet's
-		                            # sitting figures sit on chairs, and on the ground their legs went into it)
-		var step := (0.6 if kids else 0.75) if seat else (0.75 if ground else 0.6)
-		var y := 0.45 if seat else 0.0
-		var x := -L - d
-		while x < L + d:
-			# The far side, behind the table, and the two ends; the near side only far to the left and right.
-			var far := Vector3(x + (0.0 if seat else rng.randf_range(-0.2, 0.2)), y, -W - d - 1.8)
-			spots.append(far)
-			if seat and not kids:
-				_chairs.append(Props.at(Vector3(far.x, 0, far.z), rng.randf_range(-0.12, 0.12)))
-			if absf(x) > 9.0:
-				var nr := Vector3(x + rng.randf_range(-0.2, 0.2), 0.0 if at_rail else y, W + d)
-				spots.append(nr)
-			x += step
-		var zz := -W
-		while zz < W:
-			for s: float in [-1.0, 1.0]:
-				var e := Vector3(s * (L + d), 0.0 if at_rail else y, zz + rng.randf_range(-0.2, 0.2))
-				spots.append(e)
-			zz += step
-		if seat and kids:
-			# Pupils on painted benches, two to a bench.
-			var bx := -L - d
-			while bx < L + d:
-				_benches.append(Props.at(Vector3(bx + 0.3, 0, -W - d - 1.8)))
-				bx += 1.2
-	return spots
-
 
 const SEAT_BACK := -0.4   # m: a spectator in the stands sits at the front edge of his step (+ is back from it), his legs
                           # down its face: a flat figure further back had its legs cut off by the step and sat "in" it
@@ -986,13 +953,8 @@ func _stage(low: bool) -> Array:
 		for r in 2:
 			for col in 3:
 				_glow.box(b + Vector3(0, 8.85 + r * 0.5, 0) + right * (-0.55 + col * 0.55) + fwd * 0.14, Vector3(0.4, 0.36, 0.02), Color("fffbe8"), yaw, false)
-	# The guests: a row of chairs on the stage.
-	var seats: Array = []
-	for i in 10:
-		var p := Vector3(-4.05 + i * 0.9, 0, z - 0.6)
-		_chairs.append(Props.at(p + Vector3(0, top, 0), 0.0))
-		seats.append(p + Vector3(0, top + 0.45, 0))
-	return seats
+	# The guests sit on chairs along its back (VenueCrowd's "stage").
+	return []
 
 
 ## The school: two storeys with a verandah of pillars on each, windows with frames, a parapet, a water tank on the
