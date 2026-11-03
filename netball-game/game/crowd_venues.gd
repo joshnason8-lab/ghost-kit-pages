@@ -76,8 +76,7 @@ class Venue extends WsgCrowdVenue:
 		for i in every.spots.size():
 			var si: int = every.section[i]
 			var s: Dictionary = sections[si]
-			var sv := int(s.get("solid", 1))
-			if solid > 0 and (sv == 0 or sv > solid):
+			if solid > 0 and not is_solid(si, solid):
 				continue
 			if s.get("aisles", false):
 				if not frames.has(si):
@@ -110,6 +109,12 @@ class Venue extends WsgCrowdVenue:
 				dst.append(src[i])
 			out[k] = dst
 		return out
+
+	## Whether section si is drawn in 3D at level (1 Medium, 2 High): its "solid", the least level that does (0 never;
+	## none given: 1).
+	func is_solid(si: int, level: int) -> bool:
+		var sv := int(sections[si].get("solid", 1))
+		return sv > 0 and sv <= level
 
 	## A box no one may be inside (an empty seat, its back): xf its centre and axes, size its full size.
 	func obstacle(xf: Transform3D, size: Vector3, what: String) -> void:
@@ -210,10 +215,13 @@ const AISLE_W := 1.0
 const MITRE := 0.7
 const WALKWAY := 0.7          # the walkway behind the lower tier, m deep
 const FASCIA := 1.3           # the fascia under the upper tier's front row, m high
-## Who came, in the bowl's filled sections, at each level (Low, Medium, High): the aisles and a seat here and there
-## empty (the courtside stands keep Game.crowd_density). Medium's is the tier's frame budget's: at 0.8 (601 3D people
-## with the courtside stands) a frame drew 549k triangles, over Medium's 520k (world_check tiers).
-const BOWL_DENSITY := [0.7, 0.6, 0.9]
+## Who came, in the bowl, at each level (Low, Medium, High): a full house (the owner, via the lead, 2026-11-03), the
+## aisles and a seat here and there empty. In the sections the level draws in 3D, BOWL_DENSITY_3D[level]: [the far
+## side, the ends, the far upper tier], held to the tier's frame budget (Medium 520k triangles; world_check tiers): the
+## far side full, as it is most of the broadcast camera's view of the bowl, the ends thinner on Medium (at 0.8 all
+## round, 601 3D people with the courtside stands drew 549k triangles). The courtside stands keep Game.crowd_density.
+const BOWL_DENSITY := [0.95, 0.95, 0.95]
+const BOWL_DENSITY_3D := [[0.95, 0.95, 0.95], [0.95, 0.25, 0.95], [0.95, 0.9, 0.9]]
 
 
 ## The bowl's two tiers (front: the lower tier's front wall, its top the first row's floor), each [the first row's front
@@ -252,11 +260,11 @@ static func bowl_first(half_d: float) -> int:
 
 ## The bowl's people (v: the venue, the courtside sections already in it; first: the lower tier's first row clear of
 ## the courtside stands on the far side and ends; level: Low 0, Medium 1, High 2). A section a side of a tier, or a
-## band of its rows (each row to the corner's mitre); the stairs empty (Venue.place). Low fills every section with
-## cards. Medium and High fill only what they draw as real 3D people ("solid": from which level; within the 3D
-## budget, 700 and 1,200 with the courtside stands): the lower tier behind the courtside stands on the far side and
-## the ends from Medium (the broadcast camera's backdrop, behind the posts in a goal's close shot), and the far upper
-## tier's front rows on High; the rest of the bowl is empty seats there (the owner: real people, never cards).
+## band of its rows (each row to the corner's mitre); the stairs empty (Venue.place). Who are 3D people on Medium and
+## High ("solid": from which level; within the 3D budget, 700 and 1,200 with the courtside stands): the lower tier
+## behind the courtside stands on the far side and the ends from Medium (the broadcast camera's backdrop, behind the
+## posts in a goal's close shot), and the far upper tier's front rows on High; the far tiers are person-shaped cards
+## there, and everywhere on Low (the owner, via the lead, 2026-11-03: a full house, cut-outs in the far tiers only).
 static func bowl(v: Venue, x0: float, z0: float, front: float, first: int, level: int) -> void:
 	var tiers := bowl_tiers(front)
 	var names := ["far side", "east end", "near side", "west end"]
@@ -285,7 +293,8 @@ static func bowl(v: Venue, x0: float, z0: float, front: float, first: int, level
 					"seat": "plastic", "height": BOWL_SEAT.height, "depth": BOWL_SEAT.depth, "back": BOWL_SEAT.back,
 					"setback": BOWL_SEAT.setback, "pitch": 0.499999, "aisles": true, "solid": b[2],
 					"mitre": float(sd[3]) + o - MITRE,
-					"density": BOWL_DENSITY[clampi(level, 0, 2)]})
+					"density": BOWL_DENSITY_3D[level][0 if t == 0 and side == 0 else (1 if t == 0 else 2)]
+						if b[2] > 0 and b[2] <= level else BOWL_DENSITY[clampi(level, 0, 2)]})
 
 
 ## The sports hall's stand down the near side (Arena._hall_stand: rows stepped up from z0, each depth deep and rise

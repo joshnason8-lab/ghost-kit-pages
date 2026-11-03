@@ -432,13 +432,17 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   riser, a plastic seat (pan, edge, back; one back a seat on Medium/High, one strip on Low) along the back of it,
   stairs every 8 m and down each corner's mitre (Arena._bowl_tier, all in the venue's lit draw call), declared as
   WsgCrowdVenue sections (CrowdVenues.bowl: a side of a tier or a band of its rows, seats 0.43 m high, 0.33 deep,
-  backs 0.32; each row to its own mitre; no places on the stairs). Low fills every seat with the foundation's cards
-  (one draw call, 4,803 people). Medium and High fill only what they draw as 3D people (the owner's notes
-  crowd-real-people and crowd-squares: no cards there, nine in ten real): the lower tier behind the courtside
-  stands on the far side and the ends ("solid" 1), and on High the far upper tier's front rows ("solid" 2); the
-  rest of the bowl is empty seats there. Medium's bowl at 0.6 (474 3D people with the courtside stands: the tier's
-  frame budget, 492k of 520k triangles; at 0.8 it drew 549k), High's at 0.9 (1,175; 807k of 1.15M, 99 draw calls
-  of 180, world_check tiers). The courtside metal stands' empty rows 2-5 (knees in the chair backs) and empty
+  backs 0.32; each row to its own mitre; no places on the stairs). A full house (the owner via the lead,
+  2026-11-03 17:03Z: "Full house"; cut-outs in the far tiers only): on Medium and High the sections the level draws
+  in 3D ("solid": the courtside stands; the lower tier behind them on the far side and ends; on High also the far
+  upper tier's front rows) hold whole 3D people or are empty, never cards; every other bowl section is the
+  foundation's person-shaped cards (one draw call); Low is cards everywhere. Bowl density 0.95 for the cards; in
+  the 3D sections the far side 0.95 and the ends 0.25 on Medium (the tier's 520k triangles: 498k with the cards;
+  0.35 drew 513k), 0.9 on High. World_check tiers: Medium 465 3D fans, 498k triangles, 55 draw calls (of 520k,
+  125); High 1,185, 822k, 100 (of 1.15M, 180); Low 66k, 20. The owner notes crowd-real-people and crowd-squares
+  record the decision and check it: no painted people, no card where the level draws 3D people, at least 400 (Medium)
+  and 900 (High) 3D people in the arena, at least 90% of the bowl's seats in the broadcast camera's view filled
+  (96% on every level). The courtside metal stands' empty rows 2-5 (knees in the chair backs) and empty
   first-row seats were black shards of the model's decimated chairs: a lit plastic pan, edge and back is drawn
   over each chair (Arena._metal_seats, CrowdVenues.METAL_SEATS). The bowl's solids (WsgSolidProps,
   Arena._solid_bowl) are the rows as drawn: each up to its tread, the seats of each block, each stair's half step.
@@ -447,8 +451,8 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   Foundation synced to 2cd59a7 and the licensed crowd baked again (version 3), then main's 1303a18 by the merge; the
   cards' sheets import VRAM-compressed with mipmaps (our .import files: vendor.sh keeps a game's), Low's video
   memory 41.8 -> 33.6 MB in the arena. crowd_audit passes every venue at Medium and High (the arena in three
-  sheets: courtside, lower tier, upper tier), prop_audit passes. The shared cards have no look or clap poses, so on
-  Low the people do not turn to the ball or clap in time (Crowd calls the cards' watch_ball and clap, ready for art
+  sheets: courtside, lower tier, upper tier), prop_audit passes. The shared cards have no look or clap poses, so the
+  cut-outs do not turn to the ball or clap in time (Crowd calls the cards' watch_ball and clap, ready for art
   that has them).
 
 ## Next
