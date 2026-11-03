@@ -989,11 +989,23 @@ then run the game's suites and commit on the game's branch. It replaces `addons/
 licensed `data/` folder) and the foundation's own scripts in `tools/wsg/` - never your link, players, tests,
 assets or workflow - and writes the foundation commit to `addons/wsg_foundation/VERSION`.
 
-Your workflow warns (never fails) when your copy is behind - a step after checkout:
+Your workflow checks your copy in a step after checkout:
 ```yaml
-      - name: Shared foundation up to date? (a warning only)
+      - name: Shared foundation (fails without a required commit)
         run: sh <game>/tools/wsg/check_foundation.sh
 ```
+**It fails when you lack a required commit.** These are the foundation commits listed in `foundation/REQUIRED` on its
+branch. Today they are:
+- 2cd59a7: key hits crisp at a distance;
+- 0422175: solid props;
+- ad83891: loading v2;
+- a24408b: the warm-up fix.
+
+You pass if your `VERSION` comes from that commit or later, or if your code carries the commit's marker line (a fix
+you took another way). Kabaddi nearly shipped on edebcd5 without loading v2.
+
+If you truly must ship without one, set `FOUNDATION_REQUIRED_SKIP: "<commit>:<the reason>"` on the step; the log prints
+the reason. Being merely behind the branch's latest is still only a warning.
 The foundation's own session pushes each update to every adopted game's pilot or game branch, under that game's
 rules (a pilot branch until the owner has passed the game's pilot), and says so to the lead, who checks each release.
 
