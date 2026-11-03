@@ -66,6 +66,17 @@ func _initialize() -> void:
 			if mask[v] == 1:
 				ids.append(v)
 		meta.fans[fan]["seat_vertices"] = ids
+		# The hands (WsgCrowdVenue.audit lets them rest on a seat: a fan getting up pushes on it).
+		var hands := []
+		for v in m.count:
+			var w := 0.0
+			for j in 4:
+				var nm: String = WsgRig.BONES[m.bones[v * 4 + j]][0]
+				if nm.begins_with("LeftHand") or nm.begins_with("RightHand"):
+					w += m.weights[v * 4 + j]
+			if w >= 0.5:
+				hands.append(v)
+		meta.fans[fan]["hand_vertices"] = hands
 		print("%s: %d triangles (far %d), %d vertices, VAT %dx%d" % [fan, m.tris, m.far_tris, m.count, vat[0].get_width(), rows])
 	var f := FileAccess.open(out_dir.path_join("crowd.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(meta, "\t"))

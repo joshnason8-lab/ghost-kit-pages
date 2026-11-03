@@ -670,6 +670,25 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The crowd's backs, and flat boots (0.15.1)
+
+The foundation, synced to b073334:
+- **Back views for the cards** (`crowd/cards_back.png`): a card the camera sees from behind its fan shows the fan's
+  back, turned toward the camera at most 35 degrees. The near side's second card set and its hide rule (0.15.0's
+  workaround) are gone: one draw call again, and the broadcast camera shows the near stands' backs. Also the cards'
+  faces from the fans' full models, and the shared crowd's getting-up and chair-fit fixes. crowd_audit again: every
+  venue PASS (2,623 3D fans, 3,077 cards): the seat of the trousers within 1 mm of the seat, the soles 9 mm under to
+  level with the floor, nothing more than 25 mm into anything, every fan within 7 degrees of the play. To pass, the
+  arena's step pads went from 2 cm to 1 cm thick and from 0.35 to 0.3 m deep (the seat 0.43 m over the step below):
+  the national arena's longest-legged fans' knees were 2.7 cm into the step above.
+- **WsgFootFlat** (from Hurling, whose rig's boots rested 10.6 degrees toe-up and showed it in every move):
+  `FoundationLink` adds it as the body's last modifier (after the planter), and it turns the feet down only where the
+  rig's boots rise 2 degrees or more heel to toe, keeping a planted heel on the floor. The tilt each character
+  measures is printed in test_runner's foundation section ("the rig's boots' sole tilt", in the CI log: the rig is
+  licensed data, not in the repo).
+- Seen from the broadcast camera, the near stands show their fans' backs (hair and the backs of their shirts) in
+  every venue; checked on renders at Low and High.
+
 ## The shared crowd: fans on their seats, facing the play (0.15.0)
 
 The owner, for every game: the crowd sitting properly (not standing inside a seat), standing properly, watching the

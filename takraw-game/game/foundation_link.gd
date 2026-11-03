@@ -92,6 +92,11 @@ func _init(p_body: RealBody, p_kind := "player") -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
+var foot_flat: WsgFootFlat = null   # (none when the rig's boots stand flat)
+## The rig's boots' heel-to-toe rise as each character stands at rest (degrees; WsgFootFlat.sole_tilt), as measured.
+static var sole_tilt := {}
+
+
 func _ready() -> void:
 	body = WsgBody.new(WsgBody.load_character(DIR, "woman" if gb.women else "man"), null, 0)
 	add_child(body)
@@ -122,6 +127,10 @@ func _ready() -> void:
 	legacy.torso_r = 0.08       # the forearms kept out of the chest
 	loco = WsgLocomotor.attach(body)
 	legacy.lift_after = loco.planter.hips_offset
+	# The rig's boots, if they rest toe-up, turned flat (the shared foundation's WsgFootFlat, the last modifier: after
+	# the planter, whose toe clamp would turn them back up). Its tilt kept for the tests' report.
+	foot_flat = WsgFootFlat.attach(body)
+	sole_tilt["woman" if gb.women else "man"] = WsgFootFlat.sole_tilt(body)
 	gb.mesh_instance.visible = false
 	gb.link = self
 	body.posed.connect(_on_posed)

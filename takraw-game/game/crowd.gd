@@ -10,9 +10,8 @@ extends Node3D
 ## level (Game.crowd_density). They get up and cheer with the play (set_excite: the shared crowd's excitement), wear
 ## the home side's colours more than any other, and hold up the two teams' flags here and there (show_teams; the
 ## flags are this game's own).
-## The near side's fans (facing +z, toward the court, as the broadcast and side cameras do over their heads) are their
-## own set, hidden while the camera looks the way they face: a card has only its front, and seen from behind it turns
-## edge on, a sliver (the end camera, from the side, shows them).
+## Seen from behind (the broadcast camera over the near side), a card shows its fan's back (the shared cards' back
+## views, 0.15.1).
 
 const FLAG_W := 96       # a flag's pixels (in the crowd)
 const FLAG_H := 64
@@ -25,15 +24,11 @@ const HAIR := [Color("0b0908"), Color("110d0b"), Color("17120e"), Color("1e1712"
 const LEGS := [Color("16181d"), Color("23262c"), Color("1f2b3d"), Color("2c3d58"), Color("3d4a5c"), Color("4a4a4f"),
 	Color("5c4c3a"), Color("8a7a62")]
 
-const BEHIND_Z := 0.5      # a fan facing +z more than this is the near side's
-const BEHIND_LOOK := 0.35  # hidden while the camera looks +z more than this (over their backs)
-
 static var _flag_mat: ShaderMaterial
 static var _flag_mesh: ArrayMesh
 static var _excite := 0.0
 
-var cards: WsgCrowdCards                      # the fans the cameras see from in front or from the side
-var cards_behind: WsgCrowdCards               # the near side's, facing the way the cameras over them look
+var cards: WsgCrowdCards
 var places := {}                              # WsgCrowdVenue.place(): every place in the venue
 var shown := PackedInt32Array()               # the places filled (by the level's density)
 var _flag_at: Array[Transform3D] = []         # where the flags are held up
@@ -47,8 +42,6 @@ func build(venue: WsgCrowdVenue, density: float, palette: Array, seed_ := 1) -> 
 	rng.seed = seed_
 	places = venue.place(seed_)
 	shown = PackedInt32Array()
-	var front := PackedInt32Array()
-	var behind := PackedInt32Array()
 	var shirts := []
 	# Exactly the level's share of the places, picked at random (a seeded shuffle: a small venue's share as true as a
 	# big one's).
@@ -65,47 +58,21 @@ func build(venue: WsgCrowdVenue, density: float, palette: Array, seed_ := 1) -> 
 	for i in n:
 		if take.has(i):
 			shown.append(i)
-			if (places.facings[i] as Vector3).z > BEHIND_Z:
-				behind.append(i)
-			else:
-				front.append(i)
 		var col: Color = palette[rng.randi_range(0, palette.size() - 1)] if not palette.is_empty() and rng.randf() < 0.45 \
 			else Color(rng.randf(), rng.randf(), rng.randf())
 		shirts.append(col)
 	_excite = 0.0
 	WsgCrowd3D.set_excite(0.0)
-	for old in [cards, cards_behind]:
-		if old:
-			old.queue_free()
-	cards = _card_set(front, seed_, shirts, palette)
-	cards_behind = _card_set(behind, seed_ + 1, shirts, palette)
+	if cards:
+		cards.queue_free()
+		cards = null
+	if not shown.is_empty():   # (WsgCrowdCards draws every place when given none)
+		cards = WsgCrowdCards.new()
+		add_child(cards)
+		cards.build(places, shown, seed_, shirts)
+		cards.set_looks(SKIN, HAIR, LEGS)
+		cards.set_teams(palette[0] if not palette.is_empty() else Game.C_SAFFRON, palette[1] if palette.size() > 1 else Color.WHITE)
 	_flags(rng, palette)
-
-
-## A set of the places drawn as cards (none: null - WsgCrowdCards draws every place when given none).
-func _card_set(which: PackedInt32Array, seed_: int, shirts: Array, palette: Array) -> WsgCrowdCards:
-	if which.is_empty():
-		return null
-	var c := WsgCrowdCards.new()
-	add_child(c)
-	c.build(places, which, seed_, shirts)
-	c.set_looks(SKIN, HAIR, LEGS)
-	c.set_teams(palette[0] if not palette.is_empty() else Game.C_SAFFRON, palette[1] if palette.size() > 1 else Color.WHITE)
-	return c
-
-
-## Every card set (for the tests' audit).
-func card_sets() -> Array:
-	return [cards, cards_behind].filter(func(c): return c != null)
-
-
-func _process(_delta: float) -> void:
-	if cards_behind == null:
-		return
-	var cam := get_viewport().get_camera_3d()
-	if cam:
-		var fwd := -cam.global_transform.basis.z
-		cards_behind.visible = Vector2(fwd.x, fwd.z).normalized().y < BEHIND_LOOK
 
 
 ## A card's foot and the way its fan faces (the flag is held up from there).
@@ -133,8 +100,7 @@ func _flags(rng: RandomNumberGenerator, palette: Array) -> void:
 ## side's, a third the visitors'; the shirts' team colours the two sides' too.
 func show_teams(home: String, away: String) -> void:
 	if cards:
-		for c: WsgCrowdCards in card_sets():
-			c.set_teams(DB.team(home).get("c1", Game.C_SAFFRON), DB.team(away).get("c1", Color.WHITE))
+		cards.set_teams(DB.team(home).get("c1", Game.C_SAFFRON), DB.team(away).get("c1", Color.WHITE))
 	if not _flag_at.is_empty():
 		_show_flags(team_flag(home), team_flag(away), 0.35)
 

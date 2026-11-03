@@ -236,8 +236,8 @@ func _team_event_lineups() -> void:
 ## AI matches in each event: they finish, with legal set scores.
 ## Every venue, at every graphics level, its crowd the shared foundation's (0.15.0; the owner: fans sitting on their
 ## seats, not in them, standing on the floor, facing the play): its places declared (Arena.crowd_venue), the share the
-## level fills them (Low 40%, Medium 70%, High all), drawn as the shared cards (one draw call, the near side's a second,
-## hidden while a camera looks over their backs), and every card measured
+## level fills them (Low 40%, Medium 70%, High all), drawn as the shared cards in one draw call (seen from behind, their
+## backs), and every card measured
 ## (WsgCrowdCards.audit): a seated fan's seat of the trousers on their seat, the card in front of the seat, never in
 ## it, and every fan within 35 degrees of the play's nearest part. tools/wsg/crowd_audit.gd measures the 3D fans too.
 func _crowd_facing() -> void:
@@ -253,24 +253,16 @@ func _crowd_facing() -> void:
 			if ok:
 				var places: Dictionary = a.crowd.places
 				var n: int = places.spots.size()
-				var sets: Array = a.crowd.card_sets()
-				var shown := 0
-				var draws := 0
-				var fails := []
-				var hips := [INF, -INF]
-				var facing := 0.0
-				for c: WsgCrowdCards in sets:
-					shown += c.placed_cards.size()
-					draws += c.find_children("*", "MultiMeshInstance3D", false, false).size()
-					var res: Dictionary = c.audit(Arena.crowd_venue(v[0]), places)
-					fails.append_array(res.fails)
-					if res.hips[0] != INF:
-						hips = [minf(hips[0], res.hips[0]), maxf(hips[1], res.hips[1])]
-					facing = maxf(facing, res.facing)
+				var shown: int = a.crowd.cards.placed_cards.size()
+				var draws := a.crowd.cards.find_children("*", "MultiMeshInstance3D", false, false).size()
+				var res: Dictionary = a.crowd.cards.audit(Arena.crowd_venue(v[0]), places)
+				var fails: Array = res.fails
+				var hips: Array = res.hips
+				var facing: float = res.facing
 				var want: float = Game.crowd_density()
 				check(n > 50 and absf(float(shown) / n - want) < 0.08, "%s (graphics %d): %d of its %d places filled (%.0f%%, the level's %.0f%%)"
 					% [v[0], g, shown, n, 100.0 * shown / maxf(n, 1), 100.0 * want])
-				check(draws <= 2, "%s (graphics %d): the crowd in at most two draw calls (%d: the near side's apart, hidden from behind)" % [v[0], g, draws])
+				check(draws == 1, "%s (graphics %d): the crowd in one draw call (%d)" % [v[0], g, draws])
 				check(fails.is_empty(), "%s (graphics %d): every fan sits on their seat (hips %+.3f..%+.3f m), in front of it, and faces the play (at most %.0f degrees off) %s"
 					% [v[0], g, hips[0] if hips[0] != INF else 0.0, hips[1] if hips[1] != -INF else 0.0, facing, str(fails)])
 			a.queue_free()
@@ -1251,6 +1243,9 @@ func _foundation(available: bool) -> void:
 	check(contacts >= 20 and contact_gap < 0.04,
 		"foundation: at contact the drawn foot or head is where the game's meets the ball (%d contacts, at most %.1f cm apart)" % [contacts, contact_gap * 100.0])
 	check(walked > 300, "foundation: the capture walks the players between points (%d body-frames)" % walked)
+	# The rig's boots (WsgFootFlat, 0.15.1): their heel-to-toe rise at rest, measured on each character (the modifier
+	# turns them flat where it is 2 degrees or more), for the log.
+	print("foundation: the rig's boots' sole tilt (degrees; WsgFootFlat flattens %.0f or more): %s" % [WsgFootFlat.MIN_TILT, FoundationLink.sole_tilt])
 	check(slide_n > 150 and slide < 0.03, "foundation: a planted foot does not slide under the capture (worst %.3f m a frame over %d: %s)" % [slide, slide_n, slide_why])
 	check(held_n > 20 and held_gap < 0.02, "foundation: the ball carried is in the drawn hands (%d frames, at most %.1f cm off)" % [held_n, held_gap * 100.0])
 	check(official_moves > 1000, "foundation: the officials standing and stepping under the capture (%d body-frames)" % official_moves)

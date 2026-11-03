@@ -501,8 +501,8 @@ const STAND_Z := 9.6       # the long sides' first step (its front)
 const STAND_END := 13.4    # the ends' first step
 const STEP_D := 0.8
 const STEP_H := 0.42
-const PAD_H := 0.02        # a seat pad's thickness, along the front of each step
-const PAD_D := 0.35
+const PAD_H := 0.01        # a seat pad's thickness, along the front of each step
+const PAD_D := 0.3
 const JURY_Z := Court.HALF_W + 5.05
 const JURY_X := 6.2
 
