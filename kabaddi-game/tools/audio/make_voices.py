@@ -186,10 +186,8 @@ def shout(text, voice, speed, pitch):
 def main():
     if subprocess.run(["espeak-ng", "--voices=mb"], capture_output=True, text=True).stdout.find("mb-in1") < 0:
         sys.exit("needs the MBROLA Indian voices: apt-get install mbrola mbrola-in1 mbrola-in2")
-    for i in range(2):
-        save("chant_word_%d" % (i + 1), chant_word(i))
-    save("chant_raider", chant_run())
-    save("crowd_chant", crowd_chant(), 3)
+    # The cant and the crowd's chant are tools/audio/make_chant.py's now (a natural voice, 2026-11); these stay for
+    # reference: chant_word(), chant_run(), crowd_chant().
     for name, (text, voice, speed, pitch) in SHOUTS.items():
         save(name, shout(text, voice, speed, pitch))
 

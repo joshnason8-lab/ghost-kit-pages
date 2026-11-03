@@ -62,9 +62,10 @@ The dome is indoors and has no ambience of its own: its crowd is its sound.
 
 | File(s) | What it is | How |
 |---|---|---|
-| `chant_raider`, `chant_word_1..2` | The raider's "kabaddi, kabaddi" | `tools/audio/make_voices.py` (MBROLA Indian voices through espeak-ng) |
+| `chant_raider`, `chant_word_1..2` | The raider's "kabaddi, kabaddi" | `tools/audio/make_chant.py`: Piper TTS voice "venkatesh" (Telugu; rhasspy/piper-voices, trained by PravalX on AI4Bharat IndicVoices-R, CC BY 4.0), each word checked by speech recognition. Was MBROLA through espeak-ng (the owner found it awkward, 2026-11) |
 | `yell_aaja`, `yell_pakad`, `yell_shabash`, `yell_chal`, `yell_haan`, `yell_nahi`, `yell_touch` | Players' shouts in Hindi | `tools/audio/make_voices.py` |
-| `crowd_chant`, `clap` | The crowd chanting, one clap | `tools/audio/make_sounds.py` (layered synthetic voices) |
+| `crowd_chant` | The crowd chanting "kabaddi!" with claps (the trophy screen) | `tools/audio/make_chant.py` (16 takes of the Piper voice, each its own pitch and timing, claps on the off-beat) |
+| `clap` | One clap | `tools/audio/make_sounds.py` |
 | buzzer, whoosh, gavel, bid (and a dhol loop if the recording is missing) | The clock's buzzer, moves through the air, the auction | Synthesised at startup in `autoload/sfx.gd` |
 
 The whistles (0.11.1) were supplied by the owner from Pixabay through the shared assets (`shared-assets/sounds/whistle/`,

@@ -1709,7 +1709,7 @@ func _languages() -> void:
 	check(all.contains("Motion capture data from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217."),
 		"the licences screen credits the CMU motion capture database as it asks")
 	check(["Gregor Quendel", "CC BY 4.0", "Kenney", "Fantozzi", "eXpl0it3r", "Kresiek The Furry", "jasinski", "Thimras",
-		"Wolfgang_", "Whistle sounds from Pixabay", "charlesheffley009", "framptones"].all(func(w): return all.contains(w)), "the licences screen credits every recorded sound's author")
+		"Wolfgang_", "Whistle sounds from Pixabay", "charlesheffley009", "framptones", "Piper text-to-speech voice \"venkatesh\""].all(func(w): return all.contains(w)), "the licences screen credits every recorded sound's author")
 	# The match's words in the game's own fonts (a CanvasLayer does not pass the window's theme on).
 	Game.start_match({"home": "MUM", "away": "CHD", "arena": "dome", "mode": "quick", "control": "all", "length": 0,
 		"difficulty": 1, "first_raider": 0, "passive": true})
