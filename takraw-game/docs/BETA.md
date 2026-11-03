@@ -15,6 +15,12 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.9: **the ball no longer passes through the boards or the fence.** A ball that flew over the low LED
+boards (indoor) or came down fast against the park's fence could end up back on the court side of it, as if it had
+gone through; now it stays behind it, or comes off it. A player chesting the ball now bends his elbows and draws his
+arms back, as players do, instead of holding them out straight. Found by the thousands of matches the game now plays
+by itself each night.
+
 New in 0.15.8: **in the national arena, nobody sits right behind the jury table's chairs any more.** A fan there who
 got up to cheer put a knee into a chair in front of him; those few seats are now left empty, as they would be.
 

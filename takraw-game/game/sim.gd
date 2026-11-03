@@ -196,6 +196,14 @@ func bounds() -> AABB:
 	return AABB(Vector3(r.position.x - 1.0, -0.5, r.position.y - 1.0), Vector3(r.size.x + 2.0, 40.0, r.size.y + 2.0))
 
 
+## Put off with the lead's word, until a time (then it fails again): the players' planted feet sliding 2.5-4.4 cm a
+## step on Medium and High, walking briskly with the ball (2.2 m/s), mostly as they come out of a pick-up into the
+## carry walk. The feet there are the shared foundation's locomotor and planter; the Foundation is fixing them.
+func deferred() -> Dictionary:
+	return {"foot slip": ["2026-11-06T12:00Z",
+		"players carrying at 2.2 m/s, 2.5-4.4 cm, foundation planter; Foundation fixing (lead approved 12:30Z)"]}
+
+
 ## Rally-point scoring: a point at a time (the score here: the points won over every set, counted once their call can
 ## no longer be challenged: never going down).
 func score_steps() -> Array:

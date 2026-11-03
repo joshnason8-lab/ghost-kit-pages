@@ -670,6 +670,30 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## What the first full WsgSim smoke found (0.15.9)
+
+The first smoke batch to finish in CI (on 0.15.8, 65 matches) failed 31. Every failure was traced frame by frame:
+- **The ball through the LED boards and the park's fence (Low): two real bugs, fixed in `game/ball.gd`.**
+  - A loose ball that flew over a low board at an end of the hall was snapped back in front of it, through it, once it
+    came down under 0.5 m (the walls' clamp). It now stays behind it and comes off the board's back.
+  - A fast ball coming down at the court's edge was put on the floor where its flight would have it a frame later,
+    under the floor and past the end fence (the prop sweep missed it, the way being under the floor). It now lands
+    where its path meets the floor, and the sweep sees the fence first. The line calls are unchanged: they use the
+    flight's own landing (`Match.land_t`, `Ball.at`).
+- **The score went down (6 matches): the game's video review.** An overturned line call moves the point to the other
+  side. The adapter now counts a line-call point only once it can no longer be challenged, so the score it reports
+  only goes up (the Foundation agrees; no looser check).
+- **An A-pose (9 matches): the chest trap**, arms held straight out at 44 degrees. Its elbows now bend and its arms
+  draw back (`Moves`, "chest").
+- **Officials' feet sliding 10-16 cm (15 matches): the slow-motion replay.** During a replay the foundation's
+  WsgReplay sets every bone, but the foot planters stayed on, so a foot swinging at 0.4 times its speed read as a
+  planted foot sliding. The planters are now off while a replay plays (`Match._start_replay`), and the Foundation's
+  WsgSim no longer measures feet during a replay, for every game (284bef5).
+- **Players' feet sliding 2.5-4.4 cm (Medium and High)**: walking briskly with the ball (2.2 m/s), mostly as they come
+  out of a pick-up into the carry walk. These are the shared locomotor's and planter's feet: deferred with the lead's
+  word until 2026-11-06 12:00 UTC (`game/sim.gd deferred()`), reported under Warnings until then; the frame data went
+  to the Foundation.
+
 ## Thousands of simulated matches: WsgSim (ADOPTING §5.17)
 
 `game/sim.gd` is the game's adapter to the shared simulator. Its matches are built by `Game.start_match`, as a Start

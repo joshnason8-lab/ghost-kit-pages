@@ -160,6 +160,12 @@ func update_to(t: float, dt: float) -> void:
 		var k := t - t_launch
 		global_position = Ball.pos_at(p_launch, v_launch, k)
 		vel = v_launch + Vector3(0, -G * k, 0)
+		# Down on the floor within this step: only as far as where it meets the floor, not on to where its flight would
+		# have it under the floor (a fast ball low at the court's edge: past the fence, which the way under the floor
+		# misses). (The match's own landing, for the line call, is the flight's: Match land_t, Ball.at.)
+		var lands := global_position.y < RADIUS and vel.y < 0.0
+		if lands:
+			global_position = was.lerp(global_position, clampf((was.y - RADIUS) / maxf(was.y - global_position.y, 1e-6), 0.0, 1.0))
 		# Into a prop on its way (a post, the referee's chair, the table, a bench): off it, as it would, and loose from
 		# there (the match calls the rally: hit_prop).
 		if solid and bool(solid.sweep(was, global_position, RADIUS).get("hit", false)):
@@ -168,9 +174,10 @@ func update_to(t: float, dt: float) -> void:
 			vel = r.vel
 			flying = false
 			loose = true
+			lands = false
 		turn(dt)
 		# Down on the floor (the rally is over by now): from here it bounces and rolls by itself.
-		if global_position.y < RADIUS and vel.y < 0.0:
+		if (lands or global_position.y < RADIUS) and vel.y < 0.0:
 			global_position.y = RADIUS
 			flying = false
 			loose = true
