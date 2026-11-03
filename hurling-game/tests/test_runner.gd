@@ -61,6 +61,7 @@ func _ready() -> void:
 	await _stick_camera()
 	await _half_time_and_clock()
 	await _post_clang()
+	await _loading_overlay()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -2241,6 +2242,10 @@ func _half_time_and_clock() -> void:
 	check(after_one > 80.0 and after_two < 0.5,
 		"Clock: a stoppage's 90 s is run up to on the score bug, not jumped (%.0f s behind after a frame, %.1f after 1.7 s)" % [after_one, after_two])
 	m.set_paused(false)
+	# (How far each is beyond a line at the whistle, and the most he goes further out over the break: one fetching a
+	# wide at the whistle walks back in; none runs on out.)
+	var out := func(p: Player) -> float: return maxf(absf(p.global_position.x) - Pitch.HALF_L, absf(p.global_position.z) - Pitch.HALF_W)
+	var at_whistle := {}
 	var worst := 0.0
 	var seen := false
 	f = 0
@@ -2248,12 +2253,16 @@ func _half_time_and_clock() -> void:
 		await frames(1)
 		f += 1
 		if m.phase == m.P.HALF_TIME:
-			seen = true
 			for pl in m.all_players():
 				var p: Player = pl
-				if p.visible:
-					worst = maxf(worst, maxf(absf(p.global_position.x) - Pitch.HALF_L, absf(p.global_position.z) - Pitch.HALF_W))
-	check(seen and worst < 3.0, "Half-time: every player stays on the field over the break (furthest %.1f m beyond a line)" % worst)
+				if not p.visible:
+					continue
+				var o: float = out.call(p)
+				if not seen:
+					at_whistle[p] = maxf(o, 0.0)
+				worst = maxf(worst, o - float(at_whistle.get(p, 0.0)))
+			seen = true
+	check(seen and worst < 1.0, "Half-time: no player runs on off the field over the break (the most any went further out: %.1f m)" % worst)
 	m.queue_free()
 	await frames(2)
 
@@ -2280,4 +2289,32 @@ func _post_clang() -> void:
 	check(heard, "Free-taking: the sliotar off a post is heard, the clang played flat and clear")
 	Game.settings.sound = keep_sound
 	m.queue_free()
+	await frames(2)
+
+
+## Start, from the setup screen: the loading overlay up in the tap's own frame (the owner: on the slow phone "users
+## might think the game has frozen"), the bar only going forward, frames drawn while the match is built, then the match.
+func _loading_overlay() -> void:
+	var scr: Node = Game.show_screen("res://ui/quick_setup.gd", {})
+	await frames(5)
+	scr.call("_play")
+	var ld = WsgLoading.current()
+	check(ld != null, "Loading: the overlay is up in the tap's own frame")
+	var drawn := 0
+	var last := -1.0
+	var back := false
+	var t0 := Time.get_ticks_msec()
+	while WsgLoading.current() != null and Time.get_ticks_msec() - t0 < 60000:
+		await frames(1)
+		drawn += 1
+		var cur = WsgLoading.current()
+		if cur:
+			var v: float = cur.get("_shown")
+			back = back or v < last - 0.0001
+			last = v
+	var m: Node = Game.current
+	check(drawn >= 4 and not back and m != null and m.has_method("is_watch"), "Loading: the bar goes forward over %d frames and the match comes up" % drawn)
+	if m:
+		m.queue_free()
+		Game.current = null
 	await frames(2)

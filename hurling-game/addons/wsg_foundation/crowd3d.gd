@@ -232,6 +232,13 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 	return used
 
 
+## What the crowd's data must have been baked with (crowd.json "version"; tools/bake_crowd.gd): 3 = every frame
+## grounded at its soles, the parts, hand vertices. A crowd baked before (a game's old local licensed bake) has its
+## seated soles up to 7 cm under the floor: WsgCrowdVenue.audit refuses it - run tools/wsg/fetch_assets.sh with
+## FORCE=1 to bake it again.
+const BAKE_VERSION := 3
+
+
 ## A fan's size fitted to a venue's seat at most this far from the model's own.
 const FIT_MIN := 0.86
 const FIT_MAX := 1.14

@@ -844,3 +844,15 @@ The owner's 0.20 playtest (code 34):
   (AudioStreamPlayer3D's attenuation filter) takes the highs off with distance, and a ping is all highs. Back to
   Sfx.play, flat and full (as before the foundation's positional sound), the crowd's "ooh" 0.35 s after it. Test
   _post_clang. Code 38.
+
+## Done (0.23.0, 3 November 2026)
+
+- The loading overlay (the owner's all-games request; the shared foundation's WsgLoading, synced to edebcd5), code 39:
+  Game.start_match_loading on every start (quick, Watch AI, championship, practice and its "go again"): the overlay
+  in the tap's own frame, the match's script, the bodies, the crowd's fans and the licensed animation loaded on the
+  loader's thread, then three steps a frame apart - Ground (Stadium built ahead, its crowd held back: defer_crowd),
+  Crowd (build_deferred_crowd; the practice's at its close focus and budget, so Match._close_crowd no longer builds it
+  twice), Teams (the match, given the built stadium). Practice's High graphics set before the ground
+  (Practice.use_practice_graphics). Longest slices here (xvfb, software rendering, Low): quick county Ground 345 ms,
+  watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
+  offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.

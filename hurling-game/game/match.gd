@@ -126,8 +126,18 @@ func _ready() -> void:
 	var venue := String(config.get("venue", "county"))
 	var home_t := DB.team(String(config.home))
 	var away_t := DB.team(String(config.away))
-	stadium = Stadium.new(venue, [home_t.c1, home_t.c2], [away_t.c1, away_t.c2])
-	add_child(stadium)
+	# The ground built already by the loading overlay's steps (Game.start_match_loading), or now.
+	var built = config.get("stadium")
+	if built is Stadium and is_instance_valid(built):
+		stadium = built
+		config.erase("stadium")
+		if stadium.get_parent():
+			stadium.get_parent().remove_child(stadium)
+		add_child(stadium)
+		stadium.build_deferred_crowd()
+	else:
+		stadium = Stadium.new(venue, [home_t.c1, home_t.c2], [away_t.c1, away_t.c2])
+		add_child(stadium)
 	ball = Sliotar.new()
 	ball.look_scale = _ball_scale()
 	ball.backstop = stadium.backstop()
@@ -2939,7 +2949,10 @@ func _rank_detail(dt: float) -> void:
 ## behind that goal at its Close budget (more full figures: there are few players to draw).
 func _close_crowd() -> void:
 	if stadium and int(Game.settings.graphics) == Game.GFX_HIGH:
-		stadium.build_crowd(Vector3(_shootout_goal_dir() * (Pitch.HALF_L + 14.0), 3.0, 0.0), 3)
+		var f := Vector3(_shootout_goal_dir() * (Pitch.HALF_L + 14.0), 3.0, 0.0)
+		if stadium.crowd_key == [f, 3]:
+			return      # (built so already: the loading overlay's crowd step)
+		stadium.build_crowd(f, 3)
 
 
 var _pen_view: Camera3D     # the shoot-out's camera, low behind the taker

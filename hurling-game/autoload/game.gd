@@ -394,6 +394,76 @@ func start_match(config: Dictionary) -> void:
 	_swap(m)
 
 
+## A match started from a button, behind the shared foundation's loading overlay (WsgLoading; the owner: "when you
+## click start game there is a loading delay ... long enough on the slow phone that users might think the game has
+## frozen"). The overlay is up in the tap's own frame and the buttons go dead; the heavy files load on the loader's
+## thread; then the ground, its crowd and the match (its players, officials, camera and buttons) are built a step each,
+## a frame drawn between them.
+func start_match_loading(config: Dictionary, buttons: Array = []) -> void:
+	var host: Node = current if current and is_instance_valid(current) else main
+	var ld := WsgLoading.cover(host, buttons, load_look())
+	ld.log_label = String(config.get("mode", "match"))
+	ld.request(_load_files(String(config.get("mode", ""))))
+	var built := {}
+	var practice := String(config.get("mode", "")) == "practice"
+	if practice:
+		load("res://game/practice.gd").use_practice_graphics()     # (High, from before anything is built)
+	ld.step("Ground", func():
+		var venue := String(config.get("venue", "county"))
+		var home_t := DB.team(String(config.home))
+		var away_t := DB.team(String(config.away))
+		var st := Stadium.new(venue, [home_t.c1, home_t.c2], [away_t.c1, away_t.c2])
+		st.defer_crowd = true
+		st.visible = false
+		main.add_child(st)
+		built.stadium = st, 3.0)
+	ld.step("Crowd", func():
+		if practice and int(settings.graphics) == GFX_HIGH:
+			# Built as the practice shoots it: close behind the goal it attacks, at the Close budget (Match._close_crowd).
+			(built.stadium as Stadium).build_deferred_crowd(Vector3(Pitch.attack_dir(0, 1) * (Pitch.HALF_L + 14.0), 3.0, 0.0), 3)
+		else:
+			(built.stadium as Stadium).build_deferred_crowd(), 2.0)
+	ld.step("Teams", func():
+		var cfg := config.duplicate()
+		cfg.stadium = built.stadium
+		(built.stadium as Stadium).visible = true
+		var s: Script = ld.res("res://game/practice.gd" if String(config.get("mode", "")) == "practice" else "res://game/match.gd")
+		var m: Node = s.new()
+		m.config = cfg
+		Sfx.music(false)
+		_swap(m)
+		built.match = m, 3.0)
+	if not await ld.run():
+		if built.has("stadium") and is_instance_valid(built.stadium) and not built.has("match"):
+			(built.stadium as Node).queue_free()
+		return
+	ld.done()
+
+
+## The loading overlay in the game's own colours, with a tip about hurling while it loads.
+func load_look() -> Dictionary:
+	return {"dim": Color(C_BG, 0.94), "text": C_INK, "bar": C_SAFFRON, "bar_back": Color(C_INK, 0.16), "spinner": C_GOLD,
+		"title": tr("LOADING"), "tips": [tr("LOAD_TIP_1"), tr("LOAD_TIP_2"), tr("LOAD_TIP_3"), tr("LOAD_TIP_4")]}
+
+
+## The heavy files a match needs, for the loader's thread: the match's script, the players' bodies, the crowd's fans
+## and the licensed animation (where this build has it).
+func _load_files(mode: String) -> Array:
+	var out := ["res://game/practice.gd" if mode == "practice" else "res://game/match.gd"]
+	for f in ["res://assets/player/hero_hi.res", "res://assets/player/hero_lo.res"]:
+		if ResourceLoader.exists(f):
+			out.append(f)
+	for dir in ["res://addons/wsg_foundation/crowd/", "res://addons/wsg_foundation/data/"]:
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for f in d.get_files():
+			var path: String = dir + f.trim_suffix(".remap")
+			if path.ends_with(".res") and ResourceLoader.exists(path) and not path in out:
+				out.append(path)
+	return out
+
+
 func on_match_finished(result: Dictionary) -> void:
 	Records.add_match(result)
 	# The coach's tips are for a first match: once one is played through, they go off (Settings turns them on).

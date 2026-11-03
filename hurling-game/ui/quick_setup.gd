@@ -161,6 +161,6 @@ func _arrow(icon: String, k: int, step: int) -> Button:
 
 
 func _play() -> void:
-	Game.start_match({"home": _home, "away": _away, "venue": _venue, "mode": "watch" if _watch else "quick",
+	Game.start_match_loading({"home": _home, "away": _away, "venue": _venue, "mode": "watch" if _watch else "quick",
 		"user_team": -1 if _watch else 0, "knockout": _knockout, "difficulty": int(Game.settings.difficulty),
 		"grade": int(Game.settings.grade), "stage": tr("FRIENDLY") if not _knockout else tr("KNOCKOUT_GAME")})

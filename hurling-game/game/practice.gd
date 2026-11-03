@@ -38,6 +38,11 @@ var _view_to := Transform3D()  # where it eases to as he walks up
 ## High graphics and the smooth frame rate from before anything is built, for as long as the practice lasts; the
 ## player's own settings back after it (never saved while it lasts: _save_settings).
 func _enter_tree() -> void:
+	use_practice_graphics()
+
+
+## (Also before the loading overlay builds the practice's ground and crowd: Game.start_match_loading.)
+static func use_practice_graphics() -> void:
 	if not Game.has_meta("practice_gfx"):
 		Game.set_meta("practice_gfx", [int(Game.settings.graphics), int(Game.settings.get("fps", Game.FPS_SMOOTH))])
 	Game.settings.graphics = Game.GFX_HIGH
@@ -371,7 +376,8 @@ func on_back() -> void:
 func again() -> void:
 	var cfg: Dictionary = config.duplicate()
 	cfg.seed = rng.randi()
-	Game.start_match(cfg)
+	cfg.erase("stadium")
+	Game.start_match_loading(cfg)
 
 
 ## Never kept for later: a round is two minutes.

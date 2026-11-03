@@ -9,6 +9,13 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.23.0
+
+- **A loading screen when a match starts**: tap Throw-in, Watch AI, a championship match or free-taking practice and
+  the screen dims at once with "Loading…", a bar that fills as the ground, the crowd and the teams are built, a
+  spinner and a tip about the game. The buttons can't be tapped twice. (On a slow phone the game looked frozen for
+  several seconds.)
+
 ## New in 0.22.1
 
 - **The clang off the posts, properly this time**: the ping of the sliotar off the aluminium is played clear and

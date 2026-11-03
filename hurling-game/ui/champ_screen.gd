@@ -216,5 +216,5 @@ func _play(f: Dictionary) -> void:
 	var user := 0 if home == _c.user else 1
 	var stage := String(f.stage)
 	var venue := "county" if stage == "STAGE_GROUP" else ("stadium" if stage in ["STAGE_SEMI", "STAGE_FINAL"] else "county")
-	Game.start_match({"home": home, "away": away, "venue": venue, "mode": "champ", "user_team": user,
+	Game.start_match_loading({"home": home, "away": away, "venue": venue, "mode": "champ", "user_team": user,
 		"knockout": bool(f.knockout), "stage": tr(stage), "grade": int(Game.settings.grade)})

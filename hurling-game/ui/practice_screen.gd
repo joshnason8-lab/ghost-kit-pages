@@ -117,5 +117,5 @@ static func sparring(id: String) -> String:
 func _start() -> void:
 	Game.settings.practice_team = _team
 	Game.save_settings()
-	Game.start_match({"home": _team, "away": sparring(_team), "venue": VENUE, "mode": "practice", "user_team": 0,
+	Game.start_match_loading({"home": _team, "away": sparring(_team), "venue": VENUE, "mode": "practice", "user_team": 0,
 		"difficulty": int(Game.settings.difficulty), "grade": int(Game.settings.grade)})

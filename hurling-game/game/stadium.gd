@@ -16,6 +16,7 @@ var time := "day"
 ## every fan on Low, the stands the 3D fans do not reach on Medium and High.
 var crowd: WsgCrowdCards
 var venue: WsgCrowdVenue       # the ground's spectator sections (crowd_venue)
+var defer_crowd := false       # the crowd built later, by build_deferred_crowd (a step of the loading overlay)
 ## On Medium and High the nearer fans are whole 3D people (the foundation's WsgCrowd3D), the rest stay cut-outs.
 var crowd3d: WsgCrowd3D
 var _seats := {}            # spot index -> how far behind the feet the step behind rises above the seat (m; INF: it
@@ -91,15 +92,23 @@ func _ready() -> void:
 	net.build(H + Pitch.POST_W * 0.5, time)
 	add_child(net)
 	_spots = spots
-	_crowd()
+	# (Built by the loading overlay's own step when it is the one building the ground: Game.start_match_loading.)
+	if not defer_crowd:
+		_crowd()
 	_environment()
 
 
 ## The crowd, as many as the graphics level seats.
-func _crowd() -> void:
+## The crowd held back from _ready (defer_crowd), built now: round focus at quality (-1: the graphics level's).
+func build_deferred_crowd(focus := CROWD_FOCUS, quality := -1) -> void:
+	if crowd == null:
+		_crowd(focus, quality)
+
+
+func _crowd(focus := CROWD_FOCUS, quality := -1) -> void:
 	crowd = WsgCrowdCards.new()
 	add_child(crowd)
-	build_crowd(CROWD_FOCUS, int(Game.settings.graphics))
+	build_crowd(focus, quality if quality >= 0 else int(Game.settings.graphics))
 	_flags()
 
 
@@ -163,7 +172,11 @@ func _baked_light() -> void:
 ## Medium and High the 3D fans take the places nearest focus (as many as quality's budget: 1 Medium, 2 High, 3 Close -
 ## a practice or a shoot-out, the camera near one goal and few players to draw), the cards the rest; on Low all cards.
 ## Built again when the camera's place changes (the shoot-out, the practice: behind the goal they shoot at).
+var crowd_key := []            # [focus, quality] the crowd was last built for
+
+
 func build_crowd(focus: Vector3, quality: int) -> void:
+	crowd_key = [focus, quality]
 	if venue == null:
 		venue = crowd_venue()
 	var seed := hash(kind)

@@ -1,7 +1,7 @@
 keys,en,ga
 GAME_TITLE,Hurling Heroes,Hurling Heroes
 TAGLINE,"Hurling, as it is played.","An iománaíocht, mar a imrítear í."
-LOADING,Lining the pitch…,Ag marcáil na páirce…
+LOADING,Loading…,Ag lódáil…
 MENU_QUICK,Throw-in,Caitheamh isteach
 MENU_QUICK_DESC,Pick two counties and a ground. Play now.,Roghnaigh dhá chontae agus páirc. Imir anois.
 MENU_CHAMP,The Summer Championship,Craobh an tSamhraidh
@@ -457,3 +457,7 @@ PRACTICE_CH_TITLE,POST CHALLENGE!,DÚSHLÁN CUAILLE!
 PRACTICE_CH_HIT_SUB,Off the post! +{n},Den chuaille! +{n}
 TALLY_TODAY,%s today,%s inniu
 WATCH_BACK,Watch it back,Féach arís air
+LOAD_TIP_1,"For a free, tap SHOOT to stop the target, then SHOOT again with the marker in the green.","Le haghaidh saorphoc, brúigh SHOOT chun an sprioc a stopadh, ansin SHOOT arís leis an marcóir sa ghlas."
+LOAD_TIP_2,Points over the bar are worth one; a goal under it is worth three.,Is fiú pointe amháin thar an trasnán; is fiú trí phointe cúl faoi.
+LOAD_TIP_3,Tap SOLO to bounce the sliotar on your hurley as you run.,Brúigh SOLO chun an sliotar a phreabadh ar do chamán agus tú ag rith.
+LOAD_TIP_4,A hook from behind or a block from in front wins the ball back without a foul.,Buaileann cor ón gcúl nó bac ón tosach an liathróid ar ais gan calaois.
