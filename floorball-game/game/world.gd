@@ -64,6 +64,13 @@ func find_officials(root: Node) -> Array:
 	return out
 
 
+## The players as the check reads bodies: the shared foundation's, those drawn (a match keeps its substitutes and Penalty
+## shots its idle players hidden, off the rink: their bodies are not drawn and not posed).
+func find_bodies(root: Node) -> Array:
+	return super(root).filter(func(b: Node) -> bool: return (b as Node3D).is_visible_in_tree() or \
+		(b.get_parent() as Node3D).is_visible_in_tree())
+
+
 ## Two referees on the rink in a match and a match watched; none in Penalty shots (the shooter and the goalkeeper only).
 func officials(mode: String) -> int:
 	return 0 if mode == "penalty shots" else 2

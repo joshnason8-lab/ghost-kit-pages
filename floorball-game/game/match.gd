@@ -2449,14 +2449,17 @@ var _rank_t := 0.0
 ## number: WsgFoundation.rank_detail), every half second.
 func _rank_bodies(delta: float) -> void:
 	_rank_t -= delta
-	if _rank_t > 0.0 or cam == null:
+	if _rank_t > 0.0:
 		return
 	_rank_t = 0.5
 	var bodies := []
 	for p: Player in everyone() + sitters[0] + sitters[1]:
-		if p.link and p.link.body and p.visible:
-			bodies.append(p.link.body)
-	if not bodies.is_empty():
+		if p.link and p.link.body:
+			if p.is_visible_in_tree():
+				bodies.append(p.link.body)
+			else:
+				p.link.body.set_detail(false)     # (unseen - a substitute off the rink: light till he is shown and ranked)
+	if not bodies.is_empty() and cam != null:
 		WsgFoundation.rank_detail(bodies, cam.global_position)
 
 
