@@ -56,6 +56,10 @@ func play_seconds(_mode: String) -> float:
 func start_mode(mode: String, parent: Node) -> void:
 	Game.settings.sound = false
 	Game.settings.coach = false
+	# A tap replaces what the last one started: the match up now goes, as Game.start_match's swap does.
+	if Game.current != null and is_instance_valid(Game.current):
+		Game.current.queue_free()
+	Game.current = null
 	Game.main = parent
 	var host := Control.new()
 	host.name = "Menu"
