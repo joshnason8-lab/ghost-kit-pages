@@ -320,6 +320,10 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the net, the whistles and the ball's bounces now carry no distance filter and are heard from 30 m at most), the
   stick through CameraRig.court_dir on the TV, Low and End cameras, the props and crowd registries, set_tier as the
   Settings screen sets it. CI runs it after the props audit (artifact `world-check`); the job's timeout is 120 min.
+  Foundation now d4e3107 (the planter's feet within 2 cm, no doubled running landings); netball-arms' defend (arms up
+  toward the ball, soft elbows) merged. Our model on the planter: walk 1.6 cm worst slip, jog 0.5, turned 1.1, run
+  0.2, stop 0.0; cadence sprinting and cutting at 6 m/s 3.1 landings a second. perf_probe Low peaks (draw calls /
+  triangles): arena 99/53.9k, hall 100/72.4k, park 99/56.9k (draw calls as before; the solids are not drawn).
 - **A loading screen on every Start button** (the owner: "when you click start game there is a loading delay ...
   users might think the game has frozen"; it was one main-thread stall, 238-1252 ms desktop Low, 600-1040 Medium):
   the foundation synced to 2cd59a7 for its WsgLoading (ADOPTING 5.14). `Game.start_match_loading(config)` serves
