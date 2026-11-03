@@ -358,6 +358,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   excuses, deferrals; the fetch hook, enforced from 2026-11-04 12:00 UTC, asked of the lead: our players never leave
   the court, so none can fetch a ball from behind a prop).
 
+- **0.6.16-beta: the lead's decisions on the simulator's report.** The cup is seeded (the draw and the other games'
+  results from a seed saved with it) and runs in the sim (targeted:cup, with RuleChecks.cup on the whole cup after the
+  game). The sim's balance is split by who plays home: the harness's random input lost all 23 matches it played at
+  home, which is the harness, not the game; computer against computer the stronger side won 13 of 14, home or away
+  (tests/balance_sim for 200-seed cells). Feet deferred with the lead's word until 2026-11-06 12:00 UTC (the sim's foot
+  slip; the world check's feet rule once the world check reads deferrals).
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
