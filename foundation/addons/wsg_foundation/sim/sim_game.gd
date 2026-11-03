@@ -54,6 +54,17 @@ func ball() -> Dictionary:
 	return {}
 
 
+## The fetch-behind-prop case (WsgSim.FETCH_KIND, in every smoke batch): WsgSim puts SPOT behind one of the venue's
+## largest props (the side away from the field's middle, where a body can stand) and the game sends the ball (or what
+## its bodies fetch) there, dead, as a ball gone out would be, and one of its bodies to fetch it as its AI would.
+## Returns {"who": that body's name (as bodies() gives it), "seconds": how long it may take (WsgSim.FETCH_S),
+## "arrive": m from SPOT that counts as there (WsgSim.FETCH_ARRIVE_M)}; {}: not wired (the match ends, noted, no fail).
+## The body must get there within the time, never into a prop on the way (Sepak Takraw's fetcher froze, turning back
+## and forth in front of a bench).
+func fetch(_spot: Vector3) -> Dictionary:
+	return {}
+
+
 ## The venue's solid props (WsgSolidProps), or null.
 func solid() -> WsgSolidProps:
 	return null

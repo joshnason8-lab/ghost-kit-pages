@@ -519,3 +519,17 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   1.9). Fixes: the locomotor no longer starts a walk mid-stop (it read the body's speed as asked-for); a released toe
   and a step's toe keep their place on the floor. tests/feet_scale_test.gd. Also f151f52: the T/A-pose check uses
   bands and sideways arms (Netball's overhead catches were flagged).
+- **Nightly for every game (draft PR #19 to main, branch claude/wsg-nightly-dispatcher):** `.github/workflows/wsg-nightly.yml`
+  on main dispatches each game branch's `*-sim.yml` (workflow_dispatch, ref the branch) at 03:43 UTC. Scheduled runs
+  fire only from the default branch, so the games' own crons never ran. A game without a sim workflow, or one without
+  workflow_dispatch, is skipped with a warning. Today only Kho Kho has one. Remove a branch from GAME_BRANCHES once
+  that game is merged into main.
+- **Sepak Takraw's frozen fetcher (back and forth in front of a bench):**
+  - WsgSim's **no progress** check: moving, but no closer to a target that stays put, for 10 s.
+  - The **fetch behind a prop** case (`targeted:fetch_behind_prop`, in every smoke batch). The ball is placed behind
+    one of the venue's 3 largest props, and the fetcher must get there in time without going into a prop. It needs
+    the game's `WsgSimGame.fetch`; until then the report notes "not wired".
+  - WsgSolidProps' **steer-flip warning**: 4 changes of side round one prop in 90 calls, reported under Warnings.
+  - The demo's `bug:fetch_dither` is caught by all three.
+  - ADOPTING §5.17. The tiers rule now reports triangles left outside start_mode's parent (Hurling's trap; §5.18).
+  - The demo smoke's one failure, `extreme#40` out of bounds, predates this change: the previous commit fails it too.

@@ -31,6 +31,8 @@ var _bug := ""
 var _shot_from := Vector3.ZERO
 var _last_touch := -1         # who last played the ball (a shot or a pass) ...
 var _touch_until := 0.0       # ... cannot touch it again until then (it was re-catching its own shots: no goals)
+var fetch_spot := Vector3.INF # the ball dead behind a prop (WsgSim's fetch case) ...
+var fetcher := -1             # ... and who goes for it
 
 
 func setup(config: Dictionary, seed: int) -> void:
@@ -126,6 +128,12 @@ func _think(i: int, dt: float) -> void:
 	if _bug == "wallclock" and Time.get_ticks_usec() % 2 == 1:
 		tgt += Vector3(0, 0, 1.5)
 	tgt = Vector3(clampf(tgt.x, -HALF_L - 1.5, HALF_L + 1.5), 0, clampf(tgt.z, -HALF_W - 0.5, HALF_W - 0.5))
+	if i == fetcher:
+		tgt = Vector3(fetch_spot.x, 0, fetch_spot.z)
+		if _bug == "fetch_dither":
+			# (Its side round the prop forgotten and chosen again each third of a second, the other way: Sepak Takraw's
+			# fetcher, turning back and forth in front of a bench.)
+			p.memo["side"] = 1.0 if int(t * 3.0) % 2 == 0 else -1.0
 	p.target = solid.free_spot(tgt, R, H)
 	var want: Vector3 = p.target - p.pos
 	want.y = 0.0
@@ -154,7 +162,14 @@ func _think(i: int, dt: float) -> void:
 		(p.loco as WsgLocomotor).drive(dt, p.vel, p.facing, asked)
 	# Picking the ball up.
 	if holder < 0 and (Vector2(ball_pos.x - p.pos.x, ball_pos.z - p.pos.z)).length() < 0.6 and ball_pos.y < 0.6 \
-			and not (i == _last_touch and t < _touch_until):
+			and not (i == _last_touch and t < _touch_until) and (fetcher < 0 or i == fetcher):
+		if fetcher >= 0:
+			# (Fetched: back in at the line, the other side's ball, as any ball gone out.)
+			fetcher = -1
+			fetch_spot = Vector3.INF
+			ball_pos = Vector3(clampf(ball_pos.x, -HALF_L + 0.5, HALF_L - 0.5), BALL_R, clampf(ball_pos.z, -HALF_W + 0.5, HALF_W - 0.5))
+			events.append({"type": "out", "to": 1 - team})
+			return
 		if holder != i:
 			events.append({"type": "possession", "team": team})
 		holder = i
@@ -190,7 +205,27 @@ func _pass(i: int) -> void:
 	events.append({"type": "pass", "team": p.team})
 
 
+## The ball dead at SPOT (behind a prop), the nearest player sent for it: its index.
+func fetch(spot: Vector3) -> int:
+	holder = -1
+	fetch_spot = spot
+	ball_pos = spot + Vector3(0, BALL_R, 0)
+	ball_vel = Vector3.ZERO
+	var bd := INF
+	for j in players.size():
+		var d: float = (players[j].pos as Vector3).distance_to(spot)
+		if d < bd:
+			bd = d
+			fetcher = j
+	events.append({"type": "fetch", "who": fetcher})
+	return fetcher
+
+
 func _ball(dt: float) -> void:
+	if fetch_spot != Vector3.INF and holder < 0:
+		ball_pos = fetch_spot + Vector3(0, BALL_R, 0)
+		ball_vel = Vector3.ZERO
+		return
 	if holder >= 0:
 		var hp: Vector3 = players[holder].pos
 		ball_pos = hp + Vector3(0.3 * sin(players[holder].facing), BALL_R, 0.3 * cos(players[holder].facing))

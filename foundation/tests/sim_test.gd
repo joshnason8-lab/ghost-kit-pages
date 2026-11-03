@@ -1,7 +1,8 @@
 extends SceneTree
 ## WsgSim proves itself on its demo game (tests/sim_demo): a clean batch passes; every check catches the bug it is
 ## for (each a switch in the demo: a score jumping by two, a stuck player, an endless match, a NaN ball, a script error,
-## a clock running backwards, a player walking through the bench, a ball through it) under its own signature; a
+## a clock running backwards, a player walking through the bench, a ball through it, a fetcher turning back and forth
+## in front of the bench) under its own signature; the ball fetched from behind each big prop; a
 ## failure replays from its seed; the same seed twice is the same match frame for frame, and a decision on the wall
 ## clock is caught diverging; the RNG lint finds a bare randf; the menu fuzzer walks every screen and catches a broken
 ## button and a dead end; a frozen match is recorded by the shard runner and the batch goes on.
@@ -39,6 +40,19 @@ func _initialize() -> void:
 		print("bug %-14s -> %s (%s)" % [bug, checks, first])
 		if not checks.has(want[bug]):
 			fails.append("the %s bug was not caught by the %s check (got %s)" % [bug, want[bug], checks])
+	# The fetch-behind-prop case: the ball behind each of the three largest props, fetched in time, nothing warned;
+	# a fetcher turning back and forth in front of the bench (Sepak Takraw's freeze) caught by no progress and the
+	# fetch's time, its steering warned of.
+	for sd in [1, 2, 3]:
+		var r: Dictionary = await sim.run(game, WsgSim.FETCH_KIND, sd, self)
+		print("fetch #%d: %s%s" % [sd, r.get("fetch", "-"), "" if r.ok else " FAILED %s" % [(r.failures as Array).map(func(f: Dictionary) -> String: return f.message)]])
+		if not r.ok or not String(r.get("fetch", "")).contains("reached") or r.has("warnings"):
+			fails.append("a clean fetch behind a prop (seed %d): %s %s %s" % [sd, r.get("fetch", "-"), r.failures, r.get("warnings", [])])
+	var rd: Dictionary = await sim.run(game, "bug:fetch_dither", 3, self)
+	var dchecks := (rd.failures as Array).map(func(f: Dictionary) -> String: return f.check)
+	print("bug fetch_dither -> %s, warnings %s" % [dchecks, rd.get("warnings", [])])
+	if not dchecks.has("no progress") or not dchecks.has("fetch") or not str(rd.get("warnings", [])).contains("steer flip"):
+		fails.append("the fetcher turning back and forth was not caught (no progress, fetch, steer flip): %s %s" % [dchecks, rd.get("warnings", [])])
 	# The endless match also ends as "endless" (the clock stood still, then the limit).
 	if not (caught.endless as Array).has("endless"):
 		fails.append("an endless match was not reported as endless: %s" % [caught.endless])

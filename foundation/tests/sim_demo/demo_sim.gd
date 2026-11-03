@@ -46,6 +46,8 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 		"bodies":
 			c.bodies = true
 			c.half = 15.0
+	if kind.begins_with("bug:fetch"):
+		c.fetch_behind_prop = true
 	if kind.begins_with("bug:"):
 		c.bug = kind.substr(4)
 		c.half = 20.0
@@ -92,7 +94,13 @@ func bodies() -> Array:
 
 
 func ball() -> Dictionary:
-	return {"pos": m.ball_pos, "radius": 0.11, "live": m.holder < 0}
+	return {"pos": m.ball_pos, "radius": 0.11, "live": m.holder < 0 and m.fetch_spot == Vector3.INF}
+
+
+## The fetch-behind-prop case: the ball dead at SPOT, the nearest player sent for it.
+func fetch(spot: Vector3) -> Dictionary:
+	var i: int = m.fetch(spot)
+	return {"who": "%s %d" % [["home", "away"][m.players[i].team], i % 3 + 1], "seconds": 20.0}
 
 
 func solid() -> WsgSolidProps:

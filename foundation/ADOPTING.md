@@ -1079,6 +1079,7 @@ test_runner); it is not a second copy of your game.
 | `bodies()` | `[{name, pos, radius, height, body (WsgBody), active, target}]` |
 | `ball()` | the ball's position, radius and whether it's in play |
 | `solid()` | your WsgSolidProps |
+| `fetch(spot)` | the ball dead at `spot` (behind a big prop) and one body sent for it: `{who, seconds, arrive}` |
 | `bounds()` | where anything may ever be |
 | `score_steps()` | how much one side's score may go up at once (e.g. `[1, 3]`) |
 | `max_seconds(config)` | the most simulated time a match may take |
@@ -1107,6 +1108,26 @@ For the human and the menus:
 - **The score:** going down, or up by a step not in `score_steps()`.
 - **The clock:** running backwards within a phase, jumping, or standing still while running.
 - **Stuck bodies:** a body that is active, with its target more than 1.5 m away, and has hardly moved for 6 s.
+- **No progress:** a body that is active and moving (over 2 m), but has got no closer to its target (by 0.5 m) for
+  10 s. The target must stay put (within 1 m) and be a spot a body can stand on, in the bounds and clear of props.
+  This is a body turning back and forth in front of a prop, which "stuck" does not see because it keeps moving.
+  Sepak Takraw's fetcher froze this way in front of a bench.
+- **The fetch behind a prop** (`targeted:fetch_behind_prop`, added to every smoke batch and nightly rotation):
+  1. At 1 s, WsgSim picks a spot behind one of the venue's 3 largest props, in turn by seed. The spot is on the side
+     away from the field's middle, or round it if that side is out or blocked, and clear of every prop.
+  2. It calls your `fetch(spot)`. You put the ball there, dead, as a ball gone out would be (report it as not live in
+     `ball()`), and send one body for it as your AI would.
+  3. You return `{"who": that body's name, "seconds": the time it may take (default 20), "arrive": metres from the
+     spot that count as there (default 1)}`.
+  4. The body must get there in time, and never go into a prop on the way.
+
+  Not wired (`{}`, the default), the match ends at once and the report says so under Warnings. Nothing fails yet; wire
+  it. A targeted kind of your own can run the same case by setting `fetch_behind_prop: true` in its config.
+- **Steering back and forth** (a warning, not a failure): WsgSolidProps counts a body changing sides round one prop
+  4 times within 90 `steer` calls. It warns once per body and prop (`flip_warnings`, and a `push_warning`), and the
+  report lists it under Warnings. The usual cause is a goal straight behind a long prop with the body's `memo` lost
+  or rebuilt every frame (keep one `memo` per body for good), or a goal flipping sides. Walk such a body round the
+  prop with `path()`.
 - **Endless matches:** past `max_seconds`.
 - **Props:** a body more than 2 cm into a prop, or the ball through one.
 - **Feet and poses:** a planted foot slipping more than 2 cm in a step, or a T-pose or A-pose. A quarter of your
@@ -1326,6 +1347,13 @@ on any phone. Build what the player's tier allows. If the owner lets a mode run 
 `tier_exceptions()`. Tests that build a High or Close crowd set `WsgFoundation.tier = WsgFoundation.HIGH` first (the
 foundation's crowd tests and notes now do). The frame budgets are set from Hurling's national stadium with about 15%
 room (docs/BUDGET.md); send me your numbers if a venue of yours needs more.
+
+**`start_mode` must replace whatever the last call started, as a real tap does.** The tiers rule starts every mode
+three times, one after another. Hurling's `start_mode` left the previous match drawing while the next one started, so
+the tiers rule measured both: 524k triangles and 154 draw calls at Low. Free or replace the previous mode in your own
+start code, as your menu does when a player taps. Better still, build everything under the `parent` you are given:
+the rule frees that parent after each mode. Each tiers line now says how many triangles were left outside that parent.
+A number that grows from mode to mode is the last mode still drawing.
 
 The foundation's own world is `tests/world_demo/world.gd`. It passes every rule, and `tests/world_check_test.sh` shows
 that each fault fails its own rule and only that rule.
