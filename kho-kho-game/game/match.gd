@@ -330,7 +330,9 @@ func defending() -> int:
 
 func _bench_pos(side: int, i: int) -> Vector3:
 	var W: float = f.width * 0.5
-	var z: float = -(W + f.lobby + 1.7)
+	# In front of the teams' benches (which stand at W + lobby + 1.5 to 1.9), clear of the tents' front poles (W + lobby
+	# + 0.4): until 0.12.2 they knelt on the benches' own place, inside them (the owner: nobody through a bench).
+	var z: float = -(W + f.lobby + 1.0)
 	var s := -1.0 if side == 0 else 1.0
 	return Vector3(s * (4.6 + i * 0.75), 0, z)
 
