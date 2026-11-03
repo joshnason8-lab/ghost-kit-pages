@@ -609,11 +609,13 @@ func _aimed_penalty() -> void:
 	var guard := 0
 	var close_seen := false
 	while (String(m._so.get("stage", "")) != "run" or (m._so.shooter as Player).pos.x * float(m._so.dir) < 6.0) and guard < 60 * 12:
+		m.touch.joystick = Vector2(0, -1)   # (you skate him in)
 		await get_tree().physics_frame
 		close_seen = close_seen or not m.penalty_view().is_empty()
 		guard += 1
 	check(close_seen and m.cam._close, "your penalty shot: the close camera behind the shooter")
 	check(m.touch.ids == ["SHOOT", "DEKE"], "your penalty shot: SHOOT and DEKE (%s)" % [m.touch.ids])
+	m.touch.joystick = Vector2.ZERO
 	m._on_action("SHOOT")
 	check(bool(m._so.get("winding", false)), "SHOOT winds up")
 	await get_tree().physics_frame

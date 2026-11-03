@@ -345,8 +345,13 @@ func _ground(dt: float) -> void:
 			continue
 		var y := (sk.global_transform * sk.get_bone_global_pose(b)).origin.y - body.global_position.y
 		want = maxf(want, float(_feet_rest[b]) - y)
+	var was := _lift
 	_lift = want if want > _lift else move_toward(_lift, want, dt * 0.6)
 	body.position.y = _lift
+	# (The hands took the stick before this frame's lift: raised, it goes up with them for this frame; the next frame
+	# grips it with the lift in place. Let down, at most 1 cm a frame, it stays: the blade never into the floor.)
+	if _lift > was and stick and stick.visible:
+		stick.global_position.y += _lift - was
 
 
 ## Both hands closed round the shaft (the fingers' turns solved once, WsgGrip, then laid on each time).
