@@ -30,6 +30,7 @@ var in_goal := 0            # the end whose net holds it (after a goal), or 0
 var tries := {}             # players who have had their one try at it since it was last struck (match._pickups)
 var live := true            # in play: out-of-play and goal-line checks run
 var doors: Array = []       # the arena's doors' openings (Arena.door_open): a shut door is a board
+var solid: WsgSolidProps = null   # the hall's props (Arena.solid): a ball over the boards bounces off them
 var _carry_target := Vector3.ZERO
 var _mesh: MeshInstance3D
 var _shadow: MeshInstance3D
@@ -290,6 +291,17 @@ func step(dt: float) -> void:
 			vel.x = h.x
 			vel.z = h.y
 	var prev := pos
+	if not live and solid != null and not Rules.in_rink(floor_pos(), R):
+		# Over the boards (out of play): it flies on among the hall's props - the benches, the table, the glass, the
+		# stands - and bounces off them by their material (WsgSolidProps.bounce: swept, never through one).
+		var hit_cb := func(h: Dictionary) -> void:
+			if float(h.get("speed", 0.0)) > 1.2:
+				hit.emit("board", float(h.speed))
+		var r: Dictionary = solid.bounce(pos, vel, R, dt, hit_cb)
+		pos = r.pos
+		vel = r.vel
+		_place()
+		return
 	pos += vel * dt
 	if pos.y < R:
 		pos.y = R
@@ -347,6 +359,8 @@ func _collide_boards() -> void:
 		live = false
 		out_of_play.emit(p)
 		return
+	if not live and solid != null:
+		return   # (out of play outside the rink: it flies on among the props, step())
 	var c: Array = Rules.board_contact(p)
 	var n: Vector2 = c[1]
 	var back: Vector2 = c[0] + n * (R + 0.001)

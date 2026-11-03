@@ -126,6 +126,9 @@ func _ready() -> void:
 	signage = Signage.new()
 	add_child(signage)
 	_ads = Geo.new()
+	solid.add({"name": "floor", "kind": "floor", "y": 0.0, "material": "plastic"})
+	solid.skip("the rink's boards and their doors", "the game's own analytic test: Rules.board_contact, Rules.through_door (a door opens)")
+	solid.skip("the ceiling, its trusses, scoreboards and folded basketball boards", "over 8 m up: no ball or body reaches them")
 	_structure(v)
 	_env(venue, float(v.light))
 	_floor()
@@ -823,6 +826,18 @@ func _goals() -> void:
 		var gh := Rules.GOAL_H
 		var pl := Vector3(x, 0, -hw)
 		var pr := Vector3(x, 0, hw)
+		# Solid: the frame to the ball and bodies (the ball's own test is the game's, Ball._collide_goals: the same
+		# tubes); the net to bodies only (the ball in it is the game's net), the mouth open.
+		var gname := "goal %s" % ("left" if end < 0 else "right")
+		for zz: float in [-hw, hw]:
+			solid.add({"name": gname + " post", "kind": "cylinder", "position": Vector3(x, 0, zz), "radius": r, "height": gh, "material": "metal"})
+			solid.add({"name": gname + " frame", "kind": "capsule", "a": Vector3(x, r, zz), "b": Vector3(back, r, zz), "radius": r, "material": "metal"})
+			solid.add({"name": gname + " net side", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3((x + back) * 0.5, gh * 0.5, zz)),
+				"size": Vector3(Rules.GOAL_D, gh, 0.02), "material": "net", "ball": false})
+		solid.add({"name": gname + " crossbar", "kind": "capsule", "a": Vector3(x, gh, -hw), "b": Vector3(x, gh, hw), "radius": r, "material": "metal"})
+		solid.add({"name": gname + " frame back", "kind": "capsule", "a": Vector3(back, r, -hw), "b": Vector3(back, r, hw), "radius": r, "material": "metal"})
+		solid.add({"name": gname + " net back", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(back, gh * 0.5, 0)),
+			"size": Vector3(0.02, gh, Rules.GOAL_W), "material": "net", "ball": false})
 		# Posts and crossbar, the bottom frame round the back, the back's sloping supports.
 		_lit.cylinder(pl, pl + Vector3(0, gh, 0), r, r, red, seg, false)
 		_lit.cylinder(pr, pr + Vector3(0, gh, 0), r, r, red, seg, false)
@@ -863,6 +878,12 @@ func _bench(cx: float, z: float, length: float, facing: int, seats_col: Color, b
 	var seat_y := 0.44
 	var x0 := cx - length * 0.5
 	var x1 := cx + length * 0.5
+	var bname := "%s bench at %.1f" % ["far" if facing < 0 else "near", cx]
+	solid.add({"name": bname + " seat", "kind": "box", "position": Vector3(cx, 0, z), "size": Vector3(length, seat_y + 0.025, 0.42), "material": "plastic"})
+	solid.add({"name": bname + " seat back", "kind": "box", "position": Vector3(cx, seat_y, z + 0.2 * facing), "size": Vector3(length, 0.4, 0.04), "material": "plastic"})
+	if back_h > 0.0:
+		solid.add({"name": bname + " plexiglass", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(cx, back_h * 0.5, z + 0.38 * facing)),
+			"size": Vector3(length + 0.05, back_h, 0.02), "material": "glass"})
 	_lit.box(Vector3(cx, seat_y, z), Vector3(length, 0.05, 0.42), Color(seats_col, 0.5))
 	var legs := maxi(2, int(length / 2.0) + 1)
 	for k in legs:
@@ -903,10 +924,17 @@ func _benches() -> void:
 		# Plexiglass ends to the penalty bench.
 		for e: int in [-1, 1]:
 			var ex := side * 2.2 + e * 1.0
+			solid.add({"name": "penalty bench end", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(ex, 0.475, Rules.HALF_W + 0.925)),
+				"size": Vector3(0.02, 0.95, 1.55), "material": "glass"})
 			_see._tri_quad(Vector3(ex, 0.95, Rules.HALF_W + 0.15), Vector3(ex, 0.95, Rules.HALF_W + 1.7),
 				Vector3(ex, 0.0, Rules.HALF_W + 1.7), Vector3(ex, 0.0, Rules.HALF_W + 0.15), Vector3(-e, 0, 0), Color(0.82, 0.9, 0.95, 0.12))
 	# The secretariat: a table with a white top and a skirt with the game's name toward the rink, two chairs, laptops.
 	var tz := Rules.HALF_W + 1.5
+	solid.add({"name": "secretariat table", "kind": "box", "position": Vector3(0, 0, tz), "size": Vector3(1.8, 0.78, 0.75), "material": "wood"})
+	for k: int in [-1, 1]:
+		solid.add({"name": "secretariat chair", "kind": "box", "position": Vector3(k * 0.42, 0, tz + 0.55), "size": Vector3(0.42, 0.475, 0.4), "material": "plastic"})
+		solid.add({"name": "secretariat chair back", "kind": "box", "position": Vector3(k * 0.42, 0.475, tz + 0.74), "size": Vector3(0.42, 0.45, 0.04), "material": "plastic"})
+	solid.skip("secretariat laptops", "two laptops on the table: inside its box")
 	_lit.box(Vector3(0, 0.76, tz), Vector3(1.8, 0.04, 0.75), Color(0.95, 0.95, 0.96, 0.5))
 	_lit.face(Vector3(-0.9, 0, tz - 0.36), Vector3(0.9, 0, tz - 0.36), 0.05, 0.74, Vector3.ZERO, Color(1, 1, 1, 0.5), s("ads1"), 0.0, 0.25)
 	_lit.face(Vector3(-0.9, 0, tz + 0.36), Vector3(0.9, 0, tz + 0.36), 0.05, 0.74, Vector3(0, 0, 30), Color(0.17, 0.19, 0.22, 0.6))
@@ -965,6 +993,9 @@ func _build_crowd() -> void:
 # ---------------------------------------------------------------- the hall
 
 func _walls(half_x: float, half_z: float, h: float, bands: Array, pale_ceiling := false) -> void:
+	for e: int in [-1, 1]:
+		solid.add({"name": "end wall", "kind": "box", "position": Vector3((half_x + 0.15) * e, 0, 0), "size": Vector3(0.3, h, half_z * 2.0 + 0.6), "material": "concrete"})
+		solid.add({"name": "side wall", "kind": "box", "position": Vector3(0, 0, (half_z + 0.15) * e), "size": Vector3(half_x * 2.0 + 0.6, h, 0.3), "material": "concrete"})
 	# Each band: [y0, y1, colour, strip, metres a repeat along, metres a repeat up]; round all four walls.
 	var corners := [Vector3(-half_x, 0, -half_z), Vector3(half_x, 0, -half_z), Vector3(half_x, 0, half_z), Vector3(-half_x, 0, half_z)]
 	for i in 4:
@@ -1026,6 +1057,7 @@ func _hall_school(walls: Color, half_x: float, half_z: float, h: float) -> void:
 	# Climbing ropes from a steel beam in the far corner (pushed to the wall for a match, clear of the cameras behind
 	# the goals), hanging clear of the floor.
 	var rz := -half_z + 0.7
+	solid.skip("climbing ropes", "soft hemp ropes hanging free: a ball or a body pushes them aside")
 	_lit.box(Vector3(-half_x + 2.9, h - 0.12, rz), Vector3(4.0, 0.2, 0.12), Color("5d636b"))
 	for k in 4:
 		var x := -half_x + 1.4 + k * 1.0
@@ -1057,6 +1089,9 @@ func _door(p: Vector3, n: Vector3) -> void:
 func _backboard_wall(p: Vector3, e: int) -> void:
 	var face_x := p.x - e * 1.2            # the board's face 1.2 m out from the wall (its baseline's place)
 	var y0 := 2.9
+	solid.add({"name": "basketball board", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(face_x, y0 + 0.525, 0)), "size": Vector3(0.03, 1.05, 1.8), "material": "glass"})
+	solid.add_ring({"name": "basketball rim", "centre": Vector3(face_x - e * (0.15 + 0.235), 3.05, 0), "radius": 0.235, "tube": 0.009, "axis": Vector3.UP, "material": "metal"})
+	solid.skip("basketball board bracket", "steel arms between the board and the wall, above head height and behind the board")
 	_board(Vector3(face_x, y0, 0), e, false)
 	# The bracket: two arms from the wall to the board's back, a brace below each.
 	var steel := Color("4a5058", 0.5)
@@ -1164,6 +1199,10 @@ func _bleachers() -> Array:
 		for k in 4:
 			var x := -12.0 + k * 8.0
 			at.append(Transform3D(Basis.IDENTITY, Vector3(x, lift, z)))
+			# Solid: each plank as a block down to its tier's floor (the bleacher's steel frame under it).
+			for row: Array in BLEACHER_ROWS:
+				solid.add({"name": "bleacher %d.%d plank" % [tier + 1, k + 1], "kind": "box", "position": Vector3(x, lift, z + float(row[1])),
+					"size": Vector3(7.9, float(row[0]), 0.38), "material": "metal"})
 			# The model's three planks: its first and last are seats (the last's feet on the middle one, a footboard);
 			# a fan on the middle plank would have the front row in their knees. Each its own one-row section.
 			var r0: Array = BLEACHER_ROWS[0]
@@ -1184,6 +1223,7 @@ func _bleachers() -> Array:
 			# The deck the back sections stand on: its front and sides dark steel.
 			var zf := z + BLEACHER_D * 0.5
 			var zb := z - BLEACHER_D * 0.5
+			solid.add({"name": "bleacher deck", "kind": "box", "position": Vector3(0, 0, z), "size": Vector3(32.0, lift, BLEACHER_D), "material": "metal"})
 			_lit.face(Vector3(-16, 0, zf), Vector3(16, 0, zf), 0.0, lift, Vector3(0, 0, 0), Color("2b2f35", 0.5))
 			_lit.flat(-16, zb, 16, zf, lift, Color("3a3f47", 0.6))
 			for e: int in [-1, 1]:
@@ -1203,6 +1243,11 @@ const SEAT_GAP := 0.05          # a seat's back this far in front of the riser b
 ## as it is built.
 var crowd_venue := WsgCrowdVenue.new(Vector3.ZERO, Vector2(Rules.LENGTH, Rules.WIDTH), 0.0)
 
+## The venue's props as solid shapes (the shared WsgSolidProps: the owner, "every asset was built to be a tangible
+## object"): declared as each is built. Bodies are pushed out of them; a ball over the boards bounces off them. The
+## rink's boards and its doors stay the game's own analytic test (Rules.board_contact, Rules.through_door).
+var solid := WsgSolidProps.new()
+
 
 ## Rows of seats along a long side (side -1: the far side, behind the benches; 1: the near side), rising; aisles
 ## between sections. Each row: its floor (where the feet go), a seat on it at the row's back, the seat's back (the
@@ -1221,6 +1266,10 @@ func _stands(side: int, rows: int, seat: Color, fascia: bool) -> Array:
 		var zw := zf - side * FOOTWELL
 		var l := Vector3(-half, 0, zw)
 		var r := Vector3(half, 0, zw)
+		solid.add({"name": "%s stand front wall" % ("far" if side < 0 else "near"), "kind": "box", "position": Vector3(0, 0, zw + side * 0.075),
+			"size": Vector3(half * 2.0, y_front, 0.15), "material": "concrete"})
+		solid.add({"name": "%s stand glass" % ("far" if side < 0 else "near"), "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(0, y_front + 0.4, zw)),
+			"size": Vector3(half * 2.0, 0.9, 0.02), "material": "glass"})
 		_glow.face(l, r, 0.25, y_front - 0.05, rink, Color.WHITE, s("led"), 0.0, 30.0 / 8.0)
 		_lit.face(l, r, 0.0, 0.25, rink, Color("1b1e23"))
 		_see.face(l, r, y_front - 0.05, y_front + 0.85, rink, Color(0.8, 0.88, 0.95, 0.12))
@@ -1237,6 +1286,8 @@ func _end_stands(end: int, rows: int, seat: Color) -> Array:
 	var rink := Vector3.ZERO
 	var xf0 := x0 - end * ROW_DEPTH * 0.5
 	var xw := xf0 - end * FOOTWELL
+	solid.add({"name": "end stand front wall", "kind": "box", "position": Vector3(xw + end * 0.075, 0, 0), "size": Vector3(0.15, 1.0, half * 2.0), "material": "concrete"})
+	solid.add({"name": "end stand glass", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(xw, 1.4, 0)), "size": Vector3(0.02, 0.9, half * 2.0), "material": "glass"})
 	_glow.face(Vector3(xw, 0, -half), Vector3(xw, 0, half), 0.25, 0.95, rink, Color.WHITE, s("led"), 0.3, 22.0 / 8.0)
 	_lit.face(Vector3(xw, 0, -half), Vector3(xw, 0, half), 0.0, 0.25, rink, Color("1b1e23"))
 	_see.face(Vector3(xw, 0, -half), Vector3(xw, 0, half), 0.95, 1.85, rink, Color(0.8, 0.88, 0.95, 0.12))
@@ -1281,6 +1332,11 @@ func _tiers(a: Vector3, b: Vector3, away: Vector3, rows: int, kind: Dictionary, 
 		var fb: Vector3 = at.call(length, front)
 		var ba: Vector3 = at.call(length, back)
 		var steel := r < steel_rows
+		# Solid: the row as a block from the floor to its tread (its seats are where the fans sit: theirs).
+		var mid_r: Vector3 = at.call(length * 0.5, (front + back) * 0.5)
+		var yaw_r := atan2(along.x, along.z) - PI * 0.5
+		solid.add({"name": "%s row %d" % [name, r + 1], "kind": "box", "position": Vector3(mid_r.x, 0, mid_r.z), "yaw": yaw_r,
+			"size": Vector3(length, f, ROW_DEPTH), "material": "metal" if steel else "concrete"})
 		# The riser up to this row's floor, and the floor.
 		if steel:
 			_lit.face(fa, fb, f_prev, f, rink, Color("2b2f35", 0.5))
@@ -1362,6 +1418,7 @@ func _wall_bars(side: int, half_x: float, half_z: float) -> void:
 	var count := 12 if venue == "school" else 8
 	for i in count:
 		var x := -float(count) * 1.2 + i * 2.4
+		solid.add({"name": "wall bars", "kind": "panel", "xf": Transform3D(Basis.IDENTITY, Vector3(x + 0.45, 1.4, z)), "size": Vector3(0.96, 2.8, 0.06), "material": "wood"})
 		for k in 2:
 			_lit.box(Vector3(x + k * 0.9, 1.4, z), Vector3(0.06, 2.8, 0.06), Color("b08a56", 0.5))
 		for j in 9:
@@ -1450,7 +1507,12 @@ func _fittings() -> void:
 			if venue == "school" and side < 0 and x > 19.0:
 				continue   # the ropes' corner
 			benches.append(Transform3D(Basis.IDENTITY, Vector3(x * side, 0, -_half.y + 0.2)))
+			solid.add({"name": "gym bench", "kind": "box", "position": Vector3(x * side, 0, -_half.y + 0.2), "size": Vector3(3.0, 0.33, 0.3), "material": "wood"})
 	_place("seating/gym_bench_pale", benches, true)
+	for sg in signs:
+		if venue == "hall" and not _low:
+			solid.add({"name": "wet floor sign", "kind": "box", "position": (sg as Transform3D).origin, "yaw": (sg as Transform3D).basis.get_euler().y, "size": Vector3(0.3, 0.62, 0.3), "material": "plastic"})
+	solid.skip("wall clocks, fire alarm call points", "flat on the walls, over 1.3 m up")
 
 
 ## Places copies of a model from assets/shared, one MultiMeshInstance3D for each mesh in it (so a draw call a surface

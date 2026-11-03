@@ -63,6 +63,7 @@ func _ready() -> void:
 		var w := AudioStreamPlayer3D.new()
 		w.unit_size = 12.0
 		w.max_distance = 90.0
+		w.attenuation_filter_db = 0.0   # (crisp at any distance: a whistle is heard sharp across the hall, only quieter)
 		w.bus = "Hall"
 		add_child(w)
 		_whistles.append(w)
@@ -526,3 +527,14 @@ func _drums_loop() -> AudioStreamWAV:
 			var t := float(i) / RATE
 			out[j] += sin(TAU * lerpf(95.0, 55.0, minf(1.0, t / 0.12)) * t) * exp(-t * 9.0) * 0.8
 	return _to_stream(out, true)
+
+
+## The kinds of sound played crisp at any distance (no muffling filter): every ball and stick sound and the boards (heard
+## as at the rink, not placed), and the referees' whistles (placed, their distance filter off). For the shared world
+## check's sounds rule (game/world.gd).
+func crisp_kinds() -> Array:
+	var out := ["shot", "pass", "touch", "clack", "post", "net", "board", "save"]
+	if not _whistles.is_empty() and _whistles.all(func(w: AudioStreamPlayer3D) -> bool: return is_zero_approx(w.attenuation_filter_db)):
+		out.append("whistle")
+	return out
+

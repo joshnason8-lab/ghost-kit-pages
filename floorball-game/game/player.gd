@@ -213,6 +213,12 @@ func step(dt: float) -> void:
 			vel -= n * vn
 	if match_node != null:
 		_keep_off_goals()   # (the match's goals: a body on its own, in a test or a tool, has none)
+		# And every prop of the hall (benches, the table, the stands, the goals: Arena.solid, WsgSolidProps) - a body
+		# never inside one.
+		var ar = match_node.get("arena")
+		if ar != null and is_instance_valid(ar) and ar.get("solid") != null:
+			var q: Vector3 = (ar.solid as WsgSolidProps).push_out(Vector3(pos.x, 0.0, pos.y), BODY_R, 1.8)
+			pos = Vector2(q.x, q.z)
 	# Turning: toward want_face, or the way he moves when he is moving.
 	var target := facing
 	if not is_nan(want_face):

@@ -103,6 +103,7 @@ func _ready() -> void:
 	ball = Ball.new()
 	add_child(ball)
 	ball.doors = arena.door_open
+	ball.solid = arena.solid
 	ball.out_of_play.connect(_on_out)
 	ball.crossed_goal_line.connect(_on_goal_line)
 	ball.hit.connect(_on_ball_hit)
@@ -135,6 +136,8 @@ func _ready() -> void:
 		add_child(r)
 		r.pos = Vector2(-4.0 + i * 8.0, 8.8 if i == 0 else -8.8)
 		refs.append(r)
+		if not bool(config.get("practice", false)):
+			r.add_to_group("wsg_official")   # (the match's officials, for the shared world check)
 	for t in 2:
 		for p in squads[t]:
 			stats[p.id] = {"g": 0, "a": 0, "sog": 0, "pim": 0, "saves": 0, "sa": 0, "name": p.name, "num": p.num, "team": t, "role": p.role}
@@ -2195,9 +2198,21 @@ func _ease_joy(delta: float) -> void:
 	if cam == null or not cam.is_inside_tree():
 		return
 	var at3 := ball.pos if user_player == null else Vector3(user_player.pos.x, 0.0, user_player.pos.y)
-	at3.y = 0.0
-	if cam.is_position_behind(at3):
+	var ways := screen_ways(cam, at3)
+	if ways.is_empty():
 		return
+	var w := minf(1.0, delta / 0.2) if _joy_up != Vector2.ZERO else 1.0
+	_joy_up = _joy_up.lerp(ways[0], w).normalized()
+	_joy_right = _joy_right.lerp(ways[1], w).normalized()
+
+
+## The floor directions that run up and right on CAM's screen at AT (a floor point): [up, right] (unit, on the floor),
+## or [] (behind the camera). The camera's rays either side of the point down to the floor: the screen's way exactly
+## there, whatever the camera and its perspective.
+static func screen_ways(cam: Camera3D, at: Vector3) -> Array:
+	var at3 := Vector3(at.x, 0.0, at.z)
+	if cam.is_position_behind(at3):
+		return []
 	var sp := cam.unproject_position(at3)
 	var k := 30.0
 	var g := func(p: Vector2) -> Vector2:
@@ -2210,10 +2225,18 @@ func _ease_joy(delta: float) -> void:
 	var up: Vector2 = (g.call(sp + Vector2(0, -k)) - g.call(sp + Vector2(0, k)))
 	var right: Vector2 = (g.call(sp + Vector2(k, 0)) - g.call(sp + Vector2(-k, 0)))
 	if up.length() < 1e-4 or right.length() < 1e-4:
-		return
-	var w := minf(1.0, delta / 0.2) if _joy_up != Vector2.ZERO else 1.0
-	_joy_up = _joy_up.lerp(up.normalized(), w).normalized()
-	_joy_right = _joy_right.lerp(right.normalized(), w).normalized()
+		return []
+	return [up.normalized(), right.normalized()]
+
+
+## The joystick as the match maps it (STICK: x right, y down, as the touch stick gives it), for CAM and a body AT:
+## the way on the floor it moves him (the world check's stick map: wsg_world_check's joystick rule).
+static func stick_world(stick: Vector2, cam: Camera3D, at: Vector3) -> Vector3:
+	var ways := screen_ways(cam, at)
+	if ways.is_empty() or stick == Vector2.ZERO:
+		return Vector3.ZERO
+	var w: Vector2 = (ways[1] as Vector2) * stick.x - (ways[0] as Vector2) * stick.y
+	return Vector3(w.x, 0.0, w.y).normalized()
 
 
 ## Who a pass goes to: the team-mate most in the joystick's direction, or the best one by the AI's reading.
