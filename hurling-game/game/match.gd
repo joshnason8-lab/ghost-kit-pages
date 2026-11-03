@@ -2414,7 +2414,9 @@ func _walk_off(pl: Player) -> void:
 	if _solid():
 		off = stadium.solid.free_spot(off, Player.BODY_R)
 	_steer(pl, off, 3.0)
-	if Vector2(pl.global_position.x - off.x, pl.global_position.z - off.z).length() < 1.0:
+	# (Within 1.5 m, over the line: an advertising board or a wall a step past it held him a metre short of the spot,
+	# and at "under 1.0" he stood there for good - WsgSim seed 8.)
+	if Vector2(pl.global_position.x - off.x, pl.global_position.z - off.z).length() < 1.5:
 		pl.visible = false
 
 
