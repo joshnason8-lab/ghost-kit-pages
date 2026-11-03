@@ -289,6 +289,11 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   13f00e2 (cut_from_heading kept true; a flat foot planted however the clip moves it). The foot-slip deferral stays:
   the smoke still reads slips of 2.5-20 cm (sent to the foundation).
 
+- 0.12.8: foundation synced to 80420f6 (cut_from_heading kept true; 68a16daa: no low foot jumps over 25 cm in a frame,
+  a stop from a sprint 88 -> 12.6 cm). WsgSim: a touch or kho reached for on the run excused (the foundation: a designed
+  move). FoundationLink notes why each frame's drive ran (trace_why, trace_dt) and its layer how often it ran, for the
+  diag of the running A/T-poses (sent to the foundation).
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

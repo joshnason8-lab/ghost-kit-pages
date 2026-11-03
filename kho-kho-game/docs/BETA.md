@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.8
+
+- **Feet stay put when a sprinter stops.** Pulling up hard from a sprint, a player's planted foot could jump a
+  stride along the ground in a single frame on Medium and High; the shared foundation now holds it (its own measure:
+  88 cm at worst, now 12.6).
+
 ## What's new in 0.12.7
 
 - **No more 13 m/s runners.** A runner brushing past a kneeling chaser was pushed clear by a whole frame's run
