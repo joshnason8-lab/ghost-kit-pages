@@ -118,11 +118,19 @@ void fragment() {
 	}
 	vec4 m = from_behind == 1 ? texture(back_mask, cell_uv) : texture(mask, cell_uv);
 	vec3 c = t.rgb;
+	// (The parts' mask comes from the crowd's low-poly figure: its edges are soft and a little off the drawn fan. Each
+	// part is recoloured only where the picture itself has that fan's own colour of it - skin by its hue, hair by its
+	// colour - so a face does not take the hair's colour, nor shoulders the hair - Kho Kho's "long-haired" cards.)
 	if (skin_c.x >= 0.0) {
-		c = mix(c, recolour(t.rgb, ref_skin[fan], skin_c), m.g);
+		vec3 rs = ref_skin[fan];
+		float like = 1.0 - smoothstep(0.15, 0.35, distance(t.rgb / max(luma(t.rgb), 0.02), rs / max(luma(rs), 0.02)));
+		like *= step(0.35 * luma(rs), luma(t.rgb));
+		c = mix(c, recolour(t.rgb, rs, skin_c), smoothstep(0.02, 0.25, m.g) * like);
 	}
 	if (hair_c.x >= 0.0) {
-		c = mix(c, recolour(t.rgb, ref_hair[fan], hair_c), m.b);
+		vec3 rh = ref_hair[fan];
+		float like = 1.0 - smoothstep(0.12, 0.3, distance(t.rgb, rh));
+		c = mix(c, recolour(t.rgb, rh, hair_c), smoothstep(0.02, 0.25, m.b) * like);
 	}
 	if (legs_c.x >= 0.0) {
 		c = mix(c, recolour(t.rgb, ref_legs[fan], legs_c), m.a);

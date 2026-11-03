@@ -238,6 +238,10 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   main/near x Low/High) for `tools/wsg/crowd_audit.gd`: all pass, and CI runs it. The game's own Crowd now only
   keeps its statics (the play it watches, its clothes).
 
+- 0.12.1: foundation synced to 5914b7c (cut_from_heading kept true): the cards pick among every fan who fits a
+  seat (`cards.fan_weights` doubles the three men), looks recolour only skin and hair; `WsgFootFlat.attach` after
+  the locomotor in FoundationLink (the sole tilt printed once in the log).
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from

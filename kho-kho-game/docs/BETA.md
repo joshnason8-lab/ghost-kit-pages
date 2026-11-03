@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.1
+
+- **A mixed crowd.** A stand of one seat height was the same person over and over; now every fan who fits the seat
+  is picked, more men among them, and skin and hair are coloured only where they are skin and hair.
+- **Feet flat on the ground** (Medium and High): if the players' boots rest toe-up, their feet are turned down so
+  the soles lie on the ground in every move (the foundation's fix from the hurling game).
+
 ## What's new in 0.12.0
 
 - **The crowd, sitting and standing properly, at every ground** (the owner's rule for every game). Every seat,

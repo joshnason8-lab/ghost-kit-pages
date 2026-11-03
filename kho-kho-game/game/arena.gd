@@ -183,6 +183,8 @@ func _cards(placed: Dictionary, seed_: int) -> WsgCrowdCards:
 		everyday += 0 if fan else (1 if keep.has(i) else 0)
 		shirts.append(home_colors[rng.randi_range(0, home_colors.size() - 1)] if fan else Crowd.CLOTHES[rng.randi_range(0, Crowd.CLOTHES.size() - 1)])
 	var cards := WsgCrowdCards.new()
+	# More men than the shared fans' mix (the crowds at the real matches): the short-haired men picked twice as often.
+	cards.fan_weights = {"fan": 2.0, "fan4": 2.0, "fan6": 2.0}
 	cards.build(placed, keep, seed_, shirts)
 	cards.set_meta("everyday", everyday)   # for the tests: how many of the drawn wear everyday clothes
 	cards.set_looks(SKIN, HAIR, LEGS)

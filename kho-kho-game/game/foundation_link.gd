@@ -37,6 +37,7 @@ var who: Athlete
 var gb: ModelBody             # the game's body (posed by the game, not drawn)
 var body: WsgBody
 var loco: WsgLocomotor
+static var _tilt_said := false
 var layer: Layer
 var mode := ""                # "full" (the game's pose), "upper" (its reaching arm over the capture), "move" (the capture)
 var pose_every := 1           # posed every frame, or every 2nd or 3rd (far from the camera: Match._rank_detail)
@@ -101,6 +102,12 @@ func _ready() -> void:
 	loco = WsgLocomotor.attach(body)
 	loco.cut_from_heading = true   # cuts from the way he was going (ADOPTING: set with every foundation sync)
 	layer.lift_after = loco.planter.hips_offset
+	# Boots resting toe-up (the foundation's WsgFootFlat, from Hurling): the feet turned down by the model's own sole
+	# tilt, as the skeleton's last modifier; a model standing flat gets none.
+	var flat := WsgFootFlat.attach(body)
+	if not _tilt_said:
+		_tilt_said = true
+		print("FoundationLink: the rig character's sole tilt %.1f degrees (WsgFootFlat %s)" % [WsgFootFlat.sole_tilt(body.model if "model" in body else body), "on" if flat else "not needed"])
 	gb.mesh.visible = false
 	# The game's skeleton has its final pose (the clips, then its own dive, head turn and grip) once its update has
 	# run: this body is posed from it then, in the same frame.
