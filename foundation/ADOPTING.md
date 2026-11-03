@@ -251,6 +251,60 @@ Your fans' feet: `bake_crowd.gd` measures each fan's soles on its mesh and turns
 the sky, as Meshy's officials were) down about the ankle till only a shoe's toe spring is left, before the bake;
 it prints each foot's pitch. (Five of the six shared fans were 10 to 36 degrees up.)
 
+## 5.1 Your venues' crowds: WsgCrowdVenue (every game, every venue)
+
+The owner's rule: in every venue every fan sits on their seat (not in it, not floating), stands with their soles on
+the floor, never inside a seat, a row or a rail, and faces the play. Your spots and facings are no longer worked out
+by hand: **declare each venue** and the foundation places, fits and checks the fans.
+
+**1. Declare the venue** (where you build its crowd today):
+```gdscript
+var v := WsgCrowdVenue.new(court_centre, Vector2(court_length, court_width), court_yaw)
+v.add({"name": "main stand", "a": Vector3(-15, 0, 9), "b": Vector3(15, 0, 9),   # the first row's front edge, at its floor
+	"rows": 8, "tread": 0.8, "rise": 0.4, "seat": "plastic"})
+v.add({"name": "east terrace", "a": Vector3(17, 0, -7), "b": Vector3(17, 0, 7),
+	"rows": 6, "tread": 0.45, "rise": 0.18, "seat": "terrace", "barrier": {"height": 1.0, "gap": 0.4}})
+```
+A section is a strip of rows: `a` to `b` is the front edge of its first row (world, at that row's floor), the rows go
+back away from the play, each `tread` deep and `rise` higher. Which side is "away" is worked out from the play area.
+- `seat`: `bench`, `chair`, `plastic`, `bleacher`, `stool`, `wall` (a wall top), `step` (sitting on the step behind:
+  stone steps, a kerb) - or standing: `terrace`, `floor`, `rail`. Each kind has a height, depth and back
+  (WsgCrowdVenue.KINDS); give your own where yours differ: `"height"` (the seat over the floor the feet are on),
+  `"depth"`, `"back"` (the seat back's height over the seat; 0 none), `"setback"` (row front to seat front; default: the
+  seat at the back of the tread).
+- `pitch`: one fan every so many m along a row (0.5 seated, 0.55 standing). `stand`: the share of a seated
+  section on its feet. `barrier`: a rail, boards or a fence in front of the first row. `facing`: only if the section
+  must look somewhere else than the play.
+- Stools and wall tops let the legs hang; every other seat has the soles on the floor.
+
+**2. Build from it** (Medium and High):
+```gdscript
+var used := crowd3d.build_venue(v, quality, focus, density, seed, shirts, lights)
+var placed := crowd3d.placed          # spots, facings, seat heights...: give your billboards the spots not in used
+```
+Each fan faces the play (turned toward its nearest part, at most 50 degrees off square to the row) and their head and
+shoulders follow the ball (`watch_ball`). A seated fan is sized to the seat (soles on the floor, the seat of the
+trousers on the seat; the shins reach the last few cm), sits back as far as the seat back or the step behind allows,
+keeps their toes on the tread, and when the crowd gets up they step forward off the seat. Low: WsgCrowdCards (to come)
+takes the same `placed`.
+
+**3. Register it for the audit**: `res://game/crowd_venues.gd`:
+```gdscript
+extends RefCounted
+static func venues() -> Array:
+	return [{"name": "National Arena", "venue": Arena.crowd_venue(), "scene": "res://venues/national_arena.tscn"}, ...]
+```
+(`scene` optional: drawn instead of the plain boxes; it must not build its own crowd.) Then
+```
+xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd /tmp/audit
+```
+measures every fan (WsgCrowdVenue.audit: the seat of the trousers within -2..+3 cm of the seat, the soles within
+-2..+4 cm of the floor, nothing more than 2.5 cm into a seat, seat back, step or barrier, every fan within 35 degrees
+of the play, none backwards) and writes a contact sheet per venue (each section close up from in front and from the
+side, seated and on their feet) and crowd_audit.json. It exits 1 on any failure: fix the declaration (a seat height,
+a tread) until it passes, and send the owner the sheets. The foundation's own test grounds (every kind) pass it:
+`tests/crowd_venues.gd`. Put it in CI with the clips fetched (your licensed crowd is the one shipped).
+
 ## 5.5 Baked light on your stadium (GL Compatibility; Low and Medium)
 
 If you build your arena in code (Hurling's `Geo`: each quad its own four vertices), its stands are lit per vertex

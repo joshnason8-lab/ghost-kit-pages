@@ -37,6 +37,9 @@ uniform vec4 team_b : source_color = vec4(0.8, 0.15, 0.1, 1.0);
 uniform float light = 1.0;           // the ground's light (night, shade)
 uniform vec3 sun_dir = vec3(0.35, 0.85, 0.4);   // where the light comes from (the game's sun)
 uniform float shade = 0.72;          // the side away from it
+uniform float knee = 0.35;           // the fan's knees seated (own units): a seat too high stretches the shins below
+uniform float reach = 0.08;          // ... by the lift, up to this
+uniform float stand_fwd = 0.0;       // a seated fan getting up steps this far forward, off their seat (own units)
 // Looks (WsgCrowd3D.set_looks): each fan's skin, hair and the legs' clothes from a game's palettes (dark to light;
 // none given: as the fan was made). The part of the fan each vertex is: UV.y (tools/bake_crowd.gd REGIONS); ref_*:
 // this fan's own colour of that part, which the new colour is shaded from.
@@ -96,7 +99,10 @@ vec3 turn_y(vec3 v, vec3 pivot, float a) {
 
 void vertex() {
 	int col = int(UV.x * float(vertices + 2));
-	float id = float(INSTANCE_ID) + INSTANCE_CUSTOM.r * 1000.0;
+	// INSTANCE_CUSTOM.r: the fan's own random number, plus 2 where their legs hang (a stool, a wall top).
+	bool hang = INSTANCE_CUSTOM.r >= 1.5;
+	float own_r = INSTANCE_CUSTOM.r - (hang ? 2.0 : 0.0);
+	float id = float(INSTANCE_ID) + own_r * 1000.0;
 	float r1 = hash(id * 1.31);
 	float r2 = hash(id * 2.17);
 	float r3 = hash(id * 3.71);
@@ -141,8 +147,14 @@ void vertex() {
 		keen = 0.0;
 	}
 	vec3 p = mix(p0, p1, keen);
-	// INSTANCE_CUSTOM.b: how far a seated fan is lifted onto their seat (their own units); none once up.
-	p.y += INSTANCE_CUSTOM.b * (1.0 - up);
+	// INSTANCE_CUSTOM.b: how far a seated fan is lifted onto their seat (their own units); none once up. Lifted, the
+	// soles reach back down to the floor (the shins stretched, up to reach) unless the legs hang.
+	float lift = INSTANCE_CUSTOM.b * (1.0 - up);
+	float ground = p.y;
+	p.y += lift;
+	if (!hang && lift > 0.0) {
+		p.y -= min(lift, reach) * (1.0 - smoothstep(0.0, knee, ground));
+	}
 	vec3 n = normalize(mix(n0, n1, keen));
 	// Watching the ball: the angle to it in the fan's own frame, a little each their own way; the shoulders take
 	// up to 30 degrees of it, the head the rest (up to 75 in all).
@@ -158,6 +170,10 @@ void vertex() {
 	piv_h = turn_y(piv_h, piv_t, torso);
 	p = turn_y(p, piv_h, head * UV2.y);
 	n = turn_y(n, vec3(0.0), head * UV2.y);
+	// Getting up from a seat: forward off it as they rise (not a terrace's, always up).
+	if (INSTANCE_CUSTOM.g > 0.0) {
+		p.z += stand_fwd * up;
+	}
 	VERTEX = p;
 	NORMAL = n;
 	// Colours: about half the shirts in a team's colours (dyed: the colour shaded by the cloth's folds), the rest in

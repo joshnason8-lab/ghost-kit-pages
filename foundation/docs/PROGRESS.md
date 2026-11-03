@@ -385,3 +385,16 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   the parts, hair-not-shirt, set_looks and the weights (0.68 against 0.67). ADOPTING §5.
 - **Meshy: spend NO credits** without the owner's own OK (not the lead's alone): the owner's standing rule, relayed
   by Netball 2026-11-02. Balance then 59 (a fan costs 35: preview 20, refine 10, rig 5).
+- **Crowd placement, every game (owner's directive via the lead, 2026-11-03)**: M1 + the audit done.
+  `WsgCrowdVenue` (crowd_venue.gd): a venue = its play area + sections (strips of rows: seat kinds bench, chair,
+  plastic, bleacher, stool, wall, step; standing terrace, floor, rail; barriers); place() gives spots (a seated
+  fan's: the floor under the middle of their seat), facings (toward the play's nearest part, <= 50 deg off square),
+  seat heights, back room, toe room, obstacles. `WsgCrowd3D.build_venue`: each seat's fan picked by leg fit, sized to
+  it (0.86-1.14), hips as far back as the back/step behind allows, toes on the tread; the shins reach down (REACH
+  0.08) unless the legs hang (stool, wall: custom.r + 2); getting up they step forward off the seat (stand_fwd per
+  fan model). The bake now grounds every frame (the licensed crowd's seated soles were 1-6 cm under the floor,
+  standing up to 5 cm over). `WsgCrowdVenue.audit` (hips, soles, inside seats/backs/steps/barriers, facing,
+  backwards; placed transforms recorded: a MultiMesh gives none back headless) and `tools/crowd_audit.gd` (contact
+  sheet per venue + JSON; vendored). Test grounds (every kind): tests/crowd_venues.gd, crowd_venue_test - all
+  1,210 fans pass: hips -0.5..+1.5 cm, soles 0..-0.9 cm (hanging on stools/walls), inside <= 2.3 cm, facing <= 7 deg.
+  Next: M2 ripple/lag of heads, M3 WsgCrowdCards (Low), then each game's venues.

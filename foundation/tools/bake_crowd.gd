@@ -460,6 +460,15 @@ func _bake_vat(ch: Dictionary, m: Dictionary, rows: int, meta: Dictionary) -> Ar
 			for pi in PIVOTS.size():
 				var pp := sk.get_bone_global_pose(sk.find_bone(PIVOTS[pi])).origin
 				pos_img.set_pixel(nv + pi, row, Color(pp.x, pp.y, pp.z, 1.0))
+			# Every frame on the ground: its lowest point (the soles, seated or standing) at 0. The motions' own feet
+			# came 1 to 6 cm under it seated and up to 5 cm over it standing (ActorCore's crowd takes, through each
+			# fan's legs): sunk into the floor or floating, and stepping as the motions changed.
+			var low := INF
+			for v in nv:
+				low = minf(low, pos_img.get_pixel(v, row).g)
+			for v in nv + PIVOTS.size():
+				var px := pos_img.get_pixel(v, row)
+				pos_img.set_pixel(v, row, Color(px.r, px.g - low, px.b, 1.0))
 			row += 1
 			await process_frame
 	body.queue_free()
