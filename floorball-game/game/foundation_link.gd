@@ -132,7 +132,7 @@ func _ready() -> void:
 	body.skeleton.add_child(floor_legs)
 	# A Meshy model may rest with its soles toe-up: the feet turned down by it, a planted heel on the floor (the body's
 	# last modifier; none if it stands flat).
-	WsgFootFlat.attach(body)
+	SoleFlat.attach_to(body)
 
 
 ## The game's kit shader (RiggedBody's: the team's colours by the texture's blues and each vertex's standing height),
