@@ -36,6 +36,9 @@ func _ready() -> void:
 				var from := OS.get_environment("KK_FROM").split_floats(",") if OS.get_environment("KK_FROM") != "" else PackedFloat64Array([0.0, 1.7, 0.0])
 				Game.current.cam.position = Vector3(from[0], from[1], from[2])
 				Game.current.cam.look_at(Vector3(t[0], t[1], t[2]))
+				# KK_NEAR: the near side shown (only the camera behind the pole sees it in play).
+				if OS.get_environment("KK_NEAR") != "":
+					Game.current.arena.show_near(true)
 		done = n
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("%s/%s_g%s_%d.png" % [a[0], a[1].replace(":", ""), a[2], n])
