@@ -18,7 +18,9 @@ uninstall that one first (its saves go with it).
 New in 0.15.11: **feet stay planted when players stop or turn hard** (Medium and High). Pulling up from a run, a
 player's foot could skate several centimetres across the floor in a single frame (up to 7 cm on a hard stop); now a
 foot flat on the floor stays where it landed, and a foot let go lifts over the floor to its next step. Worth watching
-players stopping to receive, and the blocker's shuffle along the net.
+players stopping to receive, and the blocker's shuffle along the net. And a line judge lowering his flag as he steps
+back to his place no longer has his feet jump (up to 24 cm in one frame), nor a player taking or giving up the ball on
+the move.
 
 New in 0.15.10: **a ball hit hard into the park's fence no longer sticks in it.** 0.15.9's fix for balls behind the
 boards could leave a ball, flying at the fence at waist height, caught in the wire; now it comes off the fence like any

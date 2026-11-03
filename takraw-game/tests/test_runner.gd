@@ -1418,17 +1418,22 @@ func _foundation(available: bool) -> void:
 			for k in 2:
 				var key := [l, k]
 				var p: Vector3 = l.loco.planter.ankle_world[k]
+				var toe: Vector3 = l.body.bone_world(["LeftToeBase", "RightToeBase"][k]).origin
 				# (On the floor: the ankle within 4 cm of its standing height.)
 				var down: bool = l.mode in ["move", "carry"] and l.legacy.weight <= 0.0 and l._pw <= 0.0 and float(l.loco.planter.contact[k]) > 0.5 \
 					and p.y < (l.body.joints["LeftFoot"] as Vector3).y * l.body.global_transform.basis.get_scale().y + 0.04
 				if down and last_foot.has(key):
-					var sl := Vector2(p.x - last_foot[key].x, p.z - last_foot[key].z).length() / gap_frames
+					# The smaller of the ankle's and the toe's move this frame, as the shared foundation's foot_slip measures:
+					# a heel rolling up over a held ball of the foot is not a slide (the planter holds a foot flat on the floor
+					# however fast it moves, 13f00e2: rolling off it read 4 cm here), and a real slide moves both ends.
+					var held: Array = last_foot[key]
+					var sl := minf(Vector2(p.x - held[0].x, p.z - held[0].z).length(), Vector2(toe.x - held[1].x, toe.z - held[1].z).length()) / gap_frames
 					if sl > slide:
 						slide_why = "%s, gait state %d, %.2f m/s, frame %d" % [l.mode, l.loco.state, pl.vel.length(), i]
 					slide = maxf(slide, sl)
 					slide_n += 1
 				if down:
-					last_foot[key] = p
+					last_foot[key] = [p, toe]
 				else:
 					last_foot.erase(key)
 			# The ball carried: drawn in the drawn hands.
