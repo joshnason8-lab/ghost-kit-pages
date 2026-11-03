@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 concurrency:
   group: kho-kho-balance-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false   # (a later push, which runs nothing here, must not cancel a balance run in flight)
 env:
   GODOT_VERSION: "4.7.2"
   GAME_DIR: kho-kho-game

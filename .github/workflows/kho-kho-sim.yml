@@ -49,6 +49,24 @@ jobs:
       - name: Determinism (each seed twice, frame for frame)
         run: godot --headless --fixed-fps 30 --path $GAME_DIR -s res://tools/wsg/sim.gd -- determinism --game res://game/sim.gd --seeds 2
 
+  # [sim-diag] in a push's message: what each body was doing when WsgSim saw a T/A-pose or a sliding foot
+  # (tests/diag_pose.gd; the licensed clips are here, not in a dev's checkout).
+  diag:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sim-diag]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        case: ['targeted:fair 101', 'extreme 16', 'random 5']
+    steps:
+      - uses: actions/checkout@v4
+      - *godot
+      - *assets
+      - *import
+      - name: Diagnose ${{ matrix.case }}
+        run: cd $GAME_DIR && timeout 1500 godot --headless --fixed-fps 30 --path . -s res://tests/diag_pose.gd -- ${{ matrix.case }} 2>&1 | grep -E "^DIAG|SCRIPT ERROR|^ERROR"
+
   # The smoke batch over 8 jobs (by seed): one job took 38 minutes (the full-length extreme matches and the dream
   # runs are 1,700-2,200 simulated seconds each).
   smoke:
@@ -64,7 +82,10 @@ jobs:
       - *assets
       - *import
       - name: Smoke, shard ${{ matrix.shard }} of 8
-        run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --smoke --input --shard ${{ matrix.shard }}/8
+        run: |
+          sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --smoke --input --shard ${{ matrix.shard }}/8 || code=$?
+          sed -n '/## Failures/,/## Balance/p' "$RUNNER_TEMP/sim/${{ matrix.shard }}/SIM_REPORT.md" 2>/dev/null | head -60
+          exit ${code:-0}
       - if: always()
         uses: actions/upload-artifact@v4
         with: {name: 'kho-kho-smoke-${{ matrix.shard }}', path: '${{ runner.temp }}/sim/${{ matrix.shard }}'}
