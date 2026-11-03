@@ -358,7 +358,11 @@ static func tiers(game: WsgWorldGame, parent: Node) -> Dictionary:
 				fans += (c as WsgCrowd3D).used.size()
 			var bodies := holder.find_children("*", "WsgBody", true, false)
 			var full := bodies.filter(func(b: WsgBody) -> bool: return b.full).size()
-			var fans_max: int = WsgFoundation.crowd_budget(WsgFoundation.crowd_most())[1]
+			# (The most any quality the tier allows can build: on the budget profile Close, 3, builds fewer fans than 2 -
+			# Kabaddi's High asked 2 and built its 700, within the tier, and was failed against Close's 500.)
+			var fans_max := 0
+			for q in range(1, WsgFoundation.crowd_most() + 1):
+				fans_max = maxi(fans_max, int(WsgFoundation.crowd_budget(q)[1]))
 			var full_max := WsgFoundation.full_bodies()
 			var tag := "%s at %s" % [mode, ["Low", "Medium", "High"][t]]
 			var line := "%s: tier %d after the start, %d 3D fans (at most %d), %d of %d bodies in full (at most %d), started in %.1f s (this machine)" % [
