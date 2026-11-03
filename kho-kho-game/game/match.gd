@@ -1000,12 +1000,14 @@ static func stick_map_at(c: Camera3D, p: Vector3, fallback: Array = []) -> Array
 		return fallback
 	var sx := Vector2(b.y, -a.y) / det
 	var sy := Vector2(-b.x, a.x) / det
-	# Up the stick is up the screen where the body is; right is square to it on the ground, on the screen's right
-	# (the screen's own diagonals, foreshortened, would swing a diagonal push up to 40 deg off the camera's way).
+	# Up the stick is up the screen where the body is. Right is halfway between the screen's right and square to up
+	# on the ground: the screen's own (foreshortened) right swings a diagonal push up to 40 deg off the camera's way
+	# (owner note 2026-11-02), square to up puts right 10 deg off the screen's right on the broadcast camera.
 	var down := sy.normalized()
-	var right := Vector2(-down.y, down.x)
-	if right.dot(sx) < 0.0:
-		right = -right
+	var square := Vector2(-down.y, down.x)
+	if square.dot(sx) < 0.0:
+		square = -square
+	var right := (square + sx.normalized()).normalized()
 	return [right, down]
 
 
