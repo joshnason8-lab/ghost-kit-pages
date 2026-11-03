@@ -15,6 +15,8 @@ extends SkeletonModifier3D
 const TOE_SPRING := 1.5
 ## Under this (degrees) the model stands flat: no modifier.
 const MIN_TILT := 2.0
+## The planted toe is kept in place as much as it is within this of its standing height (m).
+const TOE_ON := 0.02
 
 var down := 0.0          # radians to turn each foot toe-down
 var _ix := []            # [foot, toe base] for each side
@@ -61,9 +63,10 @@ func _process_modification_with_delta(_delta: float) -> void:
 		sk.set_bone_global_pose(pair[0], g)
 		# The turn is about the ankle: as a planted foot rolls heel to toe, the turned toe swung over the floor (a jog
 		# step 2.3 cm, 0.2 without this modifier). Moved back by what the turn moved the toe across, as much as the toe
-		# is on the ground (within 4 cm of its standing height) - Floorball's SoleFlat.
+		# is on the ground (within TOE_ON of its standing height) - Floorball's SoleFlat. (4 cm moved a foot just landed,
+		# its heel down and its toe still coming down: the heel slid 1-2 cm a frame - Hurling's walker 2.2 cm a step.)
 		var toe_now := sk.get_bone_global_pose(pair[1]).origin
-		var on := clampf(1.0 - (toe_now.y - _toe_rest) / 0.04, 0.0, 1.0)
+		var on := clampf(1.0 - (toe_now.y - _toe_rest) / TOE_ON, 0.0, 1.0)
 		if on > 0.0:
 			var moved := toe_now - tp.origin
 			moved.y = 0.0
