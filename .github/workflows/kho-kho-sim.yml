@@ -1,0 +1,92 @@
+# Kho Kho Rush's WsgSim (ADOPTING 5.17; from the foundation's tools/wsg/sim_ci.yml): the smoke batch on every push
+# (50 seeds of random and extreme matches, every targeted case x 3, every adopted case; the input fuzzer playing your
+# side), and the nightly batch, 16 shards of 150 matches merged into one report. Scheduled runs only fire from the
+# default branch: until this game is merged there, a push whose message carries [sim-nightly] runs the nightly batch
+# instead of the smoke. Artifacts only (in $RUNNER_TEMP) - never inside the project.
+name: Kho Kho Rush · simulation
+on:
+  push:
+    branches: [claude/kho-kho-game]
+    paths: ['kho-kho-game/**', '.github/workflows/kho-kho-sim.yml']
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+concurrency:
+  group: kho-kho-sim-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  GODOT_VERSION: "4.7.2"
+  GAME_DIR: kho-kho-game
+  # A full-length extreme match (four 9-minute turns and a knockout's extra innings) plays about 2,200 s and prints
+  # nothing for about 130 s of wall-clock: sim_shard.sh's default 120 s called it a freeze.
+  HANG: "900"
+jobs:
+  smoke:
+    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[sim-nightly]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - &godot
+        name: Godot ${{ env.GODOT_VERSION }}
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+      - &assets
+        name: Translations and the private animation (as the build has them)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: |
+          python3 $GAME_DIR/tools/build_i18n.py
+          sh $GAME_DIR/tools/fetch_anims.sh
+          sh $GAME_DIR/tools/wsg/fetch_assets.sh
+      - &import
+        name: Import
+        run: godot --headless --path $GAME_DIR --import || true
+      - name: Every random roll from the seed
+        run: sh $GAME_DIR/tools/wsg/rng_lint.sh $GAME_DIR/game $GAME_DIR/autoload $GAME_DIR/ui
+      - name: Determinism (each seed twice, frame for frame)
+        run: godot --headless --fixed-fps 30 --path $GAME_DIR -s res://tools/wsg/sim.gd -- determinism --game res://game/sim.gd --seeds 2
+      - name: Smoke batch
+        run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim" --smoke --input
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: kho-kho-sim-smoke, path: '${{ runner.temp }}/sim'}
+
+  nightly:
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[sim-nightly]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix: {shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]}
+    steps:
+      - uses: actions/checkout@v4
+      - *godot
+      - *assets
+      - *import
+      - name: Shard ${{ matrix.shard }} of 16
+        run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --from 1 --count 2400 --shard ${{ matrix.shard }}/16 --input
+        continue-on-error: true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: 'kho-kho-sim-shard-${{ matrix.shard }}', path: '${{ runner.temp }}/sim/${{ matrix.shard }}'}
+
+  report:
+    needs: nightly
+    if: always() && needs.nightly.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - *godot
+      - *import
+      - uses: actions/download-artifact@v4
+        with: {path: '${{ runner.temp }}/shards', pattern: 'kho-kho-sim-shard-*'}
+      - name: One report
+        run: godot --headless --path $GAME_DIR -s res://tools/wsg/sim.gd -- merge --out "$RUNNER_TEMP/sim-nightly" "$RUNNER_TEMP"/shards/*
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: kho-kho-sim-nightly, path: '${{ runner.temp }}/sim-nightly'}

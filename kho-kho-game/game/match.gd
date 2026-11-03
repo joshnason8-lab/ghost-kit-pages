@@ -1726,6 +1726,7 @@ func _next_batch() -> void:
 	for a in batch:
 		d_state[a] = "enter"
 		a.do("")
+		a.goal = Vector3.INF   # (on the field again: his walk to the bench, from an out earlier in the turn, is over)
 		stats[a.data.id].run = 0.0
 		var ai: Dictionary = _ai[a]
 		ai.cool = rng.randf_range(0.0, 0.25)

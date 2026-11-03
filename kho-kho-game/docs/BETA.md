@@ -9,6 +9,19 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.5
+
+- **Your notes are now tests.** Every note the owner has given (fourteen so far, in their own words) is a test the
+  build must pass before it ships, so none of them can come back. Running them found four things, now fixed:
+  - **The buttons never overlap**, wherever you have saved them (TAG could still sit over KHO).
+  - **The stick's diagonals** go the way the camera looks, on every camera (they could be up to 38 degrees off).
+  - **A diving tag lands on the leg.** Diving at a runner close by, the chaser no longer slides past him: his hand
+    stays on the runner's leg.
+  - **No running through a kneeling chaser** at full speed (a runner could get half through).
+- **Thousands of matches a night.** The game now plays itself headless, faster than real time, every match from a
+  seed and checked every frame against kho kho's laws and the foundation's checks; a defender who stood still
+  after coming back on, still meaning to walk to the bench, was the first thing it found (fixed).
+
 ## What's new in 0.12.4
 
 - **Everything round the field is solid** (the owner: "every asset was built to be a tangible object"). Nobody -

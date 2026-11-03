@@ -262,6 +262,20 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   his bench spot, free_spot) moves with solid.move. game/prop_runs.gd registers the four grounds for
   tools/wsg/prop_audit.gd (CI, 2 seeds x 120 s): 0 bodies inside a prop.
 
+- 0.12.5: foundation synced to 877bcd9, then 7239d54 (cut_from_heading kept true). The owner's notes as tests
+  (ADOPTING 5.16): tests/owner_notes/ (14 notes and INDEX.json, tests/note_kk.gd), CI runs
+  tools/wsg/owner_notes_guard.sh and the strict run. Fixes the notes found: TouchControls.layout checks a saved
+  place against every other button; Match.stick_map_at: up the screen at the player, right halfway between the
+  screen's right and square to up; a dive that touches stops LOCK_AHEAD (0.8 m) short of the touch
+  (Match.dive_touch_at, DIVE_TOUCH_R); Match._separate pushes a runner fully out of a kneeling chaser (at most his
+  own frame's run). WsgSim (ADOPTING 5.17): game/sim.gd (the old numbers-only sim is game/score_sim.gd, class Sim),
+  .github/workflows/kho-kho-sim.yml (smoke on push; 16 nightly shards; [sim-nightly] in a push's message runs the
+  nightly until the game is on the default branch), rng_lint clean (cosmetic rolls marked), determinism (2 seeds,
+  and 3 at real time) the same frame for frame. First find: a defender back on the field kept his walk-to-bench goal
+  (Match: goal cleared as a batch comes on); adopted into tests/sim_cases.json. The rules check remembers an out
+  only through a turn's play. Classic outs 1.50 -> 1.36 a minute after the note fixes (fast 1.74 -> 1.77): flagged
+  to the lead for the owner, not retuned.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
