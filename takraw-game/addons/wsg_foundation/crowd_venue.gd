@@ -218,7 +218,60 @@ func place(seed := 0) -> Dictionary:
 						var feet: Vector3 = row0 + along * x + away * (off + rng.randf_range(-1.0, 1.0) * STAND_JITTER * 0.5)
 						var f: Vector3 = facing_at(s, feet).rotated(Vector3.UP, rng.randf_range(-0.12, 0.12))
 						_spot(out, si, feet, f, 0.0, false, INF, row0.y)
+	_clear_reach(out)
 	return out
+
+
+## A fan getting up or standing reaches forward (a knee 0.5 m at seat height, hands 0.55 m at waist height): where
+## another section's furniture is in that reach - a jury table's chairs set just in front of a stand's first row - no
+## fan is placed (the seat stays empty, as one behind a table's chairs would). Each section keeps its own clear of
+## itself already (its steps, its barrier). Sepak Takraw's national arena: a rising knee 3 cm into a jury chair.
+const REACH_PROBES := [[0.25, 0.40], [0.40, 0.40], [0.52, 0.40], [0.35, 0.80], [0.55, 0.80]]
+
+
+func _clear_reach(out: Dictionary) -> void:
+	# (Each box once: its inverse, half size, centre and reach; a place far from a box is not tested against it - the
+	# async build's main-thread budget.)
+	var boxes := []
+	for ob: Dictionary in out.obstacles:
+		var half: Vector3 = (ob.size as Vector3) * 0.5 + Vector3.ONE * 0.02
+		boxes.append([(ob.xf as Transform3D).affine_inverse(), half, (ob.xf as Transform3D).origin, half.length() + 1.0, int(ob.section)])
+	var keep := PackedInt32Array()
+	for k in (out.spots as Array).size():
+		var p: Vector3 = out.spots[k]
+		var f: Vector3 = out.facings[k]
+		f.y = 0.0
+		f = f.normalized() if f.length() > 0.01 else Vector3.FORWARD
+		var floor_y: float = out.floor[k]
+		var si: int = out.section[k]
+		# (A seated fan gets up at the front of the seat: the reach is from there - 0.26 m before the seat's middle on
+		# a 0.3 m step seat.)
+		if bool(out.anchor_seat[k]):
+			p += f * (float(out.half_depth[k]) + 0.12)
+		var blocked := false
+		for bx: Array in boxes:
+			if int(bx[4]) == si or p.distance_to(bx[2]) > float(bx[3]):
+				continue
+			var inv: Transform3D = bx[0]
+			var half: Vector3 = bx[1]
+			for pr in REACH_PROBES:
+				var q := inv * Vector3(p.x + f.x * float(pr[0]), floor_y + float(pr[1]), p.z + f.z * float(pr[0]))
+				if absf(q.x) < half.x and absf(q.y) < half.y and absf(q.z) < half.z:
+					blocked = true
+					break
+			if blocked:
+				break
+		if not blocked:
+			keep.append(k)
+	if keep.size() == (out.spots as Array).size():
+		return
+	for key in ["spots", "facings", "seat", "anchor_seat", "back", "section", "floor", "dangle", "half_depth", "front", "seat_dir"]:
+		var src = out[key]
+		var dst = src.duplicate()
+		dst.resize(keep.size())
+		for j in keep.size():
+			dst[j] = src[keep[j]]
+		out[key] = dst
 
 
 ## For row R of section S: the least distance from the row's front to a standing fan's feet that keeps the stand pose's

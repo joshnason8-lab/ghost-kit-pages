@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.8: **in the national arena, nobody sits right behind the jury table's chairs any more.** A fan there who
+got up to cheer put a knee into a chair in front of him; those few seats are now left empty, as they would be.
+
 New in 0.15.7: **fans on their feet behind a glass barrier stand back from it.** At the mall's balconies a standing
 fan's hands could reach a few centimetres into the glass; now they stand clear of it. Nothing else changes in play.
 

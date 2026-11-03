@@ -37,13 +37,6 @@ func crowd_registry() -> String:
 	return "res://game/crowd_venues.gd"
 
 
-## Put off with the lead's word, until a time, after which the rule fails the build again (ADOPTING §5.18): the crowd.
-## A rising fan's knee goes about 3 cm into the national arena's seat pad (far stand); that's the foundation's stand
-## pose and placement, and the Foundation is fixing it. Not an exception: from the time below it fails again.
-func deferred() -> Dictionary:
-	return {"crowd": ["2026-11-05T12:00Z", "the lead, 2026-11-03: rising-fan knee 2.8 cm into pad, national arena; Foundation fixing"]}
-
-
 func modes() -> Array:
 	return MODES
 
