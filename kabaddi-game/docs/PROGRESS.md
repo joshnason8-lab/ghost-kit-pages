@@ -586,3 +586,16 @@ the planter holds, and reads no pose under a replay; the planter moves a foot's 
 a let-go foot from its first frame; the world check plays its modes undrawn (much faster). Still open, the foundation's:
 a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is dragged rather than stepped.
 
+## 0.14.13: foundation 70e571a; Low measured; publishing in place
+
+- Foundation 70e571a (the planter's 7def933a, required from 2026-11-06 12:00 UTC): a planted foot left far behind a
+  fast stop steps instead of re-planting, landings plant on the frame they are down, the planter's own step swings at
+  most 10 cm a frame. Our walker's stop jump 20.7 -> 8.9 cm; skid 0.1, slips 0.4 cm at most.
+- walker_low (ADOPTING 5.21) in game/world.gd: what the A16 draws at Low - our own RiggedBody, planted by
+  RiggedBody._plant_feet - driven along the feet rule's path as Athlete._pose drives it. The feet_low rule (deferred
+  to 2026-11-08 12:00 UTC) measures it: standing 2.3 / walk 7.5 / jog 11.2 / jog turned 11.3 / stop 16.4 / standing
+  again 2.6 cm slip a step, skid up to 7.6 cm (2.0 the bound). Next: the foundation's planter on our skeleton at Low
+  (WsgFootPlanter.bone_map), our own planting off.
+- The beta is published in place (ADOPTING 5.19): the workflow token may no longer create tag names here, so the new
+  APK goes up beside the old on the same release, the old comes off, and the notes carry a "Commit:" line.
+

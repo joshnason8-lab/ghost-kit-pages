@@ -17,9 +17,9 @@ const ENFORCED_FROM := "2026-11-03T12:00Z"
 ## Rules enforced later than that, for every game (the lead, 2026-11-03: the feet rule's walker read 2.1-2.2 cm on the
 ## walk on three games' rigs at 888e222 - a foundation fault - so feet from the next day). Before its time a rule's
 ## failure is reported as deferred. WSG_WORLD_ENFORCE=1 enforces these now too.
-const RULE_FROM := {"feet": "2026-11-04T12:00Z"}
+const RULE_FROM := {"feet": "2026-11-04T12:00Z", "feet_low": "2026-11-08T12:00Z"}
 
-const RULES := ["props", "crowd", "feet", "pose", "officials", "sounds", "loading", "joystick", "web", "tiers"]
+const RULES := ["props", "crowd", "feet", "feet_low", "pose", "officials", "sounds", "loading", "joystick", "web", "tiers"]
 
 
 func _initialize() -> void:
@@ -105,6 +105,9 @@ func _initialize() -> void:
 					r = _audit(rule, game.crowd_registry(), "crowd_registry", "crowd_audit.gd", abs_out.path_join("crowd"), [], reuse.get("crowd", ""))
 				"feet":
 					r = await WsgWorldRules.feet(game, sv)
+				"feet_low":
+					# (What the owner sees at Low: the game's own bodies there, the lead 2026-11-03; deferred to 11-08 12:00.)
+					r = await WsgWorldRules.feet_low(game, sv)
 				"pose":
 					r = WsgWorldRules.pose(game, modes)
 				"officials":

@@ -93,6 +93,39 @@ func walker(parent: Node) -> Array:
 	return [body, loco]
 
 
+## Low (ADOPTING 5.21): what the A16 draws - our own body (RiggedBody, its Low mesh) posed by HumanModel and planted by
+## RiggedBody._plant_feet, no FoundationLink - driven as a match drives it (Athlete._pose: speed, and which way he moves
+## against where he faces, eased at its rate), its feet read as drawn (anchors after HumanModel._process).
+func walker_low(parent: Node) -> Variant:
+	var was := int(Game.settings.graphics)
+	set_tier(Game.GFX_LOW)
+	var m := HumanModel.new()
+	m.body_kind = "player"
+	m.body_file = "player_01.krb"
+	m.setup(Color(DB.SKIN_TONES[2]), Color(DB.HAIR_COLORS[0]), Color("1d4ed8"), Color.WHITE, 7, 1.78, 1.0)
+	parent.add_child(m)
+	set_tier(was)
+	var drive := func(dt: float, vel: Vector3, facing: float) -> void:
+		m.position += vel * dt
+		var fwd := Vector3(sin(facing), 0.0, cos(facing))
+		m.rotation.y = atan2(-fwd.x, -fwd.z)   # the model faces -Z (Athlete._track_motion)
+		var k := clampf(dt * 10.0, 0.0, 1.0)
+		var flat := Vector3(vel.x, 0.0, vel.z)
+		m.speed = flat.length()
+		if flat.length() > 0.3:
+			var dir := flat.normalized()
+			m.move_fwd = lerpf(m.move_fwd, dir.dot(fwd), k)
+			m.move_side = lerpf(m.move_side, dir.dot(fwd.cross(Vector3.UP).normalized()), k)
+		else:
+			m.move_fwd = lerpf(m.move_fwd, 1.0, k)
+			m.move_side = lerpf(m.move_side, 0.0, k)
+	var feet := func() -> Array:
+		if m.rig == null:
+			return [m.anchor("foot_l"), m.anchor("toe_l"), m.anchor("foot_r"), m.anchor("toe_r")]
+		return [m.rig.anchor("foot_l"), m.rig.anchor("toe_l"), m.rig.anchor("foot_r"), m.rig.anchor("toe_r")]
+	return [m, drive, feet]
+
+
 ## The key moments' sounds (Sfx.BRIGHT: a tag's slap, a body onto the mat, the referee's whistle).
 func key_sounds() -> Array:
 	return Sfx.BRIGHT.values()

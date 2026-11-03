@@ -174,7 +174,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/prev"
           # The published beta built from this very commit (the push run of it published before this pull_request
           # run got here) is not a previous release: comparing the APK with itself fails "newer" on every push.
-          PUB=$(gh release view kabaddi-raid-beta --json targetCommitish -q .targetCommitish 2>/dev/null || true)
+          # (Published in place, the release keeps its first target: its build's commit is the notes' "Commit:" line.)
+          PUB=$(gh release view kabaddi-raid-beta --json body -q .body 2>/dev/null | sed -n 's/^Commit: \([0-9a-f]*\).*/\1/p' | tail -1)
+          [ -n "$PUB" ] || PUB=$(gh release view kabaddi-raid-beta --json targetCommitish -q .targetCommitish 2>/dev/null || true)
           if [ "$GITHUB_EVENT_NAME" != "push" ]; then
             echo "a pull_request run publishes nothing: newness is judged on the push run that publishes"
           elif [ "$PUB" = "$HEAD_SHA" ]; then
@@ -227,17 +229,22 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # Publishing safely (ADOPTING 5.19): the new release, whole, under a tag of its own first; only then the
-          # old one goes and the new one takes the tag. (0.14.11's delete-then-create hit a 403 on create and left
-          # the testers' link pointing at nothing.)
-          NEXT="$TAG-next-$GITHUB_RUN_ID"
-          gh release create "$NEXT" "$APK" --prerelease --target "$GITHUB_SHA" \
-            --title "Kabaddi Raid ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
-          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+          # Publishing safely, in place (ADOPTING 5.19): no tag is made or deleted - since 2026-11-03 about 17:00 the
+          # workflow token is refused new tag names here (HTTP 403 on create: 0.14.11's delete-then-create left the
+          # testers' link empty). The new APK goes up beside the old, then the old comes off, then the title and notes.
+          printf '\n\nCommit: %s\n' "$GITHUB_SHA" >> notes.md   # (the release gate's guard reads it)
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+              --title "Kabaddi Raid ${VERSION} (latest beta)" --notes-file notes.md
+            exit 0
+          fi
+          OLD=$(gh release view "$TAG" --json assets -q '.assets[].name')
+          gh release upload "$TAG" "$APK" --clobber
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
+          for n in $OLD; do
+            [ "$n" = "$(basename "$APK")" ] || gh release delete-asset "$TAG" "$n" --yes || true
+          done
+          gh release edit "$TAG" --title "Kabaddi Raid ${VERSION} (latest beta)" --notes-file notes.md --prerelease
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot

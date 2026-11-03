@@ -142,6 +142,60 @@ static func feet(game: WsgWorldGame, parent: Node) -> Dictionary:
 	return _close(r)
 
 
+## feet_low: the feet rule on what the game draws at Low (WsgWorldGame.walker_low): its own body driven along the match
+## path by the game's own drive, its feet read as drawn; "foundation" passes (the feet rule measured that body).
+static func feet_low(game: WsgWorldGame, parent: Node) -> Dictionary:
+	var r := result("feet_low")
+	var w: Variant = game.walker_low(parent)
+	if w == null:
+		return _not_wired(r, "walker_low")
+	if w is String and w == "foundation":
+		r.lines.append("Low draws the foundation's bodies: the feet rule measured them")
+		return _close(r)
+	if not (w is Array and (w as Array).size() >= 3 and w[1] is Callable and w[2] is Callable):
+		r.fails.append("walker_low() returned %s: want \"foundation\" or [body, drive, feet]" % [w])
+		return _close(r)
+	var body: Node = w[0]
+	var drive_fn: Callable = w[1]
+	var feet_fn: Callable = w[2]
+	var tree := parent.get_tree()
+	await tree.process_frame
+	var frames := {}
+	var vel := Vector2.ZERO
+	var facing := 0.0
+	for si in MATCH_PATH.size():
+		var seg: Array = MATCH_PATH[si]
+		var n := int(float(seg[0]) / DT)
+		frames[si] = []
+		for k in n:
+			var want: Vector2 = seg[1]
+			vel = vel.move_toward(want, (ACCEL if want.length() > vel.length() else DECEL) * DT)
+			if is_nan(float(seg[2])):
+				if vel.length() > 0.3:
+					facing = atan2(vel.x, vel.y)
+			else:
+				facing = deg_to_rad(float(seg[2]))
+			drive_fn.call(DT, Vector3(vel.x, 0, vel.y), facing)
+			await tree.process_frame
+			(frames[si] as Array).append(feet_fn.call())
+	for si in MATCH_PATH.size():
+		var name: String = MATCH_PATH[si][3]
+		var s := WsgNoteChecks.foot_slip(frames.get(si, []))
+		r.lines.append("Low: %-15s %2d steps, worst slip %.1f cm, skid %.1f cm, jump %.1f cm" % [name, s.steps, s.max_cm, s.skid_cm, s.jump_cm])
+		_near(r, "Low: %s: a planted foot's slip" % name, float(s.max_cm), FEET_MAX_CM)
+		_near(r, "Low: %s: a flat foot's skid" % name, float(s.skid_cm), FEET_MAX_CM)
+		_near(r, "Low: %s: a low foot's jump" % name, float(s.jump_cm), JUMP_MAX_CM)
+		if float(s.max_cm) > FEET_MAX_CM:
+			r.fails.append("Low: %s: a planted foot slid %.1f cm in one step (%.1f at most)" % [name, s.max_cm, FEET_MAX_CM])
+		if float(s.skid_cm) > FEET_MAX_CM:
+			r.fails.append("Low: %s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [name, s.skid_cm, FEET_MAX_CM])
+		if float(s.jump_cm) > JUMP_MAX_CM:
+			r.fails.append("Low: %s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most)" % [name, s.jump_cm, JUMP_MAX_CM])
+	if is_instance_valid(body):
+		body.queue_free()
+	return _close(r)
+
+
 ## Plays every mode the game has: each started as the tap does (WsgWorldGame.start_mode), its loading watched from the
 ## tap's frame, then PLAY_SECONDS of it watched (its bodies' and officials' drawn poses), then its cameras taken.
 ## [{mode, root, cover_frame (frames after the tap the overlay was up; -1 never), load_frames, bodies, officials,

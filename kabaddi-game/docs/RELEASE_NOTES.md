@@ -1,4 +1,7 @@
-**New in 0.14.12: feet that step, not slide.** On Medium and High, a foot taking its own step moves evenly across
+**New in 0.14.13: steadier stops.** On Medium and High, a player stopping hard from a run plants his feet where
+they land instead of one foot lurching after him.
+
+**In 0.14.12: feet that step, not slide.** On Medium and High, a foot taking its own step moves evenly across
 the floor instead of in a lurch, and a foot let go after a stop lifts at once instead of gliding along the floor.
 
 **In 0.14.11: Android only.** The browser version of the game is retired: it is no longer built, and its page
