@@ -690,6 +690,12 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   skeleton, bone_prefix "mixamorig_", _planted's own contact rule, planting off in the air; their feet read as drawn,
   in skeleton_updated). Their flat feet sliding over 2 cm in a frame 32 -> 3 (worst 40.8 -> 12.5 cm), the planted
   step's slip (90th percentile) 8.3 -> 4.7 cm, jumps over 25 cm 1; CPU the same.
+- **WsgSim's deferrals, split by level** (game/sim.gd, the lead, 2026-11-03): on Low, our own bodies, every foot check
+  until 2026-11-08 12:00 UTC with feet_low; on Medium and High, the foundation's bodies, every foot check until
+  2026-11-06 12:00 UTC, then a planted foot's slide up to 7.5 cm only until 2026-11-13 12:00 UTC (jumps and skids
+  enforced). Kabaddi's setup tried on our Low players (WsgFootPlanter, its own contact gate, our planting off) failed
+  feet_low (planted slips 2.2-5.2 cm walking to stopping, skids 2.5-3.5): they stay on RealBody._planted until the
+  Foundation's slide fix.
 - **Publishing in place** (takraw-android.yml, ADOPTING 5.19): the workflow token is refused new tag names since
   2026-11-03 about 17:00, so the release on the beta's tag is updated where it stands - the new APK up beside the old,
   then the old off, then the title and notes, which carry "Commit: <sha>"; the release gate skips comparing a build

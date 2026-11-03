@@ -71,6 +71,7 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 			c.user_team = 0
 	if int(c.user_team) >= 0:
 		c.demo = true   # (no result screens after it: the sim frees it)
+	_tier = int(c.graphics)   # (deferred() is asked next, for this match)
 	return c
 
 
@@ -216,13 +217,23 @@ func bounds() -> AABB:
 	return AABB(Vector3(r.position.x - 1.0, -0.5, r.position.y - 1.0), Vector3(r.size.x + 2.0, 40.0, r.size.y + 2.0))
 
 
-## Put off with the lead's word, until a time (then it fails again): planted feet on Medium and High - the shared
-## foundation's locomotor and planter draw them - sliding 2.5-4.4 cm a step carrying the ball (0.15.11). On the
-## foundation's 11-06 feet batch (d70ac7d) a smoke still finds, all on Medium and High, officials' feet sliding 4.4-6.9
-## cm a step and jumping 29-47 cm in a frame, and players' 3.3-6.3 cm and 25.1: sent to the Foundation.
+## Put off with the lead's word, each until a time (then it fails again), by the match's graphics level (WsgSim asks
+## config() first):
+## - Low, our own bodies (RealBody's planter; the standing officials on the shared one): every foot check, until
+##   2026-11-08 12:00 UTC with the world check's feet_low (the lead, 2026-11-03: WsgSim read them for the first time -
+##   per match, slips 7.7 cm a step, flat skids 14.5 cm and jumps 30 cm at the median).
+## - Medium and High, the shared foundation's bodies: every foot check until 2026-11-06 12:00 UTC (0.15.11: planted
+##   feet sliding 2.5-4.4 cm carrying the ball), then a planted foot's slide up to 7.5 cm only, until 2026-11-13 12:00
+##   UTC (the lead, 2026-11-03: on 70e571a slides of 2.4-7.0 cm, no jumps or skids left; the Foundation's slide fix).
+var _tier := Game.GFX_LOW
+
+
 func deferred() -> Dictionary:
+	if _tier == Game.GFX_LOW:
+		return {"foot slip": ["2026-11-08T12:00Z", "the lead, 2026-11-03: Low feet on our own bodies, aligned with feet_low"]}
 	return {"foot slip": ["2026-11-06T12:00Z",
-		"players carrying at 2.2 m/s, 2.5-4.4 cm, foundation planter; Foundation fixing (lead approved 12:30Z)"]}
+		"players carrying at 2.2 m/s, 2.5-4.4 cm, foundation planter; Foundation fixing (lead approved 12:30Z)"],
+		"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-03: planted slides 2.4-7.0 cm on the foundation's bodies; foundation fix pending", 7.5]}
 
 
 ## Rally-point scoring: a point at a time (the score here: the points won over every set, counted once their call can
