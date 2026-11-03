@@ -74,26 +74,34 @@ func _default_place(slot: int, s: Vector2, k: float) -> Vector2:
 func layout() -> Array:
 	var s := size
 	var k := _k()
-	var out := []
 	var radii := [86.0 * k, 64.0 * k, 60.0 * k, 56.0 * k]
 	var saved: Dictionary = Game.settings.btn_places
-	for i in mini(ids.size(), 4):
-		var id := String(ids[i])
-		var c := _default_place(i, s, k)
+	var m := UI.safe_margins(self, 12.0)
+	var n := mini(ids.size(), 4)
+	# Every button in its own place first (right-handed px), then the saved places, in slot order.
+	var at := []
+	for i in n:
+		at.append(_fit(_default_place(i, s, k), radii[i], s, m))
+	for i in n:
 		var key := "%d" % i
-		var r: float = radii[i]
-		var m := UI.safe_margins(self, 12.0)
-		if saved.has(key):
-			var fr: Array = saved[key]
-			var placed := _fit(Vector2(float(fr[0]) * s.x, float(fr[1]) * s.y), r, s, m)
-			# A place saved for another button in this slot (TAG took POWER PLAY's slot in 0.11.2, and the owner's
-			# saved place put it over KHO): if it would overlap a button already placed, the slot's own place instead.
-			if not _overlaps(placed, r, out):
-				c = placed
-		c = _fit(c, r, s, m)
+		if not saved.has(key):
+			continue
+		var fr: Array = saved[key]
+		var placed := _fit(Vector2(float(fr[0]) * s.x, float(fr[1]) * s.y), radii[i], s, m)
+		# A place saved for another button in this slot (TAG took POWER PLAY's slot in 0.11.2, and the owner's saved
+		# place put it over KHO): if it would overlap any other button where it is now, the slot's own place instead.
+		var others := []
+		for j in n:
+			if j != i:
+				others.append(["", at[j], radii[j]])
+		if not _overlaps(placed, radii[i], others):
+			at[i] = placed
+	var out := []
+	for i in n:
+		var c: Vector2 = at[i]
 		if _left_handed():
 			c.x = s.x - c.x
-		out.append([id, c, r])
+		out.append([String(ids[i]), c, radii[i]])
 	return out
 
 
@@ -102,12 +110,10 @@ func _fit(c: Vector2, r: float, s: Vector2, m: Vector4) -> Vector2:
 	return Vector2(clampf(c.x, s.x * STICK_SIDE + r, s.x - m.z - r), clampf(c.y, TOP_CLEAR + r, s.y - m.w - r))
 
 
-## Does a button of radius r at c (right-handed) overlap one already laid out?
+## Does a button of radius r at c overlap one of placed ([id, centre, radius], all right-handed px)?
 func _overlaps(c: Vector2, r: float, placed: Array) -> bool:
 	for b in placed:
 		var bc: Vector2 = b[1]
-		if _left_handed():
-			bc.x = size.x - bc.x
 		if c.distance_to(bc) < r + float(b[2]) + 6.0:
 			return true
 	return false

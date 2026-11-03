@@ -639,7 +639,7 @@ func _process(delta: float) -> void:
 	for a in everyone():
 		a.integrate(dt)
 	if phase == "play":
-		_separate()
+		_separate(dt)
 	_update_markers()
 	# The crowd follows the chase: where the active chaser and the defender nearest him are.
 	if active and phase == "play":
@@ -978,7 +978,18 @@ func _stick_map() -> Array:
 	var fallback := [Vector2(-fwd.y, fwd.x), -fwd]
 	if cam == null or not cam.is_inside_tree():
 		return fallback
-	var p := _stick_point()
+	return stick_map_at(cam, _stick_point(), fallback)
+
+
+## The stick's axes [right, down] on the ground at p as camera c sees it (the owner's note: every camera, every part of
+## the screen - tests/owner_notes).
+static func stick_map_at(c: Camera3D, p: Vector3, fallback: Array = []) -> Array:
+	if fallback.is_empty():
+		var f := -c.global_transform.basis.z
+		var y := atan2(f.x, f.z)
+		var fw := Vector2(sin(y), cos(y))
+		fallback = [Vector2(-fw.y, fw.x), -fw]
+	var cam := c
 	if cam.is_position_behind(p):
 		return fallback
 	var s0 := cam.unproject_position(p)
@@ -989,8 +1000,13 @@ func _stick_map() -> Array:
 		return fallback
 	var sx := Vector2(b.y, -a.y) / det
 	var sy := Vector2(-b.x, a.x) / det
-	var k := maxf(sx.length(), sy.length())
-	return [sx / k, sy / k]
+	# Up the stick is up the screen where the body is; right is square to it on the ground, on the screen's right
+	# (the screen's own diagonals, foreshortened, would swing a diagonal push up to 40 deg off the camera's way).
+	var down := sy.normalized()
+	var right := Vector2(-down.y, down.x)
+	if right.dot(sx) < 0.0:
+		right = -right
+	return [right, down]
 
 
 func _ease_stick(dt: float) -> void:
@@ -1533,8 +1549,8 @@ func _touches() -> void:
 	if active.act == "dive":
 		if active.act_t < 0.08 or active.act_t > 0.45:
 			return
-		hand = active.position + fwd * 1.3
-		hand_r = 0.45
+		hand = dive_touch_at(active)
+		hand_r = DIVE_TOUCH_R
 		kind = KhoRules.OUT_DIVE
 	elif active.act == "pole_dive":
 		if active.act_t < 0.1:
@@ -1571,6 +1587,12 @@ func _touches() -> void:
 				active.lock_reach(d.global_position + Vector3(0, 0.18, 0))   # the hand stays on his leg
 			_out(d, kind, active)
 			return
+
+
+## A dive's hand, where it can touch a runner (within DIVE_TOUCH_R, from 0.08 s to 0.45 s into the dive).
+const DIVE_TOUCH_R := 0.45
+static func dive_touch_at(a: Athlete) -> Vector3:
+	return a.position + Vector3(sin(a.yaw), 0, cos(a.yaw)) * 1.3
 
 
 ## The last-moment swerve: as the hand comes, a defender may twist away from it. The chance is his turn rating
@@ -2101,7 +2123,7 @@ func _solid(a: Athlete) -> bool:
 	return not (a.act in ["dive", "pole_dive", "lie", "getup", "pole_turn"])
 
 
-func _separate() -> void:
+func _separate(dt := 1.0 / 30.0) -> void:
 	var movers: Array = []
 	for d in batch:
 		if d_state.get(d, "") == "in" and _solid(d):
@@ -2110,7 +2132,10 @@ func _separate() -> void:
 		for sq in squares:
 			if sq == active or not (sq as Athlete).act in ["sit", ""] or (sq as Athlete).vel.length() > 0.5:
 				continue
-			_push_apart(d, sq, BODY_SEATED, 1.0)
+			# A kneeling chaser does not move: a runner who ran into him this frame is put back out all the way (at
+			# most his own frame's run - he slides round him, no jump), or at full speed he went half through (the
+			# owner: "like they are ghosts").
+			_push_apart(d, sq, BODY_SEATED, 1.0, PUSH_MAX + d.vel.length() * dt)
 	for i in movers.size():
 		for k in range(i + 1, movers.size()):
 			_push_apart(movers[i], movers[k], BODY_STANDING, 0.5)

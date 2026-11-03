@@ -32,6 +32,10 @@ jobs:
       - name: Shared foundation has every required commit (fails without one; only behind is a warning)
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
 
+      # The owner's notes are kept as tests for good (ADOPTING 5.16): no note ever leaves tests/owner_notes/INDEX.json.
+      - name: Owner's notes all still kept (none ever deleted)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -125,6 +129,14 @@ jobs:
         run: |
           set -o pipefail
           timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 2 120 2>&1 | grep -E "inside a prop|PROP AUDIT"
+
+      # Every note the owner ever gave, as a test of its own (tests/owner_notes: their words, and what must hold so they
+      # never see it again). Strict: nothing may be skipped here.
+      - name: The owner's notes (every one, in their own words)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | grep -E "^\[|PASS|FAIL|SKIPPED|OWNER NOTES|notes:"
 
       # The beta's signing key: the owner's (repository secret BETA_KEYSTORE_B64, a PKCS12 keystore, alias
       # androiddebugkey, passwords "android"), the same on every build, so each beta installs over the last. Without

@@ -134,7 +134,13 @@ func integrate(dt: float) -> void:
 		var f := clampf(act_t / maxf(act_len, 0.1), 0.0, 1.0)
 		var sp := vel.length()
 		if sp > 0.01:
-			vel = vel.normalized() * move_toward(sp, lerpf(_dive_v0, DIVE_LAND, f * f), 30.0 * dt)
+			var to_v := lerpf(_dive_v0, DIVE_LAND, f * f)
+			if _reach_lock != Vector3.INF:
+				# His hand has the runner's leg: the dive stops on it, not carrying him past it (the owner, 0.11: a
+				# diving tag, one arm out to the leg) - no faster than stops him LOCK_AHEAD short of it.
+				var along := (_reach_lock - position).dot(vel / sp)
+				to_v = minf(to_v, sqrt(2.0 * LOCK_STOP * maxf(along - LOCK_AHEAD, 0.0)))
+			vel = vel.normalized() * move_toward(sp, to_v, maxf(30.0, LOCK_STOP * 2.0) * dt)
 		dv = Vector3.ZERO
 	elif act == "lie":
 		dv = -vel
@@ -244,6 +250,10 @@ const PUSH_TO := 0.3        # the get-up (the owner: "push up with the hands, a 
 const KNEEL_TO := 0.55      # ... a knee under him and the other foot forward by ..., then up off it to standing
 const POLE_REACH := 1.6   # m: a pole dive's hand goes for a runner this near, else straight ahead
 const REACH := 2.6          # m: a runner nearer than this has his leg reached for; further, the arm reaches ahead
+
+
+const LOCK_AHEAD := 0.8    # m: a dive that has touched a runner stops this far short of the touch (the hand on it)
+const LOCK_STOP := 22.0    # m/s/s: how hard it stops (his hand on the leg)
 
 
 ## His hand touched the runner at p (Match._touches): it stays there as he lands, as a tag's does.
