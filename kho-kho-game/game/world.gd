@@ -93,6 +93,41 @@ func walker(parent: Node) -> Array:
 	return [a.link.body, a.link.loco]
 
 
+## The world check's pose rule asks this before it fails a T- or A-pose (WsgWorldGame.pose_excuse). Narrow, as the lead
+## ruled (2026-11-03): a pole turn only while a hand is on the pole (the other arm thrown out: the Drive video's
+## slingshot), and a touch or kho reached for on the run (FoundationLink "upper": the foundation's ruling). Every pose
+## asked about is printed (WORLD_POSE: who, act, mode, grip, hand to pole) so the log says what it was.
+const POLE_HOLD := 0.25   # m from a hand to the pole's axis: holding it
+var _pose_said := {}
+
+
+func pose_excuse(body: Node) -> String:
+	var link = body.get_parent() if body else null
+	var a = link.get("who") if link != null else null
+	if a == null or not (a is Athlete) or not is_instance_valid(a):
+		return ""
+	var m = a.get_parent()
+	var hand := INF
+	if m != null and m.get("f") != null and body is WsgBody:
+		for sx in [-1.0, 1.0]:
+			var pole := Vector2(sx * float(m.f.pole_gap) * 0.5, 0.0)
+			for hs in ["LeftHand", "RightHand"]:
+				var hp: Vector3 = (body as WsgBody).bone_world(hs).origin
+				hand = minf(hand, Vector2(hp.x, hp.z).distance_to(pole))
+	var why := ""
+	if a.act == "pole_turn" and hand < POLE_HOLD:
+		why = "pole turn: a hand on the pole (%.2f m), the other arm out" % hand
+	elif String(link.get("mode")) == "upper":
+		why = "a touch or kho reached for on the run: the reaching arm over the run"
+	var n := int(_pose_said.get(body.get_instance_id(), 0))
+	if n < 3:
+		_pose_said[body.get_instance_id()] = n + 1
+		print("WORLD_POSE %s: act '%s' act_t %.2f, link mode %s, weight %.2f, grip %s, speed %.1f, hand to pole %.2f m -> %s" % [
+			body.name, a.act, a.act_t, link.get("mode"), float(link.layer.weight), a.body.grip, a.vel.length(), hand,
+			why if why != "" else "NOT excused"])
+	return why
+
+
 ## Low (ADOPTING 5.21): the game draws its own body there (ModelBody, the light mesh; FoundationLink is off below
 ## Medium), its feet held by the clips' baked foot locks, not a planter. Driven a frame at a time as play does
 ## (ModelBody.drive), its feet read as drawn.

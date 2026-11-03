@@ -104,6 +104,19 @@ func _ready() -> void:
 	var diver := DivePose.new()
 	diver.body = self
 	skeleton.add_child(diver)   # first: the head turn and the grip work on the pose it leaves
+	if low:
+		# At Low (what the owner plays on): the foundation's planter on this skeleton (ADOPTING 5.21) - the clips' baked
+		# foot locks alone slid 3-14 cm a step at the stride rates they are played at (the world check's feet_low).
+		planter = WsgFootPlanter.new()
+		var bm := {"Hips": "mixamorig_Hips"}
+		for side in ["Left", "Right"]:
+			for b in ["UpLeg", "Leg", "Foot", "ToeBase"]:
+				bm[side + b] = "mixamorig_" + side + b
+		planter.bone_map = bm
+		# Down by this body's own feet (the foundation, 2026-11-03): the planter's floor is the rig's rest ankle and toe
+		# heights, not this model's - its running feet never read as down, and a flat run foot slid 9 cm unplanted.
+		planter.contact_fn = _foot_down
+		skeleton.add_child(planter)   # after the clips and DivePose; before the head turn and the grip
 	_turner = HeadTurn.new()
 	_turner.body = self
 	skeleton.add_child(_turner)
@@ -111,6 +124,44 @@ func _ready() -> void:
 	_gripper.body = self
 	skeleton.add_child(_gripper)
 	play("stand")
+
+
+## The planter at Low (null on Medium and High, where FoundationLink draws him). Each game step: step_feet.
+var planter: WsgFootPlanter
+var _feet_at := Vector3.INF
+## Near enough the camera for his feet to be seen (Match._rank_detail at Low): far off the planter rests and the clips'
+## own foot locks hold them (the A16's frame: the lead, 2026-11-03 - about 1 ms over Low without it, at most).
+var feet_near := true
+var _floor_a := NAN   # the ankle's and the toe's height standing (over the ground), from this model's rest pose
+var _floor_t := NAN
+
+
+## A game step for the planter: his speed over the ground, and whether his feet are his own (not on the ground in a
+## dive, kneeling, getting up - the planter lets go then). Put somewhere else (over 1.2 m in a step): it lets go.
+func step_feet(dt: float, speed: float, on_feet := true) -> void:
+	if planter == null:
+		return
+	var p := global_position
+	if _feet_at != Vector3.INF and p.distance_to(_feet_at) > 1.2:
+		planter.reset()
+	_feet_at = p
+	var on := on_feet and feet_near
+	if planter.enabled != on:
+		planter.enabled = on
+		planter.reset()
+	planter.ground_y = 0.0
+	planter.body_speed = speed
+	planter.tick(dt)
+
+
+func _foot_down(i: int, ankle: Vector3, toe: Vector3, was_down: bool) -> bool:
+	if is_nan(_floor_a):
+		var side := "Left" if i == 0 else "Right"
+		var base := global_position.y
+		_floor_a = (skeleton.global_transform * skeleton.get_bone_global_rest(skeleton.find_bone("mixamorig_%sFoot" % side)).origin).y - base
+		_floor_t = (skeleton.global_transform * skeleton.get_bone_global_rest(skeleton.find_bone("mixamorig_%sToeBase" % side)).origin).y - base
+	var g := planter.ground_y
+	return minf(ankle.y - g - _floor_a, toe.y - g - _floor_t) < (0.05 if was_down else 0.03)
 
 
 ## One frame of running or walking, as play draws it (Athlete._animate's moving branch: the run over 2.6 m/s, the walk
@@ -126,6 +177,7 @@ func drive(dt: float, vel: Vector3, facing: float) -> void:
 		play("idle", 1.0, 0.4)
 	position += Vector3(vel.x, 0.0, vel.z) * dt
 	rotation.y = facing
+	step_feet(dt, spd)
 
 
 ## Its feet as drawn (world): [left ankle, left toe, right ankle, right toe], kept from its last skeleton_updated

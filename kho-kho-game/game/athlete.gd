@@ -416,6 +416,7 @@ func _animate(dt: float, spd: float) -> void:
 	if act != "sit":
 		_knelt = false
 	body.play(c, rate, blend, at)
+	body.step_feet(dt, spd, not act in ["sit", "rise", "dive", "pole_dive", "lie", "getup"])
 	# His feet: two steps to each cycle of his run or walk, as fast as the clip plays.
 	if c in ["run", "walk"] and spd > 0.5:
 		_stride += dt * 2.0 * rate / body.clip_length(c)

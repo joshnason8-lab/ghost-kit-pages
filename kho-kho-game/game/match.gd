@@ -730,12 +730,14 @@ func _rank_detail(dt: float) -> void:
 	var near: Array = POSE_NEAR[clampi(int(Game.settings.graphics), 0, 2)]
 	var list := []
 	for a in everyone():
+		var d: float = a.global_position.distance_to(camp)
+		var busy: bool = a == active or d_state.get(a, "") == "in" or a.act in ["dive", "pole_dive", "lie", "getup", "pole_turn", "kho", "reach", "rise", "dodge"]
+		# Low draws his own body (ModelBody): its planter only where his feet can be seen - in the play, or near.
+		a.body.feet_near = busy or d < float(near[1])
 		var link: FoundationLink = a.link
 		if link == null or link.body == null:
 			continue
 		list.append(link.body)
-		var d: float = a.global_position.distance_to(camp)
-		var busy: bool = a == active or d_state.get(a, "") == "in" or a.act in ["dive", "pole_dive", "lie", "getup", "pole_turn", "kho", "reach", "rise", "dodge"]
 		link.pose_every = 1 if busy or d < float(near[0]) else (2 if d < float(near[1]) else 3)
 		if a.act == "sit" and not busy:
 			link.pose_every = maxi(link.pose_every, 2)
