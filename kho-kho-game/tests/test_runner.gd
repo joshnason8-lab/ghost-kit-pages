@@ -834,6 +834,8 @@ func _your_controls() -> void:
 		low = minf(low, m.active.body.position.y + m.active.position.y)
 	check(m.active.act != "dive" and m.active.act != "lie" and low > -0.05, "and he never leaves his feet (%s)" % m.active.act)
 	await frames(10)
+	# (The owner, 0.12: a reach had no end - he kept it, his arm out, standing or running.)
+	check(m.active.act == "" and m.active.body.grip == Vector3.INF, "and the reach ends: his arm comes back (%s)" % m.active.act)
 	m.active.position = Vector3(float(f.square_x[4]), 0, float(m.chase.half) * 3.0)
 	m.active.vel = Vector3.ZERO
 	await frames(2)

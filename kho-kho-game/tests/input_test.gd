@@ -116,6 +116,15 @@ func _two_thumbs() -> void:
 	_touch(0, base, false)
 	await frames(1)
 	check(tc.joystick == Vector2.ZERO, "lifting the left thumb lets the joystick go")
+	# A place saved for slot 2 (once POWER PLAY's, TAG's since 0.11.2) right on KHO: TAG takes its own place instead.
+	var keep: Dictionary = Game.settings.btn_places.duplicate()
+	tc.set_buttons(["KHO", "DIVE", "TAG"])
+	var k0: Vector2 = tc.layout()[0][1]
+	Game.settings.btn_places = {"2": [k0.x / tc.size.x, k0.y / tc.size.y]}
+	var lay: Array = tc.layout()
+	var gap: float = (lay[0][1] as Vector2).distance_to(lay[2][1]) - float(lay[0][2]) - float(lay[2][2])
+	check(gap > 0.0, "a saved place over KHO is not used: TAG clear of it (%.0f px)" % gap)
+	Game.settings.btn_places = keep
 	tc.queue_free()
 
 

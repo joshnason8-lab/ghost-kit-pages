@@ -820,8 +820,9 @@ func _play(dt: float) -> void:
 	if chase.foul != "":
 		_foul_whistle -= dt
 		if _foul_whistle <= 0.0:
-			_foul_whistle = 0.32
-			# Short whistles, again and again, until it is put right.
+			_foul_whistle = FOUL_REMIND
+			# A reminder now and then until it is put right (the foul's bar shows it all along). Every 0.32 s, as
+			# until 0.12, the whistles "went nuts" (the owner).
 			Sfx.whistle("short", _umpire_for(active.position.x).global_position if active else arena.table_pos(), -5.0)
 	_touches()
 	_limits_and_entry(dt)
@@ -1486,8 +1487,8 @@ func _touches() -> void:
 	if active == null:
 		return
 	var fwd := Vector3(sin(active.yaw), 0, cos(active.yaw))
-	var hand := active.position + fwd * 0.4
-	var hand_r := 0.36
+	var hand := active.position + fwd * TOUCH_AHEAD
+	var hand_r := TOUCH_R
 	var kind := KhoRules.OUT_TOUCH
 	if active.act == "dive":
 		if active.act_t < 0.08 or active.act_t > 0.45:
@@ -1536,6 +1537,10 @@ func _touches() -> void:
 ## against the chaser's reach (and a dive is harder to escape). Calibrated so that equal sides put out about
 ## 1.3-2 defenders a minute, as real matches do (docs/AI.md). Once a defender has swerved a hand, it has missed him.
 const SWERVE_TOUCH := 0.78
+const TOUCH_AHEAD := 0.45   # m: the middle of a running touch's reach, ahead of him ...
+const TOUCH_R := 0.42       # ... and how far round it the hand finds a man (0.4 and 0.36 until 0.12.2)
+const CONTACT := 0.62       # m between middles: body to body ...
+const CONTACT_SLIP := 0.4   # ... where a twist takes him clear of the hand this much as often
 const SWERVE_DIVE := 0.5
 
 
@@ -1556,11 +1561,17 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	var reach := float(active.data.get("reach", 70)) + float(_diff[active.side])
 	var base := SWERVE_TOUCH if kind == KhoRules.OUT_TOUCH else SWERVE_DIVE
 	var p := clampf(base + (turn - reach) / 150.0, 0.15, 0.85)
+	# Body to body (the owner, 0.12: "so close it's obvious there would be a tag, but they just run right by"): at
+	# arm's length a twist may take him clear of the hand; this close, rarely.
+	if (d.position - active.position).length() < CONTACT:
+		p *= CONTACT_SLIP
 	if steered:
 		# Yours: the difficulty decides, so a harder side's chasers really do catch you (the owner: on the hardest
 		# they still ran past). Your defender's own turn against the chaser's reach still counts a little.
 		var raw := float(d.data.get("turn", 70)) - float(active.data.get("reach", 70))
 		p = clampf((_user_slip + raw / 300.0) * (1.0 if kind == KhoRules.OUT_TOUCH else 0.6), 0.08, 0.85)
+		if (d.position - active.position).length() < CONTACT:
+			p *= CONTACT_SLIP
 	if rng.randf() >= p:
 		return false
 	ai.slip_until = t_match + (0.5 if kind == KhoRules.OUT_TOUCH else 0.6)
@@ -1573,6 +1584,9 @@ func _swerves(d: Athlete, kind: String) -> bool:
 	ai.juke_dir = dir
 	if steered:
 		d.vel += dir * 3.0
+	elif d.act == "":
+		# Seen: he twists away from the hand (the recorded dodge), not a hand passing through him.
+		d.dodge(dir, 0.4)
 	_near_miss(kind != KhoRules.OUT_TOUCH)
 	game_event.emit("swerve")
 	return true
@@ -1615,9 +1629,10 @@ func _out(d: Athlete, kind: String, by: Athlete = null) -> void:
 		user_def = null
 		_switch_defender()
 	if replay:
-		if by and kind in [KhoRules.OUT_DIVE, KhoRules.OUT_POLE, KhoRules.OUT_TOUCH]:
-			replay.moment({KhoRules.OUT_DIVE: "dive_out", KhoRules.OUT_POLE: "pole_out", KhoRules.OUT_TOUCH: "touch_out"}[kind], by)
-		replay.close()
+		# No replays of a tag (the owner, 0.12: they will never look good on a phone's level of detail): the window of
+		# moments before an out is dropped, and nothing is shown for it.
+		replay.moments = []
+		replay._due = -1.0   # and none already due (a near thing just before) plays over it
 	game_event.emit("out")
 	if min_chase:
 		min_times[chasing] = turn_len - clock
@@ -1731,6 +1746,9 @@ func _dream(dt: float) -> void:
 		game_event.emit("dream")
 
 
+const FOUL_REMIND := 2.5   # s between the umpire's reminders while a foul stands
+
+
 func _on_foul(kind: String, who: Athlete = null) -> void:
 	var a := who if who else active
 	var ump := _umpire_for(a.position.x)
@@ -1740,8 +1758,10 @@ func _on_foul(kind: String, who: Athlete = null) -> void:
 		stats[a.data.id].fouls += 1
 	_log("foul", {"how": kind, "by": a.data.get("id", ""), "act": a.act, "x": a.position.x, "z": a.position.z,
 		"vz": a.vel.z, "half": chase.half, "plan": String(_chase_plan.get("kind", ""))})
+	# Two short blasts as he calls it; then a reminder every FOUL_REMIND s while it stands.
 	Sfx.whistle("short", ump.global_position, -2.0)
-	_foul_whistle = 0.32
+	get_tree().create_timer(0.3).timeout.connect(func(): Sfx.whistle("short", ump.global_position, -3.0))
+	_foul_whistle = FOUL_REMIND
 	if who and kind == KhoRules.FOUL_EARLY:
 		who.do("foul", 0.6)   # half up, then back down
 	if hud:

@@ -41,6 +41,7 @@ var dive_push := 0.0
 var dive_h := 0.0
 var dive_reach := Vector3.INF   # the point (world) his reaching hand goes for: the runner's leg; INF straight ahead
 var dive_arm := -1.0            # which arm reaches: -1 his right, 1 his left (+x is his left)
+var dive_bend := 0.0            # the reaching arm's elbow bent this much (0 straight; a pole dive's, a little)
 var dive_kneel := 0.0           # getting up: how far his leading leg has come forward under him (0-1)
 var dive_hand := Vector3.INF    # where DivePose last drew the reaching hand (world)
 var dive_drawn := Vector2.INF   # as DivePose last drew him: (hips height, lowest point's height) in body space (m)
@@ -326,6 +327,9 @@ class DivePose extends SkeletonModifier3D:
 					var d2 := to_t.normalized().slerp(want[side_name + "Arm"] as Vector3, k)
 					want[side_name + "Arm"] = d2
 					want[side_name + "ForeArm"] = d2
+			if pair[2] == side_name + "ForeArm" and float(body.dive_bend) > 0.0:
+				# The elbow a little bent, the forearm toward the ground (a pole dive: not thrown out at full stretch).
+				want[pair[2]] = (want[pair[2]] as Vector3).slerp(G_DOWN, float(body.dive_bend))
 			var t: Vector3 = to_sk * (want[pair[2]] as Vector3)
 			var gb := sk.get_bone_global_pose(b)
 			var d := sk.get_bone_global_pose(pair[1]).origin - gb.origin

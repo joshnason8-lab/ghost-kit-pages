@@ -26,6 +26,7 @@ var yaw := 0.0
 var watch := Vector3.INF    # a point his head turns to follow (a seated chaser watches the play), INF none
 var _head := 0.0
 var _prev_act := ""
+var _pole_dive := false
 var _knelt := false
 var _stride := 0.0          # through his stride: a footstep at each half
 var _dive_v0 := 0.0         # m/s he leaves the ground at in a dive
@@ -60,6 +61,7 @@ func do(p_act: String, len := 0.0, p_mirror := false) -> void:
 		return
 	_prev_act = act
 	act = p_act
+	_pole_dive = p_act == "pole_dive"   # (kept through the lie that follows it)
 	act_t = 0.0
 	act_len = len
 	mirror = p_mirror
@@ -190,8 +192,8 @@ func _finish_act() -> void:
 	match act:
 		"rise":
 			act = ""
-		"kho":
-			act = ""
+		"kho", "reach":
+			act = ""   # (a reach had no ending: he kept reaching, his arm out, standing or running - the owner, 0.12)
 		"dive", "pole_dive":
 			act = "lie"
 			act_t = 0.0
@@ -226,6 +228,7 @@ const LIE_S := 0.25
 const GETUP_S := 1.25
 const PUSH_TO := 0.3        # the get-up (the owner: "push up with the hands, a knee under, rise"): pushed up by ...
 const KNEEL_TO := 0.55      # ... a knee under him and the other foot forward by ..., then up off it to standing
+const POLE_REACH := 1.6   # m: a pole dive's hand goes for a runner this near, else straight ahead
 const REACH := 2.6          # m: a runner nearer than this has his leg reached for; further, the arm reaches ahead
 
 
@@ -235,6 +238,7 @@ func lock_reach(p: Vector3) -> void:
 
 
 func _dive_body() -> void:
+	body.dive_bend = 0.35 if _pole_dive and act in ["pole_dive", "lie"] else 0.0
 	body.rotation.x = 0.0
 	body.position.y = 0.0
 	var f := clampf(act_t / act_len, 0.0, 1.0) if act_len > 0.0 else 1.0
@@ -296,7 +300,9 @@ func _aim_reach() -> void:
 	var p := dive_target.global_position + Vector3(0, 0.18, 0)
 	var to := p - global_position
 	to.y = 0.0
-	if to.length() > REACH:
+	# A pole dive reaches from the pole for a runner close by it, the arm not thrown out at one further off (the
+	# owner, 0.12: "his arms extend too much").
+	if to.length() > (POLE_REACH if act == "pole_dive" else REACH):
 		return
 	body.dive_reach = p
 	# The arm on the runner's side of his line reaches (his left is +x in his own frame).
@@ -307,6 +313,10 @@ func _aim_reach() -> void:
 ## Which of the model's clips he plays, and how fast: his run or walk at the rate that keeps his feet with the
 ## ground; the act's clip fitted to the act's length.
 func _animate(dt: float, spd: float) -> void:
+	# The arm reaches (body.grip) only in a reach, a kho or round the pole: an act cut short by another (a reach by a
+	# dive, a kho by sitting down) left it set, and his arm stayed straight out as he ran or stood (the owner, 0.12).
+	if body.grip != Vector3.INF and not act in ["reach", "kho", "pole_turn"]:
+		body.grip = Vector3.INF
 	var f := act_t / act_len if act_len > 0.0 else 1.0
 	var c := ""
 	var rate := 1.0

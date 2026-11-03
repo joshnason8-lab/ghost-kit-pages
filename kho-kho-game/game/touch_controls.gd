@@ -81,18 +81,36 @@ func layout() -> Array:
 		var id := String(ids[i])
 		var c := _default_place(i, s, k)
 		var key := "%d" % i
+		var r: float = radii[i]
+		var m := UI.safe_margins(self, 12.0)
 		if saved.has(key):
 			var fr: Array = saved[key]
-			c = Vector2(float(fr[0]) * s.x, float(fr[1]) * s.y)
-		var r: float = radii[i]
-		# Never off the screen, under a camera cut-out, over the scoreboard, or on the joystick's side.
-		var m := UI.safe_margins(self, 12.0)
-		c.x = clampf(c.x, s.x * STICK_SIDE + r, s.x - m.z - r)
-		c.y = clampf(c.y, TOP_CLEAR + r, s.y - m.w - r)
+			var placed := _fit(Vector2(float(fr[0]) * s.x, float(fr[1]) * s.y), r, s, m)
+			# A place saved for another button in this slot (TAG took POWER PLAY's slot in 0.11.2, and the owner's
+			# saved place put it over KHO): if it would overlap a button already placed, the slot's own place instead.
+			if not _overlaps(placed, r, out):
+				c = placed
+		c = _fit(c, r, s, m)
 		if _left_handed():
 			c.x = s.x - c.x
 		out.append([id, c, r])
 	return out
+
+
+## Never off the screen, under a camera cut-out, over the scoreboard, or on the joystick's side (right-handed px).
+func _fit(c: Vector2, r: float, s: Vector2, m: Vector4) -> Vector2:
+	return Vector2(clampf(c.x, s.x * STICK_SIDE + r, s.x - m.z - r), clampf(c.y, TOP_CLEAR + r, s.y - m.w - r))
+
+
+## Does a button of radius r at c (right-handed) overlap one already laid out?
+func _overlaps(c: Vector2, r: float, placed: Array) -> bool:
+	for b in placed:
+		var bc: Vector2 = b[1]
+		if _left_handed():
+			bc.x = size.x - bc.x
+		if c.distance_to(bc) < r + float(b[2]) + 6.0:
+			return true
+	return false
 
 
 ## Puts the buttons back where they started (Move buttons: Reset).
