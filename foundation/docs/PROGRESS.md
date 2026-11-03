@@ -566,3 +566,28 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     Locking at the previous drawn ankle removed those, but the walk still read 2.7 (a slow creep in stance, under 3 mm
     a frame), and 2.2 m/s got worse (a self-step's end toe skating). Reverted.
   - Probes kept in the scratchpad (planter_probes/_brisk.gd, _brisk2.gd).
+- **Feet measure, frame by frame (the lead's go, 2026-11-03; REQUIRED from 2026-11-05 12:00 UTC):**
+  - `WsgNoteChecks.foot_slip` adds up, each frame a foot is down, the smaller of the heel's and the ball's move. A
+    heel-to-toe roll reads ~0; a slide reads in full. The old one took each end's drift since the step began: a roll
+    read 1-3 cm that was not there, and the planter off (the clips' own feet) read 2.7 cm at a walk (now 8.0).
+  - `tests/foot_slip_test.gd` pins it: a pure roll under 0.5 cm, a planted foot pushed 3 cm (as the toe comes down,
+    flat, as the heel lifts) 3 cm or more, the planter off 5 cm or more at 1.3/1.8/2.2/3.0 m/s (8.0-10.7). The old
+    measure fails it (roll 0.9, planter off at 1.3 m/s 2.7). Limit: the frame a foot comes down in is its arrival,
+    not counted.
+  - `WsgWorldRules.drive` drives every frame. It took two frames a step; the hurler's numbers are identical either
+    way (the pose advances only inside drive). The earlier note above ("reads 1.5: optimistic") was the measure,
+    not the cadence.
+  - What the new measure showed, both fixed:
+    - The planter's roll over the ball lowered the heel below where it was planted when a stop's clip pitched its
+      foot back toe-up; the floor took it back and the toe was dragged 1 cm off its lock and back. The hero's stop
+      read 2.3-3.2 cm at every scale; now 0.0 (the roll never goes lower than the foot was held).
+    - WsgFootFlat's toe shift came on in the frame the toe touched, the heel already planted: the heel jumped 3.3 cm
+      (Hurling's walker: walk 2.6, jog 2.4, jog turned 2.3). Now in full while the planter holds the foot, else by the
+      heel's or the toe's height (made in the air): Hurling 1.0 / 0.3 / 1.3. The hero (flat) does not show it even
+      with FootFlat forced on (feet_scale_test now runs two scales with it).
+  - Every game's walker (world_check --only feet), foundation 5d33d5a9 (old measure) -> this commit, worst slip cm:
+    Hurling walk 1.7->1.0, jog 0.4->0.3, turned 1.9->1.3; Floorball walk 1.5->0.8, jog 1.3->0.7, stop 1.5->0.2;
+    Kabaddi all <= 0.9 both; Kho Kho walk 2.6 (FAIL) -> 0.6; Netball walk 1.6->0.6, turned 1.1->1.2; Pok Ta Pok walk
+    2.1 (FAIL) -> 0.3, jog 0.4->0.7; Takraw walk 1.8->0.3. All pass after.
+  - Still open, not measured by either measure: a hard stop from a run lands with the clip snapping the foot back 7-8
+    cm in one frame at ground height (the planter plants the frame after; the swing gate reads it as swinging).

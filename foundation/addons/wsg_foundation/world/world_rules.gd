@@ -60,11 +60,14 @@ static func drive(tree: SceneTree, body: WsgBody, loco: WsgLocomotor, segments: 
 				facing = deg_to_rad(float(seg[2]))
 			pos += Vector3(vel.x, 0, vel.y) * DT
 			body.position = pos
+			# Every frame, as a game drives its players (until 2026-11-04 it took two frames a step: the pose advances only
+			# inside drive, so the hurler's numbers are the same, but a modifier keeping its own frame-by-frame state ran
+			# twice a step there and once in a game).
 			loco.drive(DT, Vector3(vel.x, 0, vel.y), facing, Vector3(want.x, 0, want.y))
-			await tree.process_frame
 			# (A body the game advances itself - set_manual - is posed only when advanced: Hurling's hung the walk.)
 			if body.manual:
 				body.call_deferred("advance", DT)
+			# The frame's own pass - the pose as drawn (the locomotor's drive poses it once already, inside the call).
 			await body.skeleton.skeleton_updated
 			on_frame.call(t, si)
 			# (Out of skeleton_updated before the next drive: poses set inside it are undone.)

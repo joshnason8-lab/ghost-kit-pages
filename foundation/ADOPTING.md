@@ -466,7 +466,10 @@ Web export made by hand from that checkout would otherwise ship them. Kabaddi's 
 body's modifiers are all in place (the locomotor, the layers, your own): it measures the model's sole tilt from its
 mesh (`WsgFootFlat.sole_tilt(body)`, a boot's 1.5 degrees of toe spring allowed) and, if it is 2 degrees or more, adds
 itself as the skeleton's LAST modifier, turning each foot down by it and setting a planted heel back on the ground.
-A model standing flat gets none. (From Hurling's FootFlat, 0.21.1: its match audit's ankle frames 86 -> 7.)
+A model standing flat gets none. (From Hurling's FootFlat, 0.21.1: its match audit's ankle frames 86 -> 7.) It finds
+the body's `WsgFootPlanter` on the skeleton and keeps a foot the planter holds down shifted in full, so the turn's toe
+shift is made in the air, not on the ground (until 2026-11-04 it came on as the toe touched down: the planted heel
+jumped 3.3 cm a step on Hurling's walker).
 
 **Your pose over the whole body**
 - **A body you pose from its first frame never runs the locomotor**, so nothing switches its planter for you. Set it
@@ -1014,7 +1017,10 @@ func check() -> void:                     # may await; tree is the SceneTree
   behind-the-player cameras.
 - `foot_slip(frames, ankle_rest, toe_rest)`: each step's planted-foot slip in cm, from `feet(body)` every frame. A
   planted foot is one on the ground and not swinging through; pass the planter's own flags as items 4 and 5 if you
-  have them.
+  have them. **Since 2026-11-04 it adds up, frame by frame, the smaller of the heel's and the ball's move**: a
+  heel-to-toe roll (one end still at a time) reads near 0, a foot sliding (both ends moving) reads in full. Before, it
+  took each end's drift since the step began: a roll read 1-3 cm that was not there, and a slide that came back read
+  less than it went (the planter off, a walk's 8 cm read 2.7). Your numbers move both ways - re-check your feet items.
 - `t_or_a_pose(body)` and `arms(body)`: an A-pose or T-pose, how far out the arms are, how bent the elbows.
 - `block_figure(node)`: no skinned body, or primitive shapes standing in for one.
 - `pose(body)` and `jitter(body, poses)`: twitching while standing.

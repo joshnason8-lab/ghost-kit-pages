@@ -236,7 +236,10 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					var held: Vector3 = _foot[i]
 					var length := held.length()
 					var flat := Vector2(held.x, held.z)
-					var lift := clampf(held.y / maxf(length, 0.001) + up - float(_up0[i]), -1.0, 1.0)
+					# (Never lower than it was held: a stop's clip pitches its foot back toe-up as the body goes over it, the
+					# ankle went below where it was planted, the floor took it back up, and the toe was dragged a centimetre
+					# off its place and back - 2.7 cm a stop, summed frame by frame.)
+					var lift := clampf(held.y / maxf(length, 0.001) + maxf(0.0, up - float(_up0[i])), -1.0, 1.0)
 					_ball[i] = Vector3.INF
 					if flat.length() > 0.01:
 						var across := flat.normalized() * sqrt(1.0 - lift * lift)
