@@ -271,7 +271,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          WSG_NOTES_STRICT=1 timeout 8400 godot --headless --path . --fixed-fps 60 -s res://tools/wsg/owner_notes.gd 2>&1 | tee "${{ runner.temp }}/owner_notes.log"
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 8400 godot --headless --path . --fixed-fps 60 -s res://tools/wsg/owner_notes.gd 2>&1 | tee "${{ runner.temp }}/owner_notes.log"
           grep -E "^(FAIL|SKIP)|OWNER NOTES" "${{ runner.temp }}/owner_notes.log" >> "$GITHUB_STEP_SUMMARY" || true
 
   # The release, once the build AND every one of the owner's notes have passed (the lead, 2026-11-03: a red note blocks
