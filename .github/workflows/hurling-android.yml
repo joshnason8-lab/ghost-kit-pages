@@ -216,7 +216,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee world_check.log
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --reuse "crowd=$RUNNER_TEMP/crowd_audit,props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log
           if grep -q "SCRIPT ERROR" world_check.log; then grep -A4 "SCRIPT ERROR" world_check.log; exit 1; fi
 
       - name: World check report
