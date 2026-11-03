@@ -41,6 +41,7 @@ func _initialize() -> void:
 		printerr("world_check: no %s (the game's WsgWorldGame: ADOPTING.md §5.18)" % game_path)
 		quit(1)
 		return
+	WsgAutoTier.off = true   # (frames at a fixed step are not a phone's)
 	var game: WsgWorldGame = (load(game_path) as GDScript).new()
 	if bad != "" and "bad" in game:
 		game.set("bad", bad)

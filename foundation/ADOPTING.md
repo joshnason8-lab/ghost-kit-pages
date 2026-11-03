@@ -1205,6 +1205,14 @@ the game clock.
   hands `start()` a copy anyway. Read `config.short` in `max_seconds()` too.
 - **`res://game/sim.gd` may already be taken** by your own numbers-only championship sim (Kho Kho, Hurling). Move it
   (Kho Kho: `game/score_sim.gd`; Hurling: `game/result_sim.gd`). A kept `class_name` means nothing else changes.
+- **Say whether the match is paused** (`paused()`: 1, 0, or -1 for unknown). The input fuzzer then resumes a match
+  your game paused when it was sent to the background, as a person taps Resume, and presses its own pause pair only
+  from a known state. Pok Ta Pok's toggling pause key, pressed between a background pause and its resume, left 5 of
+  13 matches paused for good ("endless").
+- **Your own frame-rate auto tier must stand down in the sim.** At a fixed 30 frames a second it reads 30, below
+  the threshold, and steps every match down. `WsgAutoTier` does this itself (`WsgAutoTier.off`, set by WsgSim and the
+  world check). A game with its own auto tier checks `WsgAutoTier.off` too, or turns it off in its adapter (Pok Ta
+  Pok does).
 - **Long matches print a heartbeat.** A match prints `sim: <kind> seed N still playing` every 30 s of wall-clock, so
   `sim_shard.sh`'s HANG (120 s of silence = frozen) only catches real freezes. Before this, a 2,170 s Kho Kho match,
   127 s of wall-clock, was called frozen.
