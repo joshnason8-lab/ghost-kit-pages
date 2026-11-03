@@ -42,6 +42,10 @@ const MAX_TURN := deg_to_rad(50.0)
 ## Standing: feet this far from a barrier, a riser or another fan's (m), and jittered this much.
 const STAND_GAP := 0.3
 const STAND_JITTER := 0.06
+## Behind a barrier at least BARRIER_HIGH tall, a standing fan's feet this far from its inner face at the least: the
+## stand pose's hands go forward, and at a 0.05 m gap they were 3 cm into the glass (Sepak Takraw's mall balcony).
+const BARRIER_CLEAR := 0.6
+const BARRIER_HIGH := 0.6
 
 var play_centre := Vector3.ZERO
 var play_size := Vector2(30, 15)        # x along the play's own x, y across (its z)
@@ -187,9 +191,13 @@ func place(seed := 0) -> Dictionary:
 					var x: float = (i + 0.5) * length / n
 					var mid: Vector3 = row0 + along * x + away * (seat_front + s.depth * 0.5)
 					var up: bool = rng.randf() < s.stand
+					# (Behind a barrier their seat leaves too little room in front of it to stand clear of: they stay
+					# seated - standing, their hands went into the glass.)
+					if up and _barrier_min(s, r) > seat_front - 0.05:
+						up = false
 					if up:
-						# On their feet in front of their seat.
-						var feet: Vector3 = row0 + along * x + away * maxf(seat_front - 0.12, 0.15)
+						# On their feet in front of their seat (behind a barrier: clear of it).
+						var feet: Vector3 = row0 + along * x + away * maxf(maxf(seat_front - 0.12, 0.15), _barrier_min(s, r))
 						_spot(out, si, feet, facing_at(s, feet), 0.0, false, INF, row0.y)
 					else:
 						_spot(out, si, Vector3(mid.x, row0.y, mid.z), facing_at(s, mid), seat_top - row0.y, true, back, row0.y,
@@ -198,12 +206,12 @@ func place(seed := 0) -> Dictionary:
 				# One line of fans a tread, or more on a deep one (a floor): STAND_GAP from the front, 0.6 m apart,
 				# none nearer the back than a body's depth.
 				var offs := []
-				var o := STAND_GAP
+				var o := maxf(STAND_GAP, _barrier_min(s, r))
 				while o <= s.tread - 0.25:
 					offs.append(o)
 					o += 0.6
 				if offs.is_empty():
-					offs.append(s.tread * 0.5)
+					offs.append(maxf(s.tread * 0.5, minf(_barrier_min(s, r), s.tread - 0.1)))
 				for off in offs:
 					for i in n:
 						var x: float = (i + 0.5 + rng.randf_range(-1.0, 1.0) * STAND_JITTER / s.pitch) * length / n
@@ -211,6 +219,16 @@ func place(seed := 0) -> Dictionary:
 						var f: Vector3 = facing_at(s, feet).rotated(Vector3.UP, rng.randf_range(-0.12, 0.12))
 						_spot(out, si, feet, f, 0.0, false, INF, row0.y)
 	return out
+
+
+## For row R of section S: the least distance from the row's front to a standing fan's feet that keeps the stand pose's
+## hands out of the barrier in front of it (0: no barrier there, or one too low to reach).
+static func _barrier_min(s: Dictionary, r: int) -> float:
+	if r != 0 or not s.has("barrier") or float(s.barrier.get("height", 1.0)) < BARRIER_HIGH:
+		return 0.0
+	# (The barrier's inner face: GAP in front of the row, less half its 6 cm board; the feet's own jitter allowed for.)
+	var face := float(s.barrier.get("gap", 0.35)) - 0.03
+	return BARRIER_CLEAR - face + STAND_JITTER * 0.5
 
 
 func _spot(out: Dictionary, si: int, p: Vector3, f: Vector3, seat: float, anchor: bool, back: float, floor_y: float,

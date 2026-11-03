@@ -52,9 +52,9 @@ func route(a: Vector3, b: Vector3) -> PackedVector3Array:
 		while j > i and not _line_clear(from, _at(cells[j] % nx, cells[j] / nx)):
 			j -= 1
 		var p := _at(cells[j] % nx, cells[j] / nx)
+		out.append(p)
 		if _line_clear(p, b):
 			break
-		out.append(p)
 		from = p
 		i = j + 1
 	out.append(b)

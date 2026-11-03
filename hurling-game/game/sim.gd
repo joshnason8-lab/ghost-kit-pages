@@ -149,10 +149,15 @@ func bodies() -> Array:
 			continue
 		var w := Vector3(pl.want_vel.x, 0, pl.want_vel.z)
 		var tgt := pl.global_position + w.normalized() * 3.0 if w.length() > 1.0 else Vector3.INF
-		out.append({"name": "%s %d" % [pl.role if pl.role != "" else ["home", "away"][pl.team], pl.num],
+		var b := {"name": "%s %d" % [pl.role if pl.role != "" else ["home", "away"][pl.team], pl.num],
 			"pos": pl.global_position, "radius": Player.BODY_R, "height": 1.8,
 			"body": pl.link.body if pl.visible and pl.link and pl.link.body.is_visible_in_tree() else null, "active": live and not pl.down(float(m.now)) and pl.role == "",
-			"target": tgt})
+			"target": tgt}
+		# (An official's signal raises the arms out from the sides, straight - a wide's both arms up to cross overhead
+		# pass through a T and an A on the way: by design, counted, not failed.)
+		if pl.role != "" and String(pl.action).begins_with("sig_"):
+			b["pose_excuse"] = "an official's signal (%s): arms raised straight out from the sides" % String(pl.action).trim_prefix("sig_")
+		out.append(b)
 	return out
 
 
