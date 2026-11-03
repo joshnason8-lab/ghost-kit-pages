@@ -1,0 +1,66 @@
+# WsgSim in CI (copy to .github/workflows/<game>-sim.yml and set GAME_DIR). The smoke batch on every push (about 50
+# seeds and every targeted case: minutes); the nightly batch sharded over 16 parallel jobs (2,400 matches: under 2 hours
+# wall-clock - a public repository runs 20 at once, leaving room for the push jobs), merged into one report. The
+# batch's defaults are the lead's speed levers: sampled pose and the match-length mix. Artifacts only - never inside
+# the project.
+name: <game> simulation
+on:
+  push:
+    paths: ['<game-dir>/**']
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+env:
+  GAME_DIR: <game-dir>
+jobs:
+  smoke:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: 4.7.2, use-dotnet: false}
+      - name: Licensed data (the game's real animation)
+        run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
+        env: {ASSETS_REPO_TOKEN: '${{ secrets.ASSETS_REPO_TOKEN }}'}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - run: sh $GAME_DIR/tools/wsg/rng_lint.sh
+      - run: godot --headless --fixed-fps 30 --path $GAME_DIR -s res://tools/wsg/sim.gd -- determinism --seeds 2
+      - run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim" --smoke --input
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: sim-smoke, path: '${{ runner.temp }}/sim'}
+  nightly:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix: {shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: 4.7.2, use-dotnet: false}
+      - run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
+        env: {ASSETS_REPO_TOKEN: '${{ secrets.ASSETS_REPO_TOKEN }}'}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --from 1 --count 2400 --shard ${{ matrix.shard }}/16 --input
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with: {name: 'sim-shard-${{ matrix.shard }}', path: '${{ runner.temp }}/sim/${{ matrix.shard }}'}
+  report:
+    needs: nightly
+    if: always() && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: 4.7.2, use-dotnet: false}
+      - uses: actions/download-artifact@v4
+        with: {path: '${{ runner.temp }}/shards', pattern: 'sim-shard-*'}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - run: godot --headless --path $GAME_DIR -s res://tools/wsg/sim.gd -- merge --out "$RUNNER_TEMP/sim-nightly" "$RUNNER_TEMP"/shards/*
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: sim-nightly, path: '${{ runner.temp }}/sim-nightly'}

@@ -35,6 +35,7 @@ var _out := 0.0            # 1 .. 0 over MOVE_OUT
 var _last_p := {}          # last frame's pose (the move's over the stance or stride), before the small movements
 var _yaw := 0.0
 var _gait := 0              # going: 0 a run, -1/1 a side-shuffle, -2/2 a backpedal (the body turned to it)
+var _yaw_rate := 0.0        # rad/s: how fast he is turning
 var _step_w := 1.0          # under a move: how much his legs are his stride's (eased)
 var solid: WsgSolidProps = null   # the venue's props (Arena.solid): he goes round them, never through
 var _memo := {}             # (WsgSolidProps.move's: the side he chose round what is in his way)
@@ -258,8 +259,8 @@ func tick(dt: float, now: float) -> void:
 		if tb.length() > 0.3:
 			face = (face * 1.2 + tb.normalized()).normalized()
 	var want_yaw := atan2(face.x, face.z)
-	if move != "" and not facing_to:
-		want_yaw = Court.facing(side)   # moves are made facing the net
+	if move != "" and not facing_to and not (stroll and move in STROLL_MOVES):
+		want_yaw = Court.facing(side)   # moves are made facing the net (not a cheer as he walks: it whipped him round)
 	# Going somewhere with no move of his own: turned so the way he goes is straight ahead, straight back or square to
 	# his side - a run, a backpedal or a side-shuffle, whichever is nearest to the way he would face (at most 45
 	# degrees off it) - as those are strides whose feet stay planted, which one at a slant is not. Far and fast he
@@ -279,9 +280,11 @@ func tick(dt: float, now: float) -> void:
 		_gait = 0
 	# Turned as quickly as a man pivots (the planted foot stays where it is as he turns on it: RealBody._planted), more
 	# quickly to square up for a move.
+	# (and a turn builds up, as a body's does, rather than starting at full speed: the planted foot strained)
 	var turn := wrapf(want_yaw - _yaw, -PI, PI) * minf(1.0, 10.0 * dt)
-	var most := (YAW_MOVE if move != "" else YAW_MAX) * dt
-	_yaw = wrapf(_yaw + clampf(turn, -most, most), -PI, PI)
+	var most := YAW_MOVE if move != "" else YAW_MAX
+	_yaw_rate = move_toward(_yaw_rate, clampf(turn / maxf(dt, 0.001), -most, most), (YAW_ACCEL if move == "" else YAW_ACCEL * 3.0) * dt)
+	_yaw = wrapf(_yaw + _yaw_rate * dt, -PI, PI)
 	# The pose: the move if one is playing, blended over the run or the ready stance.
 	var speed := vel.length()
 	var local := vel.rotated(Vector3.UP, -_yaw)
@@ -484,6 +487,7 @@ const SHUFFLE_MAX := 2.2    # m/s: faster than this a long way, he turns and run
 const STRIDE_MAX := 22.0    # rad/s: the stride's quickest (seven steps a second)
 const YAW_MAX := 9.5        # rad/s: his quickest turn on his feet (about 540 degrees a second) ...
 const YAW_MOVE := 16.0      # ... and squaring up for a move
+const YAW_ACCEL := 80.0     # rad/s^2: how fast a turn builds up (a move's three times as fast)
 const ARRIVE_EARLY := 0.15  # s: at the spot this long before his move starts (Player.tick) ...
 const ARRIVE_MIN := 1.0     # ... going at least this fast (m/s)
 const FOLLOW_THROUGH := 0.22   # s after the touch the move keeps its legs (the kick's follow-through)

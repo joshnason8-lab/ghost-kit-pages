@@ -390,7 +390,7 @@ static func _thigh_ahead(L1: float, L2: float, d: float) -> float:
 const PLANT_HEIGHT := 0.03   # m: an ankle this close to its height standing is on the floor
 const IK_CLOSE := 0.004      # m: an ankle this close to where it is kept needs no turning
 const PLANT_REACH := 0.32    # m: a planted foot let go when his stride would have it this far from where it is
-const PLANT_EASE := 0.25     # of a correction let go each frame (four frames)
+const PLANT_EASE := 0.2      # of a correction let go each frame (five frames)
 
 var plant_feet := false      # (Player, Officials) a foot on the floor stays put: _planted
 var _locks: Array = [null, null]     # each foot's place on the floor while it is down (world), or null

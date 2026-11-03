@@ -672,8 +672,9 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
 
 ## Solid props, and loading v2 (0.15.4)
 
-Foundation synced to 877bcd9 (every required commit: loading v2, solid props, the warm-up fix, key hits; its new
-check_foundation.sh fails CI without them).
+Foundation synced to 07864d7 (every required commit: loading v2, solid props, the warm-up fix, key hits, the
+foundation's planted-feet fix 1ef240f for the bodies it draws on Medium and High; its check_foundation.sh now fails CI
+without them).
 - **Solid props** (the owner, for every game: "There will NEVER be a time when a player or referee should walk
   through a table or bench etc. A ball should also bounce off these items."): measured first (an AI match at each
   venue): players walked through the benches, the scorers' table, the referee's chair, the net posts and pads and the
@@ -690,6 +691,11 @@ check_foundation.sh fails CI without them).
   the shared audit (`tools/wsg/prop_audit.gd`, now in CI): every venue PASS, 32,400 body-frames each with nobody
   inside a prop, 2,700-2,850 ball steps each with none through one. test_runner: each venue's props, the wiring, a
   ball at the table coming back off it.
+- Found by the suite on the way: a turn now builds up (80 rad/s^2, a move's three times as fast) instead of starting
+  at full speed - a running player swinging round with both feet planted jolted a foot as it lifted; a cheer played
+  as he walks between points no longer turns him to the net mid-stride (it whipped him round 30 degrees a frame); the
+  lift-off release is eased over five frames. The joystick test leaves out pushes straight into a prop (the net post
+  ahead of a spot on the net's line): he goes round it, as he must, which says nothing of the stick's way.
 - **Loading v2**: the foundation's warm-up (`ld.warm`: the match's looks drawn a batch a frame from their own camera,
   each new shader made in a frame of its own) replaces the game's own reveal, and `ld.done()` holds the overlay till
   the frames come smoothly before the match starts. The setup screens pre-load match.gd (`WsgLoading.prewarm`).

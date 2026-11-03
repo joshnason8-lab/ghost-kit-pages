@@ -679,6 +679,11 @@ func _stick_follows_screen() -> void:
 						continue   # (no floor there: the stands)
 					spots += 1
 					for j in dirs:
+						# (a push straight into a prop - the net post ahead of a spot on the net's line, a bench - he goes
+						# round, as he must: that push says nothing of the stick's way; WsgSolidProps, the props test)
+						var way: Vector3 = m._cam_dir(j.normalized(), spot)
+						if bool(m.arena.solid.sweep(spot + Vector3(0, 0.9, 0), spot + way * 2.0 + Vector3(0, 0.9, 0), Player.BODY_R + 0.35).get("hit", false)):
+							continue
 						var a := _steer(m, pl, spot, j.normalized(), 9, true)
 						n += 1
 						if a > float(worst[0]):
@@ -875,9 +880,10 @@ func _solid_props() -> void:
 			"%s: its props solid (%d: %s), missing %s" % [v[0], s.props.size(), names.keys().slice(0, 12), missing])
 		var wired: bool = m.ball.solid == s and m.players_on(0).all(func(pl): return (pl as Player).solid == s) and m.get("_officials").solid == s
 		check(wired, "%s: the players, the officials and the ball go by the props" % v[0])
-		# A ball at the table, from the court's side: it comes back off it, never through.
+		# A ball at the table, from the court's side (clear of the referee's chair in front of its middle): it comes back
+		# off it, never through.
 		var post_z: float = Court.HALF_W + Court.POST_OUT
-		var r: Dictionary = s.bounce(Vector3(0, 0.5, post_z + 1.4), Vector3(0, 0, 12.0), Ball.RADIUS, 0.25)
+		var r: Dictionary = s.bounce(Vector3(0.8, 0.5, post_z + 1.4), Vector3(0, 0, 12.0), Ball.RADIUS, 0.25)
 		check(not (r.hits as Array).is_empty() and float((r.vel as Vector3).z) < 0.0 and float((r.pos as Vector3).z) < post_z + 2.25,
 			"%s: a ball sent at the scorers' table comes back off it (%s)" % [v[0], r.pos])
 		m.queue_free()
