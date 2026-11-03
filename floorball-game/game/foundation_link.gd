@@ -128,6 +128,7 @@ func _ready() -> void:
 	# The feet on the floor under the game's own pose: legs bent by IK where its pose would put them through it.
 	floor_legs = FloorLegs.new()
 	floor_legs.name = "FloorLegs"
+	floor_legs.active = false      # (on under the game's whole-body pose: update)
 	body.skeleton.add_child(floor_legs)
 	# A Meshy model may rest with its soles toe-up: the feet turned down by it, a planted heel on the floor (the body's
 	# last modifier; none if it stands flat).
@@ -274,6 +275,9 @@ func update(dt: float) -> void:
 		"move":
 			pose = {}
 	legacy.set_pose(pose)
+	# (The legs bent to the floor under the game's own whole-body pose only: running is the shared locomotion's, its
+	# feet planted by its planter, and bending them again there slid a planted foot.)
+	floor_legs.active = want == "full"
 	if want != mode:
 		var w := 0.0 if want == "move" else 1.0
 		if mode == "":

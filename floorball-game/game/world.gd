@@ -36,9 +36,12 @@ func _config(mode: String) -> Dictionary:
 
 ## The tap: the game's own start (Game.play_match covers the screen with WsgLoading in this frame), under PARENT.
 func start_mode(mode: String, parent: Node) -> void:
-	# (A new tap replaces what the last one started, as on the phone: the match before it goes.)
+	# (The match before it stops, as on the phone, but stays in its holder: the check reads every mode's bodies and
+	# officials after all of them have been played, and frees the holders itself.)
 	if Game.current and is_instance_valid(Game.current):
-		Game.current.queue_free()
+		Game.current.process_mode = Node.PROCESS_MODE_DISABLED
+		if Game.current is Node3D:
+			(Game.current as Node3D).visible = false
 	Game.main = parent
 	Game.current = null
 	Game.settings.sound = false

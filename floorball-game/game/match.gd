@@ -2436,6 +2436,10 @@ func pose_all() -> void:
 	for p: Player in everyone() + sitters[0] + sitters[1]:
 		p.step(0.0)
 		p.writes = 0
+		# (Its shared-foundation body drawn in that pose now: a body is shown on its first real pose, and a step of no
+		# time poses nothing - unseen, a man would appear only on the first frame of play.)
+		if p.link and p.is_visible_in_tree():
+			p.link.update(1.0 / 60.0)
 
 
 var _rank_t := 0.0

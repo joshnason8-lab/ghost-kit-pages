@@ -23,7 +23,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 120
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -109,6 +109,16 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         # (Its contact sheets written outside the project: inside it, the export imported and packed them, 65 MB.)
         run: timeout 900 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "${{ runner.temp }}/crowd_audit"
+
+      # The shared world rules (docs/WORLD_RULES.md, ADOPTING 5.18) on the game's own code (game/world.gd): every mode
+      # started as its button does, its bodies, officials, feet, sounds, joystick and graphics tiers checked, the props
+      # and the crowd audited. A failing rule fails the build (from 12:00 UTC 2026-11-03). Report outside the project.
+      - name: World check (the shared world rules on the game's own code)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2700 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "${{ runner.temp }}/world" 2>&1 | tee "${{ runner.temp }}/world_check.log"
+          cat "${{ runner.temp }}/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: Configure Android export
         env:
