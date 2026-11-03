@@ -155,7 +155,14 @@ jobs:
 
           Not the game: the game's betas are on the release "Pok Ta Pok Rivals … (latest beta)".
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$ZIP" --prerelease --latest=false --target "$GITHUB_SHA" \
+          # Published safely (ADOPTING 5.19), as the betas are: the new release, whole, under a tag of its own first;
+          # only then is the old one deleted and the new one moved onto the tag. (Run 41691232993 deleted the old kit,
+          # then its create hit a 403: the kit was gone until the job was re-run.)
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          gh release create "$NEXT" "$ZIP" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Media kit: Pok Ta Pok Rivals" --notes-file notes.md
-          gh release view "$TAG"
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$ZIP")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
