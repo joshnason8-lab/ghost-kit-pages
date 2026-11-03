@@ -492,6 +492,11 @@ static func _by_prop(solid: WsgSolidProps, p: Vector3) -> String:
 ## The planter drives this body's feet now: on, not under a pose the game makes of the whole body (keep_pose), and
 ## its ground where the body stands (a game that sends ground_y far below while it poses the body itself is not).
 static func _planted(body: WsgBody) -> bool:
+	# (A replay playing back - WsgReplay's pose on the skeleton, active - draws the kept pose, at 0.4x: the planter
+	# drives nothing then, and a swinging foot under SWING read as a 13 cm slide - Sepak Takraw's officials.)
+	for m in body.skeleton.get_children():
+		if m is WsgReplayPose and (m as WsgReplayPose).active:
+			return false
 	for c in body.get_children():
 		if c is WsgLocomotor:
 			var p: WsgFootPlanter = (c as WsgLocomotor).planter

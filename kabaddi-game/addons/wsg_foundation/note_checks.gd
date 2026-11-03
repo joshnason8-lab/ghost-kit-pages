@@ -97,10 +97,14 @@ static func feet(body: WsgBody) -> Array:
 
 ## Planted feet over a run of frames (feet() each frame; the two rest heights are no longer used - each foot's height
 ## on the ground is the lowest it goes over the run): a foot touching the ground (its ankle or toe within TOUCH of that)
-## must stay where it touched down. Each
-## step's slip: how far the planted part (the slower of heel and ball) moved over the ground while touching, from the
-## frame after it landed. Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with
-## its heel down)}.
+## must stay where it touched down. Each step's slip: frame by frame while touching, how far the foot slid over the
+## ground - the smaller of the heel's and the ball's move that frame - added up over the step. A heel-to-toe roll moves
+## one of them at a time (the toe coming down about the heel, then the heel rising over the ball) and reads near 0; a
+## slide moves both and reads in full. The frame a foot comes down in is its arrival, not counted: it is counted from
+## the first frame it is down. (Until 2026-11-04 it took the smaller of each one's drift since the step began: a roll's
+## two halves added up to 3 cm - Sepak Takraw found it - and a real 8 cm slide at a walk read 2.7. tests/foot_slip_test
+## pins it: a pure roll under 0.5 cm, a planted foot pushed 3 cm 3 cm or more, the planter off 5 cm or more.)
+## Returns {steps, max_cm, p90_cm, mean_cm, toe_up_cm (the most a toe rose off the ground with its heel down)}.
 const TOUCH := 0.03
 
 ## A frame may carry the game's own planted flags as items 4 and 5 (left, right: the planter's contact, what the motion
@@ -122,8 +126,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 		for f: Array in frames:
 			ankle_rest = minf(ankle_rest, (f[side * 2] as Vector3).y - ground_y)
 			toe_rest = minf(toe_rest, (f[side * 2 + 1] as Vector3).y - ground_y)
-		var start_a := Vector3.INF
-		var start_t := Vector3.INF
+		var prev_a := Vector3.INF
 		var touching_for := 0
 		var worst := 0.0
 		var prev_t := Vector3.INF
@@ -141,6 +144,7 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 				touching_for = 0
 				worst = 0.0
 				prev_t = t
+				prev_a = a
 				continue
 			var down: bool
 			if f.size() > 5:
@@ -148,16 +152,14 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 			else:
 				var sp := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() / FRAME_DT if prev_t != Vector3.INF else 0.0
 				down = minf(ha, ht) < TOUCH and sp < SWING
+			var step_a := Vector2(a.x - prev_a.x, a.z - prev_a.z).length() if prev_a != Vector3.INF else 0.0
+			var step_t := Vector2(t.x - prev_t.x, t.z - prev_t.z).length() if prev_t != Vector3.INF else 0.0
 			prev_t = t
+			prev_a = a
 			if down:
 				touching_for += 1
-				if touching_for == 2:
-					start_a = a
-					start_t = t
-				elif touching_for > 2:
-					var da := Vector2(a.x - start_a.x, a.z - start_a.z).length()
-					var dt := Vector2(t.x - start_t.x, t.z - start_t.z).length()
-					worst = maxf(worst, minf(da, dt))
+				if touching_for >= 2:
+					worst += minf(step_a, step_t)
 			else:
 				if touching_for > 2:
 					slips.append(worst * 100.0)
