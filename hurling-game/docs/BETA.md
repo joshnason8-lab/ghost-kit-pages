@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.1
+
+- **Less gliding**: a player picking the ball up or catching it on the move now steps with his feet instead of
+  sliding across the grass (a pick-up at a walk slid 7.7 cm in a step; now under 1.5 cm). His feet are held still
+  when he barely moves.
+- Every note you've given on the beta is now a permanent test the build must pass (21 of them so far), so a fixed
+  problem can't quietly come back.
+
 ## New in 0.24.0
 
 - **Nobody walks through anything**: the players, the referee, the linesmen and the substitutes go round the corner

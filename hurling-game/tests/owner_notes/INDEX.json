@@ -1,0 +1,173 @@
+{
+ "about": "Hurling Heroes: the owner's notes, each a test for good (tools/wsg/owner_notes.gd). Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-11-03-post-clang",
+   "file": "2026-11-03_post_clang.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0 (and 0.20 before it)",
+   "words": "I still do not hear the sound of a clang when the ball is hitting the goal posts, that was built this is a regression."
+  },
+  {
+   "id": "2026-11-03-feet-up",
+   "file": "2026-11-03_feet_up.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "Regression: the feet are pointing upward again everywhere."
+  },
+  {
+   "id": "2026-11-03-commentary-removed",
+   "file": "2026-11-03_commentary_removed.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.20.0",
+   "words": "Remove the commentary. We'll try it in a later iteration of the game."
+  },
+  {
+   "id": "2026-11-03-birds-quieter",
+   "file": "2026-11-03_birds_quieter.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "Turn down the outside bird noise a bit. It's overpowering."
+  },
+  {
+   "id": "2026-11-03-celebration-arm",
+   "file": "2026-11-03_celebration_arm.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "After the score there is an awkward closeup of the player who scored moving his hand around, find a different celebration that one makes the arm look broken."
+  },
+  {
+   "id": "2026-11-03-far-lines",
+   "file": "2026-11-03_far_lines.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "The far lines on the field disappear sometimes or look odd."
+  },
+  {
+   "id": "2026-11-03-half-time-woods",
+   "file": "2026-11-03_half_time_woods.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "at halftime for some reason I watched players run off the field into the woods."
+  },
+  {
+   "id": "2026-11-03-time-jump",
+   "file": "2026-11-03_time_jump.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "There was a large time jump for some reason while watching an AI game."
+  },
+  {
+   "id": "2026-11-03-free-finish",
+   "file": "2026-11-03_free_finish.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0 (with a screenshot)",
+   "words": "Finish of the free take swing is still awkward, does that look like a normal body to you. See screenshot."
+  },
+  {
+   "id": "2026-11-02-pants-on-refs",
+   "file": "2026-11-02_pants_on_refs.gd",
+   "game": "hurling",
+   "date": "2026-11-02",
+   "version": "Hurling 0.18.0",
+   "words": "put pants on the refs"
+  },
+  {
+   "id": "2026-11-02-posts-black",
+   "file": "2026-11-02_posts_black.gd",
+   "game": "hurling",
+   "date": "2026-11-02",
+   "version": "Hurling 0.18.0",
+   "words": "goal posts turned black"
+  },
+  {
+   "id": "2026-11-02-ball-disappears",
+   "file": "2026-11-02_ball_disappears.gd",
+   "game": "hurling",
+   "date": "2026-11-02",
+   "version": "Hurling 0.18.0",
+   "words": "ball disappears in some free take shots"
+  },
+  {
+   "id": "2026-11-02-bench-feet",
+   "file": "2026-11-02_bench_feet.gd",
+   "game": "hurling",
+   "date": "2026-11-02",
+   "version": "Hurling 0.18.0",
+   "words": "no feet, sunk into the bench"
+  },
+  {
+   "id": "2026-10-23-crowd-wrong-way",
+   "file": "2026-10-23_crowd_wrong_way.gd",
+   "game": "hurling",
+   "date": "2026-10-23",
+   "version": "Hurling 0.4.0",
+   "words": "the crowd to the near side is looking the wrong direction"
+  },
+  {
+   "id": "2026-11-02-joystick-cameras",
+   "file": "2026-11-02_joystick_cameras.gd",
+   "game": "hurling",
+   "date": "2026-11-02",
+   "version": "every game (Hurling 0.20)",
+   "words": "When switching to a camera angle that is not alongside the court the joystick movement is all wrong."
+  },
+  {
+   "id": "2026-11-03-props-solid",
+   "file": "2026-11-03_props_solid.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "every game (Hurling 0.23)",
+   "words": "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should also bounce off these items."
+  },
+  {
+   "id": "2026-10-27-refs-arms",
+   "file": "2026-10-27_refs_arms.gd",
+   "game": "hurling",
+   "date": "2026-10-27",
+   "version": "Hurling 0.11.1",
+   "words": "The refs body and arms still look very weird"
+  },
+  {
+   "id": "2026-11-03-loading-frozen",
+   "file": "2026-11-03_loading_frozen.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "every game (Hurling 0.22)",
+   "words": "when you click start game there is a loading delay ... long enough on the slow phone that users might think the game has frozen"
+  },
+  {
+   "id": "2026-10-28-goalie-removed",
+   "file": "2026-10-28_goalie_removed.gd",
+   "game": "hurling",
+   "date": "2026-10-28",
+   "version": "Hurling 0.13.0",
+   "words": "The goalie can be removed"
+  },
+  {
+   "id": "2026-11-03-practice-middle-ground",
+   "file": "2026-11-03_practice_middle_ground.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.23.1",
+   "words": "Practice graphics, the middle ground: full detail regardless of tier for the taker, the hurley, the sliotar and the posts; the crowd, the far stands, venue extras and effects follow the player's own tier."
+  },
+  {
+   "id": "2026-11-03-gliding",
+   "file": "2026-11-03_gliding.gd",
+   "game": "hurling",
+   "date": "2026-11-03",
+   "version": "Hurling 0.21.0",
+   "words": "Players are still gliding/hovering some when running or strafing sideways."
+  }
+ ]
+}

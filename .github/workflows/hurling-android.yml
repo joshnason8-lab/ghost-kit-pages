@@ -89,7 +89,7 @@ jobs:
 
       # The shared foundation (addons/wsg_foundation) against claude/shared-foundation: a warning when this copy is
       # behind, a failure when it lacks a commit in foundation/REQUIRED (tools/wsg/sync_foundation.sh brings it up to date).
-      - name: Shared foundation up to date? (behind: a warning; a required commit missing: a failure)
+      - name: "Shared foundation up to date? (behind, a warning; a required commit missing, a failure)"
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
 
       - uses: actions/setup-java@v4
@@ -190,6 +190,16 @@ jobs:
           set -o pipefail
           timeout 1800 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd crowd_audit 2>&1 | tee crowd_audit.log
           if grep -q "SCRIPT ERROR" crowd_audit.log; then grep -A4 "SCRIPT ERROR" crowd_audit.log; exit 1; fi
+
+      - name: The owner's notes are never removed (every note once listed is still there)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
+
+      - name: The owner's notes, kept as tests (each regression the owner reported stays fixed)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          WSG_NOTES_STRICT=1 timeout 1500 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log
+          if grep -q "SCRIPT ERROR" owner_notes.log; then grep -A4 "SCRIPT ERROR" owner_notes.log; exit 1; fi
 
       - name: Props audit (nobody walks through a bench, a wall, a flag or a post; the ball goes through none of them)
         working-directory: ${{ env.PROJECT_DIR }}

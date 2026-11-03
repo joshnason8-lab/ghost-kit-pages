@@ -857,6 +857,23 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.1, 3 November 2026)
+
+- **The owner's notes as tests** (foundation 877bcd9: WsgOwnerNote, WsgNoteChecks, tools/wsg/owner_notes.gd and its
+  guard, ADOPTING §5.16). 21 notes are in `tests/owner_notes/` (INDEX.json), each with the owner's words, date and
+  version. Shared kit: `tests/note_kit.gd` (bodies are measured in `posed`, where the drawn pose is readable).
+  - The clang, the feet pointing up, the commentary off, the birds, the celebration, the far lines, half-time, the
+    clock jump, the free's finish, the refs' trousers, the black posts, the ball disappearing, the bench feet, the
+    crowd's facing, the joystick on every camera, the props, the refs' arms, the loading overlay, no goalkeeper in
+    practice, the practice middle ground, the gliding.
+  - CI runs the guard (no note may be removed) and the runner with WSG_NOTES_STRICT=1.
+- **Gliding, found by its note**: a player lifting or catching the ball on the move stood on the game's own legs
+  with the planter off, so his feet slid (7.7 cm in a step at 0.9 m/s).
+  - `lift` and `catch` are now in FoundationLink.ON_THE_RUN, and the motion capture's legs take over above
+    0.3 m/s (it was 0.8).
+  - Below that, the planter holds the feet.
+  - Worst step now 1.2–1.4 cm, average 0.4–0.5 cm (seeds 6 and 9).
+
 ## Done (0.24.0, 3 November 2026)
 
 - **Solid props (the shared foundation's WsgSolidProps, foundation 0422175)**:

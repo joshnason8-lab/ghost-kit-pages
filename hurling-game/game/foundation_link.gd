@@ -215,8 +215,14 @@ static func _official_material(prefix: String) -> Material:
 	return _hd_mats[key]
 
 
-## The game's own moves that are of the arms and the trunk, made running as often as standing.
-const ON_THE_RUN := ["strike", "strike_stick", "hand_pass", "hook", "flick", "block", "tackle", "celebrate", "dejected"]
+## The game's own moves that are of the arms and the trunk, made running as often as standing (the lift and the catch
+## too: a man picking the ball up at a walk slid on the game's standing legs, 7.7 cm in a step - the owner's note
+## "gliding/hovering", kept as tests/owner_notes/2026-11-03_gliding.gd).
+const ON_THE_RUN := ["strike", "strike_stick", "hand_pass", "hook", "flick", "block", "tackle", "celebrate", "dejected",
+	"lift", "catch"]
+## Faster than this (m/s), a move ON_THE_RUN keeps the motion capture's legs, stepping: on the game's own legs, which
+## stand, the feet would slide by as much as he moves (at 0.8, as it was, 30 cm a second).
+const RUN_LEGS_FROM := 0.3
 
 
 ## After player.gd has posed the game's body this frame: drive this one.
@@ -237,7 +243,7 @@ func update(now: float) -> void:
 	# A move of the arms made on the run (a strike, a hook, a hand pass...): the legs keep running on the motion
 	# capture, the game's move above the hips - the game's own legs, standing in its move while the body ran on, slid
 	# across the grass (the owner: "gliding/hovering some when running or strafing sideways").
-	if mode == "full" and act in ON_THE_RUN and not player.down(now) and Vector2(player.vel.x, player.vel.z).length() > 0.8:
+	if mode == "full" and act in ON_THE_RUN and not player.down(now) and Vector2(player.vel.x, player.vel.z).length() > RUN_LEGS_FROM:
 		mode = "upper"
 	var pose := reader.read()
 	if mode == "upper":
@@ -276,7 +282,9 @@ func update(now: float) -> void:
 	loco.drive(dt, Vector3(v.x, 0, v.z), player.yaw, Vector3(player.want_vel.x, 0, player.want_vel.z))
 	# A move of the game's own has its feet where the game planted them (Player._plant_feet): the foundation's planter
 	# holds them only under the motion capture.
-	loco.planter.enabled = mode != "full"
+	# A move of the arms (ON_THE_RUN) made at a creep, under RUN_LEGS_FROM, keeps its feet held too: on the game's
+	# standing legs, unheld, they slid by as much as he crept (a catch at 0.2 m/s: 4 cm in a step).
+	loco.planter.enabled = mode != "full" or (act in ON_THE_RUN and not player.down(now))
 	if mode == "full":
 		# A move of the game's own: its facing exactly.
 		loco.yaw = player.yaw
