@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.7
+
+- **No more 13 m/s runners.** A runner brushing past a kneeling chaser was pushed clear by a whole frame's run
+  sideways, so for an instant he moved twice as fast as anyone can. He is now pushed out only by his run toward the
+  chaser. The two matches that showed it are replayed on every build.
+- **The arena's far boards have openings**, so a defender who is out walks round them to the bench, as he does on
+  the other grounds, instead of pressing against them. He sits only once he is at the bench and has stopped.
+- **Feet** on Medium and High: the shared foundation's planted feet now hold a flat foot still however the clip
+  moves it (a stopping chaser no longer skids).
+
 ## What's new in 0.12.6
 
 - **The whistles and the kho's slap are crisp from anywhere on the ground**, as a match's key sounds are in every

@@ -282,6 +282,13 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   slap crisp at a distance. WsgSim: pole turns' arms excused (pose_excuse); foot slip deferred to 2026-11-06 by the
   lead (planter slips under kho kho's AI, foundation fix pending). Balance runs: .github/workflows/kho-kho-balance.yml.
 
+- 0.12.7: Match._separate pushes a runner out of a kneeling chaser by his run toward him only (the whole frame's run
+  gave 13 m/s on fast seeds 279 and 298; both replayed in kho-kho-sim.yml's checks). The arena's far ad boards are three
+  panels with openings (Arena.board_gaps) and Match._route walks through them; an out defender sits only at his bench
+  and stopped. WsgSim bounds follow each venue's barricades (the arena's stands' front rows). Foundation synced to
+  13f00e2 (cut_from_heading kept true; a flat foot planted however the clip moves it). The foot-slip deferral stays:
+  the smoke still reads slips of 2.5-20 cm (sent to the foundation).
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
