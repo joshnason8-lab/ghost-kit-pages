@@ -239,7 +239,7 @@ jobs:
           NEXT="${TAG}-next"
           try() { for i in 1 2 3 4 5; do "$@" && return 0; [ "$i" = 5 ] && return 1; echo "failed (try $i): $*"; sleep $((i * 20)); done; }
           gh release delete "$NEXT" --cleanup-tag --yes 2>/dev/null || true
-          try gh release create "$NEXT" "$APK" --prerelease --target "$GITHUB_SHA" \
+          try gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
           if gh release view "$TAG" >/dev/null 2>&1; then
             try gh release delete "$TAG" --cleanup-tag --yes
