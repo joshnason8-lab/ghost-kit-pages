@@ -541,7 +541,7 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
 - World check fixes: each mode's match is let go (not freed) when the next starts, and the match does not lower its
   own graphics during the check (on software GL it did, freeing the shared bodies the officials rule reads).
 
-## 0.14.8 (in progress): Low under its triangle budget
+## 0.14.8: Low under its triangle budget
 
 - **Low's bodies a quarter of the triangles.** wsg_world_check's tiers rule measured Low at 625,000-665,000 triangles a
   frame against the budget phones' 200,000: 21 bodies of about 15,000 triangles, each drawn twice (its flattened floor

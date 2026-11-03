@@ -1,4 +1,11 @@
-**New in 0.14.7: the game checks itself.** Nothing changes in how it plays; what changed is how it is tested.
+**New in 0.14.8: smoother on Low (the A16's setting).**
+- On Low graphics each player and official is drawn with about a quarter of the detail (still the same people, the
+  same kit and the same floor shadow - side by side you cannot tell them apart from the match cameras). A frame on
+  Low now draws about 140,000-180,000 triangles instead of 625,000-665,000, over three times less work for the phone.
+- Feet: players stopping hard from a run no longer have a foot snap back along the floor, and a foot lifted after a
+  step no longer jumps.
+
+**In 0.14.7: the game checks itself.** Nothing changes in how it plays; what changed is how it is tested.
 - Every build now plays whole matches by itself, hundreds of them from numbered seeds, faster than real time, and
   checks every frame against kabaddi's rules (who is out and in what order they come back, raid timing, the lobby,
   do-or-die, the score) and for anyone stuck, inside the furniture or standing oddly. Any match that goes wrong can be
