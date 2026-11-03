@@ -2,9 +2,11 @@
 # them). One a line, tab-separated: commit, date, a file in addons/wsg_foundation/ and a line only that commit's code
 # (or later) has - the marker: a game that took the fix some other way (a cherry-pick, a patch) passes on it - and why.
 # A date that is a UTC time (2026-11-03T12:00Z) makes it required from then (a warning before: betas in flight).
+# Such a line starts "#from<TAB>" until its time: a game's older check_foundation.sh skips it as a comment (it does
+# not know times and would fail at once); the foundation session makes it a plain line at its time.
 # A game that must ship without one sets FOUNDATION_REQUIRED_SKIP="<commit>:<the reason>" (the log prints it).
 2cd59a7	2026-11-03	audio/audio.gd	var bright_kinds	Key hits crisp at a distance (the owner, twice: the post clang can't be heard); crowd built in slices.
 0422175	2026-11-03	solid_props.gd	class_name WsgSolidProps	The owner: nobody walks through a table or bench; the ball bounces off them.
 ad83891	2026-11-03	loading.gd	static func warm_scene(	The owner: a loading delay that looks frozen. Loading v2: shader warm-up, settle, prewarm.
 a24408b	2026-11-03	loading.gd	a node the game frees during the warm-up is skipped	A node freed during the warm-up stopped it warming anything (Hurling 0.23).
-1ef240f	2026-11-03T12:00Z	sim/sim.gd	shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body)]	WsgSim measured the clip, not the drawn feet (every slip it reported); the planter to 2 cm a step (world rule: feet).
+#from	1ef240f	2026-11-03T12:00Z	sim/sim.gd	shown[id] = [WsgNoteChecks.feet(body), WsgNoteChecks.t_or_a_pose(body)]	WsgSim measured the clip, not the drawn feet (every slip it reported); the planter to 2 cm a step (world rule: feet).

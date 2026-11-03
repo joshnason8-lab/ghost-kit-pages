@@ -1339,7 +1339,8 @@ rules (a pilot branch until the owner has passed the game's pilot), and says so 
 
 **A required commit can take effect later.** If its date in REQUIRED is a UTC time, such as `2026-11-03T12:00Z`, it
 is required from then. Before that, `check_foundation.sh` only warns, so a beta already in flight isn't turned red;
-sync the commit into your next build. 1ef240f (the planter, and WsgSim reading the drawn pose) is required from
+sync the commit into your next build. Until its time the line starts with `#from` and a tab, which an older copy of
+`check_foundation.sh` skips as a comment; at its time it becomes a plain line. 1ef240f (the planter, and WsgSim reading the drawn pose) is required from
 2026-11-03 12:00 UTC.
 
 ## 7. Check before you push

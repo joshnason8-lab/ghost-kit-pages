@@ -31,6 +31,8 @@ fi
 FAIL=0
 NOW=${FOUNDATION_NOW:-$(date -u +%Y-%m-%dT%H:%MZ)}
 TAB=$(printf '\t')
+# ("#from<TAB>" lines: required from a time, hidden from older copies of this script.)
+sed "s/^#from$TAB//" "$TMP/REQUIRED" > "$TMP/REQUIRED.now"
 while IFS="$TAB" read -r commit date file marker why; do
 	case "$commit" in ''|'#'*) continue ;; esac
 	ok=""
@@ -58,7 +60,7 @@ while IFS="$TAB" read -r commit date file marker why; do
 	esac
 	echo "::error::check_foundation: this game's foundation ($HAVE) lacks required $commit ($date): $why Run tools/wsg/sync_foundation.sh and commit."
 	FAIL=1
-done < "$TMP/REQUIRED"
+done < "$TMP/REQUIRED.now"
 git -C "$REPO" archive FETCH_HEAD foundation/addons/wsg_foundation | tar -x -C "$TMP"
 DIFF=$(diff -rq -x data -x VERSION -x '*.import' -x '*.uid' "$TMP/foundation/addons/wsg_foundation" "$ADDON" 2>&1 | head -20)
 if [ -n "$DIFF" ]; then
