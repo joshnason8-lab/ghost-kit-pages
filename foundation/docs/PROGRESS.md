@@ -556,3 +556,13 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     - Kho Kho AI slips 2-4 cm, deferred to 2026-11-06 12:00 (repro /home/user/wt-khokho, targeted:fair 101/103);
     - Pok Ta Pok hard stops and pivots (awaiting replays);
     - stop 2.1 cm on Floorball's model.
+- **Planter under game AI (due 2026-11-06 12:00; Kho Kho, Floorball refs, Pok Ta Pok, Takraw carry walk):**
+  - Reproduced on the foundation's own hero with no game: a straight walk driven every frame, as games do.
+    - Feet are read once per frame (the last pose; skeleton_updated fires twice a frame).
+    - Worst step: 1.3 m/s 2.6 cm, 1.8 m/s 3.5, 2.2+ m/s about 1.2.
+  - The world rule's drive() drives every other frame and reads 1.5 at the walk: optimistic. It will need to drive
+    every frame once the planter holds there (that changes the rule's numbers: decide with the lead).
+  - Found: landing frames skate the last 2.6-3.6 cm along the ground (contact 0->1 with the foot already under 1 cm).
+    Locking at the previous drawn ankle removed those, but the walk still read 2.7 (a slow creep in stance, under 3 mm
+    a frame), and 2.2 m/s got worse (a self-step's end toe skating). Reverted.
+  - Probes kept in the scratchpad (planter_probes/_brisk.gd, _brisk2.gd).
