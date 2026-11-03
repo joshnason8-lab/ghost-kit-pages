@@ -86,9 +86,10 @@ func find_bodies(root: Node) -> Array:
 		return true)
 
 
-## pose: why BODY's T- or A-pose now is by design ("pole turn: one hand on the pole, the other arm out"), or "" if it is
-## not - as WsgSimGame.bodies()' "pose_excuse". Counted with its reason in the pose rule, not failed. Only for a pose
-## the lead or owner ruled designed.
+## pose: why BODY's T- or A-pose now is by design, or "" if it is not - as WsgSimGame.bodies()' "pose_excuse". Counted
+## with its reason in the pose rule, not failed. Only for a pose the lead or owner has ruled designed, and narrowly: a
+## specific animation playing AND its contact condition holding (a hand on the pole in the pole-turn anim), never by
+## actor, role or gait.
 func pose_excuse(_body: Node) -> String:
 	return ""
 

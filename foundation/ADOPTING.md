@@ -1326,9 +1326,11 @@ func set_tier(t: int) -> void:                                          # as the
 Some hooks have defaults:
 - `find_bodies` and `find_officials` find every `WsgBody` and `WsgOfficial`, plus nodes in the group `wsg_official`.
 - `play_seconds` is 6.
-- `pose_excuse(body) -> String` is "": a pose the lead or owner ruled designed (Kho Kho's pole turn: one hand on the
-  pole, the other arm out) returns its reason while the body holds it, and the pose rule counts it instead of failing
-  ("excused by the game (why): N frames") - as `bodies()`' `pose_excuse` in WsgSim.
+- `pose_excuse(body) -> String` is "": only for a pose the lead or owner has ruled designed, after the game has shown
+  it from the frames. Narrow: return its reason only while that specific animation is playing AND its defining contact
+  holds (e.g. a hand within a few cm of the pole during the pole-turn anim), never by actor, role or gait. The pose rule
+  then counts those frames ("excused by the game (why): N frames") instead of failing; every other T/A-pose fails.
+  (The same applies to `bodies()`' `pose_excuse` in WsgSim.)
 
 **From 2026-11-03 12:00 UTC a failing rule fails your build.** Before then the check reports the same failures but
 exits 0 with a warning. That gives you the morning to write `world.gd` without turning a beta already in CI red.
