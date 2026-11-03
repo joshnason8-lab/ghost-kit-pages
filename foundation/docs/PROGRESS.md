@@ -411,3 +411,13 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   them metres off. Reproduced in Hurling's own crowd_view with its own bake (worktree /home/user/hurling-wt);
   forcing full figures fixes it. Profiles now all full figures at the same triangles (premium 700 / 1,200 / 2,400;
   budget 150 / 700 / 500); near < all brings the light one back.
+- Adoption feedback, 2026-11-03: **Pok Ta Pok** (all 4 venues pass; ships cards) and **Kho Kho** (16 venue/level
+  entries pass; audit in its CI) adopted. Fixed from them: cards from the fans' whole textured models (faces; the
+  crowd figure's 3-4-vertex faces read as backs) with a face check (skin + detail >= 0.055) - ca57ce7; cards take
+  exact shirt RGB and `brightness`; 3D shirts via WsgCrowd3D.shirt_palette (16 greys + 20 hues x 3 sats x 4 values,
+  code 1 + index; the old hash code < 1 still decodes for games' cut-outs - Hurling's cut-outs and 3D fans may now
+  differ a little in a shirt's tone at their border until it moves to cards) - 6a59b52; getting up steps off the
+  seat in the first half (smoothstep 0..0.5; Kho Kho's fan4 in a chair). Kabaddi briefed with venue notes.
+  Hurling's 0.20 playtest (toes up, free follow-through, glide) measured on its head with the licensed data in a
+  local worktree (/home/user/hurling-wt, never pushed): toes up only in its own moves (falls/lifts to 68 deg), the
+  follow-through identical with WSG_OFF (its choreography), side-steps to 5.9 m/s exist - all reported to Hurling.
