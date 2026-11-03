@@ -232,7 +232,8 @@ jobs:
       # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
       - name: Publish the beta release
         # Only this branch's builds: a branch cut from it (a pilot) must not replace the beta.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-game'
+        # ([no-beta] in the push's message: built and checked, not published - the lead holding betas.)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-game' && !contains(github.event.head_commit.message, '[no-beta]')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
