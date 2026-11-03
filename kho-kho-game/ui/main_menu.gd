@@ -37,7 +37,7 @@ func _ready() -> void:
 	WsgLoading.prewarm(PREWARM)
 	UI.screen(self, true)
 	Sfx.stop_all()
-	_pick = randi() % ATTRACT.size()
+	_pick = randi() % ATTRACT.size()   # wsg-rng-ok: which attract match the menu shows
 	var svc := SubViewportContainer.new()
 	svc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	svc.stretch = true
@@ -65,7 +65,7 @@ func _start_attract() -> void:
 	_pick += 1
 	_match = (load("res://game/match.gd") as Script).new()
 	_match.config = {"home": a[0], "away": a[1], "venue": a[2], "format": a[3], "mode": "quick", "user_team": -1,
-		"attract": true, "turn_len": 150.0, "difficulty": 2, "seed": randi()}
+		"attract": true, "turn_len": 150.0, "difficulty": 2, "seed": randi()}   # wsg-rng-ok: the attract match's own seed (every roll in it from that)
 	_match.finished.connect(func(_r): _start_attract.call_deferred())
 	_sv.add_child(_match)
 

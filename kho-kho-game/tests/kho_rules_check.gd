@@ -73,7 +73,10 @@ func frame(dt: float) -> void:
 		var want: int = (m.chase_line[m.chasing] as Array).size() - 1
 		if seated + (m._to_square as Dictionary).size() + (0 if (m._pending_kho as Dictionary).is_empty() else 1) < want:
 			_fail("chasers missing", "%d seated + %d walking, want %d" % [seated, m._to_square.size(), want])
-	# The defenders: at most three in at once; one out stays out this turn.
+	# The defenders: at most three in at once; one out stays out this turn. (Between turns the next turn's side is set
+	# up - one out two turns ago is in again, rightly - so "out" is only remembered through a turn's play.)
+	if phase != "play":
+		_state.clear()
 	var ins := 0
 	for d in m.d_state:
 		var st: String = m.d_state[d]
@@ -85,7 +88,8 @@ func frame(dt: float) -> void:
 			# again in order), never straight from out.
 			if String(_state.get(d, "")) == "out":
 				_fail("out and back in", String(d.data.get("name", "")))
-		_state[d] = st
+		if phase == "play":
+			_state[d] = st
 	if ins > 3:
 		_fail("too many defenders in", "%d" % ins)
 	# Every body: somewhere real, at a runner's speed at most.

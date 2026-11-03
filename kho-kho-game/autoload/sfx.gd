@@ -159,7 +159,7 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 
 ## One of a sound's takes, at random, if it has them.
 func _take(sound: String) -> String:
-	return "%s_%d" % [sound, 1 + randi() % int(TAKES[sound])] if TAKES.has(sound) else sound
+	return "%s_%d" % [sound, 1 + randi() % int(TAKES[sound])] if TAKES.has(sound) else sound   # wsg-rng-ok: which recorded take plays
 
 
 ## A sound from a place on the field, heard from the camera (a footstep, a dive landing).
@@ -190,13 +190,13 @@ func whistle(kind: String, pos: Vector3, volume_db := 0.0) -> void:
 	p.stream = streams[sound]
 	p.global_position = pos
 	p.volume_db = volume_db
-	p.pitch_scale = randf_range(0.98, 1.02)
+	p.pitch_scale = randf_range(0.98, 1.02)   # wsg-rng-ok: the sound's pitch only
 	p.play()
 
 
 ## A footstep at pos, on the ground's surface, louder the faster he runs.
 func step(pos: Vector3, speed: float) -> void:
-	play_at("step_mat" if surface == "mat" else "step_earth", pos, lerpf(-16.0, -6.0, clampf(speed / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))
+	play_at("step_mat" if surface == "mat" else "step_earth", pos, lerpf(-16.0, -6.0, clampf(speed / 7.0, 0.0, 1.0)), randf_range(0.92, 1.08))   # wsg-rng-ok: the sound's pitch only
 
 
 ## The place's own sound under the crowd, and in the hall its echo: kind is the ground's (Arena.kind); "" stops it.
@@ -229,12 +229,12 @@ func pause(on: bool) -> void:
 func voice(kind: String, volume_db := -10.0, pitch := 1.0) -> void:
 	var n := int(VOICES.get(kind, 0))
 	if n > 0:
-		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))
+		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch * randf_range(0.95, 1.05))   # wsg-rng-ok: the sound's take and pitch only
 
 
 ## The crowd reacting: "cheer", "ooh", "groan" or "applause".
 func react(kind: String, volume_db := -6.0) -> void:
-	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))
+	play("crowd_" + kind if kind != "applause" else kind, volume_db, randf_range(0.96, 1.04))   # wsg-rng-ok: the sound's pitch only
 
 
 func click() -> void:
@@ -359,7 +359,7 @@ func _whoosh() -> AudioStreamWAV:
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / RATE
-		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.04 + 0.25 * sin(PI * t / dur))
+		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.04 + 0.25 * sin(PI * t / dur))   # wsg-rng-ok: synthesised noise
 		out[i] = lp * sin(PI * t / dur) * 0.7
 	return _to_stream(out)
 
@@ -373,8 +373,8 @@ func _crowd_loop() -> AudioStreamWAV:
 	var b := 0.0
 	for i in n:
 		var t := float(i) / RATE
-		a = lerpf(a, randf_range(-1.0, 1.0), 0.07)
-		b = lerpf(b, randf_range(-1.0, 1.0), 0.015)
+		a = lerpf(a, randf_range(-1.0, 1.0), 0.07)   # wsg-rng-ok: synthesised noise
+		b = lerpf(b, randf_range(-1.0, 1.0), 0.015)   # wsg-rng-ok: synthesised noise
 		out[i] = (a * 0.6 + b * 1.2) * (0.75 + 0.25 * sin(TAU * t / dur * 2.0)) * 0.6
 	var fade := int(0.3 * RATE)
 	for i in fade:

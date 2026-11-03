@@ -29,7 +29,7 @@ static func create(p_kind: String, p_user: String, p_women := false) -> Cup:
 	c.kind = p_kind
 	c.women = p_women
 	c.user = p_user
-	c.seed = randi()
+	c.seed = randi()   # wsg-rng-ok: a new championship's own seed, which every roll in it then comes from
 	if p_kind == "league":
 		c.teams = DB.club_ids()
 		c.groups = [c.teams.duplicate()]

@@ -334,7 +334,7 @@ func goto_menu() -> void:
 ## here and printed, so a match seen to go wrong can be played again exactly.
 func _seeded(config: Dictionary) -> Dictionary:
 	if not config.has("seed"):
-		config["seed"] = randi() & 0x7fffffff
+		config["seed"] = randi() & 0x7fffffff   # wsg-rng-ok: a match started with no seed gets its own (logged: KHO_MATCH_SEED)
 	print("KHO_MATCH_SEED %d %s %s v %s" % [int(config.seed), String(config.get("venue", "")), String(config.get("home", "")), String(config.get("away", ""))])
 	return config
 

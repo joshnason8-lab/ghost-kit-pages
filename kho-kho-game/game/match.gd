@@ -1260,7 +1260,7 @@ func _give_kho(i: int) -> void:
 	_last_kho_t = t_match
 	# The palm on his back, as it sounds: a slap (the owner: the voice raised a pitch over it sounded like a
 	# cartoon), from where it lands.
-	Sfx.play_at("slap", squares[i].position + Vector3(0, 1.0, 0), -3.0, randf_range(0.9, 1.04))
+	Sfx.play_at("slap", squares[i].position + Vector3(0, 1.0, 0), -3.0, randf_range(0.9, 1.04))   # wsg-rng-ok: the sound's pitch only
 	if hud:
 		hud.callout(tr("CALL_KHO"), Game.C_SAFFRON, active.position)
 	if _user_chasing():

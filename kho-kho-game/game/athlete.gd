@@ -218,7 +218,7 @@ func _finish_act() -> void:
 			act = "lie"
 			act_t = 0.0
 			act_len = LIE_S
-			Sfx.play_at("thud", global_position, -2.0, randf_range(0.9, 1.05))   # down on the ground
+			Sfx.play_at("thud", global_position, -2.0, randf_range(0.9, 1.05))   # down on the ground   # wsg-rng-ok: the sound's pitch only
 			return
 		"lie":
 			act = "getup"
