@@ -46,8 +46,10 @@ func events() -> Array:
 ## Every body on the field now: [{"name", "pos": Vector3 (feet), "radius", "height", "body": WsgBody (or null),
 ## "active": bool (in play and meant to be moving), "target": Vector3 (where its AI sends it; INF: none)}], and
 ## optionally "pose_excuse": why this body's arms are out straight by design now (a pole turn: one hand on the pole,
-## the other out) - its T/A-pose readings are counted in the result, not failed. Keep the order the same all match: the
-## sampled quarter is chosen by place in this list.
+## the other out) - its T/A-pose readings are counted in the result, not failed; and "feet": a Callable() -> [left
+## ankle, left toe, right ankle, right toe] (world, as drawn) for a body the game draws itself ("body" null - its own
+## body at Low, what the owner sees on an A16): its feet read every frame, by the same bounds. Keep the order the same
+## all match: the sampled quarter is chosen by place in this list.
 func bodies() -> Array:
 	return []
 
@@ -63,7 +65,8 @@ func ball() -> Dictionary:
 ## Checks put off for this game until a time, each with the lead's or owner's note: {"foot slip": ["2026-11-06T12:00Z",
 ## "the lead, 2026-11-03: planter slips 3.5-4.1 cm under our AI; foundation fix pending"]}. Until then a failure of
 ## that check is reported as deferred (under Warnings, with its reason), not failed; from then on it fails again. Only
-## for a foundation fault the game cannot fix itself, and only with the lead's or owner's word.
+## for a foundation fault the game cannot fix itself, and only with the lead's or owner's word. "planted slip": [until,
+## why, cm] puts off only a planted foot's slide up to cm (one over it, and every skid and jump, fails as "foot slip").
 func deferred() -> Dictionary:
 	return {}
 

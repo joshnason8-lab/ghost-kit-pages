@@ -379,6 +379,10 @@ func _collide_boards() -> void:
 
 ## The goal frames: posts and crossbar bounce it; it passes the goal line between them, under the bar, into the net
 ## (crossed_goal_line); the net's back and sides from outside, and the frame's outside, turn it away.
+## The goal frame's tubes (posts, crossbar and the frame along the floor): Arena's solid goal has the same radius.
+const TUBE := 0.024
+
+
 func _collide_goals(prev: Vector3) -> void:
 	for end: int in [-1, 1]:
 		var gx := Rules.GOAL_LINE * end
@@ -386,7 +390,7 @@ func _collide_goals(prev: Vector3) -> void:
 		# Posts: vertical cylinders at (gx, +-hw).
 		for side: float in [-1.0, 1.0]:
 			var post := Vector2(gx, hw * side)
-			var rr := R + 0.024
+			var rr := R + TUBE
 			# Swept: a shot covers half a metre in a step, more than the post is wide - where its way first meets the
 			# post, not only where it ended (WsgSim found a ball through a post).
 			var a := Vector2(prev.x, prev.z)
@@ -429,15 +433,17 @@ func _collide_goals(prev: Vector3) -> void:
 			in_goal = end
 			crossed_goal_line.emit(end, true)
 			return
-		# The goal's outside: its sides and back push it away.
+		# The goal's outside: its sides and back push it away - clear of the frame's tubes along the floor (TUBE thick,
+		# as Arena's solid frame: WsgSim found a ball rolling along the goal's side 2 cm into its frame).
 		var lx := (pos.x - gx) * end
-		if lx > -0.01 and lx < Rules.GOAL_D + R and absf(pos.z) < hw + R and pos.y < Rules.GOAL_H * (1.0 - lx / Rules.GOAL_D * 0.9) + R:
+		var side := hw + R + TUBE
+		if lx > -0.01 and lx < Rules.GOAL_D + R + TUBE and absf(pos.z) < side and pos.y < Rules.GOAL_H * (1.0 - lx / Rules.GOAL_D * 0.9) + R:
 			var plx := (prev.x - gx) * end
 			if absf(prev.z) >= hw + R * 0.5:
-				pos.z = (hw + R) * signf(pos.z)
+				pos.z = side * signf(pos.z)
 				vel.z = -vel.z * 0.4
 			elif plx >= Rules.GOAL_D:
-				pos.x = gx + (Rules.GOAL_D + R) * end
+				pos.x = gx + (Rules.GOAL_D + R + TUBE) * end
 				vel.x = -vel.x * 0.4
 			else:
 				vel.y = absf(vel.y) * 0.3 + 0.5

@@ -93,6 +93,15 @@ func walker(_parent: Node) -> Array:
 	return []
 
 
+## feet_low: what draws the players at Low (the owner plays at Low): "foundation" if it is the same WsgBody the walker
+## measures, or the game's own body there - [body (Node3D, standing at the origin under PARENT), drive (Callable(dt:
+## float, velocity: Vector3, facing: float): moves and poses it one frame, as the game does), feet (Callable() -> [left
+## ankle, left toe, right ankle, right toe], world, as drawn)]. null: not wired (deferred until 2026-11-08 12:00 UTC,
+## failed from then). The feet rule's path and bounds, on that body.
+func walker_low(_parent: Node) -> Variant:
+	return null
+
+
 ## sounds: the kinds of sound the game plays at its key moments (the ball off the post, a tag, the whistle, a score):
 ## each must stay crisp at a distance (WsgAudio.bright_kinds). [] not wired.
 func key_sounds() -> Array:

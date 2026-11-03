@@ -227,6 +227,17 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.14-beta: the goal frame solid along the floor; replays cleared (3 November 2026)
+
+- Ball._collide_goals keeps the ball clear of the goal frame's tubes along the floor (2.4 cm, as Arena's solid frame):
+  WsgSim random#4 found a ball rolling along a goal's side 2 cm into its frame.
+- A match freed in its goal's replay clears FoundationLink.replay_at (shared by every body): the next match's sticks
+  were drawn at the old replay's moment. A test frees a match mid-replay.
+- The owner's notes run at a fixed 60 fps in CI, as the tests do: two notes counted screen frames against game time and
+  failed on a fast runner (barely-swings, holding-stick-up-close).
+- The shared foundation synced to 70e571a (the planter under game AI, 7def933a, required from 11-06 12:00); the
+  release gate skips its own commit's published build (ADOPTING 5.19). 0.9.14-beta, code 29.
+
 ### 0.9.13-beta: the beta published in place (3 November 2026)
 
 - The beta release is now updated in place (ADOPTING 5.19, as Hurling's): the new APK uploaded beside the old one, then

@@ -23,6 +23,8 @@ extends RefCounted
 ## log lines, and its signature (the failure with its numbers taken out: the batch report groups by it).
 
 const FPS := 30.0
+## A body not posed for more than this many frames (out of the camera's reach, then back) starts a new run of feet.
+const GAP_CUT := 3
 const STUCK_S := 6.0
 ## No progress: a body that moved over NO_PROGRESS_MOVED m but got no closer than PROGRESS_M to its target in this long.
 const NO_PROGRESS_S := 10.0
@@ -47,6 +49,7 @@ const SEVERITY := {"script error": 5, "nan": 5, "out of bounds": 4, "score": 5, 
 
 static var _log: WsgSimLog = null
 var _deferred := {}       # check -> "reason until time" (WsgSimGame.deferred, before its time)
+var _deferred_cm := {}    # check -> the most it is deferred up to (cm; "planted slip" only), INF for any
 static var _warm := false
 
 ## Options: stop_frame (replay: stop there and print the state), verbose, realtime (1x: the determinism check),
@@ -94,12 +97,14 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	# (A copy: a start() that shortens its config in place changed the saved one, and its replay shortened it again -
 	# Kho Kho's replays diverged.)
 	_deferred = {}
+	_deferred_cm = {}
 	var now := OS.get_environment("WSG_NOW") if OS.get_environment("WSG_NOW") != "" else Time.get_datetime_string_from_system(true).left(16) + "Z"
 	var dd := game.deferred()
 	for c in dd:
 		var d: Array = dd[c]
 		if d.size() >= 2 and String(d[1]).strip_edges() != "" and now < String(d[0]):
 			_deferred[String(c)] = "%s until %s" % [d[1], d[0]]
+			_deferred_cm[String(c)] = float(d[2]) if d.size() >= 3 else INF
 	var root: Node = await game.start(cfg.duplicate(true), seed, tree)
 	if root == null:
 		_fail(out, "start", "the match did not start", 0.0, 0, {}, events)
@@ -249,7 +254,24 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				progress.erase(nm)
 			var wb: Variant = b.get("body")
 			# (A quarter of the bodies, chosen by the seed, followed every frame: feet are measured frame to frame.)
-			if bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
+			if bool(opts.get("feet", true)) and not wb is WsgBody and b.get("feet") is Callable and bi % 4 == seed % 4:
+				# A body the game draws itself (its own body at Low - what the owner sees on an A16): its feet as drawn,
+				# from the game's "feet" (Callable() -> [left ankle, left toe, right ankle, right toe], world), every frame.
+				var fv: Variant = (b.feet as Callable).call()
+				if fv is Array and (fv as Array).size() >= 4:
+					if not feet.has(nm):
+						feet[nm] = [[[]], 0.0, 0.0, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
+					((feet[nm][0] as Array).back() as Array).append(fv)
+					var gr0: PackedInt32Array = (feet[nm][3] as Array).back()
+					gr0.append(1)
+					feet[nm][3][-1] = gr0
+				elif feet.has(nm) and not ((feet[nm][0] as Array).back() as Array).is_empty():
+					# (No feet this frame - the game's replay, a pause, its body off: the run ends, as a body the planter
+					# does not drive; read across, a replay putting every body back read as a 75-147 cm jump - Sepak Takraw.)
+					(feet[nm][0] as Array).append([])
+					(feet[nm][3] as Array).append(PackedInt32Array())
+					(feet[nm][8] as Array).append([])
+			elif bool(opts.get("feet", true)) and wb is WsgBody and is_instance_valid(wb) and bi % 4 == seed % 4:
 				var body := wb as WsgBody
 				if not feet.has(nm):
 					feet[nm] = [[[]], (body.joints["LeftFoot"] as Vector3).y * body.scale.y, (body.joints["LeftToeBase"] as Vector3).y * body.scale.y, [PackedInt32Array()], -1, -1, 0, 0, [[]]]
@@ -282,6 +304,9 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 						feet[nm][6] = int(feet[nm][6]) + 1
 						if reset:
 							feet[nm][7] = int(feet[nm][7]) + 1
+						# (Nor across a body not posed for more than GAP_CUT frames - put out of the camera's reach, then
+						# back: its foot read as one step over the whole gap, 1-9 m - Hurling's linesman.)
+						if reset or gap > GAP_CUT:
 							if not (runs.back() as Array).is_empty():
 								runs.append([])
 								gruns.append(PackedInt32Array())
@@ -406,7 +431,10 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 				skid = maxf(skid, float(r.skid_cm))
 				jump = maxf(jump, float(r.jump_cm))
 		if float(s.max_cm) > FOOT_SLIP_CM:
-			_fail(out, "foot slip", "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM], t, frame, {}, [])
+			# (Just the planted slide, up to a bound, can be put off on its own - "planted slip": [until, why, cm] - while
+			# skids and jumps fail: the lead, 2026-11-03, for slides of 2.1-2.5 cm left under Floorball's and Kho Kho's AI.)
+			var slid := "%s: a planted foot slid %.1f cm in a step (%.1f at most)" % [nm, s.max_cm, FOOT_SLIP_CM]
+			_fail(out, "planted slip" if _deferred.has("planted slip") and float(s.max_cm) <= float(_deferred_cm["planted slip"]) else "foot slip", slid, t, frame, {}, [])
 		if skid > FOOT_SLIP_CM:
 			_fail(out, "foot slip", "%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most)" % [nm, skid, FOOT_SLIP_CM], t, frame, {}, [])
 		if jump > WsgWorldRules.JUMP_MAX_CM:
