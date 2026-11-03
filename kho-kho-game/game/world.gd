@@ -10,8 +10,10 @@ const OFFICIALS := 5   # two umpires, the referee, the timekeeper and the scorer
 
 
 func _init() -> void:
-	if int(Game.settings.graphics) < 0:
-		Game.settings.graphics = Game.GFX_MEDIUM   # (a first run's tier: detect_graphics picks Medium for a mid phone)
+	# The modes are played at Medium: on Low the game draws its own models (the owner: Low as it is), which the pose,
+	# officials and feet rules cannot read; Medium and High draw everyone on the shared rig. (A CI machine's detected
+	# tier is Low.) The tiers rule still plays every mode at Low, Medium and High.
+	set_tier(Game.GFX_MEDIUM)
 	Game.settings.sound = true
 	Game.settings.coach = false
 
@@ -83,6 +85,11 @@ func walker(parent: Node) -> Array:
 	FoundationLink.in_match = was_in
 	if a.link == null:
 		return []   # (no licensed clips here: the rule says "not wired")
+	# The check drives his locomotor along its path; his own link would drive it too, every frame, from his (still)
+	# Athlete: the two fought over the feet. The link's posing is let go; the body and its locomotor are the match's.
+	var gs: Skeleton3D = a.body.skeleton
+	if gs.skeleton_updated.is_connected(a.link._on_game_posed):
+		gs.skeleton_updated.disconnect(a.link._on_game_posed)
 	return [a.link.body, a.link.loco]
 
 
