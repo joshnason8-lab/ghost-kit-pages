@@ -9,6 +9,24 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.0
+
+- **Nobody walks through anything**: the players, the referee, the linesmen and the substitutes go round the corner
+  flags, the posts, the nets, the dugouts and their benches, the rails, the boards and the walls, never through them
+  (a linesman used to walk straight through the flags on the touchline). A man taken off walks to the front of his
+  bench and sits down.
+- **The ball bounces off them**: a sliotar into the boards, a wall, a dugout, a stand's steps or a flag knocks back
+  off it, each its own way (a dull thud off concrete, a ping off a metal rail, next to nothing off a net). The posts
+  and the crossbar are as before, with their clang.
+- **The crowd builds a little at a time behind the loading screen**, so the bar and the spinner keep moving on a slow
+  phone.
+- **Free-taking practice at your own graphics level**: the taker, his hurley, the sliotar and the posts are drawn
+  at full detail on every level (with his shadow on the grass); the crowd and the stands are as your setting draws
+  them, as in a match. Practice no longer switches the whole game to High, so it starts faster on a budget phone.
+- **The clang off the posts comes from the posts**: still crisp and clear at a free's distance, now placed where
+  the ball hit.
+- Strikes keep their crack at a distance.
+
 ## New in 0.23.1
 
 - **No stutter as a match begins**: the graphics are prepared behind the loading screen, and it stays up until the

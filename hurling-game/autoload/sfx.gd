@@ -154,6 +154,8 @@ func _mixer() -> WsgAudio:
 	if wsg == null and FoundationLink.enabled():
 		WsgFoundation.tier = clampi(int(Game.settings.graphics), WsgFoundation.LOW, WsgFoundation.HIGH)
 		wsg = WsgAudio.new()
+		# The strikes and the woodwork crisp at any distance (the foundation's bright_kinds); a far bounce stays dull.
+		wsg.bright_kinds.erase("bounce")
 		add_child(wsg)
 		wsg.crowd_layers({
 			"murmur": {"stream": _looped("crowd_loop"), "db": [-26.0, -6.0], "by": "base"},

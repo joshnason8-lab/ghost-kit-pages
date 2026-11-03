@@ -857,6 +857,34 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.0, 3 November 2026)
+
+- **Solid props (the shared foundation's WsgSolidProps, foundation 0422175)**:
+  - Every piece of the ground is registered where it is built (Geo.solid with a per-section spec): the goal frames
+    and nets, the flags, the dugouts and their benches, the rails, the boards, the pitch walls, the stands' and
+    terraces' steps, the banks, the ball-stop nets, the masts and the clubhouse. The countryside and the far scenery
+    are skipped, with the reason recorded.
+  - Every player, official and substitute moves through `solid.move` in Player.integrate.
+  - The ball goes through `solid.bounce` in Sliotar.step, with a sound per material. The goal frames and nets stay
+    `ball: false`: Match._check_ball and the sliotar's own nets keep the woodwork's clang and the net's give.
+  - `game/prop_runs.gd` plays an AI match at each ground for the props audit, which is now a CI step. Locally, with
+    one 60 s match each: 0 bodies inside a prop and 0 ball steps through one at all three grounds. With the props
+    off (WSG_PROPS_IGNORED=1) it fails: a linesman 0.32 m into a flag, a corner-back into a goal frame.
+- **Practice graphics, the owner's middle ground** (docs/TIER_EXCEPTIONS.md):
+  - Practice no longer forces High. The taker is made at full detail on every level (`Player.make_full_detail`: the
+    HD body's full mesh, the kit's full look, kept full by `_rank_detail`), with his PlayerShadows shadow.
+  - The crowd, the stands and the extras follow the player's level. `_best_look` is High-only.
+  - Owner-note test: `_practice_low`.
+- **The post clang is positional again** (`Sfx.play_at`, kind "post"): the foundation's bright kinds replace the
+  flat workaround.
+- **Foundation 8f688ff** (from ad83891; the required commits are 2cd59a7, 0422175, ad83891 and a24408b; CI now fails
+  if one is missing):
+  - `build_venue_async` makes the crowd step of the loading overlay checkpointed.
+  - `bright_kinds` keeps strikes crisp at a distance (Hurling leaves "bounce" out).
+  - FootFlat measures the sole on the full mesh.
+  - a24408b replaces the local loading.gd warm-up patch.
+  - The crowd data is re-baked (v3).
+
 ## Done (0.23.1, 3 November 2026)
 
 - Foundation synced to ad83891 (WsgLoading v2), code 40: ld.warm on the match (every look drawn once behind the

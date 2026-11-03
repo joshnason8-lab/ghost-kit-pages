@@ -22,6 +22,10 @@ signal net_hit(pos: Vector3, vel: Vector3)   # into a goal's net (the stadium's 
 ## to the ground Pitch.NET_DEPTH behind the line) and, further back, the ball-stop net or the terrace: [distance behind the line, half its
 ## width, its height].
 var backstop := Vector3(9.0, 24.0, 14.0)
+## The ground's props (Stadium.solid): in flight or rolling it bounces off them (a board, a wall, a dugout, a flag, a
+## stand's steps), each its material's way, however fast (WsgSolidProps.bounce sweeps the whole step).
+var solid: WsgSolidProps
+signal prop_hit(hit: Dictionary)
 
 
 var state := FREE
@@ -364,6 +368,13 @@ func step(dt: float) -> Array:
 		var bounced := false
 		for i in 2:
 			var r := fly(p, v, dt * 0.5)
+			if solid and solid.sweep(p, r[0], RADIUS).hit:
+				# Into a prop this half step: the step again through the props (the grass's own bounce after).
+				var b := solid.bounce(p, r[1], RADIUS, dt * 0.5, _on_prop)
+				var bp: Vector3 = b.pos
+				if bp.y < RADIUS:
+					bp.y = RADIUS
+				r = [bp, b.vel, r[2]]
 			p = r[0]
 			v = r[1]
 			bounced = bounced or bool(r[2])
@@ -377,6 +388,23 @@ func step(dt: float) -> Array:
 	_shadow.global_position = Vector3(global_position.x, 0.015, global_position.z)
 	_shadow.visible = state == FREE or state == DEAD or state == OUT
 	return [_prev, global_position]
+
+
+## The knock off a prop (WsgSolidProps.bounce's hit): a clang off metal, a thud off wood or concrete, next to nothing
+## off a net; a ball that only grazes it makes no sound.
+func _on_prop(hit: Dictionary) -> void:
+	prop_hit.emit(hit)
+	var sp := float(hit.speed)
+	if sp < 2.5:
+		return
+	var at: Vector3 = hit.pos
+	match String(hit.sound):
+		"clang":
+			Sfx.play_at("post", at, -10.0 + minf(8.0, sp * 0.3), randf_range(1.05, 1.2), 2)
+		"net":
+			Sfx.play_at("bounce", at, -20.0, 0.6, 1)
+		_:
+			Sfx.play_at("bounce", at, -8.0 + minf(8.0, sp * 0.3), randf_range(0.8, 0.95), 1)
 
 
 ## A dead ball flying on over the end line: into the goal's net if it went in under the bar (the net takes the pace

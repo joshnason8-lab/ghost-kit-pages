@@ -141,6 +141,7 @@ func _ready() -> void:
 	ball = Sliotar.new()
 	ball.look_scale = _ball_scale()
 	ball.backstop = stadium.backstop()
+	ball.solid = _solid()
 	ball.net_hit.connect(func(p: Vector3, v: Vector3): stadium.net.ripple(p, v))
 	add_child(ball)
 	ball.place(Vector3.ZERO)
@@ -157,7 +158,8 @@ func _ready() -> void:
 	bench = Bench.new(self)
 	add_child(bench)
 	# (On High with Vulkan the sun's own shadows fall on the lit grass instead.)
-	if int(Game.settings.graphics) > Game.GFX_LOW and not Ultra.lit():
+	# (The practice's taker has his on every level: the owner's middle ground, full detail for him.)
+	if (int(Game.settings.graphics) > Game.GFX_LOW or is_practice()) and not Ultra.lit():
 		shadows = PlayerShadows.new(self)
 		add_child(shadows)
 	cam = CameraRig.new()
@@ -548,6 +550,10 @@ func _process(delta: float) -> void:
 		_step(total / n, delta / n)
 
 
+## After each step of play (its dt): the props' audit reads everyone's and the ball's places here (game/prop_runs.gd).
+signal stepped(dt: float)
+
+
 func _step(dt: float, delta: float) -> void:
 	now += dt
 	phase_t += dt
@@ -606,6 +612,7 @@ func _step(dt: float, delta: float) -> void:
 		_user_buttons()
 		if coach != null and active != null and phase in [P.LIVE, P.SET]:
 			hud.coach(coach.step(dt, coach_state()))
+	stepped.emit(dt)
 
 
 ## The crowd senses a score coming: louder as the side with the ball nears the posts (from about 60 m out, most
@@ -665,7 +672,7 @@ func lower_graphics() -> void:
 	for p in all_players() + officials.people:
 		(p as Player).body.relook()
 	# The men's shadows on the grass: their own on Medium (High on Vulkan had the sun's), none on Low.
-	if shadows != null and int(Game.settings.graphics) == Game.GFX_LOW:
+	if shadows != null and int(Game.settings.graphics) == Game.GFX_LOW and not is_practice():
 		shadows.queue_free()
 		shadows = null
 	elif shadows == null and int(Game.settings.graphics) > Game.GFX_LOW and not Ultra.lit():
@@ -759,6 +766,7 @@ func _move_all(dt: float) -> void:
 		var p: Player = pl
 		if not p.visible:
 			continue
+		p.solid = _solid()
 		p.integrate(dt, now)
 		if p.role != "umpire":
 			_out_of_goals(p)
@@ -770,7 +778,10 @@ func _move_all(dt: float) -> void:
 		# The man taken off walks to the dugout and sits down with the substitutes.
 		var gp: Player = g
 		var off: Vector3 = gp.get_meta("seat", Vector3(gp.global_position.x, 0, -Pitch.HALF_W - 7.0))
+		# (His seat is on a bench, a solid: he makes for the spot in front of it, and sits down from there.)
+		off = stadium.solid.free_spot(off, Player.BODY_R)
 		_steer(gp, off, 2.6)
+		gp.solid = _solid()
 		gp.integrate(dt, now)
 		gp.animate(now)
 		if gp.global_position.distance_to(off) < 0.8:
@@ -778,6 +789,12 @@ func _move_all(dt: float) -> void:
 			bench.sit_down(gp.team, gp.data)
 			gp.queue_free()
 	_separate(dt)
+
+
+## The ground's props everyone moves among (WSG_PROPS_IGNORED: none, the props' audit's own check that it catches
+## a walk through a bench).
+func _solid() -> WsgSolidProps:
+	return null if OS.has_environment("WSG_PROPS_IGNORED") else stadium.solid
 
 
 ## Players do not run through one another: a gentle push apart for anyone closer than a body's width, added to what
@@ -1908,11 +1925,11 @@ func _check_ball(prev: Vector3, cur: Vector3) -> void:
 				ball.global_position = Vector3(gx - s * 0.1, c.y, c.z)
 				ball.vel = Vector3(-ball.vel.x * 0.45, ball.vel.y * 0.6 + (2.0 if hit_bar else 0.0), ball.vel.z * 0.6 + rng.randf_range(-2, 2))
 				ball.last_kind = "deflect"
-				# The clang played flat, full and clear (as it was before the foundation's positional sound): a 3D player
-				# muffles its highs with distance - Godot's air absorption - and a clang is all highs, so from a free's
-				# camera 30 to 65 m off it came out a dull thud under the crowd (the owner, 0.20 and again 0.21: "I still
+				# The clang where it happened, full and clear: "post" is one of the foundation's bright kinds, kept crisp at
+				# any distance (a 3D sound's distance filter takes the highs out, and a clang is all highs: from a free's
+				# camera 30 to 65 m off it came out a dull thud under the crowd - the owner, 0.20 and again 0.21: "I still
 				# do not hear the sound of a clang").
-				Sfx.play("post", -1.0, randf_range(0.97, 1.03))
+				Sfx.play_at("post", c, -1.0, randf_range(0.97, 1.03), 5, -1.0)
 				_after(0.35, func(): Sfx.react("ooh", -3.0))   # (the crowd a beat after the ping, not over it)
 				hud.call_line(tr("CALL_POST") if hit_post else tr("CALL_BAR"))
 				_say("post")
@@ -2943,6 +2960,10 @@ func _rank_detail(dt: float) -> void:
 			bodies.append(pl.link.body)
 	var cam3 := get_viewport().get_camera_3d()
 	WsgFoundation.rank_detail(bodies, cam3.global_position if cam3 else Vector3.ZERO)
+	for p in all_players():
+		var pl := p as Player
+		if pl.full_detail and pl.link and pl.link.body:
+			pl.link.body.set_detail(true)
 
 
 ## The shoot-out and the practice are shot close at one goal: the 3D crowd (the shared foundation's, on High) moves

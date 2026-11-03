@@ -565,13 +565,13 @@ static func warm_scene(root: Node, after_frame: Callable = Callable(), max_batch
 		if g.is_visible_in_tree() and (g.layers & mask) != 0:
 			geoms.append(g)
 	var groups := {}
-	for g: GeometryInstance3D in geoms:
+	for g in geoms:
 		var k := _look_key(g)
 		if not groups.has(k):
 			groups[k] = []
 		(groups[k] as Array).append(g)
 	var saved := {}
-	for g: GeometryInstance3D in geoms:
+	for g in geoms:
 		saved[g] = [g.layers, g.visibility_range_begin, g.visibility_range_end]
 		g.layers = 0
 		g.visibility_range_begin = 0.0
@@ -597,11 +597,13 @@ static func warm_scene(root: Node, after_frame: Callable = Callable(), max_batch
 		var box := AABB()
 		var first := true
 		for k in keys.slice(i, i + n):
-			for g in groups[k]:      # (untyped: a body freed during the warm-up is skipped, not an error)
-				if not is_instance_valid(g):
+			# (Untyped: a node the game frees during the warm-up is skipped, not an error - Hurling 0.23.)
+			for g in groups[k]:
+				if not is_instance_valid(g) or not (g as GeometryInstance3D).is_inside_tree():
 					continue
-				g.layers = int(saved[g][0])
-				var b: AABB = g.global_transform * g.get_aabb()
+				var gi := g as GeometryInstance3D
+				gi.layers = int(saved[g][0])
+				var b: AABB = gi.global_transform * gi.get_aabb()
 				box = b if first else box.merge(b)
 				first = false
 		i = mini(i + n, keys.size())

@@ -62,6 +62,7 @@ func _ready() -> void:
 	await _half_time_and_clock()
 	await _post_clang()
 	await _loading_overlay()
+	await _practice_low()
 	await _champ_sim_resume()
 	await _crowd_builds()
 	await _bench_seats()
@@ -2283,10 +2284,19 @@ func _post_clang() -> void:
 	m.ball.vel = Vector3(20.0 * m.dir(0), 0, 0)
 	m._check_ball(Vector3(gx - 0.5 * m.dir(0), 3.0, z), Vector3(gx + 0.5 * m.dir(0), 3.0, z))
 	var heard := false
-	for p in Sfx._pool:
-		if p.playing and p.stream and String(p.stream.resource_path).get_file().begins_with("post"):
-			heard = heard or p.volume_db > -6.0
-	check(heard, "Free-taking: the sliotar off a post is heard, the clang played flat and clear")
+	if Sfx.wsg:
+		# Where it happened, as one of the foundation's bright kinds: no distance filter, and from no farther away than
+		# bright_distance (the camera behind the taker is 40-65 m off).
+		var ear: Vector3 = m.get_viewport().get_camera_3d().global_position
+		for p: AudioStreamPlayer3D in Sfx.wsg._pool:
+			if p.playing and p.stream and String(p.stream.resource_path).get_file().begins_with("post"):
+				heard = heard or (p.volume_db > -6.0 and p.attenuation_filter_db == 0.0 \
+					and p.global_position.distance_to(ear) <= Sfx.wsg.bright_distance + 0.5)
+	else:
+		for p in Sfx._pool:
+			if p.playing and p.stream and String(p.stream.resource_path).get_file().begins_with("post"):
+				heard = heard or p.volume_db > -6.0
+	check(heard, "Free-taking: the sliotar off a post is heard, the clang crisp and clear at the free's distance")
 	Game.settings.sound = keep_sound
 	m.queue_free()
 	await frames(2)
@@ -2317,4 +2327,36 @@ func _loading_overlay() -> void:
 	if m:
 		m.queue_free()
 		Game.current = null
+	await frames(2)
+
+
+## Owner note (the lead's, 3 November 2026: the owner's practice middle ground; docs/TIER_EXCEPTIONS.md): practice on
+## Low builds no more 3D fans than Low allows (none: cards) and keeps the player's Low, while the taker, his hurley,
+## the sliotar and the posts are at full detail (his HD body at its full mesh, the kit's full look, his shadow).
+func _practice_low() -> void:
+	var keep := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW
+	Game.start_match({"home": "KIL", "away": "TIP", "venue": "county", "mode": "practice", "user_team": 0, "seed": 3})
+	await frames(30)
+	var m: Node = Game.current
+	var st: Stadium = m.stadium
+	check(int(Game.settings.graphics) == Game.GFX_LOW, "Practice on Low: the graphics stay the player's Low (no forced High)")
+	check(st.crowd3d == null and st.crowd != null and st.crowd.visible, "Practice on Low: the crowd as Low draws it, cards and no 3D fans")
+	var t: Player = m.taker
+	check(t.full_detail and bool(t.body.look.get("full_detail", false)), "Practice on Low: the taker is at full detail")
+	if t.link and t.link.body:
+		var b: WsgBody = t.link.body
+		check(b._lod == 0 and b.full and b.mesh_instance.mesh == (b.character.meshes as Array)[0],
+			"Practice on Low: the taker's body is its full mesh (the hurley on it), not Low's light one")
+	check(m.shadows != null, "Practice on Low: the taker casts his shadow")
+	var others := 0
+	for q in m.all_players():
+		if q != t and (q as Player).full_detail:
+			others += 1
+	check(others == 0, "Practice on Low: only the taker at full detail (the rest at Low's)")
+	check(m.ball.visible and (st._posts != null or not st.baked), "Practice on Low: the sliotar drawn, the posts drawn whole over the baked light")
+	m.queue_free()
+	Game.current = null
+	Game.remove_meta("practice_gfx")
+	Game.settings.graphics = keep
 	await frames(2)

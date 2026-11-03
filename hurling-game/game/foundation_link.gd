@@ -81,7 +81,7 @@ func _ready() -> void:
 			prefix += "_hd"     # the HD pack's remake of the official, cut for the rig, with its own normal map
 	elif ResourceLoader.exists(DIR + "hero_hd_rig.json"):
 		prefix = "hero_hd"      # the HD model's own cuts, its sculpt baked into a normal map (foundation tools/blender)
-	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW else 0
+	var lod := 1 if int(Game.settings.graphics) == Game.GFX_LOW and not bool(toon.look.get("full_detail", false)) else 0
 	body = WsgBody.new(WsgBody.load_character(DIR, prefix), null, lod)
 	add_child(body)
 	body.set_manual(true)

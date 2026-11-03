@@ -4,8 +4,9 @@ extends "res://game/match.gd"
 ## Your county's free-taker takes them all, alone on the pitch but for the umpires at the goal (no goalkeeper: the
 ## owner's "The goalie can be removed"); the camera is low behind him the whole time, cutting to each new spot and
 ## easing in as he walks up, and stays there while the sliotar flies on over the bar, into the net or wide and lands.
-## High graphics while it lasts (the HD pack's hurler if it is here) and the smooth frame rate, whatever Settings
-## says: everything is close. A point over the bar is one, a goal three; the best score is kept
+## The taker, his hurley, the sliotar and the posts at full detail whatever the graphics level (the HD body, its kit
+## and its shadow), the smooth frame rate; the crowd, the stands and the rest at the player's own level, as a quick
+## match (the owner's middle ground, a tier exception: docs/TIER_EXCEPTIONS.md). A point over the bar is one, a goal three; the best score is kept
 ## (Game.settings.practice_best). Run on the shoot-out's loop (the taker walks up, the strike, the ball's end): the
 ## match's own rules for the ball, the posts and the nets, with the free's spot, the scoring and the end of the
 ## round here.
@@ -35,8 +36,9 @@ var view: Camera3D           # the low camera behind the taker, for the whole pr
 var _view_to := Transform3D()  # where it eases to as he walks up
 
 
-## High graphics and the smooth frame rate from before anything is built, for as long as the practice lasts; the
-## player's own settings back after it (never saved while it lasts: _save_settings).
+## The smooth frame rate from before anything is built, for as long as the practice lasts; the player's own settings
+## back after it (never saved while it lasts: _save_settings). The graphics level is the player's own (the owner's
+## middle ground: only the taker, his hurley, the ball and the posts are at full detail - make_full_detail).
 func _enter_tree() -> void:
 	use_practice_graphics()
 
@@ -45,7 +47,6 @@ func _enter_tree() -> void:
 static func use_practice_graphics() -> void:
 	if not Game.has_meta("practice_gfx"):
 		Game.set_meta("practice_gfx", [int(Game.settings.graphics), int(Game.settings.get("fps", Game.FPS_SMOOTH))])
-	Game.settings.graphics = Game.GFX_HIGH
 	if int(Game.settings.get("fps", Game.FPS_SMOOTH)) == Game.FPS_SAVER:
 		Game.settings.fps = Game.FPS_SMOOTH
 	Game.apply_frame_rate()
@@ -105,6 +106,7 @@ func _ready() -> void:
 	user_team = 0
 	_set_active(_best_free_taker())
 	taker = active
+	taker.make_full_detail()
 	taker.measure_free_bas()
 	# Alone on the pitch: the rest of both sides, the referee and the linesmen out of sight (the umpires stay, at the
 	# goal, for their flags).
@@ -117,7 +119,10 @@ func _ready() -> void:
 		(l as Player).visible = false
 	view = Camera3D.new()
 	add_child(view)
-	_best_look()
+	# (The sharpest look - every mesh at full detail, the sun's shadows at four times the size - is High's: on the
+	# lower levels the stands and the crowd stay as the player's level draws them.)
+	if int(Game.settings.graphics) == Game.GFX_HIGH:
+		_best_look()
 	_close_crowd()
 	practice = {"n": 0, "points": 0, "marks": [], "spots": [], "kinds": [], "state": "ready", "t": 0.0,
 		"best": int(Game.settings.get("practice_best", -1))}

@@ -125,6 +125,11 @@ func _ready() -> void:
 ## Drawn with the shared foundation (the owner's model on the shared rig, motion-capture locomotion) when this build
 ## has the licensed library (FoundationLink); the game's own body stays, posed and measured, unseen.
 var link: FoundationLink
+## The ground's props he keeps out of (Stadium.solid, the match sets it), and his own memo of which way round one he
+## chose (WsgSolidProps.move: on round a long bench, not dithering at its middle).
+var solid: WsgSolidProps
+var _solid_memo := {}
+const BODY_R := 0.3
 
 
 func _link_foundation() -> void:
@@ -170,6 +175,25 @@ func take_over(pd: Dictionary, look: Dictionary) -> void:
 	add_child(body)
 	body.scale = Vector3.ONE * DRAW_SCALE
 	body.set_lod(lod)
+	body.rotation.y = yaw
+	_link_foundation()
+
+
+## Drawn at full detail whatever the graphics level (the practice's free-taker, close to the camera all the time):
+## the HD body at its full mesh, the kit's full look and his shadow. His body is made again so.
+var full_detail := false
+
+
+func make_full_detail() -> void:
+	if full_detail:
+		return
+	full_detail = true
+	var lk: Dictionary = (body.look as Dictionary).duplicate()
+	lk.full_detail = true
+	body.queue_free()
+	body = _new_body(lk)
+	add_child(body)
+	body.scale = Vector3.ONE * DRAW_SCALE
 	body.rotation.y = yaw
 	_link_foundation()
 
@@ -252,7 +276,14 @@ func integrate(dt: float, now: float) -> void:
 	if dv.length() > rate * dt:
 		dv = dv.normalized() * rate * dt
 	vel += dv
-	position += vel * dt
+	if solid:
+		# Round the ground's props, never through them (a bench, a flag, a dugout's wall, a board, the posts: the owner's
+		# rule), and pushed out of any he was moved into; his velocity what he really moved at (into a wall: none).
+		var m := solid.move(position, vel, dt, BODY_R, 1.8, Vector3.INF, _solid_memo)
+		position = m[0]
+		vel = Vector3((m[1] as Vector3).x, 0.0, (m[1] as Vector3).z)
+	else:
+		position += vel * dt
 	# Facing: where he runs, or where he is told to look. A man told to look one way while moving the other
 	# backpedals if he is slow about it; faster than a backpedal, he turns and runs (a man facing the ball while
 	# running away from it looked to run forward while sliding backward: the owner's report).

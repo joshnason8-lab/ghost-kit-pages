@@ -35,6 +35,11 @@ var net: GoalNet               # the goals' nets (a sliotar into one ripples it)
 var _post_geo: Geo             # the goals' frames again, for _posts
 var _posts: MeshInstance3D       # the goals white over the baked light (_baked_light)
 var structure: MeshInstance3D  # the stands, walls and roofs, built
+## The ground's props as solids (the shared foundation's WsgSolidProps; the owner: nobody walks through a bench or a
+## wall, and the ball bounces off them): every piece of the structure as it is built (Geo.solid), the dugouts'
+## benches, the nets. Player.integrate moves everyone through it, Sliotar.step the ball. The goals' frames and nets
+## stop no ball here (Match._check_ball and the sliotar's own nets do: the woodwork's clang, the net's give).
+var solid := WsgSolidProps.new()
 var baked := false             # drawn under its baked light (Low and Medium: assets/env/light)
 var _built_mesh: ArrayMesh     # the stands as built (the bake's signature is of these)
 var _shirt_of := []            # each spot's fan's shirt (the 3D fan's and the cut-out's the same)
@@ -61,11 +66,16 @@ func _ready() -> void:
 	var g := Geo.new()
 	var nets := Geo.new()
 	var fields := Geo.new()
+	g.solid = solid
+	nets.solid = solid
+	nets.solid_spec = {"name": "ball-stop net", "material": "net"}
 	var spots: Array[Vector3] = []
 	scenery = Scenery.new(time)
 	_goals(g, nets)
 	_dugouts(g)
+	g.solid_spec = {"name": "countryside", "skip": "beyond the ground's boundary: nobody and no ball goes there"}
 	_countryside(g, fields)
+	g.solid_spec = {"name": "structure", "material": "concrete"}
 	match kind:
 		"parish":
 			_parish(g, nets, spots)
@@ -81,6 +91,7 @@ func _ready() -> void:
 	add_child(fields.commit(field_material(time)))
 	scenery.commit()
 	add_child(scenery)
+	_solid_scenery()
 	var nm := StandardMaterial3D.new()
 	nm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	nm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -100,15 +111,19 @@ func _ready() -> void:
 
 ## The crowd, as many as the graphics level seats.
 ## The crowd held back from _ready (defer_crowd), built now: round focus at quality (-1: the graphics level's).
-func build_deferred_crowd(focus := CROWD_FOCUS, quality := -1) -> void:
+## LD (the loading overlay): the 3D fans built in chunks, a frame drawn between them (`await` it then).
+func build_deferred_crowd(focus := CROWD_FOCUS, quality := -1, ld: WsgLoading = null) -> void:
 	if crowd == null:
-		_crowd(focus, quality)
+		await _crowd(focus, quality, ld)
 
 
-func _crowd(focus := CROWD_FOCUS, quality := -1) -> void:
+func _crowd(focus := CROWD_FOCUS, quality := -1, ld: WsgLoading = null) -> void:
 	crowd = WsgCrowdCards.new()
 	add_child(crowd)
-	build_crowd(focus, quality if quality >= 0 else int(Game.settings.graphics))
+	if ld:
+		await build_crowd(focus, quality if quality >= 0 else int(Game.settings.graphics), ld)
+	else:
+		build_crowd(focus, quality if quality >= 0 else int(Game.settings.graphics))
 	_flags()
 
 
@@ -175,7 +190,8 @@ func _baked_light() -> void:
 var crowd_key := []            # [focus, quality] the crowd was last built for
 
 
-func build_crowd(focus: Vector3, quality: int) -> void:
+## LD: behind the loading overlay, the 3D fans built with its checkpoints (WsgCrowd3D.build_venue_async; `await` it).
+func build_crowd(focus: Vector3, quality: int, ld: WsgLoading = null) -> void:
 	crowd_key = [focus, quality]
 	if venue == null:
 		venue = crowd_venue()
@@ -194,7 +210,13 @@ func build_crowd(focus: Vector3, quality: int) -> void:
 	if quality > Game.GFX_LOW and WsgCrowd3D.available() and not OS.has_environment("WSG_OFF"):
 		crowd3d = WsgCrowd3D.new()
 		add_child(crowd3d)
-		var used := crowd3d.build_venue(venue, quality, focus, density, seed, shirts, lights)
+		var used: PackedInt32Array
+		if ld:
+			used = await crowd3d.build_venue_async(venue, quality, focus, density, seed, shirts, lights, ld)
+		else:
+			used = crowd3d.build_venue(venue, quality, focus, density, seed, shirts, lights)
+		if not is_instance_valid(crowd3d):
+			return
 		if not home_colours.is_empty():
 			crowd3d.set_teams(home_colours[0], away_colours[0] if not away_colours.is_empty() else home_colours[-1])
 		placed = crowd3d.placed
@@ -380,10 +402,26 @@ func _shirts(spots: Array) -> Array:
 ## mesh in hurling) from the bar back to the ground about 2 m behind the line.
 func _goals(g: Geo, nets: Geo) -> void:
 	_goal_frames(g, 0.0)
+	# The nets themselves (GoalNet): bodies kept out; the ball's catch is the sliotar's own (_nets).
+	for s: float in [-1.0, 1.0]:
+		solid.add({"name": "goal net", "kind": "box", "material": "net", "ball": false,
+			"position": Vector3((H + Pitch.NET_DEPTH * 0.5) * s, 0, 0), "size": Vector3(Pitch.NET_DEPTH, Pitch.BAR_H, Pitch.POST_GAP)})
 	# The same again a hair larger, drawn over them where the light is baked (_baked_light): the posts are too thin
 	# for the light map's patches, which left them black (the owner, 0.18.0). Built here so they always match.
 	_post_geo = Geo.new()
 	_goal_frames(_post_geo, 0.004)
+
+
+## The scenery's benches (the dugouts', the clubhouse's) solid as they stand, their own bounds; the rest of the
+## scenery (trees, houses, lamps, rocks, the floodlights on the masts and roofs) is out beyond the stands, the ball-stop
+## nets and the boundary, where no one goes and no ball reaches.
+func _solid_scenery() -> void:
+	for c in scenery.get_children():
+		if c is MultiMeshInstance3D:
+			if String(c.name).contains("bench"):
+				solid.register(c, {"material": "wood"})
+			else:
+				solid.skip(String(c.name), "scenery beyond the stands and the boundary: no one goes there, no ball reaches it")
 
 
 ## The goals' white frames and the flags: grow (m) thickens every piece (0 for the stadium's own mesh).
@@ -391,6 +429,7 @@ func _goal_frames(g: Geo, grow: float) -> void:
 	var white := Color(0.96, 0.96, 0.94)
 	var r := Pitch.POST_W * 0.5
 	var gr := r + grow
+	g.solid_spec = {"name": "goal frame", "material": "metal", "ball": false}
 	for s: float in [-1.0, 1.0]:
 		var x := (H + r) * s
 		for zs: float in [-1.0, 1.0]:
@@ -408,6 +447,7 @@ func _goal_frames(g: Geo, grow: float) -> void:
 			g.cylinder(Vector3(x, Pitch.BAR_H, hz * zs), Vector3(back, fr, hz * zs), fg, fg, white, 6, false)
 			g.cylinder(Vector3(x, fr, hz * zs), Vector3(back, fr, hz * zs), fg, fg, white, 6, false)
 		# A corner flag at each corner, and the flags at the lines (Rule 1.2), as small posts.
+		g.solid_spec = {"name": "flag", "material": "plastic"}
 		for zs: float in [-1.0, 1.0]:
 			for d: float in [0.0, 13.0, 20.0, 45.0, 65.0]:
 				var fx := (H - d) * s
@@ -418,6 +458,7 @@ func _goal_frames(g: Geo, grow: float) -> void:
 
 func _rail(g: Geo, inset: float, h := 1.0) -> void:
 	var c := Color("b9bfc4")
+	g.solid_spec = {"name": "rail", "material": "metal"}
 	var x := H + inset
 	var z := W + inset
 	# The far side's rail stops at the dugouts (they stand in its line) and goes on between them.
@@ -440,6 +481,7 @@ func _rail(g: Geo, inset: float, h := 1.0) -> void:
 func _stand(g: Geo, x0: float, x1: float, z0: float, dir: float, rows: int, rise: float, depth: float, col: Color,
 		spots: Array[Vector3], roof := true, roof_col := Color("5a6470"), base := 1.2) -> void:
 	var seat := col
+	g.solid_spec = {"name": "stand", "material": "concrete"}
 	for r in rows:
 		var z := z0 + dir * (r * depth)
 		var y := base + r * rise
@@ -476,6 +518,7 @@ func _stand(g: Geo, x0: float, x1: float, z0: float, dir: float, rows: int, rise
 
 ## A terrace (open steps, standing) across an end: along z from z0 to z1, its front at x0, rising away (dir).
 func _terrace(g: Geo, z0: float, z1: float, x0: float, dir: float, rows: int, col: Color, spots: Array[Vector3]) -> void:
+	g.solid_spec = {"name": "terrace", "material": "concrete"}
 	for r in rows:
 		var x := x0 + dir * r * 0.7
 		var y := 0.6 + r * 0.32
@@ -494,6 +537,7 @@ var mast_spots: Array[Vector3] = []   # where the floodlight masts stand (tests:
 
 func _mast(g: Geo, p: Vector3, h: float, face: Vector3) -> void:
 	mast_spots.append(p)
+	g.solid_spec = {"name": "floodlight mast", "material": "metal"}
 	g.cylinder(p, p + Vector3(0, h, 0), 0.35, 0.22, Color("9aa2aa"), 6, false)
 	# The lamp array on top (the Meshy floodlight, 4.5 m across), aimed down at the field.
 	scenery.add("floodlight", p + Vector3(0, h + 1.6, 0), atan2(face.x, face.z), 2.4, deg_to_rad(22.0))
@@ -504,6 +548,7 @@ func _mast(g: Geo, p: Vector3, h: float, face: Vector3) -> void:
 func _dugouts(g: Geo) -> void:
 	var shell := Color("2c3640")
 	var roof := Color("8a96a0")
+	g.solid_spec = {"name": "dugout", "material": "concrete"}
 	for sx: float in [-1.0, 1.0]:
 		var x0 := sx * (Bench.FIRST - 0.9)
 		var x1 := sx * (Bench.FIRST + (Bench.SEATS - 1) * Bench.STEP + 0.9)
@@ -517,6 +562,7 @@ func _dugouts(g: Geo) -> void:
 		for i in int(w / 1.2):
 			# (Its back to the dugout's wall: the model's back is at its +z.)
 			scenery.add("painted_bench_low", Vector3(minf(x0, x1) + 0.65 + i * 1.2, 0, Bench.SEAT_Z + 0.05), PI)
+	g.solid_spec = {"name": "structure", "material": "concrete"}
 
 
 ## Trees as Irish grounds have them round the field: oak and the darker broadleaves (ash, sycamore), cut-outs of
@@ -645,6 +691,7 @@ func _parish(g: Geo, nets: Geo, spots: Array[Vector3]) -> void:
 	# The stand on the far side, at the halfway line: a small covered stand of eight rows.
 	_stand(g, -22.0, 22.0, -W - 6.0, -1.0, 8, 0.38, 0.75, Color("6d7a86"), spots, true, Color("3f5a6b"), 0.8)
 	# The grass bank along the rest of the far side, where people stand.
+	g.solid_spec = {"name": "grass bank", "material": "earth"}
 	for side: float in [-1.0, 1.0]:
 		var xa := 26.0 * side
 		var xb := (H + 4.0) * side
@@ -662,13 +709,16 @@ func _parish(g: Geo, nets: Geo, spots: Array[Vector3]) -> void:
 		spots.append(Vector3(rng.randf_range(-H, H), 0.0, W + 4.0 + rng.randf_range(0, 1.5)))
 	# Ball-stop nets behind each goal: tall poles and a net between them.
 	for s: float in [-1.0, 1.0]:
+		g.solid_spec = {"name": "ball-stop pole", "material": "metal"}
 		var x := (H + 9.0) * s
 		for z in [-24.0, -12.0, 0.0, 12.0, 24.0]:
 			g.cylinder(Vector3(x, 0, z), Vector3(x, 14.0, z), 0.12, 0.1, Color("8a9298"), 5, false)
 		nets.wall(Vector3(x, 0, -24.0), Vector3(x, 0, 24.0), 2.0, 14.0, Color(0.55, 0.58, 0.6), true)
 		# The rail's end: a low wall behind the goal.
+		g.solid_spec = {"name": "low wall", "material": "concrete"}
 		g.box(Vector3((H + 4.0) * s, 0.5, 0), Vector3(0.3, 1.0, 60.0), Color("8f979e"))
 	# The clubhouse behind one goal, and the dressing rooms.
+	g.solid_spec = {"name": "clubhouse", "material": "plaster"}
 	g.box(Vector3(-H - 22.0, 3.0, -18.0), Vector3(14.0, 6.0, 26.0), Color("d8d2c2"))
 	g.box(Vector3(-H - 22.0, 6.4, -18.0), Vector3(15.0, 0.8, 27.0), Color("5a3a2a"))
 	# Floodlight masts at the four corners.
@@ -707,6 +757,7 @@ func _parish(g: Geo, nets: Geo, spots: Array[Vector3]) -> void:
 ## Pitchside advertising boards' faces at z (facing the field: dir +1 faces +z), panels of a few colours as a
 ## board's ads change along it; the county ground's in its painted greens and whites rather than lit.
 func _boards(g: Geo, z: float, dir: float, length: float, h := 1.0, painted := false) -> void:
+	g.solid_spec = {"name": "advertising board", "material": "plastic"}
 	var cols := [Color("b0287e"), Color("7a2a9a"), Color("d0388e"), Color("5c2a8a")] if not painted \
 		else [Color("2a6a44"), Color("e8e4d8"), Color("1f4a32"), Color("c8b45a")]
 	var n := int(length / 6.0)
@@ -735,6 +786,7 @@ func _truss(g: Geo, x0: float, x1: float, front_z: float, back_z: float, y: floa
 func _county(g: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
+	g.solid_spec = {"name": "pitch wall", "material": "concrete"}
 	g.box(Vector3(0, 0.5, -W - 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
 	g.box(Vector3(0, 0.5, W + 4.5), Vector3(Pitch.LENGTH + 20.0, 1.0, 0.4), Color("1f4a32"))
 	if int(Game.settings.graphics) > Game.GFX_LOW:
@@ -745,6 +797,7 @@ func _county(g: Geo, spots: Array[Vector3]) -> void:
 	# The open terraces on the far side beyond it and at both ends.
 	for s: float in [-1.0, 1.0]:
 		_terrace(g, -W + 2.0, W - 2.0, (H + 8.0) * s, s, 16, Color("8c8f88"), spots)
+		g.solid_spec = {"name": "side terrace", "material": "concrete"}
 		for r in 10:
 			var x0 := 64.0 * s
 			var x1 := (H + 8.0) * s
@@ -754,6 +807,7 @@ func _county(g: Geo, spots: Array[Vector3]) -> void:
 			for i in int(absf(x1 - x0) / 0.6):
 				spots.append(Vector3(minf(x0, x1) + 0.3 + i * 0.6, y, z - 0.35))
 	# A low stand on the near side, under the camera.
+	g.solid_spec = {"name": "near stand", "material": "concrete"}
 	for r in 6:
 		var z := W + 6.0 + r * 0.8
 		var y := 0.8 + r * 0.42
@@ -774,6 +828,7 @@ func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 13
 	# The advertising boards round the field, lit magenta and purple as the national stadium's are (no names).
+	g.solid_spec = {"name": "pitch wall", "material": "concrete"}
 	g.box(Vector3(0, 0.6, -W - 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("6a1f55"))
 	g.box(Vector3(0, 0.6, W + 5.0), Vector3(Pitch.LENGTH + 30.0, 1.2, 0.4), Color("6a1f55"))
 	var hd := int(Game.settings.graphics) > Game.GFX_LOW
@@ -796,6 +851,7 @@ func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 		g.box(Vector3(0, lower_top + 0.3, -W - 23.55), Vector3(160.0, 0.6, 0.12), Color("5c2a8a"))
 		_truss(g, -81.0, 81.0, -W - 23.0, -W - 49.4, upper + 24 * 0.6 + 4.5)
 	# One end: a tall stand; the other: the terrace.
+	g.solid_spec = {"name": "end stand", "material": "concrete"}
 	for r in 30:
 		var x := H + 9.0 + r * 0.85
 		var y := 1.4 + r * 0.55
@@ -810,6 +866,7 @@ func _stadium(g: Geo, spots: Array[Vector3]) -> void:
 	g.box(Vector3(H + 36.0, 22.0, 0), Vector3(1.0, 6.0, 104.0), Color("c9ced3"))
 	_terrace(g, -50.0, 50.0, -H - 9.0, -1.0, 26, Color("8c8f88"), spots)
 	# The near side's lower tier, under the camera.
+	g.solid_spec = {"name": "near stand", "material": "concrete"}
 	for r in 8:
 		var z := W + 6.0 + r * 0.8
 		var y := 1.4 + r * 0.42
@@ -839,6 +896,7 @@ func _corner(g: Geo, sx: float, spots: Array[Vector3], press: bool, hd: bool) ->
 	var rows := 20
 	var width := 24.0
 	var top := 1.4 + rows * 0.6
+	g.solid_spec = {"name": "corner stand", "material": "concrete"}
 	for r in rows:
 		var y := 1.4 + r * 0.6
 		var at := c - toward * (r * 0.85 + 0.42)

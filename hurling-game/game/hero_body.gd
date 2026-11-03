@@ -239,7 +239,7 @@ func _material() -> ShaderMaterial:
 ## The kit's material for a look (its colours and design), the design placed from a body's rest (chest and spine).
 ## The officials on the foundation wear it too, on the hurlers' model (FoundationLink).
 static func kit_material(look: Dictionary, _rest: Dictionary) -> ShaderMaterial:
-	var hd := int(Game.settings.graphics) > Game.GFX_LOW
+	var hd := int(Game.settings.graphics) > Game.GFX_LOW or bool(look.get("full_detail", false))
 	var ultra := Ultra.active()
 	var lit := Ultra.lit()
 	var key := "%s|%s|%s|%s|%s|%d|%s|%s|%s|%s" % [look.get("jersey"), look.get("trim"), look.get("shorts"), look.get("socks"),

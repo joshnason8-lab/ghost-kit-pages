@@ -420,9 +420,9 @@ func start_match_loading(config: Dictionary, buttons: Array = []) -> void:
 	ld.step("Crowd", func():
 		if practice and int(settings.graphics) == GFX_HIGH:
 			# Built as the practice shoots it: close behind the goal it attacks, at the Close budget (Match._close_crowd).
-			(built.stadium as Stadium).build_deferred_crowd(Vector3(Pitch.attack_dir(0, 1) * (Pitch.HALF_L + 14.0), 3.0, 0.0), 2)
+			await (built.stadium as Stadium).build_deferred_crowd(Vector3(Pitch.attack_dir(0, 1) * (Pitch.HALF_L + 14.0), 3.0, 0.0), 2, ld)
 		else:
-			(built.stadium as Stadium).build_deferred_crowd(), 2.0)
+			await (built.stadium as Stadium).build_deferred_crowd(Stadium.CROWD_FOCUS, -1, ld), 2.0)
 	ld.step("Teams", func():
 		var cfg := config.duplicate()
 		cfg.stadium = built.stadium

@@ -9,6 +9,23 @@ var normals := PackedVector3Array()
 var colors := PackedColorArray()
 var uvs := PackedVector2Array()
 var idx := PackedInt32Array()
+## The ground's solid props (the shared foundation's WsgSolidProps; the owner: nobody walks through anything, and the
+## ball bounces off it), when set: each box, upright post, bar and net wall registered as it is built, with
+## solid_spec (name, material, and "ball"/"walk" false where only one of the two applies; "skip": a reason it is not
+## solid). Pieces lying flat on the ground (under 15 cm high, from it) are not: nobody trips on a painted strip.
+var solid: WsgSolidProps
+var solid_spec := {"name": "structure", "material": "concrete"}
+
+
+func _solid(spec: Dictionary) -> void:
+	if solid == null:
+		return
+	if solid_spec.has("skip"):
+		solid.skip(String(solid_spec.get("name", spec.get("name", "piece"))), String(solid_spec.skip))
+		return
+	var d := solid_spec.duplicate()
+	d.merge(spec)
+	solid.add(d)
 
 
 func _tri_quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color, uv := Rect2(0, 0, 1, 1)) -> void:
@@ -30,6 +47,11 @@ func floor_rect(x0: float, z0: float, x1: float, z1: float, y: float, col: Color
 
 ## A rectangle standing up, from p0 to p1 along the floor, from height y0 to y1, facing n.
 func wall(p0: Vector3, p1: Vector3, y0: float, y1: float, col: Color, double := false) -> void:
+	if solid:
+		var along := Vector3(p1.x - p0.x, 0, p1.z - p0.z)
+		var mid := (p0 + p1) * 0.5
+		_solid({"kind": "panel", "xf": Transform3D(Basis(Vector3.UP, atan2(-along.z, along.x)), Vector3(mid.x, (y0 + y1) * 0.5, mid.z)),
+			"size": Vector3(along.length(), y1 - y0, 0.06)})
 	var n := (p1 - p0).cross(Vector3.UP).normalized()
 	_tri_quad(Vector3(p0.x, y1, p0.z), Vector3(p1.x, y1, p1.z), Vector3(p1.x, y0, p1.z), Vector3(p0.x, y0, p0.z), n, col)
 	if double:
@@ -38,6 +60,8 @@ func wall(p0: Vector3, p1: Vector3, y0: float, y1: float, col: Color, double := 
 
 ## A box centred at c, of size s, turned by yaw (radians) about its centre. Its top lighter, its sides as they are.
 func box(c: Vector3, s: Vector3, col: Color, yaw := 0.0, shade := true) -> void:
+	if solid and not (s.y < 0.15 and c.y - s.y * 0.5 < 0.05):
+		_solid({"kind": "box", "xf": Transform3D(Basis(Vector3.UP, yaw), c), "size": s})
 	var b := Basis(Vector3.UP, yaw)
 	var h := s * 0.5
 	var p := func(x: float, y: float, z: float) -> Vector3: return c + b * Vector3(x * h.x, y * h.y, z * h.z)
@@ -54,6 +78,12 @@ func box(c: Vector3, s: Vector3, col: Color, yaw := 0.0, shade := true) -> void:
 
 ## A cylinder (or a cone, r1 0) from a to b.
 func cylinder(a: Vector3, b: Vector3, r0: float, r1: float, col: Color, seg := 8, caps := true) -> void:
+	if solid:
+		var r := maxf(r0, r1)
+		if Vector2(a.x - b.x, a.z - b.z).length() < 0.001:
+			_solid({"kind": "cylinder", "position": a if a.y < b.y else b, "radius": r, "height": absf(b.y - a.y)})
+		else:
+			_solid({"kind": "capsule", "a": a, "b": b, "radius": r})
 	var up := (b - a).normalized()
 	var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 	var fwd := side.cross(up).normalized()
