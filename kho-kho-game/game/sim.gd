@@ -194,7 +194,7 @@ func bodies() -> Array:
 			"active": m.phase == "play" and not bool(m.paused), "target": tgt,
 			# Round the pole his arms are out by design: one hand on the pole, the other arm thrown out (the Drive
 			# video's slingshot, 0.10).
-			"pose_excuse": "pole turn: one hand on the pole, the other arm out" if a.act == "pole_turn" else ""})
+			"pose_excuse": "pole turn: one hand on the pole, the other arm out" if _pole_turning(a) else ""})
 	return out
 
 
@@ -221,6 +221,18 @@ func fetch(spot: Vector3) -> Dictionary:
 			m._wait_spot[a] = Vector3(spot.x, 0.0, spot.z)
 			return {"who": _who(a), "seconds": 30.0, "arrive": 1.0}
 	return {}
+
+
+## In a pole turn, or coming out of one: his arms come back from the pole over FoundationLink's QUICK blend.
+var _pole_t := {}
+const POLE_OUT_S := 0.6
+
+
+func _pole_turning(a: Athlete) -> bool:
+	if a.act == "pole_turn":
+		_pole_t[a] = float(m.t_match)
+		return true
+	return float(m.t_match) - float(_pole_t.get(a, -INF)) < POLE_OUT_S
 
 
 func solid() -> WsgSolidProps:
@@ -292,6 +304,7 @@ func stop() -> void:
 		m.queue_free()
 	m = null
 	_chk = null
+	_pole_t = {}
 
 
 func human_team() -> int:

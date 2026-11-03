@@ -474,10 +474,7 @@ func _waiting() -> void:
 		# through the hall's boards' opening from behind them.)
 		var way := _route(a.position, spot)
 		a.goal = way if to.length() >= 0.15 else Vector3.INF
-		if way != spot:
-			to = way - a.position
-			to.y = 0
-		if to.length() < 0.15:
+		if to.length() < 0.15:   # (at his place - not at the boards' opening on his way there)
 			a.want = Vector3.ZERO
 			if a.act != "sit" and a.vel.length() < 0.3:
 				a.do("sit")
@@ -485,7 +482,9 @@ func _waiting() -> void:
 		else:
 			if a.act == "sit":
 				a.do("rise", 0.3)
-			a.want = to.normalized() * minf(2.0, to.length() * 3.0)
+			var go: Vector3 = way - a.position
+			go.y = 0
+			a.want = go.normalized() * minf(2.0, maxf(go.length(), to.length()) * 3.0) if go.length() > 0.01 else Vector3.ZERO
 
 
 func _end_turn(reason := "time") -> void:
@@ -853,9 +852,11 @@ func _play(dt: float) -> void:
 			a.goal = way
 			var to: Vector3 = way - a.position
 			to.y = 0
-			if to.length() < 0.25:
+			var left: Vector3 = home - a.position
+			left.y = 0
+			if left.length() < 0.25:   # (at his place - not at the boards' opening on his way there)
 				a.want = Vector3.ZERO
-				if a.act != "sit":
+				if a.act != "sit" and a.vel.length() < 0.3:   # (down once he has stopped: not kneeling on the move)
 					a.do("sit")
 			else:
 				a.want = to.normalized() * minf(2.4, to.length() * 3.0)
