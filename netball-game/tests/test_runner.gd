@@ -655,7 +655,11 @@ func _ball_free_in_play() -> void:
 	var hung := 0
 	var fr := {"f": 0, "at": []}
 	m.ball.bounced.connect(func(_at, _sp): fr.at.append(fr.f))
-	for f in 2400:
+	for f in 7200:
+		# (2400 frames at least, and on until the match has given enough free frames of each kind: how many a match
+		# gives depends on its course.)
+		if f >= 2400 and n.flight > 200 and n.loose + n.dead > 20:
+			break
 		fr.f = f + 1
 		await frames(1)
 		var b: Ball = m.ball
