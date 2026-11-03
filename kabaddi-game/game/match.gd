@@ -1261,7 +1261,9 @@ func on_back() -> void:
 		return
 	if hud.layout_panel:
 		hud.layout_panel.finish()   # Move buttons is open: back to the pause menu
-	elif phase != "fulltime":
+	elif phase != "fulltime" or paused:
+		# (Paused at full time - the app sent to the background during the celebration - Back resumes it: it could
+		# only be resumed from the pause menu, and WsgSim's human found the match standing paused for good.)
 		set_paused(not paused)
 
 

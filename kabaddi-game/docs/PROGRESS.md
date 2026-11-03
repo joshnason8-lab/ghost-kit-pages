@@ -533,4 +533,10 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   officials' pose code is 12 of a frame's 14 ms), so the smoke batch runs as four parallel jobs
   (.github/workflows/kabaddi-sim.yml) and a nightly 1,200 over sixteen (2,400 once it runs faster). Its first
   batches found the winning side all put back on the mat to celebrate at full time with its out queue left full
-  (Match._end_match now clears it).
+  (Match._end_match now clears it), and human-input matches standing paused for good at full time (Back now resumes
+  a paused match there too). The stance-twitch owner note, unseeded, failed on CI (0.252 rad at a defender's knee):
+  a defender shuffling his place in starts and stops had his crouch follow each burst of speed (0.5 rad of knee per
+  m/s). Athlete now eases the legs' speed while ready or idle; a 12-seed sweep is clean (it had 2 at 0.03 and 0.09
+  rad) and the note runs on fixed seeds, the failing ones among them.
+- World check fixes: each mode's match is let go (not freed) when the next starts, and the match does not lower its
+  own graphics during the check (on software GL it did, freeing the shared bodies the officials rule reads).

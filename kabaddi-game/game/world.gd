@@ -44,8 +44,17 @@ func _config(mode: String) -> Dictionary:
 ## Played at Medium: the shared rig draws the players and officials there and on High (Low draws the game's own
 ## bodies, which the pose and officials rules do not read); tiers() plays every level.
 func start_mode(mode: String, parent: Node) -> void:
+	# The last mode's match, finished (stopped and hidden in cameras()), is let go rather than freed as a tap would: the
+	# check keeps each mode's bodies and officials to read until it frees the modes itself (free_modes); its rules
+	# loop over them typed, and a freed one is a script error there.
+	var last: Node = Game.current
+	if last and is_instance_valid(last) and last.process_mode == Node.PROCESS_MODE_DISABLED:
+		Game.current = null
 	Game.main = parent
 	Game.settings.sound = false
+	# The level the check sets stays: on its software renderer every frame is slow, and the match would lower its own
+	# graphics mid-play (Match._check_frame_rate), releasing the shared bodies the check has hold of.
+	Game.settings.auto_gfx = false
 	set_tier(Game.GFX_MEDIUM)
 	Game.loading_overlay = true
 	Game.show_screen("res://ui/quick_setup.gd")
@@ -64,6 +73,7 @@ func officials(_mode: String) -> int:
 ## A player as the match draws him on Medium and High: his own Meshy rig, its locomotor as FoundationLink sets it up
 ## (a cut measured from the way he was going), his feet turned down if his model stands toe-up.
 func walker(parent: Node) -> Array:
+	set_tier(Game.GFX_MEDIUM)
 	var body := WsgBody.new(WsgBody.load_character(FoundationLink.DIR, "player_01"), null, 0)
 	parent.add_child(body)
 	var loco := WsgLocomotor.attach(body)

@@ -8,8 +8,11 @@ const JOINTS := ["hip_l", "hip_r", "kn_l", "kn_r", "spine", "sh_l", "sh_r", "el_
 ## Standing, no input: the user's raider waiting at the start of his raid, and every defender standing still in his
 ## stance - each joint's second difference over two seconds (a twitch is a jolt; quaternions, so no angle wraps).
 func check() -> void:
-	for side in [0, 1]:
-		var m: Node = U.start(tree, {"first_raider": side, "passive": true})
+	# Fixed seeds (the same matches every run): seeds 1 and 2 had a defender settling into his place in starts and
+	# stops, his knees jerked 0.03-0.25 rad a frame (fixed in 0.14.7: Athlete eases his legs' speed while ready).
+	for run in [[0, 1], [1, 1], [1, 2], [1, 3]]:
+		var side: int = run[0]
+		var m: Node = U.start(tree, {"first_raider": side, "passive": true, "seed": run[1]})
 		await U.until_raid(tree, m)
 		await U.frames(tree, 20)   # the last stride to the mark settles first (a stride ending is not a twitch)
 		var who: Array = [m.raider] if side == 0 else m.defenders().filter(func(a): return a.state in ["ready", "idle"])

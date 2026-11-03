@@ -411,7 +411,13 @@ func _pose(delta: float) -> void:
 	# A holder is moved by the grapple to keep his hold, not running: no stride for that (it would feed back into
 	# where the grapple puts him next frame). Nor for a raider held round the middle, who steps a foot at a time
 	# (Grapple._steps, RiggedBody.step), or held by both legs, who cannot step at all.
-	m.speed = 0.0 if state == "holding" or (state == "held" and held_leg == 0.0) else move_vel.length()
+	var want_speed := 0.0 if state == "holding" or (state == "held" and held_leg == 0.0) else move_vel.length()
+	# Standing ready (or idle) and shuffling his place in starts and stops, his legs ease with it: the crouch follows
+	# his speed, and fed each burst it jerked his knees (0.1-0.25 rad in a frame; the owner's "twitching", 2026-11-02).
+	if state in ["ready", "idle"] and want_speed < 1.0 and m.speed < 1.0:
+		m.speed = lerpf(m.speed, want_speed, clampf(delta * 6.0, 0.0, 1.0))
+	else:
+		m.speed = want_speed
 	# The held clip's own leg work would fight his steps (its feet lifting and shifting under a planted foot): his legs
 	# are the braced stance underneath while he steps or is held by both legs. Standing ready, the same: the stance clip
 	# (a goalkeeper's) stood him with his knees and toes turned out and a leg straight out to the side, a foot left

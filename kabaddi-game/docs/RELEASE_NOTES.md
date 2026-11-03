@@ -9,6 +9,9 @@
 - The shared World Stage checks (props, crowd, feet, poses, officials, key sounds, loading, the stick, the web build,
   the graphics levels) run on every build too.
 - On a keyboard (the web version), Escape now pauses a match.
+- Fixed, found by the new checks: a defender settling into his place in little starts and stops jerked his knees
+  (your "guy is twitching" note - it still happened now and then); and a match paused by leaving the app during the
+  full-time celebration could not be resumed with the back button.
 
 **In 0.14.6: nobody walks through the furniture, and a smoother start.**
 - **Solid props**: players and officials walk round the benches, the scorers' table, the chairs and stools, the
