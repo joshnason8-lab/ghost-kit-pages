@@ -19,6 +19,7 @@ var _dir := Vector2.ZERO
 var _release := {}        # action -> frame to let go
 var _resume_at := -1
 var _fore_at := -1
+var _back_at := -1        # frame to tap Resume after coming back from the background (a paused game)
 
 
 func _init(p_game: WsgSimGame, seed: int, p_tree: SceneTree) -> void:
@@ -68,14 +69,23 @@ func tick(frame: int) -> void:
 			_action(a, true)
 			_release[a] = frame + 2
 			_count("double tap")
-	# Pause and resume.
-	if _resume_at < 0 and rng.randf() < 0.001:
+	# Pause and resume (from a state the game says it is in, when it says: a toggling pause key pressed while the game
+	# had paused itself for the background resumed it, and the "resume" then paused it for good).
+	var p := game.paused()
+	if _resume_at < 0 and _fore_at < 0 and _back_at < 0 and p != 1 and rng.randf() < 0.001:
 		_pause_key()
 		_resume_at = frame + rng.randi_range(15, 120)
 		_count("pause")
 	elif _resume_at >= 0 and frame >= _resume_at:
-		_pause_key()
+		if p != 0:
+			_pause_key()
 		_resume_at = -1
+	# Back from the background to a paused game: a person taps Resume.
+	if _back_at >= 0 and frame >= _back_at:
+		_back_at = -1
+		if game.paused() == 1 and _resume_at < 0:
+			_pause_key()
+			_count("resume after background")
 	# The app to the background and back.
 	if _fore_at < 0 and rng.randf() < 0.001:
 		tree.root.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
@@ -86,6 +96,7 @@ func tick(frame: int) -> void:
 		tree.root.propagate_notification(Node.NOTIFICATION_APPLICATION_RESUMED)
 		tree.root.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 		_fore_at = -1
+		_back_at = frame + rng.randi_range(10, 45)
 	# The screen turned (portrait and landscape swapped: the layout's size changes).
 	if rng.randf() < 0.0005:
 		var sz := tree.root.content_scale_size

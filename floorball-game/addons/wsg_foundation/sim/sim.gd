@@ -63,13 +63,16 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		cfg["short"] = not kind.begins_with("targeted:") and seed % 4 != 0 and bool(opts.get("length_mix", false))
 	# Any stray global randf in the game is at least the same for the same seed (rng_lint finds them).
 	seed(seed)
+	WsgAutoTier.off = true
 	var out := {"ok": true, "seed": seed, "kind": kind, "config": cfg, "failures": [], "hashes": []}
 	var t_wall := Time.get_ticks_usec()
 	var fps := float(opts.get("fps", FPS))
 	if bool(opts.get("realtime", false)):
 		Engine.max_fps = int(fps)
 	var events := []
-	var root: Node = await game.start(cfg, seed, tree)
+	# (A copy: a start() that shortens its config in place changed the saved one, and its replay shortened it again -
+	# Kho Kho's replays diverged.)
+	var root: Node = await game.start(cfg.duplicate(true), seed, tree)
 	if root == null:
 		_fail(out, "start", "the match did not start", 0.0, 0, {}, events)
 		return _finish(out, game, t_wall, 0.0, 0)
@@ -103,7 +106,13 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		input = WsgSimInput.new(game, seed + 7919, tree)
 	var stop_frame := int(opts.get("stop_frame", -1))
 	var hash_every := int(opts.get("hash_every", 0))
+	var beat := Time.get_ticks_usec()
 	while true:
+		# A heartbeat every 30 s of wall-clock in a long match (sim_shard.sh takes HANG seconds of silence for a freeze:
+		# a full-length extreme Kho Kho match, 2,170 s simulated, ran 127 s without a line and was called frozen).
+		if Time.get_ticks_usec() - beat > 30000000:
+			beat = Time.get_ticks_usec()
+			print("sim: %s seed %d still playing: %.0f s simulated, %d frames" % [kind, seed, t, frame])
 		if input:
 			input.tick(frame)
 		await tree.process_frame
