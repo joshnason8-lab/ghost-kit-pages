@@ -465,7 +465,6 @@ func match_files(config: Dictionary) -> Array:
 		"outdoor":
 			files.append_array([tex_path(Arena.COURT_SKY, g), Arena.COURT_HDR, tex_path(Arena.ASPH_TEX, g), tex_path(Arena.TARMAC_TEX, g)])
 	if g > GFX_LOW:
-		files.append(Crowd.SHEET_HD)
 		if WsgCrowd3D.available():
 			for f in DirAccess.get_files_at(WsgCrowd3D.DIR):
 				f = f.trim_suffix(".remap")
