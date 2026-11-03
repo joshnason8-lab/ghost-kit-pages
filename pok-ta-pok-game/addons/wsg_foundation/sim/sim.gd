@@ -281,10 +281,15 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 							_fail(out, "pose", "%s stands in a %s" % [nm, seen[1]], t, frame, st, events)
 		if (kind == FETCH_KIND or bool(cfg.get("fetch_behind_prop", false))) and t >= FETCH_AT_S:
 			if fetch.is_empty():
-				var spots := fetch_spots(solid, bounds) if solid else []
+				var spots := fetch_spots(solid, bounds, 0.3, 1.8, FETCH_PROPS, func(q: Vector3) -> bool: return game.fetch_reach(q)) if solid else []
 				var g: Dictionary = {} if spots.is_empty() else game.fetch(spots[seed % spots.size()][0])
+				if g.has("exempt"):
+					# (The game says why it cannot: noted, never failed - the lead's word, in the reason.)
+					out["fetch"] = "exempt: %s" % g.exempt
+					print("sim: %s seed %d: %s" % [kind, seed, out.fetch])
+					break
 				if spots.is_empty() or g.is_empty():
-					out["fetch"] = "no props to fetch behind" if spots.is_empty() else "not wired (WsgSimGame.fetch)"
+					out["fetch"] = "no prop with a reachable spot behind it" if spots.is_empty() else "not wired (WsgSimGame.fetch)"
 					print("sim: %s seed %d: %s" % [kind, seed, out.fetch])
 					if not spots.is_empty() and now >= FETCH_ENFORCED_FROM:
 						_fail(out, "fetch", "not wired: WsgSimGame.fetch(spot) returns {} (required from %s, ADOPTING 5.17)" % FETCH_ENFORCED_FROM, t, frame, st, events)
@@ -372,7 +377,9 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 ## The fetch-behind-prop case's spots: behind each of the venue's MOST largest props a body is kept out of (by its
 ## footprint), on the side away from the field's middle (BOUNDS' centre) - or round it, if that side is out or blocked
 ## - clear of every prop: [[spot, the prop's name], ...], largest first.
-static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, height := 1.8, most := FETCH_PROPS) -> Array:
+static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, height := 1.8, most := FETCH_PROPS,
+		reach := Callable()) -> Array:
+	var field := _reachable(solid, bounds, radius, height, reach)
 	var cands := []
 	for i in solid.props.size():
 		var pr: Dictionary = solid.props[i]
@@ -399,10 +406,63 @@ static func fetch_spots(solid: WsgSolidProps, bounds: AABB, radius := 0.3, heigh
 				p2 += d * 0.05
 				k += 1
 			var spot := Vector3(p2.x, ab.position.y, p2.y)
-			if bounds.has_point(spot + Vector3.UP * 0.1) and float(solid.penetration(spot, radius, height)[0]) <= 0.0:
+			if bounds.has_point(spot + Vector3.UP * 0.1) and float(solid.penetration(spot, radius, height)[0]) <= 0.0 \
+					and field.has(Vector2i(floori(spot.x / REACH_CELL), floori(spot.z / REACH_CELL))) \
+					and (not reach.is_valid() or bool(reach.call(spot))):
 				out.append([spot, String(solid.props[i].name)])
 				break
 	return out
+
+
+## The cells (REACH_CELL m) a body can walk to from the middle of the field over the floor - clear of the props, in the
+## bounds and where the game lets its bodies go (REACH, WsgSimGame.fetch_reach) - flood-filled. A spot behind a stand
+## that rings the bowl, or off a court the players are kept on, is not offered (Hurling's stadium, Pok Ta Pok).
+const REACH_CELL := 0.5
+const REACH_MAX_CELLS := 160000
+
+
+static func _reachable(solid: WsgSolidProps, bounds: AABB, radius: float, height: float, reach: Callable) -> Dictionary:
+	var floor_y := 0.0
+	for pr: Dictionary in solid.props:
+		if pr.kind == "floor":
+			floor_y = float(pr.y)
+			break
+	var ok := func(c: Vector2i) -> bool:
+		var q := Vector3((c.x + 0.5) * REACH_CELL, floor_y, (c.y + 0.5) * REACH_CELL)
+		if not bounds.has_point(q + Vector3.UP * 0.1):
+			return false
+		if reach.is_valid() and not bool(reach.call(q)):
+			return false
+		return float(solid.penetration(q, radius, height)[0]) <= 0.0
+	var c0 := bounds.get_center()
+	var start := Vector2i(floori(c0.x / REACH_CELL), floori(c0.z / REACH_CELL))
+	# (The middle itself in a prop - a centre circle's marker: the nearest free cell.)
+	var found := false
+	for r in 40:
+		for dx in range(-r, r + 1):
+			for dz in [-r, r] if absi(dx) != r else range(-r, r + 1):
+				var c := start + Vector2i(dx, dz)
+				if ok.call(c):
+					start = c
+					found = true
+					break
+			if found:
+				break
+		if found:
+			break
+	var seen := {}
+	if not found:
+		return seen
+	var todo := [start]
+	seen[start] = true
+	while not todo.is_empty() and seen.size() < REACH_MAX_CELLS:
+		var c: Vector2i = todo.pop_back()
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + d
+			if not seen.has(n) and ok.call(n):
+				seen[n] = true
+				todo.append(n)
+	return seen
 
 
 ## A target a body could stand on: in the bounds, clear of the props.

@@ -36,6 +36,9 @@ var ball_path: Array = []
 var clock := 0.0              # real seconds played (not counting calls, pauses)
 var limit_s := 0.0
 var sudden := false           # time is up and level: the next raya wins
+var fetcher: Player = null    # sent for a dead ball (the simulator's fetch case: fetch()); the walk-out waits for him
+var fetch_spot := Vector3.INF
+var _fetch_path := PackedVector3Array()
 var paused := false
 ## Watching the computer play (mode "watch"): 1 or 2 steps of the match a frame (the HUD's 1x / 2x).
 var speed := 1
@@ -347,9 +350,40 @@ func _tick(delta: float) -> void:
 	_record(delta)
 
 
+## The simulator's fetch case (WsgSim, ADOPTING 5.17): the ball dead at SPOT, on the court, and the nearest player of
+## the side whose half it is in sent for it as the AI sends a man anywhere (his want, Player.update's own steps, its
+## push out of the props), the way round the props from the venue's WsgSolidProps.path. In the walk-out, which waits
+## for him. Returns him, or null.
+func fetch(spot: Vector3) -> Player:
+	var side := 0 if spot.x * Rules.dir(0) < 0.0 else 1
+	var best: Player = null
+	for p in (teams[side].players as Array):
+		if best == null or (p as Player).global_position.distance_to(spot) < best.global_position.distance_to(spot):
+			best = p
+	if best == null:
+		return null
+	phase = P.INTRO
+	fetcher = best
+	fetch_spot = Vector3(spot.x, 0.0, spot.z)
+	_fetch_path = venue.solid.path(best.global_position, fetch_spot, Player.WALK_R) if venue and venue.solid else PackedVector3Array([fetch_spot])
+	ball.held = false
+	ball.vel = Vector3.ZERO
+	ball.pos = fetch_spot + Vector3(0, Ball.RADIUS, 0)
+	return best
+
+
+## Where the fetcher heads now: the next corner of his way, the spot at the last.
+func fetch_next(p: Player) -> Vector3:
+	while _fetch_path.size() > 1 and Vector2(p.global_position.x - _fetch_path[0].x, p.global_position.z - _fetch_path[0].z).length() < 0.35:
+		_fetch_path.remove_at(0)
+	return _fetch_path[0] if _fetch_path.size() > 0 else fetch_spot
+
+
 func _phase_logic(_delta: float) -> void:
 	match phase:
 		P.INTRO:
+			if fetcher != null:
+				return
 			if in_ritual():
 				ritual.step(_delta)
 				if not ritual.done:

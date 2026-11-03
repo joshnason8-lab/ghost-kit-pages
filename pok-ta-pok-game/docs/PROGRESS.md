@@ -365,7 +365,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   (tests/balance_sim for 200-seed cells). Feet deferred with the lead's word until 2026-11-06 12:00 UTC (the sim's foot
   slip; the world check's feet rule once the world check reads deferrals).
 
-- **0.6.17-beta: shared foundation e9c234c.** The world check's props and crowd rules now fail on a failing audit
+- **0.6.17-beta: shared foundation 1303a185.** The world check reads our deferral (feet until 2026-11-06 12:00 UTC,
+  the lead's word). The sim's fetch case wired: fetch_reach is the court, and the AI walks the nearest player of that
+  half round the court's own props (Match.fetch, the venue's path) to a dead ball behind them; on the stone and night
+  courts he gets round the end walls in about 2 s, never into them; the earth courts have no props on the court.
+  Earlier in it, e9c234c: The world check's props and crowd rules now fail on a failing audit
   (they read PASS whatever the audit said); both pass here on the audits' own exit codes. The stands' front-row fans
   stand back 0.6 m from a barrier.
 

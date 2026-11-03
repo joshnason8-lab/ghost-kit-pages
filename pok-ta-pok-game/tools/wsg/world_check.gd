@@ -13,6 +13,10 @@ extends SceneTree
 ## (the check's own test); WSG_NOW=2026-11-03T12:00Z judges by another time.
 
 const ENFORCED_FROM := "2026-11-03T12:00Z"
+## Rules enforced later than that, for every game (the lead, 2026-11-03: the feet rule's walker read 2.1-2.2 cm on the
+## walk on three games' rigs at 888e222 - a foundation fault - so feet from the next day). Before its time a rule's
+## failure is reported as deferred. WSG_WORLD_ENFORCE=1 enforces these now too.
+const RULE_FROM := {"feet": "2026-11-04T12:00Z"}
 
 const RULES := ["props", "crowd", "feet", "pose", "officials", "sounds", "loading", "joystick", "web", "tiers"]
 
@@ -47,6 +51,8 @@ func _initialize() -> void:
 		game.set("bad", bad)
 	var rules := RULES if only == "" else Array(only.split(",", false))
 	var excused := game.exceptions()
+	var deferred := game.deferred()
+	var now := OS.get_environment("WSG_NOW") if OS.has_environment("WSG_NOW") else Time.get_datetime_string_from_system(true).substr(0, 16) + "Z"
 	# The screen the modes are played on.
 	var sv := SubViewport.new()
 	sv.size = Vector2i(1280, 720)
@@ -88,6 +94,21 @@ func _initialize() -> void:
 					r = await WsgWorldRules.tiers(game, sv)
 				"web":
 					r = WsgWorldRules.web(presets, pck)
+		if not r.is_empty() and r.has("status") and r.status in ["fail", "not wired"]:
+			# Put off: for every game until the rule's own time (RULE_FROM), or for this game by its deferred() - the
+			# lead's word, with a reason, until a time. Reported as deferred, with why; not failed.
+			var until := ""
+			var why := ""
+			if RULE_FROM.has(rule) and now < String(RULE_FROM[rule]) and OS.get_environment("WSG_WORLD_ENFORCE") != "1":
+				until = String(RULE_FROM[rule])
+				why = "this rule fails the build from %s for every game (foundation fault being fixed)" % until
+			var dd: Variant = deferred.get(rule, [])
+			if dd is Array and (dd as Array).size() >= 2 and String(dd[1]).strip_edges() != "" and now < String(dd[0]):
+				until = String(dd[0])
+				why = String(dd[1])
+			if until != "":
+				r.status = "deferred"
+				r.lines.append("deferred until %s: %s" % [until, why])
 		if r.is_empty() or not r.has("status"):
 			# (A rule stopped by a script error returns nothing: failed, named, and the check goes on and finishes.)
 			r = WsgWorldRules.result(rule)
@@ -103,7 +124,6 @@ func _initialize() -> void:
 	print("WORLD CHECK: %s (%d rules, %d failed) - %s" % ["PASS" if failed.is_empty() else "FAIL", results.size(), failed.size(), abs_out.path_join("WORLD_CHECK.md")])
 	sv.queue_free()
 	await process_frame
-	var now := OS.get_environment("WSG_NOW") if OS.has_environment("WSG_NOW") else Time.get_datetime_string_from_system(true).substr(0, 16) + "Z"
 	if not failed.is_empty() and OS.get_environment("WSG_WORLD_ENFORCE") != "1" and now < ENFORCED_FROM:
 		print("::warning::world_check: %d rules fail; the world check fails the build from %s (now %s) - fix them before then" % [failed.size(), ENFORCED_FROM, now])
 		quit(0)

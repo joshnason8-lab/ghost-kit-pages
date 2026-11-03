@@ -186,7 +186,7 @@ func bodies() -> Array:
 func ball() -> Dictionary:
 	if not is_instance_valid(m) or not m.built:
 		return {"pos": Vector3.ZERO, "radius": Ball.RADIUS, "live": false}
-	return {"pos": m.ball.pos, "radius": Ball.RADIUS, "live": not m.ball.held and m.phase != m.P.REPLAY}
+	return {"pos": m.ball.pos, "radius": Ball.RADIUS, "live": not m.ball.held and m.phase != m.P.REPLAY and m.fetcher == null}
 
 
 func solid() -> WsgSolidProps:
@@ -219,6 +219,24 @@ func result() -> Dictionary:
 	for h in c.history:
 		won[int(h[0])] += 1
 	return {"winner": c.winner, "score": won}
+
+
+## The fetch case: the ball dead at SPOT and a player sent for it, as Match.fetch does it (no fetching in the sport: the
+## ball goes back to the server's hand after a call; this walks a player round the court's own props as the AI walks).
+func fetch(spot: Vector3) -> Dictionary:
+	if not is_instance_valid(m) or not m.built:
+		return {}
+	var p: Player = m.fetch(spot)
+	return {} if p == null else {"who": String(p.name), "seconds": 20.0, "arrive": 1.0}
+
+
+## Where a player may stand to fetch: on the court (Court.clamp_feet leaves him where he is), inside its walls and
+## ends; the stands, the houses and the terraces are no player's.
+func fetch_reach(p: Vector3) -> bool:
+	if not is_instance_valid(m) or m.court == null:
+		return false
+	var k: Vector3 = m.court.clamp_feet(p)
+	return Vector2(k.x - p.x, k.z - p.z).length() < 0.02
 
 
 ## Checks put off with the lead's word (WsgSimGame.deferred): planted feet, the foundation's planter (its let-go fix,

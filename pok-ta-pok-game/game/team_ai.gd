@@ -203,6 +203,9 @@ func _place(p: Player, i: int, live: bool, path: Array, _dt: float) -> void:
 	if m.server == p and m.ball.held:
 		# The ball is in his hand: he faces the other side, not the ball (which would turn with him).
 		p.face_yaw = atan2(dirn(), 0.0)
+	if m.fetcher == p:
+		p.want = m.fetch_next(p)
+		return
 	if not live:
 		if m.server == p and m.phase == m.P.SERVE:
 			p.want = m.serve_spot(team)
