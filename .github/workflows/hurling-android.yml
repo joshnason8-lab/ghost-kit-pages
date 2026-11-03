@@ -414,16 +414,21 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # (Never the old release deleted before the new one exists - ADOPTING 5.19, "Publishing safely": the new
-          # release whole under a tag of its own first; then the old one goes and the new one takes the tag.)
-          NEXT="$TAG-next-$GITHUB_RUN_ID"
-          gh release create "$NEXT" "$APK" "$APK32" --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
-          gh release view "$TAG" >/dev/null
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+          # (Never the old release deleted before the new one exists - ADOPTING 5.19. The token may not make a new tag
+          # here: run 170's "$TAG-next-<run>" create got 403 "Resource not accessible by integration", as Floorball's
+          # did. So no tag is made or removed: the new APKs go up beside the old ones on the beta's own release, its
+          # title and notes are changed, and only then are the old APKs taken down. The release always has an APK.)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$APK32" --clobber
+            gh release edit "$TAG" --prerelease --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+            for a in $(gh release view "$TAG" --json assets -q '.assets[].name'); do
+              case "$a" in "$(basename "$APK")"|"$(basename "$APK32")") ;; *.apk) gh release delete-asset "$TAG" "$a" --yes ;; esac
+            done
+          else
+            gh release create "$TAG" "$APK" "$APK32" --prerelease --target "$GITHUB_SHA" \
+              --title "Hurling Heroes ${VERSION} (latest beta)" --notes-file notes.md
+          fi
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
 
       # The shared foundation's pilot (claude/hurling-foundation-pilot): its own pre-release, never the beta's, never
       # "latest", its title not starting "Hurling Heroes " (Obtainium follows the beta by that).
