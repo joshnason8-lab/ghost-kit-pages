@@ -411,6 +411,7 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	var top_pt := sx.origin - lift + down * TOP_AT
 	var qt := _straight(sk, top, _along(_rig_turn * (g[top + "Hand"] as Quaternion), down), top_pt, down)
 	var ql := _straight(sk, low, _along(_rig_turn * (g[low + "Hand"] as Quaternion), down), top_pt + down * 0.3, down)
+	ql = (Quaternion(down.normalized(), _thumb_roll) * ql).normalized()
 	var one := not hands.has(l_s)    # the stick in the top hand alone: the other arm the run's own
 	_low_w = move_toward(_low_w, 0.0 if one else 1.0, _dt * 6.0)
 	var spacing := maxf(0.12, float(hands.get(l_s, 0.34)) - float(hands.get(t_s, 0.03)))
@@ -467,6 +468,46 @@ static func _turn_about(xf: Transform3D, pivot: Vector3, from: Vector3, to: Vect
 		return xf
 	var r := Basis(ax.normalized(), minf(ang, deg_to_rad(max_deg)))
 	return Transform3D(r * xf.basis, pivot + r * (xf.origin - pivot))
+
+
+## The lower hand's thumb on top (the owner, 2026-11-02: "their thumbs should be up and the knuckles under the stick
+## facing downward"): read as drawn - the thumb's tip over the little finger's knuckle by THUMB_UP - and, when it is
+## not, the hand rolled a little further round the shaft next frame (the way that lifts the thumb), at most
+## THUMB_ROLL_MAX; eased back toward none while it is well up. (Worked out from the drawn fist, not the hand's rest
+## shape: the fingers closed and the arm's reach move it.)
+const THUMB_UP := 0.02
+const THUMB_ROLL_MAX := deg_to_rad(20.0)
+const THUMB_STEP := deg_to_rad(2.5)
+var _thumb_roll := 0.0
+
+
+func _thumb_up(sk: Skeleton3D) -> void:
+	# (Bodies in full detail only, near the camera, and not at Low, where a thumb is hardly seen: there the fists keep
+	# the reach the roll would cost them.)
+	if _low_w < 1.0 or not body.full or int(Game.settings.graphics) == Game.GFX_LOW:
+		_thumb_roll = move_toward(_thumb_roll, 0.0, THUMB_STEP)
+		return
+	var tb := sk.find_bone(low + "HandThumb3")
+	var pb := sk.find_bone(low + "HandPinky1")
+	if tb < 0 or pb < 0:
+		return
+	var v := sk.get_bone_global_pose(tb).origin - sk.get_bone_global_pose(pb).origin
+	var axis := -(legacy.stick.basis.y).normalized()
+	# The fist on the shaft comes first: drawn off it (the roll took the wrist past the arm's reach), the roll eases off.
+	var hand := sk.get_bone_global_pose(sk.find_bone(low + "Hand"))
+	var grip: Vector3 = hand * ((_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3))
+	var off := grip - legacy.stick.origin
+	if (off - axis * off.dot(axis)).length() > 0.025:
+		_thumb_roll = move_toward(_thumb_roll, 0.0, THUMB_STEP)
+		return
+	if v.y >= THUMB_UP * 2.0:
+		_thumb_roll = move_toward(_thumb_roll, 0.0, THUMB_STEP * 0.25)
+		return
+	if v.y >= THUMB_UP:
+		return
+	# (Which way lifts the thumb: the turn whose small step raises it.)
+	var up := (Quaternion(axis, 0.1) * v).y > (Quaternion(axis, -0.1) * v).y
+	_thumb_roll = clampf(_thumb_roll + (THUMB_STEP if up else -THUMB_STEP), -THUMB_ROLL_MAX, THUMB_ROLL_MAX)
 
 
 ## The least roll (radians, about dir, every 10 degrees up to 60) of a fist whose grip is at grip (the wrist at grip -
@@ -543,6 +584,7 @@ func _place_stick() -> void:
 		var d := sk.get_bone_global_pose(sk.find_bone(side + "Hand")).origin - sk.get_bone_global_pose(sk.find_bone(side + "ForeArm")).origin
 		if d.length() > 0.01:
 			_fore_dir[side] = d.normalized()
+	_thumb_up(sk)
 	var hand := body.bone_world(top + "Hand")
 	if replay_at != INF:
 		stick.global_transform = hand * _replay_stick(replay_at)

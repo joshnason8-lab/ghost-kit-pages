@@ -227,6 +227,15 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.12-beta: thumbs up on the stick; all 30 of the owner's notes pass (3 November 2026)
+
+- **"Their thumbs should be up and the knuckles under the stick facing downward"** (2026-11-02): the lower hand's thumb
+  was up in 86% of frames (90% wanted). It is now read as drawn each frame - the thumb's tip over the little finger's
+  knuckle - and when it is not, the hand rolls a little further round the shaft (2.5 degrees a frame, at most 20, the
+  way that lifts the thumb), easing off whenever the fist is drawn off the shaft (the fist on the stick comes first).
+  Near the camera only, not at Low. The thumb up 91.5%; the fists on the shaft 97% (Medium) and 96% (Low).
+- Every one of the owner's 30 notes kept as tests now passes. 0.9.12-beta, code 27.
+
 ### 0.9.11-beta: the shooter no longer contorts; the foundation's planter (3 November 2026)
 
 - **Penalty shots: his body contorts coming back** (the owner's 2026-11-02 note): the idle skaters, hidden but left
