@@ -670,6 +670,31 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Low's officials on the shared planter; publishing in place (0.15.15)
+
+- **Foundation d70ac7d -> 70e571a** (REQUIRED 7def933a from 2026-11-06 12:00 UTC): the planter under game AI - a foot
+  let go rising over its whole ease, plants landing on the frame they are read down, a foot left far behind a fast
+  stop stepping; WsgFootPlanter.bone_prefix and contact_fn; WsgSim ending a run where a game gives no feet (our Low
+  replay); ADOPTING 5.19 publishing in place.
+- **Low, measured again on it** (the same seeded regu, 2 x 150 s, feet as drawn), players:
+
+  | Low | glide share | flat skids over 2 cm | step slip p90 | jumps over 25 cm |
+  |---|---|---|---|---|
+  | RealBody._planted (0.15.14) | 14% | 11 | 2.3 cm | 9 |
+  | WsgFootPlanter, its own gate | 17% | 1032 | 9.7 cm | 15 |
+  | WsgFootPlanter, our contact rule, planting off in the air | 9% | 79 | 4.2 cm | 2 |
+
+  The last glides least in play, but on the world check's walker (feet_low) its planted feet slid 3.2-7.5 cm a step
+  walking, running and stopping (the bound 2; ours 1.8 at most): **the players keep RealBody._planted**.
+- **The standing officials plant with the shared planter on Low** (RealBody._foundation_plant: WsgFootPlanter on our
+  skeleton, bone_prefix "mixamorig_", _planted's own contact rule, planting off in the air; their feet read as drawn,
+  in skeleton_updated). Their flat feet sliding over 2 cm in a frame 32 -> 3 (worst 40.8 -> 12.5 cm), the planted
+  step's slip (90th percentile) 8.3 -> 4.7 cm, jumps over 25 cm 1; CPU the same.
+- **Publishing in place** (takraw-android.yml, ADOPTING 5.19): the workflow token is refused new tag names since
+  2026-11-03 about 17:00, so the release on the beta's tag is updated where it stands - the new APK up beside the old,
+  then the old off, then the title and notes, which carry "Commit: <sha>"; the release gate skips comparing a build
+  with the published one when the notes name its own commit (the pull request's run and the push's race).
+
 ## The foundation's 11-06 feet batch, and Low measured (0.15.14)
 
 - **Foundation 3b3563f -> d70ac7d** (REQUIRED 41c84347 from 2026-11-06 12:00 UTC). The 11-06 feet batch: a body

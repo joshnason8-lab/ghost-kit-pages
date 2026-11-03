@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.15: **on Low, the line judges' feet stay put.** A line judge stepping out of the ball's way and back
+could leave a foot sliding along the floor (up to 40 cm in a frame, now and then); on Low the judges now plant their
+feet with the shared planter the Medium and High bodies use. Nothing else changes in play.
+
 New in 0.15.14: **on Medium and High, a foot let go lifts off the floor at once.** As a player pulled up from a
 run, the foot he was about to step with could slide a few centimetres flat along the floor (up to 7 cm) before it
 lifted; now it rises from the first frame. On Low, a line judge stepping out of the ball's way now moves smoothly:

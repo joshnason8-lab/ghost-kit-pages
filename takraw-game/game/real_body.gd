@@ -275,6 +275,12 @@ func bone_world(name: String) -> Vector3:
 ## His feet as drawn on Low: [left ankle, left toe, right ankle, right toe] (world), planted (RealBody._planted sets the
 ## pose itself: nothing changes it after). With a link (Medium and High) this is the game's pose under the drawn body.
 func feet() -> Array:
+	if _wp != null and _wp.active and not _drawn_feet.is_empty():
+		return _drawn_feet   # (the shared planter plants them as the skeleton is drawn: read then)
+	return _feet_now()
+
+
+func _feet_now() -> Array:
 	if skeleton == null:
 		return []
 	var out := []
@@ -294,7 +300,12 @@ static func local_rot(v) -> Quaternion:
 ## Puts the model in the pose. DT: the game's step (s) since the last, for the planted feet's steps.
 func apply(p: Dictionary, dt := 1.0 / 30.0) -> void:
 	if plant_feet and skeleton != null and link == null:
-		p = _planted(p, dt)
+		if foundation_planter:
+			_foundation_plant(p, dt)
+		else:
+			p = _planted(p, dt)
+	if _wp != null:
+		_wp.active = plant_feet and foundation_planter and link == null
 	pose = p
 	if skeleton == null:
 		return
@@ -465,6 +476,50 @@ const LAND_REACH := 0.16     # m: and coming down, from it (further, let go soon
 const STEP_REACH := 0.45     # m: the furthest a stepping foot is from where his stride has it
 const EASE_HIGH := 0.3       # m: a foot let go is all the stride's own this far over its height standing
 const CUT := 1.0             # m: a planted foot this far from his stride's is not stepped from: it goes with him
+
+## Low (no link): the shared foundation's planter (WsgFootPlanter, its bone_prefix and our contact rule) plants this
+## body's feet instead of _planted - the standing officials (0.15.15). Measured on Low (a seeded regu, 2 x 150 s, the
+## feet as drawn): their flat feet sliding over 2 cm in a frame 32 times -> 2, the planted step's slip (90th percentile)
+## 8.3 -> 4.7 cm. The players keep _planted: under the shared planter their glide share fell (14 -> 9%) but the world
+## check's feet_low failed, planted feet sliding 3-7 cm a step walking, running and stopping (ours: 1.8 at most).
+var foundation_planter := false
+var _wp: WsgFootPlanter = null
+var _wp_at := Vector3.INF
+var _drawn_feet := []
+
+
+func _foundation_plant(p: Dictionary, dt: float) -> void:
+	if _wp == null:
+		_wp = WsgFootPlanter.new()
+		_wp.bone_prefix = "mixamorig_"
+		var cal := _leg_cal(_rig)
+		# (Down as _planted has it: the pose's ankle within PLANT_HEIGHT of its height standing, twice that to lift.
+		# The planter's own gate, a foot's speed too, let our strides' standing feet slide: 1032 flat-foot skids.)
+		_wp.contact_fn = func(i: int, ank: Vector3, _toe: Vector3, was: bool) -> bool:
+			return ank.y < _floor_y() + float(cal.ground[i]) * global_transform.basis.get_scale().y + PLANT_HEIGHT * (2.0 if was else 1.0)
+		skeleton.add_child(_wp)
+		skeleton.skeleton_updated.connect(func() -> void:
+			if _wp != null and _wp.active:
+				_drawn_feet = _feet_now())
+	dt = maxf(dt, 1.0 / 240.0)
+	var at := global_position
+	var speed := 0.0
+	if _wp_at != Vector3.INF and at.distance_to(_wp_at) >= 0.5:
+		_wp.reset()   # (put somewhere new: his feet go with him)
+	elif _wp_at != Vector3.INF:
+		speed = Vector2(at.x - _wp_at.x, at.z - _wp_at.z).length() / dt
+	_wp_at = at
+	# (Off the floor: planting off - a foot it held eased back - not the pose handed back at once, a jump of the foot.)
+	_wp.enabled = float(p.get("y", 0.0)) <= 0.05
+	_wp.ground_y = _floor_y()
+	_wp.body_speed = speed
+	_wp.tick(dt)
+
+
+func _floor_y() -> float:
+	var par := get_parent() as Node3D
+	return par.global_position.y if par else 0.0
+
 
 var plant_feet := false      # (Player, Officials) a foot on the floor stays put: _planted
 var _locks: Array = [null, null]     # each foot's place on the floor while it is down (world), or null

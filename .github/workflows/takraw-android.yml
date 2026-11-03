@@ -226,13 +226,13 @@ jobs:
         run: |
           # (Against the beta published now - unless that is this very commit's: the push's run and the pull request's
           # build the same commit, and the one that finished first had published it; the other then read its own
-          # version as "not newer" and failed, 0.15.13's pull request run.)
+          # version as "not newer" and failed, 0.15.13's pull request run. The publish step puts "Commit: <sha>" in the
+          # notes: ADOPTING 5.19 - published in place, the release's target commit no longer follows the build.)
           HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-          PUBLISHED=$(gh release view sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" --json targetCommitish -q .targetCommitish 2>/dev/null || true)
-          if [ "$PUBLISHED" != "$HEAD_SHA" ]; then
-            gh release download sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" -p '*.apk' -O "$RUNNER_TEMP/previous.apk" 2>/dev/null || true
-          else
+          if gh release view sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" --json body -q .body 2>/dev/null | grep -q "Commit: $HEAD_SHA"; then
             echo "The published beta is this commit's own build: no earlier one to compare with."
+          else
+            gh release download sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" -p '*.apk' -O "$RUNNER_TEMP/previous.apk" 2>/dev/null || true
           fi
           PREV=""
           if [ -s "$RUNNER_TEMP/previous.apk" ]; then PREV="--previous $RUNNER_TEMP/previous.apk"; fi
@@ -279,18 +279,23 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          # Safely (ADOPTING 5.19): the new release, whole, under a tag of its own first - if that fails, the old one is
-          # untouched; then the swap, seconds apart: the old one goes, the new one takes the tag. (Deleting first left
-          # Floorball's tag empty for an hour when the create hit a 403.)
-          NEXT="$TAG-next-$GITHUB_RUN_ID"
-          gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
-          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take: the build is still under $NEXT)
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
-          gh release delete takraw-smash-beta --cleanup-tag --yes || true   # the beta under the game's old name
+          printf '\n\nCommit: %s\n' "$GITHUB_SHA" >> notes.md   # (the release gate's guard reads it)
+          # In place (ADOPTING 5.19, 2026-11-03): the release on the tag updated where it stands, no tag made or deleted
+          # (the workflow token is refused new tag names since about 17:00 that day): the new APK up beside the old,
+          # then the old one off, then the title and notes. It always holds an APK; a failed step leaves it as it was,
+          # or holding both.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+            exit 0
+          fi
+          OLD=$(gh release view "$TAG" --json assets -q '.assets[].name')
+          gh release upload "$TAG" "$APK" --clobber
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
+          for n in $OLD; do
+            case "$n" in "$(basename "$APK")") ;; *) gh release delete-asset "$TAG" "$n" --yes || true ;; esac
+          done
+          gh release edit "$TAG" --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md --prerelease
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot

@@ -62,7 +62,8 @@ func add(body: RealBody, base: Dictionary, standing := false, judge := false) ->
 	o.base = base
 	o.standing = standing
 	o.judge = judge
-	body.plant_feet = standing   # (stepping out of the ball's way, his feet stay put: RealBody._planted)
+	body.plant_feet = standing   # (stepping out of the ball's way, his feet stay put)
+	body.foundation_planter = standing   # (on Low, the shared foundation's planter: RealBody._foundation_plant)
 	o.home = body.position
 	o.eye = 1.6 if standing else 1.2
 	o.breath = _rng.randf() * TAU
