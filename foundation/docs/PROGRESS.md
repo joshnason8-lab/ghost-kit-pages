@@ -591,3 +591,9 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     2.1 (FAIL) -> 0.3, jog 0.4->0.7; Takraw walk 1.8->0.3. All pass after.
   - Still open, not measured by either measure: a hard stop from a run lands with the clip snapping the foot back 7-8
     cm in one frame at ground height (the planter plants the frame after; the swing gate reads it as swinging).
+  - Owner notes on 4cae13ae: Hurling, Kabaddi, Kho Kho, Pok Ta Pok and Takraw all pass; Netball has no INDEX.json.
+    Floorball (head 27a66b6f) fails 3 hand and pose notes (up-close fist 31/519 frames, penalty twist 64°, thumbs
+    7497/8779), identically on 5d33d5a9: theirs, not this change. Announced to the lead and the 7 games 13:5x UTC.
+- **73abc139:** the ball audit takes an optional per-frame `path` (WsgSimGame.ball's "path";
+  WsgPropAudit.ball(pos, r, who, path)), each step swept. Takraw's mall tripod: the chord between frames cut 2.3 cm
+  into it, the bounce path never touched it. Pinned in solid_props_test on their numbers.
