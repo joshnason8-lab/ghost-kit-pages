@@ -163,6 +163,10 @@ func _near_side(low: bool) -> void:
 ## side's colours on a share of them, and the looks of a crowd here (mostly darker skin, black hair).
 const SKIN := [Color("4a2e20"), Color("5e3a28"), Color("714630"), Color("85543a"), Color("986446"), Color("ab7655")]
 const HAIR := [Color("0c0b0a"), Color("15110e"), Color("1f1914"), Color("2c241c"), Color("4a4a4a")]
+## Everyday clothes the shared crowd's shirt code can show (WsgCrowd3D.shirt_code reaches 256 colours, none near
+## white: the whites and pale blues of Crowd.CLOTHES came out mint green, so they are left out until it can).
+const EVERYDAY := [Color("8f8a80"), Color("2a2d36"), Color("1f2a44"), Color("4a3a30"), Color("7a6a52"), Color("c8b896"),
+	Color("6a2a2a"), Color("e8873a"), Color("d0407a"), Color("c8322a"), Color("e6c23a"), Color("2e7a4a"), Color("2850a8")]
 const LEGS := [Color("23252c"), Color("2f3340"), Color("3d3a36"), Color("4a3e30"), Color("1e2a44"), Color("d8d2c4")]
 
 
@@ -174,12 +178,11 @@ func _cards(placed: Dictionary, seed_: int) -> WsgCrowdCards:
 	for i in placed.spots.size():
 		if rng.randf() < density:
 			keep.append(i)
-	# Shirts: a few in the home side's colours, the rest in what people wear any day (Crowd.CLOTHES: whites and pale
-	# shirts most, as at the real matches).
+	# Shirts: a few in the home side's colours, the rest in what people wear any day (EVERYDAY).
 	var shirts: Array = []
 	for i in placed.spots.size():
 		var fan := not home_colors.is_empty() and rng.randf() < Crowd.SUPPORTERS
-		shirts.append(home_colors[rng.randi_range(0, home_colors.size() - 1)] if fan else Crowd.CLOTHES[rng.randi_range(0, Crowd.CLOTHES.size() - 1)])
+		shirts.append(home_colors[rng.randi_range(0, home_colors.size() - 1)] if fan else EVERYDAY[rng.randi_range(0, EVERYDAY.size() - 1)])
 	var cards := WsgCrowdCards.new()
 	cards.build(placed, keep, seed_, shirts)
 	cards.set_looks(SKIN, HAIR, LEGS)
