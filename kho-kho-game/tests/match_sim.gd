@@ -21,10 +21,16 @@ var in_t := [0.0, 0.0, 0.0, 0.0]   # seconds with 0, 1, 2, 3 of the batch in
 var out_dz := [0, 0, 0, 0]   # outs (not at a pole) by distance off the lane: 0-2, 2-4, 4-6, 6+ m
 
 
+var chk = null              # KK_CHECK=1: kho kho's rules checked every frame (tests/kho_rules_check.gd)
+var broken: Array = []
+
+
 ## The playtest tester's thumb, when the home side defends.
 func _process(_d: float) -> void:
 	if cur == null or not is_instance_valid(cur):
 		return
+	if chk:
+		chk.frame(_d)
 	# Real defenders out of danger stand still and watch (docs/AI.md, "Watched"): how much do these?
 	if cur.phase == "play" and cur.active != null:
 		for d in cur.batch:
@@ -104,7 +110,15 @@ func _ready() -> void:
 		add_child(m)
 		cur = m
 		var drawn: int = m.everyone().filter(func(q): return q.link != null).size()
+		if OS.get_environment("KK_CHECK") != "":
+			chk = (load("res://tests/kho_rules_check.gd") as Script).new(m)
 		var res: Dictionary = await m.finished
+		if chk:
+			chk.finish(true, 4)
+			for fl in chk.fails:
+				print("RULE BROKEN ", JSON.stringify(fl))
+			broken.append_array(chk.fails)
+			chk = null
 		if drawn > 0:
 			print("  (the shared foundation drew %d of %d; %d replays shown)" % [drawn, m.everyone().size(), m.replay.shown.size() if m.replay else 0])
 		cur = null
@@ -175,6 +189,8 @@ func _ready() -> void:
 		tot.secs += secs
 		m.queue_free()
 		await get_tree().process_frame
+	if OS.get_environment("KK_CHECK") != "":
+		print("RULES: %d broken in %d matches" % [broken.size(), n])
 	print("ALL: outs %.2f a min, khos %.1f a min, a dive every %.0f s, fouls %.2f a min, dream points %d" % [tot.outs / (tot.secs / 60.0),
 		tot.khos / (tot.secs / 60.0), tot.secs / maxf(1, tot.dives + tot.pole), tot.fouls / (tot.secs / 60.0), tot.dream])
 	print("POLE TURNS: %.1f a minute" % (tot.turns / (tot.secs / 60.0)))

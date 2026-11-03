@@ -330,7 +330,17 @@ func goto_menu() -> void:
 ## config keys: home, away (team ids), venue (DB.VENUES id), format (FMT_*), turn_len (s), difficulty, mode
 ## ("quick"|"cup"), user_team (0, 1 or -1 for none), chase_first (0 or 1: the side that won the toss and chose to chase,
 ## or lost it), stage (a line naming the match: "Semi-final"), women (bool), knockout (bool: a tie is played off).
+## Every match has a seed (every roll in its play comes from match.rng, seeded with it): one not given is drawn
+## here and printed, so a match seen to go wrong can be played again exactly.
+func _seeded(config: Dictionary) -> Dictionary:
+	if not config.has("seed"):
+		config["seed"] = randi() & 0x7fffffff
+	print("KHO_MATCH_SEED %d %s %s v %s" % [int(config.seed), String(config.get("venue", "")), String(config.get("home", "")), String(config.get("away", ""))])
+	return config
+
+
 func start_match(config: Dictionary) -> void:
+	_seeded(config)
 	var s: Script = load("res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config
@@ -345,6 +355,7 @@ func start_match(config: Dictionary) -> void:
 func play_match(config: Dictionary, buttons: Array = []) -> void:
 	if WsgLoading.busy():
 		return   # a second tap while one loads starts nothing
+	_seeded(config)
 	var host: Node = current if current and is_instance_valid(current) else main
 	var ld := WsgLoading.cover(host, buttons, {"dim": Color(C_BG, 0.92), "text": C_INK, "bar": C_SAFFRON, "spinner": C_SAFFRON,
 		"bar_back": Color(C_INK, 0.15), "title": tr("LOADING"), "font": font_bold,

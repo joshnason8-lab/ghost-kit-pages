@@ -183,5 +183,6 @@ func _play(c, p: Array) -> void:
 	var away: String = p[1] if p[0] == c.user else p[0]
 	var venue: String = "arena" if c.kind != "national" else ["maidan", "floodlit", "school"][c.round % 3]
 	Game.play_match({"home": home, "away": away, "venue": venue, "format": c.fmt(), "turn_len": [180.0, 300.0, KhoRules.real_turn(c.fmt())][int(Game.settings.turn_len)],
-		"difficulty": int(Game.settings.difficulty), "mode": "cup", "user_team": 0, "women": c.women, "chase_first": randi() % 2,
+		"difficulty": int(Game.settings.difficulty), "mode": "cup", "user_team": 0, "women": c.women, "chase_first": absi(hash("%d %d %s" % [c.seed, c.round, home])) % 2,
+		"seed": absi(hash("%d %d %s %s" % [c.seed, c.round, home, away])),
 		"knockout": c.knockout(), "stage": c.stage_name(), "follow_on": bool(Game.settings.follow_on), "powerplay": bool(Game.settings.powerplay)})

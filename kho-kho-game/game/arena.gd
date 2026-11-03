@@ -632,9 +632,11 @@ func _temple() -> void:
 	Props.place(self, "buildings/indian_village_temple", [Props.at(p, atan2(-p.x, -p.z))])
 	Props.place(self, "trees/rain_tree_card", [Props.at(p + Vector3(-7.0, 0, -2.5), 0.6, 0.95)], false)
 	var face := atan2(-p.x, -p.z)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 17
 	for k in 3:
 		var off := Basis(Vector3.UP, face) * Vector3(-1.6 + k * 1.0, 0, 4.2)
-		_chairs.append(Props.at(p + off, face + PI + randf_range(-0.3, 0.3)))
+		_chairs.append(Props.at(p + off, face + PI + rng.randf_range(-0.3, 0.3)))
 
 
 ## A town behind the place: painted apartment blocks on the skyline (the shared assets).
