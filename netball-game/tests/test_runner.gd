@@ -2972,7 +2972,8 @@ func _match_sig(m: Match) -> Array:
 				v.append(mesh.surface_get_arrays(i)[Mesh.ARRAY_VERTEX].size())
 		out.append(v)
 	if m.arena.crowd:
-		out.append([m.arena.crowd.spots.size(), m.arena.crowd.multimesh.instance_count if m.arena.crowd.multimesh else -1])
+		var cr: Crowd = m.arena.crowd
+		out.append([(cr.placed.get("spots", []) as Array).size(), cr.used.size(), cr.shirts.size(), cr.people != null, cr.cards != null])
 	for u in m.umpires:
 		out.append(u.position.snapped(Vector3.ONE * 0.001))
 	out.append(m.ball.position.snapped(Vector3.ONE * 0.001))
