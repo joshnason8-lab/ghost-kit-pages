@@ -36,6 +36,11 @@ var ball_path: Array = []
 var clock := 0.0              # real seconds played (not counting calls, pauses)
 var limit_s := 0.0
 var sudden := false           # time is up and level: the next raya wins
+var first_serve := 0          # the side serving first (home; config first_serve swaps it)
+var half := 1                 # M6 (the revival): two halves; the other side serves to open the second
+var turn_team := -1           # M4 (the revival): the side that struck last this rally (-1: none since the serve)
+var turn_crossed := false     # and whether the ball has crossed into the other half since
+var _half_at := -1            # the count's history length when the second half began
 var fetcher: Player = null    # sent for a dead ball (the simulator's fetch case: fetch()); the walk-out waits for him
 var fetch_spot := Vector3.INF
 var _fetch_path := PackedVector3Array()
@@ -71,6 +76,9 @@ func _ready() -> void:
 	court = Court.new(rules)
 	count = Rules.Count.new(rules, String(config.get("urria", Game.settings.get("urria", "3_7"))))
 	limit_s = float(config.get("length", 10)) * 60.0
+	if rules == Rules.MAYA and limit_s <= 0.0:
+		# M6: the revival has no target; it always plays to the clock (two halves of 13 minutes by default).
+		limit_s = Rules.MAYA_HALF_MIN * 2.0 * 60.0
 	for k in 2:
 		tstats[k] = {"rayas": 0, "dead": 0, "end": 0, "won_out": 0, "won_touch": 0, "ring": 0, "faults_touch": 0, "faults_out": 0,
 			"strikes": 0, "dives": 0, "serves": 0}
@@ -130,7 +138,7 @@ func build_sides(ld: WsgLoading) -> void:
 	var lod := 0 if int(Game.settings.graphics) >= Game.GFX_HIGH else 1
 	for k in 2:
 		var tid := String(config.get("home" if k == 0 else "away", "ESC" if k == 0 else "LLA"))
-		var roster := DB.roster(tid, side, "classic" if rules == Rules.CLASSIC else "ulama")
+		var roster := DB.roster(tid, side, "classic" if court.classic() else "ulama")
 		var ps: Array = []
 		for i in roster.size():
 			var r: Dictionary = roster[i]
@@ -176,7 +184,8 @@ func build_rest(ld: WsgLoading) -> void:
 		user_player = teams[user_team].players[0]
 		user_player.user = true
 	# The first serve is home's (docs/RULES.md); config first_serve lets the balance tests swap it (tests/balance_sim).
-	serve_team = clampi(int(config.get("first_serve", 0)), 0, 1)
+	first_serve = clampi(int(config.get("first_serve", 0)), 0, 1)
+	serve_team = first_serve
 	_pick_server()
 	ball.held = true
 	ball.pos = Vector3(0, Ball.RADIUS, 0)
@@ -246,6 +255,11 @@ func in_ritual() -> bool:
 
 
 # ---------------------------------------------------------------- what the others ask
+
+## M4 (the revival): may this side strike now? Not twice in a row before the ball has crossed into the other half.
+func may_strike(team: int) -> bool:
+	return rules != Rules.MAYA or turn_team != team or turn_crossed
+
 
 func is_live() -> bool:
 	return phase == P.LIVE
@@ -405,6 +419,13 @@ func _phase_logic(_delta: float) -> void:
 					(p as Player).calm()
 				if count.winner >= 0:
 					_to_over()
+				elif rules == Rules.MAYA and half == 1 and limit_s > 0.0 and clock >= limit_s * 0.5:
+					# M6: half time; the side that received first serves to open the second half.
+					half = 2
+					_half_at = count.history.size()
+					if hud:
+						hud.banner(tr("HALF_TIME"), Game.C_GOLD)
+					_to_serve()
 				elif limit_s > 0.0 and clock >= limit_s and not sudden:
 					var w := Rules.at_time(count)
 					if w >= 0:
@@ -430,7 +451,15 @@ func _to_serve() -> void:
 	ball.held = true
 	ball.vel = Vector3.ZERO
 	ball.grounded = false
-	serve_team = Rules.server(count)
+	# The first serve (and the second half's, M6) is set; after a raya the side that won it serves (R11).
+	if half == 2 and count.history.size() == _half_at:
+		serve_team = Rules.other(first_serve)
+	elif count.history.is_empty():
+		serve_team = first_serve
+	else:
+		serve_team = Rules.server(count)
+	turn_team = -1
+	turn_crossed = false
 	_pick_server()
 	rally = 0
 	if hud:
@@ -538,7 +567,8 @@ func _restart_attract() -> void:
 	count = Rules.Count.new(rules, "3_7")
 	clock = 0.0
 	sudden = false
-	serve_team = 0
+	half = 1
+	_half_at = -1
 	_to_serve()
 
 
@@ -1080,6 +1110,8 @@ func _ball_step(dt: float) -> void:
 		if phase != P.LIVE:
 			return
 	var events := ball.step(dt)
+	if turn_team >= 0 and ball.pos.x * Rules.dir(turn_team) > 0.0:
+		turn_crossed = true
 	if phase != P.LIVE:
 		# After the call the ball runs on as it will; nothing it does counts.
 		for e in events:
@@ -1190,6 +1222,14 @@ var top_strike := -INF   # the highest over his hip a standing hip has met the b
 
 
 func _strike(p: Player, window: float, off: float) -> void:
+	if not may_strike(p.team):
+		# M4: a second strike by the same side before the ball has crossed: the point to the other side.
+		p.stats.faults += 1
+		tstats[p.team].faults_touch += 1
+		_award(Rules.second_strike(p.team), "twice", true, p)
+		return
+	turn_team = p.team
+	turn_crossed = false
 	if p.action == Player.A.STRIKE:
 		top_strike = maxf(top_strike, ball.pos.y - p.hip_point().y)
 	var quality := clampf(window * 0.55 + (1.0 - off) * 0.45, 0.05, 1.0)
@@ -1260,7 +1300,7 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 	if reason == "ring":
 		res = Rules.award_ring(count, team)
 	else:
-		res = Rules.award(count, team)
+		res = Rules.award(count, team, Rules.points_for(count, reason))
 	if sudden and count.winner < 0:
 		count.winner = team
 	tstats[team].rayas += 1
@@ -1274,7 +1314,7 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 			tstats[Rules.other(team)].faults_out += 1
 			if who is Player:
 				(who as Player).stats.faults += 1
-		"touch":
+		"touch", "twice":
 			tstats[team].won_touch += 1
 		"ring":
 			tstats[team].ring += 1

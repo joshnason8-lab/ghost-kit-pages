@@ -191,8 +191,8 @@ All the numbers are together at the top of `game/rules.gd` (`MAYA_END_POINTS`, `
 `SIDE_MAYA`, `MAYA_HALF_MIN`), so a better source can correct them in one place. `tests/test_runner.gd`
 (`_rules_maya`) checks each rule.
 
-**Status (0.6.27):** the rules module and its checks are in. The match, the menus and How to Play come next, so the
-mode cannot be chosen yet.
+**Status (0.6.28):** the rules and the match are in (`tests/test_runner.gd` `_maya_match`, and the sim's
+`targeted:maya`). The menus and How to Play come next, so the mode cannot be chosen from the menus yet.
 
 Other tournaments differ. The 2021 Copa del Sureste plays 4 a side, 2 × 15 minutes and 5 points over the end line.
 Belize plays 5 a side. Some tournaments score the ring 5 or 10 points instead of the match, and take points off for
@@ -225,7 +225,7 @@ fouls (a non-hip touch −1, a kick −2, sitting on the ball −3) [AFP] [JSFD]
 | | |
 |---|---|
 | **Documented** | The ball is played with the hip only. Each team strikes once in a row before the turn passes [GT21] [AFP]. A referee judges the play [GT21]. |
-| **In the game** | A touch with anything but the hip (R6), or a second strike by the same side before the ball has crossed the analco, gives **1 point** to the other side (`Rules.second_strike`). |
+| **In the game** | A touch with anything but the hip (R6), or a second strike by the same side before the ball has crossed into the other half, gives **1 point** to the other side (`Rules.second_strike`, `Match.may_strike`). The computer's side never goes for the ball a second time; a ball it cannot get across dies in its half (M3). |
 | **Reconstructed** | The value of 1 point for a fault. Some tournaments take points off the side at fault instead [AFP]; the game gives the point to the other side, as R6 does. |
 
 ### M5. The players
@@ -241,7 +241,7 @@ fouls (a non-hip touch −1, a kick −2, sitting on the ball −3) [AFP] [JSFD]
 |---|---|
 | **Documented** | **Two halves of 13 minutes** [GT21]; the 2025 world cup in Copán used the same [HT]. |
 | **In the game** | Two halves of 13 minutes of play. At time the side ahead on points wins. If the points are level, the next point wins, as R14. |
-| **Reconstructed** | The level-at-time rule is ulama's R14, the game's own. |
+| **Reconstructed** | The level-at-time rule is ulama's R14, the game's own. The second half is opened by the side that received first; the sides do not change ends. Both are the game's own. A match set with no time limit plays the full two halves. |
 
 ### The court and the serve
 

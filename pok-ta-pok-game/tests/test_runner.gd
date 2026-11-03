@@ -60,6 +60,8 @@ func _ready() -> void:
 	await _foundation()
 	await _ai_plays("village", "ulama")
 	await _ai_plays("stone", "classic")
+	await _ai_plays("stone", "maya")
+	await _maya_match()
 	await _watch_ai()
 	await _stick_in_walkout()
 	await _stick_camera("village", "ulama")
@@ -1100,6 +1102,65 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 ## ground, never rolled along it; through two minutes of an AI match the ball is met with the hip standing far more
 ## often than dived for on the ground, and rallies go on.
 const SERVE_TOSS_MIN := 1.6   # the serve goes up at least this high (m; the owner, 0.6.8: "toss the ball up higher")
+
+
+## The revival in a match (M1-M6): the stone court, four a side, two halves to the clock, the end line 4 points, a
+## second strike in a row a fault, and the computer striking once a side; the first serve as the config sets it.
+func _maya_match() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "PIS", "away": "VAL", "venue": "stone", "rules": "maya", "user_team": -1, "seed": 33, "length": 0.0,
+		"mode": "test", "difficulty": 1, "ritual": false, "first_serve": 1}
+	add_child(m)
+	await frames(2)
+	check(m.court.classic() and m.teams[0].players.size() == 4 and m.teams[1].players.size() == 4,
+		"M5: the revival on the stone court, four a side (%d v %d)" % [m.teams[0].players.size(), m.teams[1].players.size()])
+	check(is_equal_approx(float(m.limit_s), Rules.MAYA_HALF_MIN * 2.0 * 60.0), "M6: no length set: two halves of 13 minutes (%.0f s)" % float(m.limit_s))
+	var g := 0
+	while m.phase != m.P.LIVE and g < 30 * 30:
+		await get_tree().process_frame
+		g += 1
+	check(int(m.serve_team) == 1, "The first serve goes to the side the config names (first_serve 1: served by %d)" % int(m.serve_team))
+	# Two minutes of the computer playing: never a second strike in a row.
+	for f in 30 * 120:
+		await get_tree().process_frame
+	var twice := 0
+	var reasons := {}
+	for r in m.log_rayas:
+		reasons[r[1]] = int(reasons.get(r[1], 0)) + 1
+		if String(r[1]) == "twice":
+			twice += 1
+	var touches: int = int(m.tstats[0].strikes) + int(m.tstats[1].strikes) + int(m.tstats[0].dives) + int(m.tstats[1].dives)
+	check(twice == 0 and touches >= 10, "M4: the computer strikes once a side, never twice in a row (%d touches, rayas %s)" % [touches, str(reasons)])
+	# The end line: 4 points.
+	g = 0
+	while m.phase != m.P.LIVE and g < 30 * 30:
+		await get_tree().process_frame
+		g += 1
+	var before := int(m.count.points[0])
+	m._award(0, "end", false, null)
+	check(int(m.count.points[0]) == before + 4 and m.count.winner < 0, "M2: over the end line in a match: 4 points, and play goes on (%d -> %d)" % [before, int(m.count.points[0])])
+	# A second strike in a row by the side that just struck, the ball still in its half: the point to the other side.
+	g = 0
+	while m.phase != m.P.LIVE and g < 30 * 30:
+		await get_tree().process_frame
+		g += 1
+	var p: Player = m.teams[0].players[0]
+	m.turn_team = 0
+	m.turn_crossed = false
+	var other_before := int(m.count.points[1])
+	m._strike(p, 1.0, 0.0)
+	check(m.phase == m.P.CALL and String(m.last_call.reason) == "twice" and int(m.last_call.team) == 1 and int(m.count.points[1]) == other_before + 1,
+		"M4: a second strike in a row in a match is a fault, the point to the other side (%s)" % str(m.last_call))
+	# Half time: the side that received first serves to open the second half.
+	m.clock = float(m.limit_s) * 0.5 + 1.0
+	g = 0
+	while m.phase != m.P.SERVE and g < 30 * 30:
+		await get_tree().process_frame
+		g += 1
+	check(int(m.half) == 2 and int(m.serve_team) == 0 and m.count.winner < 0,
+		"M6: half time; the side that received first serves the second half (half %d, serving %d)" % [int(m.half), int(m.serve_team)])
+	m.queue_free()
+	await frames(2)
 
 
 func _ai_plays(venue: String, rules: String) -> void:

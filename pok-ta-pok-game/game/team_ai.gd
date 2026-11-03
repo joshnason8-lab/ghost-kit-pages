@@ -101,7 +101,8 @@ func update(dt: float) -> void:
 
 ## Who goes for the ball, where and when: the soonest any of them can be there.
 func _plan(path: Array) -> void:
-	if path.is_empty():
+	if path.is_empty() or not m.may_strike(team):
+		# M4 (the revival): the side has struck and the ball has not crossed yet; nobody goes for it again.
 		return
 	var best := {}
 	var best_p: Player = null

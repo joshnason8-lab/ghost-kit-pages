@@ -40,8 +40,9 @@ func _init(p_rules := Rules.ULAMA) -> void:
 	rules = p_rules
 
 
+## The stone court (walls, end courts, rings): the classic game and the revival (M1) play on it.
 func classic() -> bool:
-	return rules == Rules.CLASSIC
+	return rules == Rules.CLASSIC or rules == Rules.MAYA
 
 
 ## The playing length's half: to the end lines (ulama) or the end courts' back walls (classic).

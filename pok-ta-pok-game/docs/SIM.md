@@ -105,6 +105,8 @@ Each comes from the real menus' configs (`Game.start_match`) and a seed:
   game played as the menu plays it (mode cup, the town's side the person's), the result recorded as the game records
   it, then checked (`RuleChecks.cup`): the game's winner in the draw, every later round drawn from the winners, the
   town in or out as it played, and played through to a champion once it is out.
+- **The revival** (`targeted:maya`): the pelota maya rules (docs/RULES.md M1-M6) on a stone court, four a side, 1-3
+  minutes on the clock. RuleChecks: points only go up, a winner only by the ring or at time, and the half-time serve.
 - **Menu paths:**
   - the tournament from the draw to the final, saved and resumed;
   - quick match and play again;

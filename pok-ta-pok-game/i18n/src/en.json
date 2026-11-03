@@ -288,5 +288,8 @@
   "PRIV_CHANGES": "Changes",
   "PRIV_CHANGES_TEXT": "If this ever changes, this page will say so, and the date at the top will change.",
   "PRIV_CONTACT": "Contact",
-  "PRIV_CONTACT_TEXT": "Questions about privacy: joshnason8@gmail.com. Pok Ta Pok Rivals is made by Josh Nason."
+  "PRIV_CONTACT_TEXT": "Questions about privacy: joshnason8@gmail.com. Pok Ta Pok Rivals is made by Josh Nason.",
+  "WHY_TWICE": "{name}'s side struck twice in a row",
+  "POINTS_TO": "{n} points to {team}",
+  "HALF_TIME": "Half time"
 }

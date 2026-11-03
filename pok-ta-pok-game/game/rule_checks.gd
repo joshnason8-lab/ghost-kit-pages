@@ -76,9 +76,16 @@ func step(m: Node, dt := 1.0 / 30.0) -> Array:
 	if float(m.limit_s) > 0.0 and clock > float(m.limit_s) + STUCK_S:
 		out.append("the clock %.0f s past its limit %.0f s" % [clock, float(m.limit_s)])
 	_clock = clock
-	# The serve: the side that won the last raya.
-	if m.phase == m.P.SERVE and c.winner < 0 and int(m.serve_team) != Rules.server(c):
-		out.append("side %d serves; the last raya was side %d's" % [int(m.serve_team), Rules.server(c)])
+	# The serve: the side that won the last raya (R11); the first, the side the config names; the revival's second half
+	# opened by the side that received first (M6).
+	if m.phase == m.P.SERVE and c.winner < 0:
+		var want := Rules.server(c)
+		if c.history.is_empty():
+			want = int(m.first_serve)
+		elif int(m.half) == 2 and c.history.size() == int(m._half_at):
+			want = Rules.other(int(m.first_serve))
+		if int(m.serve_team) != want:
+			out.append("side %d serves; side %d should (the last raya was side %d's)" % [int(m.serve_team), want, Rules.server(c)])
 	# The end: no play after a win.
 	if c.winner >= 0 and m.phase == m.P.LIVE:
 		out.append("play goes on after side %d won" % c.winner)

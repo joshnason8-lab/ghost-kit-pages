@@ -64,7 +64,7 @@ func _headline() -> Control:
 	var how := ""
 	if bool(c.get("ring", false)):
 		how = tr("RESULT_RING")
-	elif String(c.get("rules", "ulama")) == Rules.CLASSIC:
+	elif Rules.by_points(String(c.get("rules", "ulama"))):
 		var pts: Array = c.get("points", [0, 0])
 		how = tr("RESULT_POINTS").format({"a": DB.short_name(String(r.home)), "x": int(pts[0]), "b": DB.short_name(String(r.away)), "y": int(pts[1])})
 	elif bool(r.get("timed", false)):

@@ -21,7 +21,7 @@ func game_name() -> String:
 
 func scenarios() -> Array:
 	return ["random", "extreme", "targeted:scoring", "targeted:timer", "targeted:possession", "targeted:collisions",
-		"targeted:completion", "targeted:ring", "targeted:copal", "targeted:fair", "targeted:cup"]
+		"targeted:completion", "targeted:ring", "targeted:copal", "targeted:fair", "targeted:cup", "targeted:maya"]
 
 
 func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
@@ -75,6 +75,15 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 			c.length = 1.0
 		"targeted:fair":
 			c.levels = [1, 1]
+		"targeted:maya":
+			# The pelota maya revival (M1-M6): the stone courts, four a side, to the clock; the end line 4 points, a
+			# second strike in a row a fault (RuleChecks: points only up, a winner only by the ring or at time).
+			c.venue = ["stone", "night"][rng.randi() % 2]
+			c.rules = Rules.MAYA
+			c.home = "PIS"
+			c.away = "VAL"
+			c.side = 4
+			c.length = rng.randf_range(1.0, 3.0)
 		"targeted:cup":
 			# The town tournament: a cup drawn from the seed for the home town, its first game played as the menu plays
 			# it (mode cup, the town's side the person's), the rest of the cup played on from its result and checked.

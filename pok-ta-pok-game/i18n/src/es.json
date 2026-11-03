@@ -288,5 +288,8 @@
   "PRIV_CHANGES": "Cambios",
   "PRIV_CHANGES_TEXT": "Si esto cambia algún día, esta página lo dirá y cambiará la fecha de arriba.",
   "PRIV_CONTACT": "Contacto",
-  "PRIV_CONTACT_TEXT": "Preguntas sobre privacidad: joshnason8@gmail.com. Pok Ta Pok Rivals está hecho por Josh Nason."
+  "PRIV_CONTACT_TEXT": "Preguntas sobre privacidad: joshnason8@gmail.com. Pok Ta Pok Rivals está hecho por Josh Nason.",
+  "WHY_TWICE": "El lado de {name} golpeó dos veces seguidas",
+  "POINTS_TO": "{n} puntos para {team}",
+  "HALF_TIME": "Medio tiempo"
 }

@@ -434,10 +434,22 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   together at the top of rules.gd so a better source can change them in one place; RuleChecks and nine new tests
   cover them. Not yet playable: the match (step 2) and the menus and How to Play (step 3) come next.
 
+- **0.6.28-beta: the revival in the match (step 2 of 3); the first serve fixed.** `rules: "maya"` plays on the stone
+  courts (`Court.classic()` is now "the stone court"), four a side, with two halves on the clock (26 minutes when no
+  length is set). The end line scores 4. A second strike by the same side before the ball has crossed into the other
+  half is a fault, and the computer never tries it. At half time the side that received first serves. The scoreboard
+  shows points with the half (I or II) in place of a target, and the result screen shows the points. New texts in six languages: half time, the double
+  strike, "4 points to". The sim gains `targeted:maya` (6 matches, no failures), and RuleChecks knows the half-time
+  serve. Tests: `_maya_match` and the AI match on the stone court under maya. **Bug found:** `config.first_serve` was
+  overwritten when the intro ended (`Rules.server` of an empty count is home), so home always served first. The
+  0.6.22 balance study's "serving first is worth nothing" never swapped the serve and does not stand. What it did
+  measure is home (always serving first) winning 52.7%, 45-60%. Fixed; the study is not re-run (sim work is
+  stopped).
+
 ## Next
 
-1. **The pok-ta-pok / pelota maya revival**, steps 2 and 3: the match (end line 4 points, the second-strike fault, the
-   AI striking once a side, two halves, 4 a side, the stone courts), then the menus, How to Play and the cup.
+1. **The pok-ta-pok / pelota maya revival**, step 3: the menus (a third rule set in match setup, halves for the
+   length), How to Play with the "Reconstructed" labels, the court diagram, the cup and Watch AI.
 2. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
    in docs/CULTURE.md.
 3. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").

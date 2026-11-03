@@ -205,7 +205,7 @@ func _draw_board() -> void:
 	var n := Rules.target(c.rules)
 	var gap := s.x / float(n + 1)
 	var font: Font = Game.font_display
-	if c.rules == Rules.CLASSIC:
+	if Rules.by_points(c.rules):
 		var half := s.x * 0.5
 		for k in 2:
 			var pts := c.of(k)
@@ -215,7 +215,9 @@ func _draw_board() -> void:
 			_board.draw_string(font, Vector2(x - 20, s.y * 0.78), txt, HORIZONTAL_ALIGNMENT_CENTER, 40, 30, Game.C_INK)
 			_board.draw_rect(Rect2(x - 14, s.y - 4, 28, 3), col)
 		_board.draw_arc(Vector2(half, s.y * 0.5), 9.0, 0, TAU, 24, Game.C_PAPER, 3.0, true)
-		_board.draw_string(Game.font_bold, Vector2(half - 20, s.y * 0.95), "/" + str(n), HORIZONTAL_ALIGNMENT_CENTER, 40, 11, Game.C_MUTED)
+		# The target in the middle; the revival has none, so its half (M6).
+		var mid := "/" + str(n) if n > 0 else ("I" if int(m.half) == 1 else "II")
+		_board.draw_string(Game.font_bold, Vector2(half - 20, s.y * 0.95), mid, HORIZONTAL_ALIGNMENT_CENTER, 40, 11, Game.C_MUTED)
 		return
 	var holder := c.holder
 	var hcol: Color = DB.team(String(m.teams[holder].id)).c1 if holder >= 0 else Game.C_PAPER
@@ -352,7 +354,13 @@ func call_raya(team: int, reason: String, what: String, fault: bool, who) -> voi
 	var how := ""
 	match what:
 		"add":
-			how = tr("COUNT_ADD").format({"team": t, "n": m.count.of(team)}) if m.count.rules == Rules.ULAMA else tr("POINT_TO").format({"team": t})
+			var pts := Rules.points_for(m.count, reason)
+			if m.count.rules == Rules.ULAMA:
+				how = tr("COUNT_ADD").format({"team": t, "n": m.count.of(team)})
+			elif pts > 1:
+				how = tr("POINTS_TO").format({"team": t, "n": pts})   # M2: the revival's end line
+			else:
+				how = tr("POINT_TO").format({"team": t})
 		"cancel":
 			how = tr("COUNT_CANCEL").format({"team": t, "other": o})
 		"urria":
@@ -465,7 +473,7 @@ func show_pause(on: bool) -> void:
 ## "Escuinapa hold 3 rayas", "Level", or the points.
 func score_line() -> String:
 	var c: Rules.Count = m.count
-	if c.rules == Rules.CLASSIC:
+	if Rules.by_points(c.rules):
 		return "%s %d  ·  %s %d" % [DB.short_name(String(m.teams[0].id)), c.of(0), DB.short_name(String(m.teams[1].id)), c.of(1)]
 	if c.holder < 0:
 		return tr("COUNT_LEVEL")
