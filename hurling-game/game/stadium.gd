@@ -415,13 +415,20 @@ func _goals(g: Geo, nets: Geo) -> void:
 ## The scenery's benches (the dugouts', the clubhouse's) solid as they stand, their own bounds; the rest of the
 ## scenery (trees, houses, lamps, rocks, the floodlights on the masts and roofs) is out beyond the stands, the ball-stop
 ## nets and the boundary, where no one goes and no ball reaches.
+## (From where Scenery placed each one, not from the MultiMesh: a headless run's renderer keeps no instances, and
+## every bench came back at the centre spot.)
 func _solid_scenery() -> void:
-	for c in scenery.get_children():
-		if c is MultiMeshInstance3D:
-			if String(c.name).contains("bench"):
-				solid.register(c, {"material": "wood"})
-			else:
-				solid.skip(String(c.name), "scenery beyond the stands and the boundary: no one goes there, no ball reaches it")
+	for name: String in scenery._xf:
+		if not name.contains("bench"):
+			solid.skip(name, "scenery beyond the stands and the boundary: no one goes there, no ball reaches it")
+			continue
+		var m: Array = Scenery.mesh_of(name)
+		var ab: AABB = (m[0] as Mesh).get_aabb()
+		var own: Transform3D = m[1]
+		for x: Transform3D in scenery._xf[name]:
+			var xf := x * own
+			solid.add({"name": name, "kind": "box", "material": "wood", "size": ab.size * xf.basis.get_scale(),
+				"xf": Transform3D(xf.basis.orthonormalized(), xf * ab.get_center())})
 
 
 ## The goals' white frames and the flags: grow (m) thickens every piece (0 for the stadium's own mesh).
@@ -429,8 +436,10 @@ func _goal_frames(g: Geo, grow: float) -> void:
 	var white := Color(0.96, 0.96, 0.94)
 	var r := Pitch.POST_W * 0.5
 	var gr := r + grow
-	g.solid_spec = {"name": "goal frame", "material": "metal", "ball": false}
 	for s: float in [-1.0, 1.0]:
+		# (Each goal's own: the flags' spec, set below, must not carry into the far goal's posts and make them stop
+		# the ball before Match._check_ball can take it off the woodwork.)
+		g.solid_spec = {"name": "goal frame", "material": "metal", "ball": false}
 		var x := (H + r) * s
 		for zs: float in [-1.0, 1.0]:
 			var z := (Pitch.POST_GAP * 0.5 + r) * zs

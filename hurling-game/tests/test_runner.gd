@@ -1287,8 +1287,8 @@ func _aimed_shots() -> void:
 
 ## Free-taking practice (game/practice.gd): ten frees, each aimed by timing and struck off the bar; a goal into the
 ## net (no goalkeeper), a point over the bar flying on to land, a miss off the bar's end or outside the posts; the
-## taker alone on the pitch, swinging every time, under the practice's own low camera throughout; High graphics while
-## it lasts and the player's own after; the score kept as the best; the pause menu without substitutions or tactics.
+## taker alone on the pitch, swinging every time, under the practice's own low camera throughout; the player's own
+## graphics (the taker at full detail); the score kept as the best; the pause menu without substitutions or tactics.
 func _practice_frees() -> void:
 	var kept := int(Game.settings.get("practice_best", -1))
 	var kept_gfx := int(Game.settings.graphics)
@@ -1310,8 +1310,8 @@ func _practice_frees() -> void:
 		seen += 1 if (q as Player).visible else 0
 	check(seen == 1 and m.taker.visible and not m.keeper_of(1).visible and not m.officials.referee.visible,
 		"Practice: the taker alone on the pitch (%d players seen), no goalkeeper, no referee" % seen)
-	check(int(Game.settings.graphics) == Game.GFX_HIGH and m.get_viewport().get_camera_3d() == m.view,
-		"Practice: High graphics while it lasts, and its own low camera")
+	check(int(Game.settings.graphics) == Game.GFX_LOW and m.get_viewport().get_camera_3d() == m.view and m.taker.full_detail,
+		"Practice: the player's own graphics (the owner's middle ground: the taker at full detail), and its own low camera")
 	# A goal first (low in the middle of the net), seven between the posts over the bar with the bar in the green,
 	# one off the bar's right end, one outside the posts.
 	var aimed := 0
