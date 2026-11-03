@@ -218,7 +218,9 @@ jobs:
       - name: Publish the beta release
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/floorball-game'
         env:
-          GH_TOKEN: ${{ github.token }}
+          # (RELEASE_TOKEN, when the owner sets one: a fine-grained token with Contents and Workflows write - GitHub
+          # refuses github.token a tag on a commit whose workflow files differ, HTTP 403.)
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           TAG=floorball-unleashed-beta
