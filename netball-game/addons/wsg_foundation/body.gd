@@ -105,6 +105,26 @@ func advance(delta: float) -> void:
 		skeleton.advance(delta)
 
 
+## WsgSim's sampled pose: a body not in this match's sample (false) keeps everything gameplay reads - its
+## animation (root motion, the locomotor's state), its bones, its feet's contacts and the footsteps they fire - but
+## not the work only seen: the planter's IK (it still finds the contacts), the pose layers and other modifiers, the
+## helpers. A quarter of the bodies, a different quarter each match, stay full (WsgSim). Off a phone only.
+var sim_full := true
+
+
+func set_sim_full(on: bool) -> void:
+	sim_full = on
+	if not on:
+		helpers.active = false
+	for m in skeleton.get_children():
+		if m is WsgFootPlanter:
+			(m as WsgFootPlanter).enabled = on
+		elif m is SkeletonModifier3D and m != helpers:
+			(m as SkeletonModifier3D).active = on
+	if on:
+		helpers.active = full
+
+
 func add_modifier(m: SkeletonModifier3D) -> void:
 	skeleton.add_child(m)
 	skeleton.move_child(m, helpers.get_index())
