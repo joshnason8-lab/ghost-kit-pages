@@ -398,6 +398,25 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   measurements (about 12x real time a CPU core without the foundation, 3.8x with it at one step a frame), the first
   batches' findings (no rule broken; rebounds popping into the hands, defenders inside 0.9 m, slip calls without the
   infringement) and the scenario list with its gaps are in docs/SIM.md. No gameplay or balance change.
+- **The owner's notes as permanent tests** (the owner: "the regressions are getting worse"; foundation synced
+  2cd59a7 -> ed3c181 in its own commit, ADOPTING §5.16). Every note the owner has given is a test in
+  `tests/owner_notes/<date>_<slug>.gd` (WsgOwnerNote: the owner's words, the date, the version), listed in
+  `tests/owner_notes/INDEX.json`, each measuring the symptom over its whole range (every level, venue, camera,
+  screen shape, speed as the note needs), most through test_runner's own sections (`lib/harness.gd` runs a section
+  and gathers its checks). 24 notes, back-filled from this file and the code's comments too (the crowd facing away,
+  0.4.2; "failure conflict" updates, the beta key). `lib/run_one.gd -- <part of a name>` runs some. CI runs
+  `tools/wsg/owner_notes_guard.sh` (no note ever removed) and the notes with WSG_NOTES_STRICT=1. The props note
+  ("a player or referee should never walk through a table or bench") waits in `tests/owner_notes/pending/` until
+  the props are solid (WsgOwnerNote has no expected-fail). Failing when written, with the measured numbers: the
+  nets (a goal moves the net 4.8 px on the close shot, 2.5 courtside), the arena's painted bowl (1-2% of its crowd
+  real people on Medium/High), a ball held in the air after a whistle (1.5-1.7 s), the penalised player 0.3-0.85 m
+  from a penalty pass's thrower (fixes in progress); and three found by the notes: the stick's diagonals 15.6
+  degrees off on the screen at 16:9 and 20.8 at 20:9 on every camera (CameraRig._through_lens steps along the stick
+  in the lens's units, not the screen's: the x step wants dividing by the aspect), a shooter right under the post
+  who caught facing away shoots without turning (140 degrees off), and the foundation's body on Medium/High
+  defending on the move at 3 m/s with both arms straight out (T-pose measure, 85-87 degrees; the game's own body
+  keeps them by her sides). Found on the way: the netball-loading merge left game.gd warming `Crowd.SHEET_HD` and
+  test_runner's `_match_sig` reading `crowd.spots`, both removed by the crowd placement (the game did not compile).
 
 ## Next
 

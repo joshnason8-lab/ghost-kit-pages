@@ -25,7 +25,7 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # (the tests, the props audit and the world check play many matches)
+    timeout-minutes: 150   # (the tests, the props audit, the world check and the owner's notes play many matches)
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
@@ -130,6 +130,18 @@ jobs:
         with:
           name: world-check
           path: ${{ runner.temp }}/world
+
+      # The owner's notes, each a test for good (tests/owner_notes/, ADOPTING §5.16): none may be removed from
+      # INDEX.json (the guard reads its history), and every one must pass here, where the licensed data is (a skip fails).
+      - name: The owner's notes are all still listed
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
+
+      - name: The owner's notes (every note the owner has given, measured over its whole range)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          WSG_NOTES_STRICT=1 timeout 3000 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log | grep -v "^gait:\|^foundation steps:\|^  "
+          if grep -q "SCRIPT ERROR" owner_notes.log; then grep -A4 "SCRIPT ERROR" owner_notes.log; exit 1; fi
 
       # The beta key: the owner's shared keystore (repository secret BETA_KEYSTORE_B64, PKCS12, storepass and keypass
       # "android", alias "androiddebugkey"), so every beta installs over the last. Without the secret, a throwaway

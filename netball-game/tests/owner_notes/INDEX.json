@@ -1,0 +1,197 @@
+{
+ "about": "Netball Unleashed: the owner's notes, each a test for good (tools/wsg/owner_notes.gd runs them; CI with WSG_NOTES_STRICT=1). Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone. Notes written ahead of their fix wait in pending/ (not in the strict run).",
+ "notes": [
+  {
+   "id": "2026-10-22-menu-line-white",
+   "file": "2026-10-22_menu_line_white.gd",
+   "game": "netball",
+   "date": "2026-10-22",
+   "version": "0.2.x",
+   "words": "On Menu make the black line white between nations cup and club season"
+  },
+  {
+   "id": "2026-10-22-running-arms-out",
+   "file": "2026-10-22_running_arms_out.gd",
+   "game": "netball",
+   "date": "2026-10-22",
+   "version": "0.2.x",
+   "words": "Use the running .FBX from the other games in development, the running with the arms out looks awkward."
+  },
+  {
+   "id": "2026-10-23-crowd-wrong-way",
+   "file": "2026-10-23_crowd_wrong_way.gd",
+   "game": "netball",
+   "date": "2026-10-23",
+   "version": "0.4.1-beta",
+   "words": "the near side's crowd looked the wrong way"
+  },
+  {
+   "id": "2026-10-24-update-conflict",
+   "file": "2026-10-24_update_conflict.gd",
+   "game": "netball",
+   "date": "2026-10-24",
+   "version": "0.6.0-beta",
+   "words": "failure conflict"
+  },
+  {
+   "id": "2026-10-27-about-pages-404",
+   "file": "2026-10-27_about_pages_404.gd",
+   "game": "netball",
+   "date": "2026-10-27",
+   "version": "0.8.0-beta",
+   "words": "Licenses/Help/Privacy links returned 404"
+  },
+  {
+   "id": "2026-11-02-gliding-arms",
+   "file": "2026-11-02_gliding_arms.gd",
+   "game": "netball",
+   "date": "2026-11-02",
+   "version": "0.8.2-pilot",
+   "words": "Netball is still severely broken: players gliding around, not running, arms just stretched out when running. Looks like nothing was updated."
+  },
+  {
+   "id": "2026-11-02-joystick-cameras",
+   "file": "2026-11-02_joystick_cameras.gd",
+   "game": "netball",
+   "date": "2026-11-02",
+   "version": "0.8.4-beta",
+   "words": "When switching to a camera angle that is not alongside the court, the joystick movement is all wrong."
+  },
+  {
+   "id": "2026-11-02-watch-ai",
+   "file": "2026-11-02_watch_ai.gd",
+   "game": "netball",
+   "date": "2026-11-02",
+   "version": "0.8.3-beta",
+   "words": "Watch AI"
+  },
+  {
+   "id": "2026-11-03-advantage-move-away",
+   "file": "2026-11-03_advantage_move_away.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "When there is contact and advantage have the defending player move out of the way."
+  },
+  {
+   "id": "2026-11-03-crowd-properly",
+   "file": "2026-11-03_crowd_properly.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.9.0-beta (every game)",
+   "words": "Look at all maps/arenas that have different standing/sitting and make sure the crowd is sitting properly (body not standing awkwardly inside the seat), watching the game properly, facing the right direction, standing properly."
+  },
+  {
+   "id": "2026-11-03-crowd-real-people",
+   "file": "2026-11-03_crowd_real_people.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "The crowd isn't real people, why isn't that updated? That was supposed to be shared foundation too. Even on High in the outdoor court the crowd looks like simple shapes."
+  },
+  {
+   "id": "2026-11-03-crowd-squares",
+   "file": "2026-11-03_crowd_squares.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.9.0-beta",
+   "words": "Most of the crowd is still just squares, needs to be actual people."
+  },
+  {
+   "id": "2026-11-03-floating-legs",
+   "file": "2026-11-03_floating_legs.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "Players floating around and not moving legs, thought that was fixed in shared foundation."
+  },
+  {
+   "id": "2026-11-03-hands-on-ball",
+   "file": "2026-11-03_hands_on_ball.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "Often times their hands aren't holding the ball, it looks like the forearms are holding the ball."
+  },
+  {
+   "id": "2026-11-03-howto-positions",
+   "file": "2026-11-03_howto_positions.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "In the how to play positions section the court graphics don't show the positions, its just the same image over and over."
+  },
+  {
+   "id": "2026-11-03-loading-frozen",
+   "file": "2026-11-03_loading_frozen.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.9.0-beta (every game)",
+   "words": "When you click start game there is a loading delay … long enough on the slow phone that users might think the game has frozen. We either need a little load screen or load bar by the start buttons."
+  },
+  {
+   "id": "2026-11-03-net-still-not-moving",
+   "file": "2026-11-03_net_still_not_moving.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.9.0-beta",
+   "words": "Net still isn't moving when ball hits it."
+  },
+  {
+   "id": "2026-11-03-net-sway",
+   "file": "2026-11-03_net_sway.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "The net should move when the ball goes in, it's rope and should sway."
+  },
+  {
+   "id": "2026-11-03-pass-physics",
+   "file": "2026-11-03_pass_physics.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "The pass speed doesn't look very natural, the lobs especially. Check the physics of the ball movement."
+  },
+  {
+   "id": "2026-11-03-passes-gravity",
+   "file": "2026-11-03_passes_gravity.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.9.0-beta",
+   "words": "Some times the passes are almost across the court and they just keep going, that seems unlikely. Like it will never succumb to gravity."
+  },
+  {
+   "id": "2026-11-03-penalty-spacing",
+   "file": "2026-11-03_penalty_spacing.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.9.0-beta",
+   "words": "During penalties or obstructions the defender is almost on top of the passer, change that if its not realistic."
+  },
+  {
+   "id": "2026-11-03-referees-block-figures",
+   "file": "2026-11-03_referees_block_figures.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "The referees look too much like block figures, not humans."
+  },
+  {
+   "id": "2026-11-03-rigid-stance",
+   "file": "2026-11-03_rigid_stance.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "Their stance is too rigid when not moving, it doesn't look natural with their hands out and not moving."
+  },
+  {
+   "id": "2026-11-03-shooter-facing",
+   "file": "2026-11-03_shooter_facing.gd",
+   "game": "netball",
+   "date": "2026-11-03",
+   "version": "0.8.6-beta",
+   "words": "There are times when a player is shooting that the woman is facing the wrong direction and not at the hoop."
+  }
+ ]
+}
