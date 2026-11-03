@@ -193,8 +193,9 @@ func bodies() -> Array:
 		out.append({"name": _who(a), "pos": a.position, "radius": Athlete.BODY_R, "height": 1.8, "body": wb,
 			"active": m.phase == "play" and not bool(m.paused), "target": tgt,
 			# Round the pole his arms are out by design: one hand on the pole, the other arm thrown out (the Drive
-			# video's slingshot, 0.10).
-			"pose_excuse": "pole turn: one hand on the pole, the other arm out" if _pole_turning(a) else ""})
+			# video's slingshot, 0.10); and a touch or a kho reached for on the run (FoundationLink's "upper": the game's
+			# reaching arm over the capture - a designed move, the foundation, 2026-11-03).
+			"pose_excuse": _excuse(a)})
 	return out
 
 
@@ -226,6 +227,14 @@ func fetch(spot: Vector3) -> Dictionary:
 ## In a pole turn, or coming out of one: his arms come back from the pole over FoundationLink's QUICK blend.
 var _pole_t := {}
 const POLE_OUT_S := 0.6
+
+
+func _excuse(a: Athlete) -> String:
+	if _pole_turning(a):
+		return "pole turn: one hand on the pole, the other arm out"
+	if a.link != null and a.link.mode == "upper":
+		return "a touch or kho reached for on the run: the reaching arm over the run"
+	return ""
 
 
 func _pole_turning(a: Athlete) -> bool:

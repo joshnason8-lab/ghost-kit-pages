@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        case: ['targeted:fouls 101', 'targeted:collisions 101', 'random 29']
+        case: ['targeted:fouls 101', 'targeted:fouls 103', 'random 29', 'extreme 28']
     steps:
       - uses: actions/checkout@v4
       - *godot

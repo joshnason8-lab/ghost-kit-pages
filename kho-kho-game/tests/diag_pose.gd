@@ -42,8 +42,9 @@ func _initialize() -> void:
 		return
 	var counts := {}
 	var last_feet := {}
+	var acts := {}    # athlete -> [the act before this one, this one, the frame it began]
 	var still := {}   # (stuck, as WsgSim reads it: a body with a target over 1.5 m away, hardly moving) name -> [pos, s]
-	for frame in 30 * 600:
+	for frame in 30 * 2400:
 		await process_frame
 		var st := g.state()
 		g.events()
@@ -67,6 +68,9 @@ func _initialize() -> void:
 			else:
 				still.erase(b.name)
 		for a2 in m.everyone():
+			var av: Array = acts.get(a2, ["", "", 0])
+			if String(av[1]) != String(a2.act):
+				acts[a2] = [av[1], a2.act, Engine.get_process_frames()]
 			if a2.link == null or not is_instance_valid(a2.link.body):
 				continue
 			var body: WsgBody = a2.link.body
@@ -79,17 +83,21 @@ func _initialize() -> void:
 						return   # (as WsgSim: only the quarter posed in full is read - the rest skip the rig's modifiers)
 					var p := WsgNoteChecks.t_or_a_pose(body)
 					var key := "%s|%s|%s|%s" % [p, a2.act, a2.link.mode, body.sim_full]
-					if p != "" and a2.act != "pole_turn":
+					# (As WsgSim: a pole turn and a reach on the run - FoundationLink's "upper" - are excused.)
+					if p != "" and a2.act != "pole_turn" and a2.link.mode != "upper":
 						counts[key] = int(counts.get(key, 0)) + 1
-						if int(counts[key]) <= 2:
-							_say("f%d %s: %s, act '%s', link mode '%s', pose_every %d, sim full %s, vel %.1f" % [Engine.get_process_frames(), who, p, a2.act, a2.link.mode, a2.link.pose_every, body.sim_full, a2.vel.length()])
+						if int(counts[key]) <= 3:
+							var av2: Array = acts.get(a2, ["", "", 0])
+							_say("f%d %s: %s, act '%s' (after '%s', %d frames ago), link mode '%s', layer weight %.2f, grip %s, pose_every %d, vel %.1f" % [Engine.get_process_frames(), who, p, a2.act, av2[0], Engine.get_process_frames() - int(av2[2]), a2.link.mode, a2.link.layer.weight, a2.body.grip, a2.link.pose_every, a2.vel.length()])
 					var ft := WsgNoteChecks.feet(body)
 					if last_feet.has(id):
 						var was: Array = last_feet[id]
 						for k in [0, 2]:
 							var now_y := (ft[k] as Vector3).y
 							var dxz := Vector2((ft[k] as Vector3).x - (was[k] as Vector3).x, (ft[k] as Vector3).z - (was[k] as Vector3).z).length()
-							if now_y < 0.12 and (was[k] as Vector3).y < 0.12 and dxz > 0.02 and a2.vel.length() < 0.4:
+							# (As WsgSim: only under the capture, where the planter holds the feet - under the game's whole pose,
+							# "full", the feet are where the game puts them and are not measured.)
+							if a2.link.mode != "full" and now_y < 0.12 and (was[k] as Vector3).y < 0.12 and dxz > 0.02 and a2.vel.length() < 0.4:
 								var fk := "slip|%s|%s|%s" % [a2.act, a2.link.mode, body.sim_full]
 								counts[fk] = int(counts.get(fk, 0)) + 1
 								if int(counts[fk]) <= 2:
