@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.6
+
+- **The whistles and the kho's slap are crisp from anywhere on the ground**, as a match's key sounds are in every
+  World Stage game (they were dulled by distance at the far end).
+- **Feet and footsteps** on Medium and High: the shared foundation's planted feet hold to 2 cm a step at every body
+  size, and one footstep sounds for each footfall (a sprinting chaser's feet are no longer heard - or seen - double).
+- Behind the scenes: every way a match starts (quick match, Watch AI) is checked on every build against the world
+  rules (props solid, crowd seated, officials dressed as officials, the loading screen at once, the stick the camera's
+  way on every camera, graphics kept to your setting); every build is checked before it is published (signed with
+  the beta key, the right version, nothing that is not the game).
+
 ## What's new in 0.12.5
 
 - **Your notes are now tests.** Every note the owner has given (fourteen so far, in their own words) is a test the

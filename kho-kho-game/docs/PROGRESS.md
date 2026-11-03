@@ -276,6 +276,12 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   only through a turn's play. Classic outs 1.50 -> 1.36 a minute after the note fixes (fast 1.74 -> 1.77): flagged
   to the lead for the owner, not retuned.
 
+- 0.12.6: foundation synced to 888e222 (cut_from_heading kept true; one footstep per footfall 9c461ca, feet within 2 cm
+  8dc70d9/d4e3107, the toe kept planted 63b8d62). The world check (game/world.gd, ADOPTING 5.18) replaces the build's
+  crowd and prop audit steps; the release gate (5.19) runs before publishing. Sfx.key (WsgAudio): whistles and the kho
+  slap crisp at a distance. WsgSim: pole turns' arms excused (pose_excuse); foot slip deferred to 2026-11-06 by the
+  lead (planter slips under kho kho's AI, foundation fix pending). Balance runs: .github/workflows/kho-kho-balance.yml.
+
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 
 The owner sent two real matches (full 9-minute turns, filmed from behind a pole) and asked the game to learn from
