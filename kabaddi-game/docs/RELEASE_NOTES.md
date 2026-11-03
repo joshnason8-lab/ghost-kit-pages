@@ -1,4 +1,7 @@
-**New in 0.14.9: tidier arms, and a lighter village.**
+**New in 0.14.10: steadier feet.** A player stopping or turning sharply no longer has a foot jump a stride along
+the floor; a foot set down while still easing into place stays where it lands.
+
+**In 0.14.9: tidier arms, and a lighter village.**
 - Defenders and raiders shuffling sideways keep their hands out in front, elbows bent, as kabaddi players do; they
   were holding both arms out straight to the sides.
 - The village draws fewer things each frame on Medium and High (the houses' sun shadows were drawn twice). It looks
