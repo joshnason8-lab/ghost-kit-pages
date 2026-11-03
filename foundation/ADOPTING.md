@@ -1067,7 +1067,7 @@ test_runner); it is not a second copy of your game.
 |---|---|
 | `scenarios()` | `"random"`, `"extreme"` and your targeted kinds (`"targeted:scoring"`, `"targeted:timer"`, `"targeted:possession"`, `"targeted:collisions"`, `"targeted:completion"`, …) |
 | `config(kind, rng)` | one match's conditions, drawn only from `rng`: team strengths, player attributes, AI strategies, settings, venue, the human's side |
-| `start(config, seed, tree)` | builds the match with your own code, every random roll from `seed`, and returns its root |
+| `start(config, seed, tree)` | builds the match with your own code, every random roll from `seed`, and returns its root; shortens the halves if `config.short` |
 | `state()` | `{score, clock, clock_running, phase, possession, finished}` |
 | `events()` | what happened since the last call |
 | `bodies()` | `[{name, pos, radius, height, body (WsgBody), active, target}]` |
@@ -1175,9 +1175,29 @@ Don't claim a pass you didn't run.
 touch feel, audio as heard, and anything on the GPU. Those need a person, or the on-device diagnostics screen
 (item #2, deferred).
 
-**Speed target:** a 2,000-match nightly batch in under 2 hours wall-clock, and smoke under 10 minutes. Measure your
-speed (`speed` in the report). Logic that only advances with animation playback can't run faster than 1×; if that
-caps you, report it, and move that logic onto the game clock.
+**Speed target:** a 2,000-match nightly batch in under 2 hours wall-clock, and smoke under 10 minutes. These are the
+defaults, so every game gets there without deciding separately:
+- **16 nightly shards** (`sim_ci.yml`). A public repository runs 20 jobs at once, which leaves room for push CI.
+- **Sampled pose** (`--full-pose` turns it off). Each match, a quarter of the bodies, a different quarter each seed,
+  are posed in full: the planter's IK, the pose layers and the helpers. The others keep everything gameplay reads:
+  - the animation, so root motion and the locomotor's state;
+  - their bones;
+  - their feet's contacts, and the footsteps those fire.
+
+  This is `WsgBody.set_sim_full`. The feet and pose checks follow the full quarter. On the demo with 6 animated
+  bodies, it took speed from 18× to 26×.
+- **The match-length mix** (`--full-length` turns it off). A quarter of the matches play full length, so the ends of
+  matches, extra time and penalties stay covered. The rest arrive with `config.short = true`: your `start()`
+  shortens the halves, to a fifth on the demo, with every rule unchanged. Targeted matches play as you set them.
+  Together with sampled pose, a match costs about a third as much on the demo.
+- **The step.** `sim.gd -- fps-probe --seeds 12` plays the same seeds at 30, 20, 15 and 10 frames a second. It names
+  the coarsest step whose outcomes all match 30's. If it names a coarser one, run batches with
+  `FPS=<n> sim_shard.sh ... --fps <n>`. The demo's outcomes change at 20, so it stays at 30. A coarser step that
+  changes outcomes is simulating a different game.
+
+Measure and report your per-process speed (`speed` in the report) and the nightly wall-clock that results. Logic that
+only advances with animation playback can't run faster than 1×; if that caps you, report it, and move that logic onto
+the game clock.
 
 ## 6. What the owner does once (all games share it)
 

@@ -56,6 +56,9 @@ func config(kind: String, rng: RandomNumberGenerator) -> Dictionary:
 
 
 func start(cfg: Dictionary, seed: int, tree: SceneTree) -> Node:
+	# The length mix: a shortened match is a fifth as long, every rule the same.
+	if bool(cfg.get("short", false)):
+		cfg.half = maxf(float(cfg.half) * 0.2, 2.0) if float(cfg.half) > 2.0 else float(cfg.half)
 	m = Match.new()
 	tree.root.add_child(m)
 	m.setup(cfg, seed)

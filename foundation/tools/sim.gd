@@ -66,6 +66,10 @@ func _initialize() -> void:
 			code = await _replay()
 		"determinism":
 			code = await _determinism()
+		"fps-probe":
+			code = _fps_probe()
+		"outcomes":
+			code = await _outcomes()
 		"menu":
 			code = await _menu()
 		"merge":
@@ -122,7 +126,8 @@ func _batch() -> int:
 		plan = plan.filter(func(p: Array) -> bool: return int(p[1]) % sn == si)
 	var done := _done_seeds()
 	var sim := WsgSim.new()
-	sim.opts = {"input": args.has("input"), "feet": not args.has("no-feet")}
+	sim.opts = {"input": args.has("input"), "feet": not args.has("no-feet"), "sampled_pose": not args.has("full-pose"),
+		"length_mix": not args.has("full-length"), "fps": float(args.get("fps", WsgSim.FPS))}
 	var results := []
 	var t0 := Time.get_ticks_msec()
 	for p in plan:
@@ -324,7 +329,8 @@ func _replay() -> int:
 		printerr("sim replay: cannot read %s" % args.failure)
 		return 2
 	var sim := WsgSim.new()
-	sim.opts = {"stop_frame": int(rec.failure.frame), "input": args.has("input")}
+	sim.opts = {"stop_frame": int(rec.failure.frame), "input": args.has("input"), "short": bool(rec.config.get("short", false)),
+		"fps": float(args.get("fps", WsgSim.FPS))}
 	var r: Dictionary = await sim.run(_game(), String(rec.kind), int(rec.seed), self)
 	var again := (r.failures as Array).any(func(f: Dictionary) -> bool: return f.signature == rec.failure.signature)
 	print("REPLAY seed %d (%s): %s" % [rec.seed, rec.kind, "the failure happened again: %s" % rec.failure.message if again else "the failure did NOT happen again"])
@@ -383,6 +389,53 @@ func _menu() -> int:
 		await process_frame
 	print("SIM MENU: ", "PASS" if bad == 0 else "FAIL (%d of %d)" % [bad, n])
 	return 0 if bad == 0 else 1
+
+
+## The step: each seed's outcome (the result and every scoring event, to the second) at 30 frames a second and at
+## coarser steps (each in its own Godot, --fixed-fps that rate): the coarsest whose outcomes are all the same as at 30
+## is the fastest the game can be simulated without playing a different game. (Fewer steps a simulated second: that
+## much faster. A game whose outcomes change with the step simulates at 30.)
+func _fps_probe() -> int:
+	var n := int(args.get("seeds", 12))
+	var base := {}
+	var best := 30
+	for fps in [30, 20, 15, 10]:
+		var out := []
+		var exe := OS.get_executable_path()
+		var code := OS.execute(exe, ["--headless", "--fixed-fps", str(fps), "--path", ProjectSettings.globalize_path("res://"), "-s",
+			get_script().resource_path, "--", "outcomes", "--game", String(args.get("game", "res://game/sim.gd")), "--seeds", str(n),
+			"--fps", str(fps)], out, true)
+		var got := {}
+		for line in String(out[0]).split("\n", false):
+			if line.begins_with("OUTCOME\t"):
+				var parts := line.split("\t")
+				got[parts[1]] = parts[2]
+		if fps == 30:
+			base = got
+			print("30 fps: %d outcomes (the reference)" % got.size())
+			continue
+		var same := 0
+		for k in base:
+			if got.get(k, "") == base[k]:
+				same += 1
+		print("%d fps: %d of %d outcomes the same as at 30 (exit %d)" % [fps, same, base.size(), code])
+		if same == base.size() and base.size() > 0:
+			best = fps
+		else:
+			break
+	print("SIM FPS PROBE: simulate at %d frames a second%s" % [best, " (the game's outcomes change with a coarser step)" if best == 30 else " (x%.1f fewer steps than 30)" % (30.0 / best)])
+	return 0
+
+
+func _outcomes() -> int:
+	var game := _game()
+	var sim := WsgSim.new()
+	sim.opts = {"feet": false, "fps": float(args.get("fps", WsgSim.FPS)), "length_mix": false, "sampled_pose": false}
+	for k in int(args.get("seeds", 12)):
+		var kind: String = game.scenarios()[k % game.scenarios().size()]
+		var r: Dictionary = await sim.run(game, kind, 700 + k, self)
+		print("OUTCOME\t%s#%d\t%s" % [kind, 700 + k, JSON.stringify(WsgSim._plain(r.get("result", {})))])
+	return 0
 
 
 # ---------------------------------------------------------------- merge, adopt

@@ -2,7 +2,8 @@
 # Runs a WsgSim batch so that a freeze or a crash cannot stop it: Godot is watched; if it dies, or prints nothing new
 # for HANG seconds (a frozen match: an endless loop the in-game checks cannot interrupt), the match it was on (its
 # progress.txt) is recorded as a "freeze" or "crash" failure and the batch goes on from the next seed. Results go on
-# accumulating in OUT (results.jsonl: a rerun skips what is done).
+# accumulating in OUT (results.jsonl: a rerun skips what is done). FPS (default 30): the step, if the game's
+# fps-probe allows a coarser one (pass the same --fps to the batch).
 #   sh <game>/tools/wsg/sim_shard.sh <game dir> <out dir> [batch options...]
 #   e.g. sh tools/wsg/sim_shard.sh . "$RUNNER_TEMP/sim/3" --from 1 --count 2000 --shard 3/8
 GAME=$1
@@ -18,7 +19,7 @@ LOG="$OUT/godot.log"
 tries=0
 while :; do
 	: > "$OUT/progress.txt"
-	"$GODOT" --headless --fixed-fps 30 --path "$GAME" -s "$SIM" -- batch --out "$OUT" "$@" > "$LOG.part" 2>&1 &
+	"$GODOT" --headless --fixed-fps "${FPS:-30}" --path "$GAME" -s "$SIM" -- batch --out "$OUT" "$@" > "$LOG.part" 2>&1 &
 	pid=$!
 	last=$(wc -c < "$LOG.part")
 	quiet=0

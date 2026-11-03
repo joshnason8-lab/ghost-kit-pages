@@ -29,6 +29,7 @@ static var _log: WsgSimLog = null
 static var _warm := false
 
 ## Options: stop_frame (replay: stop there and print the state), verbose, realtime (1x: the determinism check),
+## length_mix (the batch's: three matches in four shortened), short (force it: a replay), fps, sampled_pose,
 ## input (WsgSimInput plays the human), feet (sample feet and poses), wall_limit_s (a match taking longer on the wall
 ## clock is reported as slow, not failed), hash_every (frames between state hashes, for the determinism check).
 var opts := {}
@@ -53,18 +54,26 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var cfg := game.config(kind, rng)
 	cfg["seed"] = seed
 	cfg["kind"] = kind
+	# The match-length mix (the lead's speed default): a quarter of the matches full length (the end of a match,
+	# extra time, penalties), the rest shortened (the game shortens its halves, every rule as it is) - targeted
+	# matches as the game sets them.
+	if opts.has("short"):
+		cfg["short"] = bool(opts.short)          # (a replay: as the failing match was)
+	elif not cfg.has("short"):
+		cfg["short"] = not kind.begins_with("targeted:") and seed % 4 != 0 and bool(opts.get("length_mix", false))
 	# Any stray global randf in the game is at least the same for the same seed (rng_lint finds them).
 	seed(seed)
 	var out := {"ok": true, "seed": seed, "kind": kind, "config": cfg, "failures": [], "hashes": []}
 	var t_wall := Time.get_ticks_usec()
+	var fps := float(opts.get("fps", FPS))
 	if bool(opts.get("realtime", false)):
-		Engine.max_fps = int(FPS)
+		Engine.max_fps = int(fps)
 	var events := []
 	var root: Node = await game.start(cfg, seed, tree)
 	if root == null:
 		_fail(out, "start", "the match did not start", 0.0, 0, {}, events)
 		return _finish(out, game, t_wall, 0.0, 0)
-	var dt := 1.0 / FPS
+	var dt := 1.0 / fps
 	var t := 0.0
 	var frame := 0
 	var limit := game.max_seconds(cfg)
@@ -79,6 +88,15 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 	var phase := ""
 	var moved := {}           # name -> [position, seconds hardly moving]
 	var feet := {}            # name -> [frames, ankle rest, toe rest]
+	# Sampled pose (the lead's speed default): a quarter of the bodies posed in full (planter IK, layers, helpers),
+	# a different quarter each seed; the rest keep their animation, bones and foot contacts (WsgBody.set_sim_full).
+	# The feet and pose checks follow the full quarter.
+	if bool(opts.get("sampled_pose", true)):
+		var bl0 := game.bodies()
+		for bi in bl0.size():
+			var wb0: Variant = (bl0[bi] as Dictionary).get("body")
+			if wb0 is WsgBody and is_instance_valid(wb0):
+				(wb0 as WsgBody).set_sim_full(bi % 4 == seed % 4)
 	var input: WsgSimInput = null
 	if bool(opts.get("input", false)) and game.human_team() >= 0:
 		input = WsgSimInput.new(game, seed + 7919, tree)
@@ -92,7 +110,7 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		frame += 1
 		var real_dt := tree.root.get_process_delta_time()
 		if absf(real_dt - dt) > 1e-4 and not bool(opts.get("realtime", false)):
-			_fail(out, "timestep", "the frame's step was %.4f s, not %.4f: run with --fixed-fps %d (the match is not reproducible)" % [real_dt, dt, int(FPS)], t, frame, {}, events)
+			_fail(out, "timestep", "the frame's step was %.4f s, not %.4f: run with --fixed-fps %d (the match is not reproducible)" % [real_dt, dt, int(fps)], t, frame, {}, events)
 		var st := game.state()
 		for e in game.events():
 			var ev: Dictionary = e
