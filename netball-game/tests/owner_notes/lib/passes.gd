@@ -22,7 +22,11 @@ static func record(h: Node, venues: Array, frames: int, seed := 21, hover := {})
 		var cur := {}
 		var prev := Vector3.INF
 		var prev2 := Vector3.INF
+		# (The frames the ball touches a prop - the post's pad, a board - it is held by it, not left in the air.)
+		var touch := {"f": -10, "now": 0}
+		m.ball.struck.connect(func(_hit): touch.f = touch.now)
 		for f in frames:
+			touch.now = f + 1
 			await h.get_tree().process_frame
 			var b: Ball = m.ball
 			var at := b.position
@@ -30,7 +34,9 @@ static func record(h: Node, venues: Array, frames: int, seed := 21, hover := {})
 			ys.append(at.y)
 			if ys.size() > 3:
 				ys.pop_front()
-			var free := b.state != "held" and b.state != "flight" and at.y > Ball.R + 0.15 and m.speed == 1
+			# (A dead ball still in the hands of the player who had it at the whistle is in her hands: Ball.carrier.)
+			var free := b.state != "held" and b.state != "flight" and b.carrier == null and at.y > Ball.R + 0.15 and m.speed == 1 \
+				and f + 1 - int(touch.f) > 2
 			for side: int in [-1, 1]:
 				var rc := Court.ring_centre(side)
 				if Vector2(at.x - rc.x, at.z - rc.z).length() < 0.6 and at.y > rc.y - 0.7:
