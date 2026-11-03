@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.7-beta
+
+- **How to Play, Positions**: each position has its own court: her areas lit, the rest dark, her bib where she
+  typically stands with her opposite number beside her, the post she attacks and the way her team attacks.
+
 ## New in 0.8.6-beta
 
 - **The stick follows the screen in every camera**: from the side, courtside or behind the goal, pushing up moves
