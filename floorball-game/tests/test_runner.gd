@@ -771,10 +771,10 @@ func _loading_overlay() -> void:
 	var ld := WsgLoading.current()
 	check(ld != null and go.disabled, "start: the loading overlay up and the buttons off in the tap's own frame")
 	var widths := []
-	var guard := 0
-	while WsgLoading.current() != null and guard < 60 * 20:
+	# (Headless, frames come as fast as they can: a few hundred ms of loading is a thousand frames. A time limit.)
+	var until := Time.get_ticks_msec() + 30000
+	while WsgLoading.current() != null and Time.get_ticks_msec() < until:
 		await get_tree().process_frame
-		guard += 1
 		var p: Dictionary = WsgLoading.current().parts() if WsgLoading.current() else {}
 		if p.has("bar"):
 			widths.append((p.bar as Control).size.x)
