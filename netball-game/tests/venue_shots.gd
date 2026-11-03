@@ -54,6 +54,19 @@ func _ready() -> void:
 				await frames(20)
 				await shot("%s_%s_%s" % [v, lv, c[1]])
 			m.cam.set_mode(Game.CAM_TV)
+			# The arena's bowl close up: the far side's tiers from the run-off, and an end and its corner.
+			if v == "arena":
+				for c: Array in [[Vector3(5, 2.6, -7.5), Vector3(-3, 6.0, -21.0), "bowl_far"],
+						[Vector3(-11, 2.8, 5.5), Vector3(-27, 6.0, -6.0), "bowl_end"]]:
+					var close := Camera3D.new()
+					close.fov = 50.0
+					m.add_child(close)
+					close.look_at_from_position(c[0], c[1], Vector3.UP)
+					close.current = true
+					await frames(20)
+					await shot("%s_%s_%s" % [v, lv, c[2]])
+					close.queue_free()
+					m.cam.current = true
 		# The home screen's live match behind the menu (Medium and High only: Low has a plain backdrop).
 		if g != Game.GFX_LOW and out != "-":
 			for v: String in venues:
