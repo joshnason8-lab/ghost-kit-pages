@@ -1,0 +1,221 @@
+{
+ "about": "Sepak Takraw Unleashed: the owner's notes, each a test for good (tools/wsg/owner_notes.gd; ADOPTING 5.16). The owner's own words, the date and the beta they were on. Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-10-21-no-player-names",
+   "file": "2026-10-21_no_player_names.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-21",
+   "version": "0.2.0",
+   "words": "no player names if they exist, no need we will simplify this a bit"
+  },
+  {
+   "id": "2026-10-21-no-timeouts",
+   "file": "2026-10-21_no_timeouts.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-21",
+   "version": "0.1.0",
+   "words": "No timesouts needed, they didn't work anyway."
+  },
+  {
+   "id": "2026-10-21-no-training",
+   "file": "2026-10-21_no_training.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-21",
+   "version": "0.1.0",
+   "words": "No training section necessary."
+  },
+  {
+   "id": "2026-10-22-numbers-over-players",
+   "file": "2026-10-22_numbers_over_players.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-22",
+   "version": "0.3.0",
+   "words": "No need to have the numbers over the characters in game its just in the way."
+  },
+  {
+   "id": "2026-10-24-ball-spin",
+   "file": "2026-10-24_ball_spin.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-24",
+   "version": "0.5.2",
+   "words": "The ball has no movement in the air, it should spin or rotate"
+  },
+  {
+   "id": "2026-10-25-fans-watch-game",
+   "file": "2026-10-25_fans_watch_game.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-25",
+   "version": "0.9.1",
+   "words": "make sure in game the fans are looking at the game."
+  },
+  {
+   "id": "2026-10-25-referee-arms",
+   "file": "2026-10-25_referee_arms.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-25",
+   "version": "0.9.1",
+   "words": "the judge sitting on the box looks awkward with his arms extended out, relax him."
+  },
+  {
+   "id": "2026-10-25-score-dots",
+   "file": "2026-10-25_score_dots.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-25",
+   "version": "0.9.1",
+   "words": "there are 2 dots in the score, is that for timeouts? If so remove them if we’re not doing timeouts."
+  },
+  {
+   "id": "2026-10-26-ace-through-walls",
+   "file": "2026-10-26_ace_through_walls.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "On a good ace the ball rolls through the walls out of bounds, it should bounce off."
+  },
+  {
+   "id": "2026-10-26-ball-hovers-after-points",
+   "file": "2026-10-26_ball_hovers_after_points.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "After points the ball seems to just hover in the air until the player gets to position, the player should grab the ball or have it with him. Noticed in doubles but check everywhere."
+  },
+  {
+   "id": "2026-10-26-ball-never-hovers",
+   "file": "2026-10-26_ball_never_hovers.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "Never have the ball just hovering in the air, it happens a lot."
+  },
+  {
+   "id": "2026-10-26-crowd-flags",
+   "file": "2026-10-26_crowd_flags.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "Have the flags in the crowds match the teams playing."
+  },
+  {
+   "id": "2026-10-26-empty-benches",
+   "file": "2026-10-26_empty_benches.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "should there be substitutes that are sitting on the benches? The benches look weird empty."
+  },
+  {
+   "id": "2026-10-26-players-alive-waiting",
+   "file": "2026-10-26_players_alive_waiting.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "When the players are waiting for a serve or are watching a serve have them move a little, like they are prepping to play and are alive. Like a small sway, maybe mixamo has something."
+  },
+  {
+   "id": "2026-10-26-six-referees",
+   "file": "2026-10-26_six_referees.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "Six referees sitting around looks creepy lets have the middle two and one on each end off to the side. Don't have the end ones sitting. have them standing and react some to the shots, like getting out of the way if the ball goes near them. Make them seem like they are judging."
+  },
+  {
+   "id": "2026-10-26-venues-removed",
+   "file": "2026-10-26_venues_removed.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-26",
+   "version": "0.11.1",
+   "words": "Remove night market, template court venue and grand dome."
+  },
+  {
+   "id": "2026-10-27-glide-fetch",
+   "file": "2026-10-27_glide_fetch.gd",
+   "game": "sepak-takraw",
+   "date": "2026-10-27",
+   "version": "0.12.1",
+   "words": "When the player goes to get the ball he glides backfor the most part instead of walking"
+  },
+  {
+   "id": "2026-11-02-glide-back-to-place",
+   "file": "2026-11-02_glide_back_to_place.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-02",
+   "version": "0.14.1",
+   "words": "When the player is going back to his position from getting the ball he is gliding and not moving his legs."
+  },
+  {
+   "id": "2026-11-02-joystick-cameras",
+   "file": "2026-11-02_joystick_cameras.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-02",
+   "version": "0.14.3",
+   "words": "When switching to a camera angle that is not alongside the court the joystick movement is all wrong."
+  },
+  {
+   "id": "2026-11-02-one-hand-toss",
+   "file": "2026-11-02_one_hand_toss.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-02",
+   "version": "0.14.1",
+   "words": "notice it's ONE hand"
+  },
+  {
+   "id": "2026-11-02-referee-backwards",
+   "file": "2026-11-02_referee_backwards.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-02",
+   "version": "0.14.1",
+   "words": "Referee is moving backwards but showing he is running forward."
+  },
+  {
+   "id": "2026-11-02-spikes-too-fast",
+   "file": "2026-11-02_spikes_too_fast.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-02",
+   "version": "0.14.1",
+   "words": "Some of the spikes are a bit too hard and fast, you can't even see the ball."
+  },
+  {
+   "id": "2026-11-03-block-folded",
+   "file": "2026-11-03_block_folded.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-03",
+   "version": "0.15.1",
+   "words": "When a player is prepping to block he is in a folded position and glides around its awkward"
+  },
+  {
+   "id": "2026-11-03-glide-getting-ball",
+   "file": "2026-11-03_glide_getting_ball.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-03",
+   "version": "0.15.1",
+   "words": "Still lots of gliding when getting the ball too."
+  },
+  {
+   "id": "2026-11-03-glide-spike-block",
+   "file": "2026-11-03_glide_spike_block.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-03",
+   "version": "0.15.1",
+   "words": "Players still gliding a lot, like when getting in position to spike or block."
+  },
+  {
+   "id": "2026-11-03-loading-frozen",
+   "file": "2026-11-03_loading_frozen.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-03",
+   "version": "0.15.1",
+   "words": "On a lot of the games when you click start game there is a loading delay ... long enough on the slow phone that users might think the game has frozen."
+  },
+  {
+   "id": "2026-11-03-props-solid",
+   "file": "2026-11-03_props_solid.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-03",
+   "version": "0.15.3",
+   "words": "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should also bounce off these items."
+  }
+ ]
+}

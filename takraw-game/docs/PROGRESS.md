@@ -670,6 +670,45 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The owner's notes, kept as tests for good (ADOPTING §5.16)
+
+The owner: "the regressions are getting worse." So every remark of theirs that can be measured is now a test in
+`tests/owner_notes/`, one script each. Each carries the owner's own words, the date, and the beta they were on.
+`INDEX.json` lists every note, and none may ever be removed. Each note measures the very symptom the owner saw, over its
+whole range. The notes share setup in `tests/takraw_note.gd` (`TakrawNote`): a match built as the game builds it,
+played at 30 frames a second, its cameras, and the venues. The gliding notes share one measurement (GlideProbe).
+
+The 27 notes, from the transcript of the owner's messages:
+- **2026-10-21** (0.1.0-0.2.0): no training, no time-outs, no player names.
+- **2026-10-22** (0.3.0): no numbers over the players.
+- **2026-10-24** (0.5.2): the ball turns in the air.
+- **2026-10-25** (0.9.1): the fans face the play; the seated referee's arms are relaxed (at most 11-17 degrees out
+  from hanging, Low and High); no dots in the score.
+- **2026-10-26** (0.11.1):
+  - the ball never hangs in the air, after points or ever, at every venue;
+  - an ace comes back off the walls;
+  - four officials (the line judges standing at the ends, stepping out of a ball's way);
+  - substitutes sitting on the benches;
+  - the crowd's flags are the two sides';
+  - players move while they wait for the serve;
+  - the removed venues are gone.
+- **2026-10-27** (0.12.1): no gliding when fetching the ball.
+- **2026-11-02** (0.14.1-0.14.3):
+  - the serve's throw in ONE hand, outside the thrower's torso, Low and High (the foundation's
+    `body.torso_capsule()`);
+  - no gliding back to his place;
+  - an official backing away steps back;
+  - spikes slow enough to see (the fastest of 40: 20.9 m/s);
+  - the joystick the camera's way on every camera, at every venue.
+- **2026-11-03** (0.15.1-0.15.3):
+  - no gliding into position to spike or block, or getting to the ball;
+  - the blocker upright on his way along the net (hips at least 91% of standing);
+  - the loading overlay up in the tap's frame on every way into a match;
+  - props solid at every venue.
+
+All 27 pass, with the licensed library, in about 8 minutes. CI runs `owner_notes_guard.sh` and then
+`WSG_NOTES_STRICT=1 ... -s res://tools/wsg/owner_notes.gd`.
+
 ## The world rules, and the ball behind the bench (0.15.5)
 
 Foundation synced to 15abaa3. It brings the world rules check's tiers rule and its screen-true joystick reference,
