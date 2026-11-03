@@ -670,6 +670,43 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## No gliding (0.15.3)
+
+The owner: "Players still gliding a lot, like when getting in position to spike or block. Still lots of gliding when
+getting the ball too. When a player is prepping to block he is in a folded position and glides around, it's
+awkward." Measured first (`tests/glide_probe.gd`: AI matches, every frame a player moves with a foot on the floor,
+whether that foot slides along with him, over half his speed): in 0.15.2, of the way they went, 87% slid running in
+the rally, 63% walking between points, 99% getting to a block, 96-98% getting to the ball (chest, header, sila), all
+of the serve. Four causes:
+- **The stride's pace** was 4 + 2.2 x speed radians a second whichever way he went. `tests/stride_probe.gd` measured
+  the rig: how far the standing foot goes back under him per radian, at each speed and share sideways.
+  `Moves.stride_rate` now turns the stride exactly that fast for the way he goes (scaled to his height).
+- **The side-shuffle** never moved the standing foot under him at all: each leg swung out and back in turn, so going
+  sideways he slid (most of a rally: facing the net, moving across it). Now a step and a close
+  (`Moves._shuffle`): the leading foot lifts and steps out while the other stands, then the other closes.
+- **Strides at a slant** have no foot planted (a run blended with a shuffle). Going somewhere, he now turns so the way
+  he goes is straight ahead, straight back or square to his side, whichever is nearest to where he would face (at
+  most 45 degrees off); far and fast he turns and runs, and squares up again as he arrives. He turns at most about
+  540 degrees a second (a pivot), quicker to square up for a move.
+- **Moves played on the way.** A move's legs held still while he slid to the spot (the blocker folded in his crouch).
+  Now he steps or shuffles under a move until a little before it leaves the floor or meets the ball
+  (`Moves.legs_from`), goes only as fast as gets him there as it starts (no sprint he brakes from in the move), and
+  stays put from the touch until its follow-through is done before he runs off.
+- **And a planted foot stays put** (`RealBody._planted`, Low; the shared foundation's planter places the feet of the
+  bodies it draws on Medium and High): while an ankle is on the floor it is kept where it was put down, the thigh,
+  knee and foot turned to it (two-bone IK on the rig, in the pelvis's own frame, on a solve of the legs alone), let
+  go as it lifts. Players and the standing officials. About 0.7 ms a frame more on this machine.
+- **Now** (the same probe, two matches): 18% slid running, 15% walking, 19% getting to a block, 12-14% getting to
+  the ball, the serve 30%. Per step (the lead's measure: how far a planted foot slides from where it went down to
+  where it lifts): half the steps under 1.1-1.4 cm running and walking (2.4 the block, 0.8-1.3 the dig, chest and
+  sila), but the worst twentieth 40-55 cm: a foot that would have to stretch past PLANT_REACH (the stride's own
+  stance longer than he travels) is put down again where the stride has it. That tail, the captured kicks' own steps
+  (the serve, the roll, the sunback) and the header's are what is left (0.15.4). test_runner checks it: running under
+  30%, walking under 25%, the block and the receiving touches under 35%; running and walking, half the steps under
+  2 cm.
+- Also: the thrower stayed set to crouch after his throw, his arms drawn back toward the crouch's mid-rally once it
+  was done (a hand jolted 0.9 m/frame^2: the jitter test); now he is not, and the crouch is only taken standing.
+
 ## A Start tap shows it is loading (0.15.2)
 
 The owner, for every game: "when you click start game there is a loading delay ... long enough on the slow phone

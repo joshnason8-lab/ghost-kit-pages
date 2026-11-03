@@ -60,6 +60,7 @@ func add(body: RealBody, base: Dictionary, standing := false, judge := false) ->
 	o.base = base
 	o.standing = standing
 	o.judge = judge
+	body.plant_feet = standing   # (stepping out of the ball's way, his feet stay put: RealBody._planted)
 	o.home = body.position
 	o.eye = 1.6 if standing else 1.2
 	o.breath = _rng.randf() * TAU
@@ -151,9 +152,11 @@ func _pose(o: One, dt: float, ball: Vector3, live: bool) -> void:
 			# Backing away (still facing the court): the stride played backwards, so his feet step back. Played forward
 			# he ran on the spot while he went backwards (the owner saw it).
 			var back := local.z < -0.5 * speed
-			o.stride += dt * (4.0 + speed * 2.2) * (-1.0 if back else 1.0)
 			var side := clampf(local.x / speed, -1.0, 1.0)
-			p = Moves.blend(p, Moves.run(o.stride, clampf(speed / 5.0, 0.0, 1.0), side * 0.8), smoothstep(0.05, 0.7, speed))
+			side = signf(side) * smoothstep(0.3, 0.7, absf(side))   # (the nearer stride, crossed over smoothly)
+			# The stride turned as fast as he goes, his standing foot kept where it is (Moves.stride_rate).
+			o.stride += dt * clampf(Moves.stride_rate(speed, side, o.body.women), 3.0, 22.0) * (-1.0 if back else 1.0)
+			p = Moves.blend(p, Moves.run(o.stride, clampf(speed / 5.0, 0.0, 1.0), side), smoothstep(0.05, 0.7, speed))
 	# The head on the ball: yaw and pitch from his eyes, turned at most 75° (past that the shoulders would turn).
 	var d: Vector3 = o.body.global_transform.affine_inverse() * ball
 	var want_look := Vector2(clampf(rad_to_deg(atan2(d.x, d.z)), -75.0, 75.0),

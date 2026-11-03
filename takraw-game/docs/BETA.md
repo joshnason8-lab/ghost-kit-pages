@@ -15,6 +15,14 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.3: **no more gliding.** The players' feet now stay planted on the floor as they run, shuffle along the
+net, back up and turn: a foot that is down stays where it was put down while the body moves over it, and the
+stride keeps pace with how fast he goes. Sideways, a real step-and-close shuffle (before, the legs only swung while
+he slid). A long way at speed, he turns and runs, then faces the net again as he arrives. Getting to the ball, to a
+block or a spike, he arrives as his move begins rather than sliding into it, a blocker shuffles along the net upright
+and folds into his crouch only to jump, and he finishes a kick before he runs off. The referees and line judges step
+the same way.
+
 New in 0.15.2: **a Start tap shows it is loading.** Tap Play (Quick match, Watch AI, a season's or an international's
 next match, Next regu, Rematch) and the screen dims at once, with "Loading", a bar and a spinner; the button goes
 off, so a second tap starts nothing. The bar moves until the match starts: the match is built a part at a time

@@ -419,6 +419,124 @@ static func mirrored(p: Dictionary) -> Dictionary:
 	return out
 
 
+## The side-shuffle (0.15.3): a step and a close. The first half of each turn of the phase the leading foot (the one on
+## the side he goes to) is lifted and steps out while the other stands; the second half it stands while the other is
+## lifted and closes. A standing foot moves back under him as he goes, so it stays where it is on the floor (before,
+## each leg only swung out and back, the standing one carried along with him: he slid sideways, the owner saw it).
+## [left thigh, right thigh (degrees out, + to his left), left knee, right knee (degrees more bent: the lifted foot)].
+static func _shuffle(ph: float, k: float, side: float) -> Array:
+	var a := absf(side)
+	if a < 0.01:
+		return [0.0, 0.0, 0.0, 0.0]
+	var step := (SHUFFLE_STEP + SHUFFLE_STEP_FAST * k) * a
+	var phi := fposmod(ph, TAU) / PI   # 0-2
+	var lead := _shuffle_foot(phi, step)
+	var trail := _shuffle_foot(fposmod(phi + 1.0, 2.0), step)
+	var sg := signf(side)
+	var deg := func(m: float) -> float: return rad_to_deg(asin(clampf(m * sg / LEG_M, -0.9, 0.9)))
+	if sg > 0.0:
+		return [deg.call(lead[0]), deg.call(trail[0]), lead[1], trail[1]]
+	return [deg.call(trail[0]), deg.call(lead[0]), trail[1], lead[1]]
+
+
+## One foot of the shuffle at phi (0-2): lifted and stepping out from half a step behind to half a step ahead for the
+## first half, standing (moving back under him) for the second. [how far out (m), its knee's extra bend (degrees)].
+static func _shuffle_foot(phi: float, step: float) -> Array:
+	if phi < 1.0:
+		return [lerpf(-step * 0.5, step * 0.5, smoothstep(0.0, 1.0, phi)), 28.0 * sin(phi * PI) * clampf(step / 0.3, 0.4, 1.0)]
+	return [lerpf(step * 0.5, -step * 0.5, phi - 1.0), 0.0]
+
+
+const SHUFFLE_STEP := 0.4        # m: the shuffle's step at a walk ...
+const SHUFFLE_STEP_FAST := 0.6   # ... and this much longer at a sprint
+const LEG_M := 0.85              # m, hip to ankle (the shuffle's step as the thigh's angle)
+
+
+## How fast the stride's phase must turn (radians a second) for a body going SPEED m/s, SIDE of the way sideways (as
+## run() takes it), for his standing foot to stay where it is on the floor: measured on the rig (the standing foot's
+## travel under him per radian, at each speed and each share sideways), once. Before (0.15.2) it was 4 + 2.2 * speed
+## whichever way he went: his feet slid under him most of the time he moved (84% of the way he ran, the glide probe).
+static func stride_rate(speed: float, side: float, women := false) -> float:
+	if speed < 0.01:
+		return 0.0
+	var tab: Array = _stride_tab(women)
+	var fk := clampf(speed / 5.0, 0.0, 1.0) * STRIDE_K
+	var ki := mini(int(fk), STRIDE_K - 1)
+	var fs := clampf(absf(side), 0.0, 1.0) * STRIDE_S
+	var si := mini(int(fs), STRIDE_S - 1)
+	var a := lerpf(float(tab[ki][si]), float(tab[ki][si + 1]), fs - si)
+	var b := lerpf(float(tab[ki + 1][si]), float(tab[ki + 1][si + 1]), fs - si)
+	return speed / maxf(lerpf(a, b, fk - ki), 0.03)
+
+
+## Seconds into a move from which its own legs take over from the stride he is still taking (Player: a move begun
+## while he is still on his way): a little before it leaves the floor or meets the ball, whichever is first; INF for
+## a move that does neither (he steps under it all the way).
+static func legs_from(name: String) -> float:
+	if _legs_from.has(name):
+		return _legs_from[name]
+	var at := INF
+	var c := contact_time(name)
+	if c > 0.0:
+		at = c
+	var n := 40
+	for i in n + 1:
+		if float(sample(name, float(i) / n).get("y", 0.0)) > 0.02:
+			at = minf(at, length(name) * i / n)
+			break
+	at = maxf(0.0, at - LEGS_BEFORE) if at < INF else INF
+	_legs_from[name] = at
+	return at
+
+
+const LEGS_BEFORE := 0.28   # s before a move leaves the floor or meets the ball that its legs are its own
+static var _legs_from := {}
+
+
+const STRIDE_K := 8   # the table's steps of speed (k 0-1) ...
+const STRIDE_S := 4   # ... and of the share sideways (0-1)
+static var _stride := {}
+
+
+## The standing foot's travel under him per radian of the phase, along the way he goes: [k][side].
+static func _stride_tab(women: bool) -> Array:
+	if _stride.has(women):
+		return _stride[women]
+	var r := RealBody.rig(women)
+	var tab := []
+	for ki in STRIDE_K + 1:
+		var row := []
+		for si in STRIDE_S + 1:
+			row.append(_travel_per_radian(r, float(ki) / STRIDE_K, float(si) / STRIDE_S))
+		tab.append(row)
+	_stride[women] = tab
+	return tab
+
+
+static func _travel_per_radian(r: RealBody.Rig, k: float, side: float) -> float:
+	var n := 32
+	var dir := Vector3(side, 0.0, sqrt(maxf(0.0, 1.0 - side * side)))
+	var feet := []
+	var low := INF
+	for i in n + 1:
+		r.solve(run(TAU * i / n, k, side))
+		var hips: Vector3 = r.out_pos[int(r.index["Hips"])]
+		var fl: Vector3 = r.out_pos[int(r.index["LeftFoot"])] - hips
+		var fr: Vector3 = r.out_pos[int(r.index["RightFoot"])] - hips
+		feet.append([fl, fr])
+		low = minf(low, minf(fl.y, fr.y))
+	var sum := 0.0
+	var cnt := 0
+	for i in range(1, n + 1):
+		for f in 2:
+			var now: Vector3 = feet[i][f]
+			var was: Vector3 = feet[i - 1][f]
+			if now.y < low + 0.03 and was.y < low + 0.03:
+				sum += -(now - was).dot(dir)
+				cnt += 1
+	return maxf(sum / maxf(cnt, 1) / (TAU / n), 0.03)
+
+
 ## The running stride at phase ph (radians, a stride each turn), at speed k (0-1 of a sprint), and a side-shuffle for
 ## sideways steps: the models' own walk and run (from motion capture), the shuffle drawn.
 static func run(ph: float, k: float, side := 0.0) -> Dictionary:
@@ -441,18 +559,20 @@ static func _cycle(name: String, c: float) -> Dictionary:
 	return blend(frames[i], frames[(i + 1) % frames.size()], f - floorf(f))
 
 
-## The stride drawn by hand: standing (k 0) to a sprint, and the side-shuffle.
+## The stride drawn by hand: standing (k 0) to a sprint, and the side-shuffle (side: the share of the way he goes that
+## is sideways, + to his left).
 static func _drawn_run(ph: float, k: float, side: float) -> Dictionary:
 	var p := READY.duplicate()
 	var s := sin(ph)
 	var c := cos(ph)
 	var swing := 42.0 * k
+	var sh := _shuffle(ph, k, side)
 	p.hips_y = -0.05 - 0.03 * k + 0.035 * absf(c) * k
 	p.spine = Vector3(10 + 10 * k, 0, 0)
-	p.thigh_l = Vector3(-22 - swing * s * (1.0 - absf(side)), 0, 7 + 18 * side * maxf(0.0, s))
-	p.thigh_r = Vector3(-22 + swing * s * (1.0 - absf(side)), 0, -7 + 18 * side * maxf(0.0, -s))
-	p.shin_l = Vector3(38 + 55 * k * maxf(0.0, -c), 0, 0)
-	p.shin_r = Vector3(38 + 55 * k * maxf(0.0, c), 0, 0)
+	p.thigh_l = Vector3(-22 - swing * s * (1.0 - absf(side)), 0, 7 + float(sh[0]))
+	p.thigh_r = Vector3(-22 + swing * s * (1.0 - absf(side)), 0, -7 + float(sh[1]))
+	p.shin_l = Vector3(38 + 55 * k * maxf(0.0, -c) * (1.0 - absf(side)) + float(sh[2]), 0, 0)
+	p.shin_r = Vector3(38 + 55 * k * maxf(0.0, c) * (1.0 - absf(side)) + float(sh[3]), 0, 0)
 	p.upperarm_l = Vector3(-12 + 38 * k * s, 0, 22)
 	p.upperarm_r = Vector3(-12 - 38 * k * s, 0, -22)
 	p.forearm_l = Vector3(-60 * k - 30, 0, 0)

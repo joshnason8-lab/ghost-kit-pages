@@ -34,6 +34,8 @@ var _out_pose := {}        # the pose a move left him in (played out, or cut sho
 var _out := 0.0            # 1 .. 0 over MOVE_OUT
 var _last_p := {}          # last frame's pose (the move's over the stance or stride), before the small movements
 var _yaw := 0.0
+var _gait := 0              # going: 0 a run, -1/1 a side-shuffle, -2/2 a backpedal (the body turned to it)
+var _step_w := 1.0          # under a move: how much his legs are his stride's (eased)
 var _carry_w := 0.0        # eased: how much his arms hold the ball
 var _hold := 1.0           # eased: the ball held out in front (standing) .. by his hip (walking)
 var _crouch := 0.0         # eased: how far down into the thrower's crouch (Moves.LOW_HOLD)
@@ -57,6 +59,7 @@ func _init(p_data := {}, p_side := 0, p_role := 0, look := {}) -> void:
 	side = p_side
 	role = p_role
 	body = RealBody.new(look)
+	body.plant_feet = true   # (a foot on the floor stays put as he goes: RealBody._planted)
 
 
 func _ready() -> void:
@@ -207,9 +210,22 @@ func tick(dt: float, now: float) -> void:
 	to.y = 0
 	var want := Vector3.ZERO
 	if to.length() > 0.03:
-		want = to.normalized() * minf(top, to.length() * (2.5 if stroll else 4.5))   # (a walk slows sooner)
+		var go := minf(top, to.length() * (2.5 if stroll else 4.5))   # (a walk slows sooner)
+		# A move of his on its way (a dig, a set, a block, a kick): he goes only as fast as gets him there a little
+		# before it starts, to play it standing, not at a sprint he is still braking from as it begins (and slides
+		# through: the owner saw it). If he can't, as fast as he can.
+		if _queued != "" and not stroll:
+			go = minf(go, maxf(to.length() / maxf(_queued_at - now - ARRIVE_EARLY, 0.05), ARRIVE_MIN))
+		want = to.normalized() * go
 	if airborne:
 		want = vel   # no changing course in the air
+	elif move != "":
+		# Finishing a kick (or any touch) before he goes: from the touch until its follow-through is done he stays
+		# (he ran off with his kicking leg still up, his standing foot dragged along).
+		var c := Moves.contact_time(move)
+		var ts := now - move_start
+		if c > 0.0 and ts > c and ts < c + FOLLOW_THROUGH:
+			want = Vector3.ZERO
 	vel = vel.move_toward(want, 16.0 * dt)
 	position += vel * dt
 	position.y = 0.0
@@ -228,21 +244,47 @@ func tick(dt: float, now: float) -> void:
 	var want_yaw := atan2(face.x, face.z)
 	if move != "" and not facing_to:
 		want_yaw = Court.facing(side)   # moves are made facing the net
-	_yaw = lerp_angle(_yaw, want_yaw, minf(1.0, 10.0 * dt))
+	# Going somewhere with no move of his own: turned so the way he goes is straight ahead, straight back or square to
+	# his side - a run, a backpedal or a side-shuffle, whichever is nearest to the way he would face (at most 45
+	# degrees off it) - as those are strides whose feet stay planted, which one at a slant is not. Far and fast he
+	# turns and runs there (no one shuffles a long way at a sprint), and faces the net again as he arrives.
+	var spd := Vector2(vel.x, vel.z).length()
+	if move == "" and not facing_to and spd > GAIT_SPEED:
+		var travel := atan2(vel.x, vel.z)
+		var rel := wrapf(travel - want_yaw, -PI, PI)
+		var g := roundi(rel / (PI * 0.5))
+		if absf(wrapf(rel - _gait * PI * 0.5, -PI, PI)) < deg_to_rad(55.0):
+			g = _gait   # (no flicking between two at 45 degrees)
+		if spd > SHUFFLE_MAX and (to.length() > 1.2 or _gait == 0):
+			g = 0   # (and still running till he has slowed)
+		_gait = g
+		want_yaw = travel - g * PI * 0.5
+	else:
+		_gait = 0
+	# Turned as quickly as a man pivots (the planted foot stays where it is as he turns on it: RealBody._planted), more
+	# quickly to square up for a move.
+	var turn := wrapf(want_yaw - _yaw, -PI, PI) * minf(1.0, 10.0 * dt)
+	var most := (YAW_MOVE if move != "" else YAW_MAX) * dt
+	_yaw = wrapf(_yaw + clampf(turn, -most, most), -PI, PI)
 	# The pose: the move if one is playing, blended over the run or the ready stance.
 	var speed := vel.length()
 	var local := vel.rotated(Vector3.UP, -_yaw)
 	# Stepping backwards (backpedalling, facing the net): the stride played backwards, so his feet step back too.
 	var back := speed > 0.4 and local.z < -0.5 * speed
-	_ph += dt * (4.0 + speed * 2.2) * (-1.0 if back else 1.0)
+	var sidestep := clampf(local.x / maxf(speed, 0.01), -1.0, 1.0) if speed > 0.4 else 0.0
+	if move != "":
+		# (under a move he faces the net: the nearer stride, crossed over smoothly - a switch jolted the legs)
+		sidestep = signf(sidestep) * smoothstep(0.3, 0.7, absf(sidestep))
+	# The stride turned as fast as he goes, for its standing foot to stay put (Moves.stride_rate, measured on the rig).
+	var rate := 4.0 if speed < 0.3 else clampf(Moves.stride_rate(speed / body.scale.x, sidestep, body.women), 3.0, STRIDE_MAX)
+	_ph += dt * rate * (-1.0 if back else 1.0)
 	# A footstep each half stride while he runs (two to a turn of the stride's phase).
 	var half := floori(_ph / PI)
 	if half != _half:
 		_half = half
 		if speed > 1.2 and move == "":
 			Sfx.step(global_position, speed)
-	var sidestep := clampf(local.x / maxf(speed, 0.01), -1.0, 1.0) if speed > 0.4 else 0.0
-	var base := Moves.run(_ph, clampf(speed / 5.0, 0.0, 1.0), sidestep * 0.8)
+	var base := Moves.run(_ph, clampf(speed / 5.0, 0.0, 1.0), sidestep)
 	# A move just played out (or cut short) eased out of over MOVE_OUT, into the stance or the stride: before, he was
 	# put straight into his stride from the move's last pose (a jolt of up to 0.9 m/frame^2 at a foot, the jitter test).
 	if _out > 0.0:
@@ -273,14 +315,36 @@ func tick(dt: float, now: float) -> void:
 			# thrower, cheering, a slump): his legs walk and the move keeps his arms and back. Standing, the move's
 			# legs slid him along (the owner saw it). Not a kick he is still finishing as the point ends, and less
 			# the further he is off the floor (a jump for joy).
+			var k := 0.0
 			if stroll and speed > 0.4 and move in STROLL_MOVES:
-				var k := clampf((speed - 0.4) / 0.6, 0.0, 1.0) * clampf(1.0 - lift / 0.08, 0.0, 1.0)
+				k = clampf((speed - 0.4) / 0.6, 0.0, 1.0) * clampf(1.0 - lift / 0.08, 0.0, 1.0)
+			# In the rally too: a move begun while he is still on his way (getting to a dig, a set, a block, a spike) -
+			# he steps or shuffles under it, its legs his own only from a little before he leaves the floor or meets the
+			# ball (Moves.legs_from) until its follow-through is done, then his stride's again as he goes back. Before,
+			# the move's legs stood still as he slid to the spot: a blocker folded into his crouch, gliding along the
+			# net (the owner saw it).
+			var from := Moves.legs_from(move)
+			var ts := now - move_start
+			if not (stroll and move in STROLL_MOVES) and speed > 0.4:
+				var c := Moves.contact_time(move)
+				var before := 1.0 - smoothstep(from - 0.12, from, ts) if from < INF else 1.0
+				var after := smoothstep(c + FOLLOW_THROUGH, c + FOLLOW_THROUGH + 0.15, ts) if c > 0.0 else 0.0
+				k = clampf((speed - 0.4) / 0.6, 0.0, 1.0) * clampf(1.0 - lift / 0.08, 0.0, 1.0) * maxf(before, after)
+			# (handed over at most STEP_EASE a second - his speed falls fast as he arrives, and the legs jolted - but in
+			# time for the move to have its own by the moment it needs them)
+			var ease := STEP_EASE
+			if from < INF and ts < from and k < _step_w:
+				ease = maxf(ease, (_step_w - k) / maxf(from - ts, 0.05))
+			_step_w = move_toward(_step_w, k, ease * dt)
+			k = _step_w
+			if k > 0.0:
 				for bone in LEGS:
 					if base.has(bone):
 						p[bone] = Moves._mix(p.get(bone, Vector3.ZERO), base[bone], k)
 				p["hips_y"] = lerpf(float(p.get("hips_y", 0.0)), float(base.get("hips_y", 0.0)), k)
 	if move == "":
 		_w = 0.0
+		_step_w = 1.0   # (a move begun from here starts from his stride)
 	# (Off the floor and turned as the pose has him: the move's, or one eased out of.)
 	lift = maxf(lift, float(base.get("y", 0.0)))
 	yaw_add = deg_to_rad(float(p.get("yaw", 0.0)))
@@ -365,7 +429,8 @@ func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 	# The thrower set to throw: down into his crouch over CROUCH_TIME, the ball held low in front of him, as the real
 	# ones wait for the server (the World Cup broadcast, traced: tools/footage). His throw (toss_low) starts from the
 	# same pose and holds it a moment: the crouch eases out within that, so he doesn't move as the throw takes over.
-	_crouch = move_toward(_crouch, 1.0 if toss_crouch and move == "" else 0.0, dt / (CROUCH_TIME if move == "" else 0.25))
+	_crouch = move_toward(_crouch, 1.0 if toss_crouch and move == "" and speed < 0.6 else 0.0,
+		dt / (CROUCH_TIME if move == "" and speed < 0.6 else 0.25))
 	var crouch := smoothstep(0.0, 1.0, _crouch)
 	if move != "" and crouch > 0.0:
 		_carry_w = 0.0   # (and the throw's arms are his from its start)
@@ -398,6 +463,15 @@ func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 
 const LEGS := ["thigh_l", "shin_l", "foot_l", "thigh_r", "shin_r", "foot_r"]
 const STROLL_MOVES := ["pick", "toss", "celebrate", "fist", "clap", "point", "slump"]   # (played between points)
+const GAIT_SPEED := 0.6     # m/s: going this fast, turned to run, backpedal or shuffle straight (see tick)
+const SHUFFLE_MAX := 2.2    # m/s: faster than this a long way, he turns and runs
+const STRIDE_MAX := 22.0    # rad/s: the stride's quickest (seven steps a second)
+const YAW_MAX := 9.5        # rad/s: his quickest turn on his feet (about 540 degrees a second) ...
+const YAW_MOVE := 16.0      # ... and squaring up for a move
+const ARRIVE_EARLY := 0.15  # s: at the spot this long before his move starts (Player.tick) ...
+const ARRIVE_MIN := 1.0     # ... going at least this fast (m/s)
+const FOLLOW_THROUGH := 0.22   # s after the touch the move keeps its legs (the kick's follow-through)
+const STEP_EASE := 6.0         # a second: the legs handed between his stride and a move's
 const MOVE_OUT := 0.15   # s to ease out of a move that has played out or been cut short
 
 

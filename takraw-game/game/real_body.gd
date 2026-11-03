@@ -282,6 +282,8 @@ static func local_rot(v) -> Quaternion:
 
 ## Puts the model in the pose.
 func apply(p: Dictionary) -> void:
+	if plant_feet and skeleton != null and link == null:
+		p = _planted(p)
 	pose = p
 	if skeleton == null:
 		return
@@ -290,6 +292,170 @@ func apply(p: Dictionary) -> void:
 	for b in r.count:
 		skeleton.set_bone_pose_rotation(b, r.out_local[b])
 	skeleton.set_bone_pose_position(r.hips, r.out_hips)
+
+
+## A foot on the floor stays where it was put down (0.15.3; the owner: "players still gliding a lot"). While a foot is
+## down, the pose's thigh, knee and foot are turned (two-bone IK on the rig) to keep it there as he moves and turns,
+## until it lifts or he has gone PLANT_REACH past it (then it is put down again where it is). The strides alone left
+## the standing foot sliding, a stride captured in one place being no stride at another speed or turning. Low: the
+## shared foundation's own planter places the feet of the bodies it draws (Medium and High).
+func _planted(p: Dictionary) -> Dictionary:
+	var r := _rig
+	if _my_cal.is_empty():
+		_my_cal = _leg_cal(r)
+	var cal := _my_cal
+	var xf := global_transform
+	var air := float(p.get("y", 0.0)) > 0.05   # (off the floor; a captured move's feet, plant 0, are on it where they are)
+	r.solve_legs(p)   # (the legs only: what this needs, a tenth of the bones)
+	var solved_for := [p]
+	var out := p
+	for leg in 2:
+		var fb: int = cal.foot[leg]
+		if not is_same(out, solved_for[0]):
+			r.solve_legs(out)
+			solved_for[0] = out
+		var a: Vector3 = r.out_pos[fb]
+		# Down within PLANT_HEIGHT of where the ankle is standing, up again past twice that (a captured foot hovers a
+		# little over the floor: no letting go and putting down again every frame).
+		var down := not air and a.y < float(cal.ground[leg]) + PLANT_HEIGHT * (2.0 if _locks[leg] != null else 1.0)
+		var w_now := xf * a
+		if not down:
+			_locks[leg] = null
+			_ease[leg] = maxf(0.0, float(_ease[leg]) - PLANT_EASE)
+			if float(_ease[leg]) <= 0.0 or _last_t[leg] == null:
+				continue
+			# (lifting: the correction let go over a few frames, not at once)
+			var t0: Vector3 = _last_t[leg]
+			var te := a.lerp(Vector3(t0.x, a.y, t0.z), smoothstep(0.0, 1.0, float(_ease[leg])))
+			if (te - a).length() > IK_CLOSE:
+				out = _leg_ik(out, leg, te, cal, r)
+			continue
+		if _locks[leg] == null:
+			_locks[leg] = w_now
+		var lock: Vector3 = _locks[leg]
+		var t := xf.affine_inverse() * Vector3(lock.x, w_now.y, lock.z)
+		if Vector2(t.x - a.x, t.z - a.z).length() > PLANT_REACH:
+			_locks[leg] = w_now   # (stretched as far as a leg goes: put down again where the stride has it)
+			t = a
+		_ease[leg] = 1.0
+		_last_t[leg] = t
+		if (t - a).length() > IK_CLOSE:
+			out = _leg_ik(out, leg, t, cal, r)
+	return out
+
+
+## The pose with leg LEG turned (thigh forward and out, knee, foot kept level) so its ankle comes to T (the body's own
+## space, m), from where the pose has it; twice, the second for what the first left (the turns are not independent).
+func _leg_ik(p: Dictionary, leg: int, t: Vector3, cal: Dictionary, r: Rig) -> Dictionary:
+	var out := p.duplicate()
+	var names: Array = [["thigh_l", "shin_l", "foot_l"], ["thigh_r", "shin_r", "foot_r"]][leg]
+	var L1: float = cal.thigh[leg]
+	var L2: float = cal.shin[leg]
+	for it in 2:
+		if it > 0:
+			r.solve_legs(out)   # (the first from the pose as the caller solved it)
+		var h: Vector3 = r.out_pos[cal.hip[leg]]
+		var a: Vector3 = r.out_pos[cal.foot[leg]]
+		if (t - a).length() < IK_CLOSE:
+			break
+		# (in the hips' own frame: the thigh turns on the pelvis, which a move may have twisted or tipped)
+		var pelvis := Basis(r._q[0] as Quaternion).inverse()
+		var v := pelvis * (a - h)
+		var u := pelvis * (t - h)
+		var dv := clampf(v.length(), absf(L1 - L2) + 0.01, L1 + L2 - 0.002)
+		var du := clampf(u.length(), absf(L1 - L2) + 0.01, L1 + L2 - 0.002)
+		var d_bend := _knee_bend(L1, L2, du) - _knee_bend(L1, L2, dv)
+		var d_swing := (atan2(u.z, -u.y) + _thigh_ahead(L1, L2, du)) - (atan2(v.z, -v.y) + _thigh_ahead(L1, L2, dv))
+		var d_out := atan2(u.x, -u.y) - atan2(v.x, -v.y)
+		out[names[0]] = _v3(out.get(names[0], Vector3.ZERO)) + Vector3(cal.k_swing * rad_to_deg(d_swing), 0, cal.k_out[leg] * rad_to_deg(d_out))
+		out[names[1]] = _v3(out.get(names[1], Vector3.ZERO)) + Vector3(cal.k_bend * rad_to_deg(d_bend), 0, 0)
+		out[names[2]] = _v3(out.get(names[2], Vector3.ZERO)) + Vector3(-cal.k_foot * rad_to_deg(d_swing - d_bend), 0, 0)
+	return out
+
+
+static func _v3(v) -> Vector3:
+	return v if v is Vector3 else Vector3.ZERO
+
+
+## A leg of thigh L1 and shin L2 with its ankle D from its hip: the knee's bend (0 straight), and how far ahead of the
+## hip-to-ankle line the thigh points (radians).
+static func _knee_bend(L1: float, L2: float, d: float) -> float:
+	return PI - acos(clampf((L1 * L1 + L2 * L2 - d * d) / (2.0 * L1 * L2), -1.0, 1.0))
+
+
+static func _thigh_ahead(L1: float, L2: float, d: float) -> float:
+	return acos(clampf((L1 * L1 + d * d - L2 * L2) / (2.0 * L1 * d), -1.0, 1.0))
+
+
+const PLANT_HEIGHT := 0.03   # m: an ankle this close to its height standing is on the floor
+const IK_CLOSE := 0.004      # m: an ankle this close to where it is kept needs no turning
+const PLANT_REACH := 0.32    # m: a planted foot let go when his stride would have it this far from where it is
+const PLANT_EASE := 0.25     # of a correction let go each frame (four frames)
+
+var plant_feet := false      # (Player, Officials) a foot on the floor stays put: _planted
+var _locks: Array = [null, null]     # each foot's place on the floor while it is down (world), or null
+var _last_t: Array = [null, null]    # where the last correction put each ankle (the body's space)
+var _ease: Array = [0.0, 0.0]        # 1 .. 0: a correction being let go
+var _my_cal := {}
+static var _cal := {}
+
+
+## The legs measured on the rig, once: hip, ankle, thigh and shin lengths, the ankles' heights standing, and which way
+## (and how far) a degree of each pose angle turns the leg (the poses' angles are the bones' own, not the leg's).
+static func _leg_cal(r: Rig) -> Dictionary:
+	if _cal.has(r):
+		return _cal[r]
+	var c := {"hip": [int(r.index["LeftUpLeg"]), int(r.index["RightUpLeg"])], "knee": [int(r.index["LeftLeg"]), int(r.index["RightLeg"])],
+		"foot": [int(r.index["LeftFoot"]), int(r.index["RightFoot"])], "toe": [int(r.index.get("LeftToeBase", r.index["LeftFoot"])), int(r.index.get("RightToeBase", r.index["RightFoot"]))]}
+	var base := Moves.READY.duplicate()
+	base["plant"] = 0.0
+	r.solve(base)
+	c.thigh = []
+	c.shin = []
+	c.ground = []
+	for leg in 2:
+		c.thigh.append(((r.out_pos[c.knee[leg]] as Vector3) - (r.out_pos[c.hip[leg]] as Vector3)).length())
+		c.shin.append(((r.out_pos[c.foot[leg]] as Vector3) - (r.out_pos[c.knee[leg]] as Vector3)).length())
+		c.ground.append(float(r.feet_rest[leg * 2]) * r.unit)
+	var leg_dir := func(p: Dictionary, leg: int) -> Vector3:
+		r.solve(p)
+		return (r.out_pos[c.foot[leg]] as Vector3) - (r.out_pos[c.hip[leg]] as Vector3)
+	var swing_of := func(v: Vector3) -> float: return rad_to_deg(atan2(v.z, -v.y))
+	var out_of := func(v: Vector3) -> float: return rad_to_deg(atan2(v.x, -v.y))
+	# A thigh's forward swing (the knee straight: shin 0 more), its turn out, the knee's bend, the foot's tilt.
+	var p1 := base.duplicate()
+	var v0: Vector3 = leg_dir.call(base, 0)
+	p1["thigh_l"] = (base.thigh_l as Vector3) + Vector3(10, 0, 0)
+	var v1: Vector3 = leg_dir.call(p1, 0)
+	c.k_swing = 10.0 / (swing_of.call(v1) - swing_of.call(v0))
+	c.k_out = []
+	for leg in 2:
+		var nm := "thigh_l" if leg == 0 else "thigh_r"
+		var q := base.duplicate()
+		q[nm] = (base[nm] as Vector3) + Vector3(0, 0, 10)
+		var w0: Vector3 = leg_dir.call(base, leg)
+		var w1: Vector3 = leg_dir.call(q, leg)
+		c.k_out.append(10.0 / (out_of.call(w1) - out_of.call(w0)))
+	var p2 := base.duplicate()
+	p2["shin_l"] = (base.shin_l as Vector3) + Vector3(10, 0, 0)
+	r.solve(base)
+	var k0: Vector3 = (r.out_pos[c.knee[0]] as Vector3)
+	var a0: Vector3 = (r.out_pos[c.foot[0]] as Vector3)
+	r.solve(p2)
+	var a1: Vector3 = (r.out_pos[c.foot[0]] as Vector3)
+	var k1: Vector3 = (r.out_pos[c.knee[0]] as Vector3)
+	var shin_pitch := func(k: Vector3, a: Vector3) -> float: return swing_of.call(a - k)
+	# (the shin swinging back as the knee bends: a bend is the thigh's line less the shin's)
+	c.k_bend = 10.0 / -(shin_pitch.call(k1, a1) - shin_pitch.call(k0, a0))
+	var p3 := base.duplicate()
+	p3["foot_l"] = (base.foot_l as Vector3) + Vector3(10, 0, 0)
+	r.solve(base)
+	var t0: Vector3 = (r.out_pos[c.toe[0]] as Vector3) - (r.out_pos[c.foot[0]] as Vector3)
+	r.solve(p3)
+	var t1: Vector3 = (r.out_pos[c.toe[0]] as Vector3) - (r.out_pos[c.foot[0]] as Vector3)
+	c.k_foot = 10.0 / (swing_of.call(t1) - swing_of.call(t0)) if absf(swing_of.call(t1) - swing_of.call(t0)) > 0.5 else 1.0
+	_cal[r] = c
+	return c
 
 
 ## One model's skeleton, read once: which pose bone each of its bones follows, and each bone's rest put the way the
@@ -318,6 +484,9 @@ class Rig:
 	var out_pos := []
 	var _q := []
 	var _glob := []
+	var legs := []            # the bones from the root down to the feet and toes (solve_legs), parents first
+	var leg_poses := []       # the pose bones they follow, and theirs
+	var _leg_pos := []
 
 	func _init(p_scene: PackedScene) -> void:
 		scene = p_scene
@@ -376,6 +545,7 @@ class Rig:
 		root.free()
 		out_local.resize(count)
 		out_pos.resize(count)
+		_leg_pos.resize(count)
 		_glob.resize(count)
 		_q.resize(BONES.size())
 		for nm in ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]:
@@ -394,6 +564,59 @@ class Rig:
 	## Poses the skeleton (without a skeleton node: the results are left in out_local, out_hips and out_pos).
 	## Unless the pose says otherwise ("plant" 0: a move from motion capture, already on the floor), the body is
 	## lowered or raised so its lower foot stays on the floor: the moves were written for other legs than these.
+	## solve() for the legs alone (the hips down to the toes): out_pos for those bones, the pose bones' turns (_q);
+	## the rest left as they were (RealBody._planted: the feet, many times a frame, cheaply).
+	func solve_legs(p: Dictionary) -> void:
+		if legs.is_empty():
+			var want := {}
+			for f in feet:
+				var b: int = f
+				while b >= 0 and not want.has(b):
+					want[b] = true
+					b = parent[b]
+			legs = want.keys()
+			legs.sort()   # (parents first: a bone's parent comes before it in the skeleton)
+			var poses := {}
+			for b in legs:
+				for f in [follow[b], follow2[b]]:
+					var i: int = f
+					while i >= 0 and not poses.has(i):
+						poses[i] = true
+						i = pose_parent[i]
+			leg_poses = poses.keys()
+			leg_poses.sort()   # (a pose bone's parent comes before it in BONES)
+		for i in leg_poses:
+			var pp: int = pose_parent[i]
+			var own := RealBody.local_rot(p.get(BONES[i][0], Vector3.ZERO))
+			_q[i] = (_q[pp] as Quaternion) * own if pp >= 0 else own
+		var off := Vector3(-float(p.get("hips_side", 0.0)), float(p.get("hips_y", 0.0)), float(p.get("hips_fwd", 0.0))) / unit
+		for b in legs:
+			var f: int = follow[b]
+			var g: Basis = rest_global[b]
+			if f >= 0:
+				var q: Quaternion = _q[f]
+				if follow2[b] >= 0:
+					q = q.slerp(_q[follow2[b]], 0.5)
+				g = Basis(q) * (rest_put[b] as Basis)
+			_glob[b] = g
+			var par: int = parent[b]
+			_leg_pos[b] = (_leg_pos[par] as Vector3) + (_glob[par] as Basis) * (rest_origin[b] as Vector3) if par >= 0 \
+				else (rest_origin[b] as Vector3) + off
+		var dy := 0.0
+		var plant := float(p.get("plant", 1.0))
+		if plant > 0.0 and not feet_rest.is_empty():
+			var low := INF
+			var lowest_foot := INF
+			for i in 4:
+				var y := (_leg_pos[feet[i]] as Vector3).y
+				low = minf(low, y - float(feet_rest[i]))
+				lowest_foot = minf(lowest_foot, y)
+			var w := plant * clampf(1.0 - float(p.get("y", 0.0)) / 0.15, 0.0, 1.0)
+			w *= clampf((((_leg_pos[hips] as Vector3).y - lowest_foot) * unit - 0.08) / 0.15, 0.0, 1.0)
+			dy = clampf(-low, -0.2 / unit, 0.2 / unit) * w
+		for b in legs:
+			out_pos[b] = ((_leg_pos[b] as Vector3) + Vector3(0, dy, 0)) * unit
+
 	func solve(p: Dictionary) -> void:
 		for i in BONES.size():
 			var pp: int = pose_parent[i]

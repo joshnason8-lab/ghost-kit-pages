@@ -903,6 +903,7 @@ func _begin_toss() -> void:
 	var tmv := "toss" if thrower == srv else "toss_low"
 	var t_release := now + Moves.contact_time(tmv)
 	thrower.play_now(tmv, now)
+	thrower.toss_crouch = false   # (thrown: not down into his crouch again once the throw is done, mid-rally)
 	var kick_h: float = Moves.CONTACT[mv][0] - (0.1 if women else 0.0)
 	var kp := srv.target + srv.net_dir() * float(Moves.CONTACT[mv][1]) + Vector3(0, kick_h, 0)
 	var right := Vector3(-srv.net_dir().z, 0, srv.net_dir().x)

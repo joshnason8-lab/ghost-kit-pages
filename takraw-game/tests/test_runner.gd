@@ -34,6 +34,7 @@ func _ready() -> void:
 	_serve_toss_clear()
 	_officials_back_away()
 	_no_glide_between_points()
+	_no_glide_in_play()
 	_jitter()
 	_stick_follows_screen()
 	await _watch_ai()
@@ -821,6 +822,35 @@ func _no_glide_between_points() -> void:
 		remove_child(m)
 	check(walks >= 30 and glides.is_empty(), "between points, %d half-second walks, all stepping (glides: %s)" % [walks + glides.size(), glides])
 	Game.settings.graphics = keep
+
+
+## The owner: "players still gliding a lot, like when getting in position to spike or block ... when getting the ball
+## too ... prepping to block he is in a folded position and glides around." In an AI match (tests/glide_probe.gd), of
+## the way the players go with a foot on the floor, the share that foot slid along with them (moving over half their
+## speed; 0.15.2: running 87%, walking 63%, the block 99%, the dig and the chest 96-98%): now under a third, the
+## receiving touches and the block under 35%.
+func _no_glide_in_play() -> void:
+	var stats: Dictionary = GlideProbe.measure(self, 150.0, [7])
+	var steps: Dictionary = stats.get("_steps", {})
+	stats.erase("_steps")
+	for kind in ["run", "walk (between points)"]:
+		var v: Array = steps.get(kind, [])
+		v.sort()
+		var med := float(v[v.size() / 2]) if not v.is_empty() else INF
+		check(v.size() > 100 and med < 0.02, "a planted foot stays put %s: half its %d steps slide under %.1f cm (under 2)" % [
+			"running" if kind == "run" else "walking between points", v.size(), 100.0 * med])
+	var share := func(kinds: Array) -> Array:
+		var moved := 0.0
+		var glided := 0.0
+		for k in kinds:
+			if stats.has(k):
+				moved += float(stats[k][1])
+				glided += float(stats[k][2])
+		return [glided / maxf(moved, 0.001), moved]
+	for row in [[["run"], 0.30, "running in the rally"], [["walk (between points)"], 0.25, "walking between points"],
+			[["block"], 0.35, "getting into position to block"], [["chest", "header", "sila", "thigh"], 0.35, "getting to the ball"]]:
+		var s: Array = share.call(row[0])
+		check(float(s[1]) > 3.0 and float(s[0]) < float(row[1]), "no gliding %s: %.0f%% of %.0f m slid (under %.0f%%)" % [row[2], 100.0 * float(s[0]), float(s[1]), 100.0 * float(row[1])])
 
 
 ## Watch AI (on the home screen): its setup in every language (the two teams, no side of yours, no difficulty); the
