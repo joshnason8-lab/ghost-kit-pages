@@ -227,6 +227,15 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.10-beta: the release gate (3 November 2026)
+
+- The shared release gate (tools/wsg/release_gate.py) runs on the signed APK before it is published: version and
+  signature, licensed data, GPU-compressed textures, the size against the APK on the release now, and (from the
+  foundation's 29212ba4) a version above it. It found the goalkeeper's kit textures (keeper_2k.jpg, keeper.jpg)
+  imported uncompressed: now VRAM-compressed (ETC2/ASTC) with mipmaps.
+- Foundation synced to 13f00e2: a foot flat on the floor stays planted however fast the clip moves it (the skid
+  measure; our stop's 2.1 cm skid to 0.1). 0.9.10-beta, code 25.
+
 ### 0.9.9-beta: straight wrists; the shared world rules and the match simulator in CI (3 November 2026)
 
 - **0.9.8-beta** (code 23): a kneeling goalkeeper's push is never faster over the floor than a sprint (it reached 14 m/s,

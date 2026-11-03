@@ -190,6 +190,22 @@ jobs:
           fi
           ls -la
 
+      # The shared release gate (tools/wsg/release_gate.py) on the signed APK: its version and signature, no licensed
+      # data where it must not be, textures GPU-compressed, its size against the APK published now, and its version
+      # above that one (Obtainium offers only a newer version: every publish takes a new version name and code).
+      - name: Release gate
+        working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev"
+          gh release download floorball-unleashed-beta --pattern '*.apk' --dir "$RUNNER_TEMP/prev" || true
+          PREV=$(ls "$RUNNER_TEMP"/prev/*.apk 2>/dev/null | head -1)
+          python3 tools/wsg/release_gate.py --apk build/floorball-unleashed-${VERSION}.apk --version "$VERSION" \
+            --out "$RUNNER_TEMP/gate" ${PREV:+--previous "$PREV"}
+          cat "$RUNNER_TEMP/gate/RELEASE_GATE.md" >> "$GITHUB_STEP_SUMMARY" || true
+
       - uses: actions/upload-artifact@v4
         with:
           name: floorball-unleashed-${{ env.VERSION }}-apk
