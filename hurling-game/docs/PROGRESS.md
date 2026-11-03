@@ -857,6 +857,13 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.9, 3 November 2026)
+
+- **Foundation 1b6793c6** (the 11-06 feet batch: far bodies read per frame, a planter.reset() a cut, the skid only of
+  held feet, no pose read under an active WsgReplay; the planter's even step and lift on release). Gliding note: 1.5
+  cm worst, 0.19 mean (was 2.0 / 0.42). Suite 710/0; owner notes 21/21.
+- **CI**: the world check reuses the job's own crowd and props audits (`--reuse`), about 10 minutes saved.
+
 ## Done (0.24.8, 3 November 2026)
 
 - **Sent off, walked off** (WsgSim seed 8, stadium: "side 1's 15 plays on though sent off", and the same man "stuck"):

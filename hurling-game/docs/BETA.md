@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.9
+
+- **Steadier feet again**: a foot moves an even share of each step, and a foot that lets go lifts at once (the shared
+  animation foundation's latest planter); the worst slide in the owner's gliding test is down to 1.5 cm a step.
+
 ## New in 0.24.8
 
 - **A man sent off leaves the field**: after a red card the player walks off over the touchline and is gone. He used
