@@ -1454,6 +1454,34 @@ The same screens and feel in every game, each wearing your game's `WsgBroadcastT
 **Note:** a test that sets `WsgHaptics.sink` to a lambda must set it back to `Callable()`. A lambda left in a static
 var outlives its script and corrupted Godot's heap on quit.
 
+## 5.22 The asset lint (every game: at import and in CI)
+
+What is wrong with an asset is found when it is imported, not at the release gate or by a player.
+
+| Check | Fails on |
+|---|---|
+| textures | An imported texture over 2 MB that isn't GPU-compressed (the release gate's rule, earlier). A warning for a texture on a model of 512 px or more without mipmaps. |
+| lods | An imported model with `meshes/generate_lods=false` and over 5,000 triangles. |
+| licensed | A raw FBX committed; anything under `addons/wsg_foundation/data/`; files named mobility, actorcore or mixamo (`.res`, `.tres`, `.anim`, `.exr`, `.png`); and the data folder not git-ignored. |
+| toe_up | Your player's model (world.gd's `walker()`) rests toe-up (`WsgFootFlat.sole_tilt` ≥ 2°) and its body has no `WsgFootFlat`. |
+| props | A prop-shaped mesh in a venue (on the ground, 0.3–3.5 m tall, under 12 m across) that no solid prop covers and that isn't opted out (`wsg_solid` false with a reason). Your prop registry builds each venue. |
+
+**In the editor:** Project Settings → Plugins → **WSG Foundation** checks each texture and model as it is imported and
+shows a toast.
+
+**In CI:**
+
+```yaml
+      - run: godot --headless --fixed-fps 30 --path <game> -s res://tools/wsg/asset_lint.gd -- --out "$RUNNER_TEMP/lint"
+```
+
+It writes `ASSET_LINT.md`. An owner-excused asset goes in `res://asset_lint_allow.txt`: a glob, a tab, then the
+owner's note.
+
+`tests/asset_lint_test.gd` plants each fault in fixtures and shows that its check finds it and passes the fixed one.
+The foundation itself lints clean: 10 imports, 333 committed files with the data folder ignored, the test hurler at
+1.9° (flat), and the test court's props all registered.
+
 ## 6. What the owner does once (all games share it)
 
 The token: GitHub → your avatar → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** →

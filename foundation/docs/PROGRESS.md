@@ -510,3 +510,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   WsgHaptics (named patterns, "bonus" the double pulse, the setting), WsgSettings and its screen (tier, bus volumes,
   joystick side and size, vibration; user://wsg_settings.cfg), WsgTutorial (prompts once, Skip tips); all themed by
   WsgBroadcastTheme. tests/ui_test.gd. ADOPTING §5.21. Found: a lambda left in a static var corrupts the heap at exit.
+- **9 (asset lint)**: WsgAssetLint (textures as the release gate at import, mipmaps warning; lods; licensed files in
+  git and the data folder ignored; toe_up from the game's walker; unregistered props from its prop registry);
+  tools/asset_lint.gd (CI, ASSET_LINT.md, asset_lint_allow.txt with the owner's note); the editor plugin
+  (plugin.cfg, lint_plugin.gd: checks at import, a toast). tests/asset_lint_test.gd plants each fault. ADOPTING §5.22.
+  The owner-approved programme (7, 4, WsgSim, 5, 3, 1, 8, 9) is done.
