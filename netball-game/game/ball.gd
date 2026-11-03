@@ -340,7 +340,7 @@ func _flight_props(was: Vector3, dt: float) -> void:
 	var v := (pos - was) / maxf(dt, 0.0001)
 	if f_kind == "shot":
 		pos = (h.pos as Vector3) + (h.normal as Vector3) * (float(h.get("depth", 0.0)) + 0.002)
-		f_t = f_dur
+		f_t = f_dur + 0.001   # (over: Match takes it on from the touch)
 		f_struck = true
 		h.speed = -v.dot(h.normal)
 		h.sound = WsgSolidProps.MATERIALS[h.material].sound
@@ -402,6 +402,21 @@ func _fall(dt: float) -> void:
 		else:
 			vel.y = 0.0
 			pos += Vector3(vel.x, 0.0, vel.z) * (dt - t)
+	if solid and not off_prop:
+		# (Its roll on the floor after a bounce, too: never into a prop - off it, at the prop's own restitution.)
+		for k in 2:
+			var h := solid.sweep(pos, pos, R)
+			if not h.hit:
+				break
+			var n: Vector3 = h.normal
+			pos += n * (float(h.get("depth", 0.0)) + 0.002)
+			var into := vel.dot(n)
+			if into < 0.0:
+				vel -= n * into * (1.0 + float(WsgSolidProps.MATERIALS[h.material].restitution))
+				if -into > 0.3:
+					h.speed = -into
+					h.sound = WsgSolidProps.MATERIALS[h.material].sound
+					_hits.append(h)
 	# Rolling on: the floor slows it.
 	if pos.y <= R + 0.001:
 		var flat := Vector2(vel.x, vel.z)

@@ -662,6 +662,7 @@ func _ball_free_in_play() -> void:
 	var hung := 0
 	var fr := {"f": 0, "at": []}
 	m.ball.bounced.connect(func(_at, _sp): fr.at.append(fr.f))
+	m.ball.struck.connect(func(_h): fr.at.append(fr.f))   # (off a prop: a bounce, as off the floor)
 	for f in 2400:
 		fr.f = f + 1
 		await frames(1)

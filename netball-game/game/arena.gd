@@ -435,7 +435,11 @@ func _posts() -> void:
 		_lit.cylinder(base, base + Vector3(0, 1.75, 0), 0.19, 0.19, pad, 14)
 		_lit.cylinder(base + Vector3(0, 1.75, 0), base + Vector3(0, 1.9, 0), 0.19, 0.19, Color("ff6a1a"), 14)
 		solid.add({"name": "goal post", "kind": "cylinder", "position": base, "radius": Court.POST_R, "height": Court.RING_H + 0.02, "material": "metal"})
-		solid.add({"name": "post pad", "kind": "cylinder", "position": base, "radius": 0.19, "height": 1.9, "material": "padding"})
+		# The pad, its top rounded (a ball dropping out of the net onto its edge rolls off it, as off a real pad's soft
+		# top, rather than sitting on a hard rim).
+		solid.add({"name": "post pad", "kind": "cylinder", "position": base, "radius": 0.19, "height": 1.71, "material": "padding"})
+		solid.add({"name": "post pad", "kind": "capsule", "a": base + Vector3(0, 1.71, 0), "b": base + Vector3(0, 1.711, 0),
+			"radius": 0.19, "material": "padding"})
 		var ring_c := Vector3((Court.HALF_L - Court.RING_OUT - Court.RING_R) * sx, Court.RING_H, 0)
 		var orange := Color("ff7b1c")
 		_lit.box(Vector3((Court.HALF_L - Court.RING_OUT * 0.5 + 0.02) * sx, Court.RING_H - 0.02, 0), Vector3(Court.RING_OUT + 0.08, 0.05, 0.07), orange)
