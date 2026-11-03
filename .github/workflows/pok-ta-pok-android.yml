@@ -130,7 +130,10 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          WSG_NOTES_STRICT=1 timeout 2400 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee notes.log
+          # On a fresh install's defaults (an empty user dir: no settings left by an earlier step), as ADOPTING asks.
+          # WSG_NOTES_FRESH=1 waits on the foundation: its check counts the settings.json the game itself writes on a
+          # first run (Game._ready: the detected graphics level) as stale.
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_STRICT=1 timeout 2400 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee notes.log
 
       # The props round each court are solid (the owner: nobody walks through a bench, the ball bounces off it): at every
       # venue a Watch-AI match, then balls struck at the props with the game's own ball; fails on anybody 2 cm into a
