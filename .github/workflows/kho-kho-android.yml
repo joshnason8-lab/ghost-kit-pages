@@ -249,10 +249,17 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+          # (ADOPTING 5.19, publishing safely: the new release whole under a tag of its own first - if that fails the
+          # old one is untouched - then the swap, seconds apart. Floorball's delete-then-create left its tag empty an
+          # hour on a 403.)
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          gh release create "$NEXT" "$APK" --prerelease --target "$GITHUB_SHA" \
             --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$TAG"
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot
@@ -268,7 +275,11 @@ jobs:
           officials on the World Stage Games shared rig with motion-capture running. Installs over the beta and keeps your
           saves (the same game); to go back to the beta, uninstall and reinstall it (its version code is lower).
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+          NEXT="$TAG-next-$GITHUB_RUN_ID"   # (published safely, as the beta: ADOPTING 5.19)
+          gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Foundation pilot: Kho Kho Rush ${VERSION}" --notes-file notes.md
-          gh release view "$TAG"
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
