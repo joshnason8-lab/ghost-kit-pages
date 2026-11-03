@@ -9,6 +9,15 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.5-beta
+
+- **A full house in the arena**: the bowl is stepped rows of seats with real people in every seat; the rows nearest
+  the court are full 3D fans who turn to the ball and clap (Medium and High), the far tiers are person-shaped
+  cut-outs. No painted crowd anywhere. The empty rows of the courtside stands show as blue seats.
+- **Room at penalties**: the penalised player stands 1.3 to 1.6 m beside the thrower, never in front of her, and
+  walks round behind her to get there; the thrower waits for her.
+- Every note you have given us is now a test the game must pass before a beta goes out.
+
 ## New in 0.9.4-beta
 
 - **Solid props**: nobody walks through a table, bench, board, sign or post, and the ball bounces off them (each
