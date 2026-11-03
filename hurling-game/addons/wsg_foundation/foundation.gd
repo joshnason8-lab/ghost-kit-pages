@@ -37,6 +37,21 @@ const PROFILES := {
 		"replay": {LOW: [4.0, 15.0], MEDIUM: [6.0, 15.0], HIGH: [7.0, 30.0]}, "voices": {LOW: 8, MEDIUM: 12, HIGH: 20}},
 }
 
+## What a frame may draw at each tier (the busiest view of the busiest venue, as the renderer counts it), by profile:
+## triangles, draw calls. Set from Hurling's national stadium (docs/BUDGET.md: premium Low 162,000 / 90, Medium
+## 442,000 / 101, High 878,000-1,013,000 / 150; budget Medium 241,000 / 96, High 674,000 / 150) with about 15% room;
+## to be confirmed on the phones (Test Lab). wsg_world_check's tiers rule fails a mode over its tier's (item 3).
+const BUDGETS := {
+	"premium": {LOW: {"triangles": 200000, "draw_calls": 110}, MEDIUM: {"triangles": 520000, "draw_calls": 125},
+		HIGH: {"triangles": 1150000, "draw_calls": 180}},
+	"budget": {LOW: {"triangles": 200000, "draw_calls": 110}, MEDIUM: {"triangles": 300000, "draw_calls": 120},
+		HIGH: {"triangles": 800000, "draw_calls": 180}},
+}
+
+## The crowd quality each tier may build (WsgCrowd3D quality: 0 none, 1 Medium, 2 High, 3 Close): a premium game's Low
+## keeps its billboards; a budget game's Low has the small band (its Medium's). Close only at High.
+const CROWD_AT_TIER := {"premium": {LOW: 0, MEDIUM: 1, HIGH: 3}, "budget": {LOW: 1, MEDIUM: 1, HIGH: 3}}
+
 static var profile := "premium"
 ## The tier the game is drawing at now (the game sets it, at start and when the player changes it).
 static var tier := MEDIUM
@@ -57,10 +72,42 @@ static func spec() -> Dictionary:
 	return PROFILES.get(profile, PROFILES.premium)
 
 
-## The 3D crowd's budget at a tier: [near, in all].
+## The 3D crowd's budget at a quality: [near, in all] (0: none).
 static func crowd_budget(quality: int) -> Array:
+	if quality <= 0:
+		return [0, 0]
 	var c: Dictionary = spec().crowd
 	return c.get(quality, c[MEDIUM])
+
+
+## The crowd quality a build asking for QUALITY gets at the tier the player chose (WsgCrowd3D asks this): never more
+## than the tier allows (CROWD_AT_TIER) - a mode does not buy itself a bigger crowd than the player's phone was set
+## for (Hurling's practice built High's Close crowd, 2,400 fans, on any tier: a 9.7 s start). A request above the
+## tier is recorded in over_tier (the world check reports it) and pushed as a warning.
+static func crowd_quality(quality: int) -> int:
+	var most := crowd_most()
+	if quality == 3 and most == 3:
+		return 3
+	var q := mini(quality, mini(most, HIGH))
+	if quality > q:
+		over_tier.append({"what": "crowd", "wanted": quality, "got": q, "tier": tier})
+		push_warning("WsgFoundation: a crowd of quality %d asked for at tier %d; built at %d (the tier's most)" % [quality, tier, q])
+	return q
+
+
+## The most crowd quality the current tier allows (CROWD_AT_TIER).
+static func crowd_most() -> int:
+	return int((CROWD_AT_TIER.get(profile, CROWD_AT_TIER.premium) as Dictionary).get(tier, 1))
+
+
+## What has asked for more than the tier allows since the last clear (the world check reads it).
+static var over_tier: Array = []
+
+
+## The frame budget at the current tier: {triangles, draw_calls}.
+static func frame_budget(t := -1) -> Dictionary:
+	var b: Dictionary = BUDGETS.get(profile, BUDGETS.premium)
+	return b.get(tier if t < 0 else t, b[MEDIUM])
 
 
 ## The replay's ring at the current tier: [seconds kept, frames a second] (WsgReplay). Long enough for a score's

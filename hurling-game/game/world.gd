@@ -50,6 +50,18 @@ func officials(mode: String) -> int:
 	return 4 if mode == "practice" else 7
 
 
+## The player's graphics level as Settings sets it: the game's own setting, handed to the foundation's tier.
+func set_tier(t: int) -> void:
+	Game.settings.graphics = clampi(t, Game.GFX_LOW, Game.GFX_HIGH)
+	WsgFoundation.tier = clampi(t, WsgFoundation.LOW, WsgFoundation.HIGH)
+
+
+## Practice draws its free-taker at full detail on every level (the owner's middle ground; docs/TIER_EXCEPTIONS.md);
+## everything else at the player's level.
+func tier_exceptions() -> Dictionary:
+	return {"practice": "2026-11-03, the owner via the lead: \"Practice graphics, the middle ground: full detail regardless of tier for the taker, the hurley, the sliotar and the posts; the crowd, the far stands, venue extras and effects follow the player's own tier.\""}
+
+
 ## The officials on the field: each one's drawn body (FoundationLink puts it in the group "wsg_official").
 func find_officials(root: Node) -> Array:
 	return super.find_officials(root).filter(func(b: Node) -> bool:
