@@ -175,7 +175,9 @@ jobs:
           # The published beta built from this very commit (the push run of it published before this pull_request
           # run got here) is not a previous release: comparing the APK with itself fails "newer" on every push.
           PUB=$(gh release view kabaddi-raid-beta --json targetCommitish -q .targetCommitish 2>/dev/null || true)
-          if [ "$PUB" = "$HEAD_SHA" ]; then
+          if [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            echo "a pull_request run publishes nothing: newness is judged on the push run that publishes"
+          elif [ "$PUB" = "$HEAD_SHA" ]; then
             echo "the published beta is this commit's own build: no previous release to compare against"
           else
             gh release download kabaddi-raid-beta --pattern '*.apk' --dir "$RUNNER_TEMP/prev" || echo "no previous beta APK"
@@ -225,10 +227,17 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+          # Publishing safely (ADOPTING 5.19): the new release, whole, under a tag of its own first; only then the
+          # old one goes and the new one takes the tag. (0.14.11's delete-then-create hit a 403 on create and left
+          # the testers' link pointing at nothing.)
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          gh release create "$NEXT" "$APK" --prerelease --target "$GITHUB_SHA" \
             --title "Kabaddi Raid ${VERSION} (latest beta)" --notes-file notes.md
-          gh release view "$TAG"
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null   # (fails the step if the swap did not take)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
 
       # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
       - name: Publish the foundation pilot
