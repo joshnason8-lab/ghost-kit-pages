@@ -37,7 +37,22 @@ func _init(p_venue := "arena", p_home_colors := []) -> void:
 	home_colors = p_home_colors
 
 
+## Built by the match's loading steps (Match.build_steps: build_venue, build_draw, build_crowd, each in a frame of its
+## own under the loading overlay), not all at once when it enters the tree. The same parts in the same order.
+var staged := false
+var _spots: Array = []            # the crowd's places (the venue's builder), for build_crowd
+
+
 func _ready() -> void:
+	if staged:
+		return
+	build_venue()
+	build_draw()
+	build_crowd()
+
+
+## The venue's structure, court and posts: its geometry, light and sky (nothing drawn yet).
+func build_venue() -> void:
 	_lit = Geo.new()
 	_glow = Geo.new()
 	_fx = Geo.new()
@@ -47,18 +62,21 @@ func _ready() -> void:
 	_low = _gfx == Game.GFX_LOW
 	var kind := String(DB.venue(venue)[2])
 	_props = VenueProps.new(kind, _low)
-	var spots: Array = []
 	match kind:
 		"arena":
-			spots = _arena()
+			_spots = _arena()
 		"hall":
-			spots = _hall()
+			_spots = _hall()
 		"outdoor":
-			spots = _outdoor()
+			_spots = _outdoor()
 	_posts()
 	if not home_colors.is_empty():
 		_look["team_a"] = home_colors[0]
 		_look["team_b"] = home_colors[min(1, home_colors.size() - 1)]
+
+
+## The venue's meshes and materials: its structure, glow, props, glass, boards and lights, each one draw call.
+func build_draw() -> void:
 	var lit := VenueLook.lit()
 	var glow := VenueLook.glow()
 	var props := _props.material()
@@ -90,6 +108,11 @@ func _ready() -> void:
 	var fxi := _fx.commit(fx)
 	fxi.sorting_offset = 50.0
 	add_child(fxi)
+
+
+## The crowd in the venue's places (Crowd: the painted stands' people, and on Medium and High the 3D front rows).
+func build_crowd() -> void:
+	var spots := _spots
 	if not spots.is_empty():
 		crowd = Crowd.new()
 		Crowd.set_tint(_look.get("stand_tint", Color.WHITE))

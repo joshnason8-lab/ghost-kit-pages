@@ -166,7 +166,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Back: pause or resume a match, leave a screen the way its Back button does, and quit from the home screen.
 func go_back() -> void:
-	if current == null or not is_instance_valid(current):
+	if current == null or not is_instance_valid(current) or WsgLoading.busy():
 		return
 	if current.has_method("on_back"):
 		current.on_back()
@@ -387,6 +387,130 @@ func start_match(config: Dictionary) -> void:
 	m.config = config
 	Sfx.music(false)
 	_swap(m)
+
+
+## Every Play and Watch button's match (Quick Match, Watch AI, the Nations Cup, the Club Season, the result screen's
+## Rematch): the loading overlay (the shared foundation's WsgLoading, ADOPTING 5.14) comes up in the tap's own frame
+## over the screen, dimmed, with the game's name, "Marking out the court…", a lime bar and a rule of the game, and the
+## screen's buttons go dead (a second tap starts nothing, nor does Back). The match's files load on the loader's
+## thread; the match is then built a part at a time (Match.build_steps), a frame drawn after each, behind the screen;
+## it takes the screen's place behind the overlay, which draws its looks (the shaders) a few a frame, waits for smooth
+## frames and fades; then the match kicks off (Match.kick_off). The match is the one start_match makes.
+## Returns false if a load is already under way.
+func start_match_loading(config: Dictionary) -> bool:
+	if WsgLoading.busy():
+		return false
+	var host: Node = current if current and is_instance_valid(current) else main
+	var buttons := []
+	if host is Control:
+		for b in host.find_children("*", "BaseButton", true, false):
+			if not (b as BaseButton).disabled:
+				buttons.append(b)
+	var ld := WsgLoading.cover(host, buttons, loading_look())
+	style_loading(ld)
+	var g := clampi(int(settings.graphics), 0, 2)
+	ld.log_label = "%s %s %s" % [String(config.get("mode", "quick")), String(config.get("venue", "arena")), ["low", "medium", "high"][g]]
+	if test_quarter_s > 0.0:
+		config.quarter_s = test_quarter_s
+	ld.request(match_files(config))
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = config
+	m.staged = true
+	m.process_mode = Node.PROCESS_MODE_DISABLED    # nothing plays till it is whole
+	ld.step("Match", func():
+		Sfx.music(false)
+		main.add_child(m))                          # behind the screen it came from, under the overlay
+	for st in m.build_steps(ld):
+		ld.step(String(st[0]), st[1], float(st[2]))
+	# The warm-up: it takes the screen's place behind the (now opaque) overlay, which draws each of its looks once, a
+	# few a frame, so the shaders compile a frame at a time and the bar moves (WsgLoading.warm; no 3D is drawn till
+	# then). done() then holds the overlay till the frames run smoothly; kick_off() starts the match on the first frame
+	# the player sees.
+	ld.warm(func():
+		_swap_in(m)
+		return m)
+	if not await ld.run():
+		if is_instance_valid(m) and not m.is_inside_tree():
+			m.free()
+		return true
+	await ld.done()
+	if is_instance_valid(m):
+		m.kick_off()
+	return true
+
+
+## The match built under the overlay takes the place of the screen it was started from (held till kick_off()).
+func _swap_in(m: Node) -> void:
+	if current and is_instance_valid(current) and current != m:
+		current.queue_free()
+	current = m
+	m.process_mode = Node.PROCESS_MODE_INHERIT
+
+
+## The files a match loads, for the loader's thread (WsgLoading.request): the venue's surfaces, sky, light and props,
+## the LED boards, the players' model and kit, the crowd's sheet and 3D fans, and the shared foundation's clips and
+## hero. Only those this build has; the match loads each where it always did, from the cache.
+func match_files(config: Dictionary) -> Array:
+	var g := int(settings.graphics)
+	var kind := String(DB.venue(String(config.get("venue", "arena")))[2])
+	var files := ["res://game/hud.gd", Arena.LED_TEX,"res://assets/venue/%s_props.res" % kind, "res://assets/venue/%s_atlas.jpg" % kind,
+		"res://assets/venue/%s_cards.png" % kind, HeroBody.DIR + "hero_hi.res", HeroBody.DIR + "hero_lo.res",
+		tex_path(HeroBody.DIR + "hero_albedo.jpg", g), tex_path(HeroBody.DIR + "hero_mask.png", g),
+		HeroBody.DIR + "hero_albedo.jpg", HeroBody.DIR + "hero_mask.png", "res://assets/ui/bib_letters.png"]
+	match kind:
+		"arena":
+			files.append(tex_path(Arena.MAPLE_TEX, g))
+		"hall":
+			files.append_array([tex_path(Arena.MAPLE_TEX, g), tex_path(Arena.BLOCK_TEX, g), tex_path(Arena.CEIL_TEX, g), Arena.GYM_HDR])
+		"outdoor":
+			files.append_array([tex_path(Arena.COURT_SKY, g), Arena.COURT_HDR, tex_path(Arena.ASPH_TEX, g), tex_path(Arena.TARMAC_TEX, g)])
+	if g > GFX_LOW:
+		files.append(Crowd.SHEET_HD)
+		if WsgCrowd3D.available():
+			for f in DirAccess.get_files_at(WsgCrowd3D.DIR):
+				f = f.trim_suffix(".remap")
+				if f.ends_with("_crowd.res") or f.ends_with("_pos.res") or f.ends_with("_nrm.res"):
+					files.append(WsgCrowd3D.DIR + f)
+	if FoundationLink.enabled():
+		files.append_array([WsgClips.DIR + "mobility.res", WsgClips.DIR + "actorcore.res", FoundationLink.DIR + "hero_hi.res",
+			FoundationLink.DIR + "hero_lo.res"])
+	var out := []
+	for f in files:
+		if not out.has(f) and ResourceLoader.exists(f):
+			out.append(f)
+	return out
+
+
+## The loading overlay in the game's colours: the indigo night, the bib lime's bar and spinner, the game's own words.
+## Its tips are rules of the game the How to Play pages already say, in the player's language.
+func loading_look() -> Dictionary:
+	return {"dim": Color(C_BG, 0.94), "text": C_INK, "bar": C_ACCENT, "bar_back": Color(C_PANEL_HI, 0.95), "spinner": C_ACCENT,
+		"title": tr("LOADING"), "logo": load("res://assets/icon/icon_192.png"), "font": font_bold, "tip_seconds": 5.0,
+		"tips": [tr("RULES_THREE_TEXT"), tr("RULES_THIRD_TEXT"), tr("RULES_SHORT_TEXT"), tr("COACH_AREAS"), tr("QUARTERS_NOTE")]}
+
+
+## The overlay in the game's theme, with the game's name under its icon (sized with the rest from the screen's short
+## side, portrait or landscape).
+func style_loading(ld: WsgLoading) -> void:
+	var p := ld.parts()
+	(p.root as Control).theme = theme
+	var name_l := Label.new()
+	name_l.name = "GameName"
+	name_l.text = tr("GAME_TITLE")
+	name_l.theme_type_variation = "TitleLabel"
+	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_l.add_theme_color_override("font_color", C_INK)
+	var box: Control = (p.logo as Control).get_parent()
+	box.add_child(name_l)
+	box.move_child(name_l, (p.logo as Control).get_index() + 1)
+	var vpt := ld.get_viewport()
+	var fit := func():
+		if is_instance_valid(name_l):
+			var vp := vpt.get_visible_rect().size
+			name_l.add_theme_font_size_override("font_size", maxi(24, int(minf(vp.x, vp.y) / 11.0)))
+	vpt.size_changed.connect(fit)
+	ld.tree_exiting.connect(func(): vpt.size_changed.disconnect(fit))
+	fit.call()
 
 
 func on_match_finished(result: Dictionary) -> void:

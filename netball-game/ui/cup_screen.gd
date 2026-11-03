@@ -148,6 +148,6 @@ func _medals(cup) -> Control:
 
 
 func _play(cup, nm: Dictionary) -> void:
-	Game.start_match({"home": nm.home, "away": nm.away, "venue": "arena", "quarter": Game.quarter_minutes(),
+	Game.start_match_loading({"home": nm.home, "away": nm.away, "venue": "arena", "quarter": Game.quarter_minutes(),
 		"difficulty": int(Game.settings.difficulty), "mode": "cup", "card": true, "user_team": 0 if nm.home == cup.user else 1,
 		"stage": _stage_name(nm), "need_winner": bool(nm.need_winner), "double_zone": false})

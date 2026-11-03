@@ -13,6 +13,7 @@ func _ready() -> void:
 	Game.settings.sound = false
 	await _scrolling()
 	await _real_pages()
+	await _start_tap()
 	print("input_test: %d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures > 0 else 0)
 
@@ -91,6 +92,64 @@ func _real_pages() -> void:
 		var most := sc.get_v_scroll_bar().max_value - sc.get_v_scroll_bar().page
 		check(sc.scroll_vertical >= minf(40.0, most) - 1.0, "%s %s scrolls when dragged on its text (%d of %d)" % [path, pg[1], sc.scroll_vertical, most])
 	Game.delete_cup()
+
+
+## A real tap on Quick Match's Play, drawn: the frame the tap lands in shows the loading overlay (the screen dimmed to
+## the game's night under it, the lime bar), the button is off, a second tap starts nothing, and the match comes up
+## and plays (Game.start_match_loading).
+func _start_tap() -> void:
+	var s := Game.show_screen("res://ui/quick_setup.gd")
+	await frames(6)
+	var play: Button = null
+	for b in s.find_children("*", "Button", true, false):
+		if (b as Button).text == tr("PLAY") and b.is_visible_in_tree():
+			play = b
+	check(play != null, "Quick Match has Play")
+	if play == null:
+		return
+	var at := play.get_global_rect().get_center()
+	await RenderingServer.frame_post_draw
+	var k := Vector2(get_viewport().get_texture().get_size()) / get_viewport().get_visible_rect().size
+	var px := Vector2i(at * k)     # on Play itself: lime before the tap, the night after
+	var before := get_viewport().get_texture().get_image().get_pixelv(px)
+	_move(at, false)
+	_mouse(at, true)
+	await frames(1)
+	_mouse(at, false)            # Play acts on the release: the overlay comes up here
+	var ld := WsgLoading.current()
+	check(ld != null and play.disabled, "the tap puts the loading overlay up at once and turns Play off")
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	var mid := img.get_pixelv(px)
+	var dim := Color(Game.C_BG, 1.0)
+	check(Vector3(mid.r - dim.r, mid.g - dim.g, mid.b - dim.b).length() < 0.12 and mid != before,
+		"the tap's own frame shows the overlay (centre %s, before %s)" % [mid.to_html(false), before.to_html(false)])
+	var lime := 0
+	for x in range(0, img.get_width(), 4):
+		for y in range(img.get_height() / 3, img.get_height() * 2 / 3, 4):
+			var p := img.get_pixel(x, y)
+			if absf(p.r - Game.C_ACCENT.r) < 0.08 and absf(p.g - Game.C_ACCENT.g) < 0.08 and absf(p.b - Game.C_ACCENT.b) < 0.08:
+				lime += 1
+	check(lime > 0, "the overlay's spinner or bar is drawn in lime (%d px)" % lime)
+	_mouse(at, true)
+	await frames(1)
+	_mouse(at, false)
+	check(WsgLoading.current() == ld, "a second tap starts nothing")
+	var guard := 0
+	while WsgLoading.busy() and guard < 3000:
+		await frames(1)
+		guard += 1
+	await frames(5)
+	var m = Game.current
+	check(m is Match and not m.held, "the match comes up (%d frames)" % guard)
+	if m is Match:
+		var g2 := 0
+		while m.phase == "setup" and g2 < 900:
+			await frames(1)
+			g2 += 1
+		check(m.phase != "setup", "and plays")
+	Game.goto_menu()
+	await frames(3)
 
 
 ## A label or rich text inside the box, wholly in view, to start a drag on.

@@ -176,14 +176,14 @@ func _watch() -> void:
 	Game.settings.watch_venue = _venue
 	Game.save_settings()
 	var qi := clampi(int(Game.settings.watch_quarter), 0, Game.QUARTERS.size() - 1)
-	Game.start_match(Game.watch_config(_home, _away, _venue, int(Game.QUARTERS[qi])))
+	Game.start_match_loading(Game.watch_config(_home, _away, _venue, int(Game.QUARTERS[qi])))
 
 
 func _play() -> void:
 	Game.settings.last_home = _home
 	Game.settings.last_away = _away
 	Game.save_settings()
-	Game.start_match({"home": _home, "away": _away, "venue": _venue, "quarter": Game.quarter_minutes(),
+	Game.start_match_loading({"home": _home, "away": _away, "venue": _venue, "quarter": Game.quarter_minutes(),
 		"difficulty": int(Game.settings.difficulty), "mode": "quick", "card": true, "user_team": 0, "control": int(Game.settings.control),
 		"bib": String(Game.settings.bib), "double_zone": bool(Game.settings.double_zone), "timeouts": bool(Game.settings.timeouts),
 		"rolling": bool(Game.settings.rolling), "need_winner": false})
