@@ -504,3 +504,33 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   0.2-2.3 s. A phone's frames are a tenth of that: the A16 numbers are still to come.
 - **APK**: the sixteen-person crowd sheets drawn at 0.75 of the render (only the far stands are cards on Medium and
   High), their masks at 0.375 and without alpha (ETC2 RGB): the four textures from 27 MB to 8.6 MB.
+
+## 0.14.7: the world check, the owner's notes as tests, the match simulator (foundation eaa6713)
+
+- **Foundation eaa6713** (2cd59a7, 0422175, ad83891, a24408b required; 1ef240f and 29f4829 from 12:00 UTC).
+- **wsg_world_check** (ADOPTING 5.18): game/world.gd (WsgWorldGame) wires every rule to the game's own code - the four
+  starts (match, Watch AI, a cup final with its walk-out, a season fixture at the village) each through
+  Game.start_match as the Play tap does it, played at Medium (the shared rig draws the players there), five officials
+  on their feet, the walker (player_01 on the rig, its locomotor as FoundationLink sets it), the key sounds
+  (Sfx.BRIGHT: the tag's slap, a body onto the mat, the whistle - played without the -24 dB distance filter now),
+  CameraRig.stick_to_world (the stick's mapping, now a static the check can call), the two match cameras, and the
+  props' and crowd's registries. Each mode's match is stopped and hidden once its cameras are taken: left playing, the
+  four matches were drawn under every later rule and the check ran past 50 minutes on software GL. prop_runs draws no
+  3D while it plays (under a display its 60 s were seven seconds of match). Its own CI job (xvfb, with the web build
+  it reads), not holding up the APK.
+- **The owner's notes as tests** (ADOPTING 5.16): tests/owner_notes, eight notes from 2026-11-02 and 11-03 (stance
+  twitch, the tag's buzz for the raider and the defender, the stick on both cameras, no news ticker, the crowd on
+  their seats, the get-up twitch, bow legs) each a WsgOwnerNote with its own check, INDEX.json, the guard and the
+  strict runner in CI.
+- **WsgSim** (ADOPTING 5.17): game/sim.gd (WsgSimGame) plays whole matches with Match itself from a seed (Match.rng;
+  rng_lint: the seven bare rolls left were a sound's pitch, a label's jitter and three new saves' seeds, now marked),
+  shortened halves for config.short (Match reads config.half_len), the human's side through the touch stick
+  (TouchControls.sim_stick) and the buttons as btn_<id> input actions, Escape pausing a match. Kabaddi's rules each
+  frame: every player on the mat, out in order or suspended; revivals in the order they went out; a raid started in
+  five seconds and over by its time; the next raid's wait; do-or-die after two empty raids; the raider one of the
+  raiding side; no defender in the lobby before the struggle; each score its points' sum; nobody on his feet inside a
+  prop. Determinism: two seeds the same frame for frame. Speed: about 2.4 times real time headless (the players' and
+  officials' pose code is 12 of a frame's 14 ms), so the smoke batch runs as four parallel jobs
+  (.github/workflows/kabaddi-sim.yml) and a nightly 1,200 over sixteen (2,400 once it runs faster). Its first
+  batches found the winning side all put back on the mat to celebrate at full time with its out queue left full
+  (Match._end_match now clears it).

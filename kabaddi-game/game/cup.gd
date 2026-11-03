@@ -44,7 +44,7 @@ static func create(country: String) -> Cup:
 	field.sort_custom(func(a, b): return DB.team(a).base > DB.team(b).base)
 	c.teams = field
 	c.groups = {"A": [field[0], field[3], field[4], field[7]], "B": [field[1], field[2], field[5], field[6]]}
-	c.seed_value = randi()
+	c.seed_value = randi()  # wsg-rng-ok: a new save's own seed (every roll after it from this seed)
 	for g in ["A", "B"]:
 		var t: Array = c.groups[g]
 		var rounds := [[[t[0], t[3]], [t[1], t[2]]], [[t[0], t[2]], [t[3], t[1]]], [[t[0], t[1]], [t[2], t[3]]]]

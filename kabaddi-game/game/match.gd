@@ -198,7 +198,7 @@ func _ready() -> void:
 	difficulty = clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, PROFILES.size() - 1)
 	prof = PROFILES[difficulty]
 	raid_rule = int(config.get("raid_rule", Game.settings.get("raid_rule", RULE_CANT_AUTO)))
-	half_len = HALF_LEN
+	half_len = float(config.get("half_len", HALF_LEN))   # (shorter: WsgSim's shortened matches, game/sim.gd)
 	clock_speed = CLOCK_SPEEDS[clampi(int(config.get("length", Game.settings.length)), 0, 2)]
 	attract = bool(config.get("attract", false))
 	lab = bool(config.get("lab", false))
@@ -2874,7 +2874,7 @@ func _touch(d: Athlete, via := "") -> void:
 	raid.touched.append(d)
 	raid.alarm = true
 	d.set_ring(Color(Game.C_SAFFRON, 0.9))
-	Sfx.play_at("slap", d.global_position + Vector3.UP, -2.0, randf_range(0.95, 1.1))
+	Sfx.play_at("slap", d.global_position + Vector3.UP, -2.0, randf_range(0.95, 1.1))  # wsg-rng-ok: a sound's pitch
 	if raider == controlled:
 		tutorial_event.emit("touch")
 	if via in ["toe", "backkick", "sidekick"]:
@@ -2927,7 +2927,7 @@ func _attach(d: Athlete, block := false, slot := "", reached := false) -> void:
 	_event("hold", {"who": d.pid(), "kind": d.kind() if was_dive else "pile", "style": style, "slot": slot, "grapple": grapple.id,
 		"holders": raid.holders.size()})
 	raider.set_state("held")
-	Sfx.play_at("thud", raider.global_position, -2.0, randf_range(0.92, 1.05))
+	Sfx.play_at("thud", raider.global_position, -2.0, randf_range(0.92, 1.05))  # wsg-rng-ok: a sound's pitch
 	Sfx.voice("oof" if first else "grunt", -6.0, raider.voice_pitch())
 	var chained := d.chain_dive and not first
 	# The message names the hold actually made (a counter-grab on a thigh is a thigh hold, not an ankle hold).
@@ -4119,6 +4119,8 @@ func _end_match() -> void:
 		for a in ps:
 			a.on_mat = true
 			_celebrate(a, CELE_ARMS if rng.randf() < 0.5 else -1)
+		# All of them on the mat to celebrate: none still waiting to come back (WsgSim found them in both: game/sim.gd).
+		teams[w].out_queue.clear()
 		for i in range(0, ps.size() - 1, 3):
 			_high_five(ps[i], ps[i + 1])
 		for a in teams[1 - w].players:

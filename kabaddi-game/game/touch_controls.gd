@@ -108,6 +108,11 @@ func move_vec() -> Vector2:
 	return v
 
 
+## The stick held at V (x right, y down; length 0..1) as a thumb would: WsgSim's human player (game/sim.gd).
+func sim_stick(v: Vector2) -> void:
+	_stick_vec = v.limit_length(1.0)
+
+
 func take_look() -> Vector2:
 	var l := _look_acc
 	_look_acc = Vector2.ZERO
@@ -313,6 +318,14 @@ func _input(event: InputEvent) -> void:
 		return
 	if editing:
 		_edit(event)
+		return
+	# A button pressed as an input action (btn_<id>: WsgSim's human player, game/sim.gd), if it is on the screen now.
+	if event is InputEventAction and event.pressed and String(event.action).begins_with("btn_"):
+		var id := String(event.action).substr(4)
+		for b in _buttons():
+			if b.id == id:
+				_fire(id)
+				break
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if not keys_shown:

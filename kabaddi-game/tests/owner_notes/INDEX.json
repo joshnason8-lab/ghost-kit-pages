@@ -1,0 +1,69 @@
+{
+ "about": "Kabaddi Raid's owner notes, each a test for good (tools/wsg/owner_notes.gd). Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-11-02-stance-twitch",
+   "file": "2026-11-02_stance_twitch.gd",
+   "game": "kabaddi",
+   "date": "2026-11-02",
+   "version": "0.13.1-beta",
+   "words": "standing position is still awful guy is twitching"
+  },
+  {
+   "id": "2026-11-02-tag-vibration-raider",
+   "file": "2026-11-02_tag_vibration_raider.gd",
+   "game": "kabaddi",
+   "date": "2026-11-02",
+   "version": "0.13.3-beta",
+   "words": "tagging someone on Kabaddi should have a phone vibration"
+  },
+  {
+   "id": "2026-11-02-joystick-cameras",
+   "file": "2026-11-02_joystick_cameras.gd",
+   "game": "kabaddi",
+   "date": "2026-11-02",
+   "version": "0.14.0-beta",
+   "words": "the joystick doesn't go the way you push it (the lead's record; fixed in 0.14.1: up the stick is up the screen where the player stands, every camera)"
+  },
+  {
+   "id": "2026-11-03-news-ticker",
+   "file": "2026-11-03_news_ticker.gd",
+   "game": "kabaddi",
+   "date": "2026-11-03",
+   "version": "0.14.1-beta",
+   "words": "Get rid of the scrolling news section on bottom."
+  },
+  {
+   "id": "2026-11-03-crowd-in-seats",
+   "file": "2026-11-03_crowd_in_seats.gd",
+   "game": "kabaddi",
+   "date": "2026-11-03",
+   "version": "0.14.1-beta",
+   "words": "The crowd is still \"in the seats\""
+  },
+  {
+   "id": "2026-11-03-tag-vibration",
+   "file": "2026-11-03_tag_vibration.gd",
+   "game": "kabaddi",
+   "date": "2026-11-03",
+   "version": "0.14.1-beta",
+   "words": "On defense if you get tagged it should vibrate as well."
+  },
+  {
+   "id": "2026-11-03-getup-twitch",
+   "file": "2026-11-03_getup_twitch.gd",
+   "game": "kabaddi",
+   "date": "2026-11-03",
+   "version": "0.14.1-beta",
+   "words": "Getting up the kabaddi player had a leg twitch that made it look weird."
+  },
+  {
+   "id": "2026-11-03-bow-legs",
+   "file": "2026-11-03_bow_legs.gd",
+   "game": "kabaddi",
+   "date": "2026-11-03",
+   "version": "0.14.1-beta",
+   "words": "Some runners are still running bow legged, it looks unnatural."
+  }
+ ]
+}

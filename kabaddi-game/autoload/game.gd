@@ -129,6 +129,12 @@ func _ready() -> void:
 	get_tree().root.get_viewport().gui_embed_subwindows = true
 
 
+## Escape (a keyboard, the web version; WsgSim's pause key): a match's pause, as the phone's back button.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and current and is_instance_valid(current) and current.has_method("on_back"):
+		current.on_back()
+
+
 ## The phone's back button and the app going into the background.
 func _notification(what: int) -> void:
 	match what:

@@ -85,8 +85,12 @@ const AXIS_PX := 24.0                # how far either side of him the rays go, i
 
 ## Where the camera's ray through screen point s meets the ground (y 0), or INF.
 func _ground_at(s: Vector2) -> Vector3:
-	var o := cam.project_ray_origin(s)
-	var n := cam.project_ray_normal(s)
+	return _ground_ray(cam, s)
+
+
+static func _ground_ray(c: Camera3D, s: Vector2) -> Vector3:
+	var o := c.project_ray_origin(s)
+	var n := c.project_ray_normal(s)
 	if n.y > -0.001:
 		return Vector3.INF
 	return o + n * (-o.y / n.y)
@@ -94,7 +98,16 @@ func _ground_at(s: Vector2) -> Vector3:
 
 ## [up, right]: the ground directions that are up and right on the screen at ground point at.
 func stick_axes(at: Vector3) -> Array:
-	var f := flat_forward()
+	return axes_for(cam, at)
+
+
+## The same for any camera (the world check's joystick rule hands it each of a mode's cameras).
+static func axes_for(cam: Camera3D, at: Vector3) -> Array:
+	var f := Vector3(0, 0, -1)
+	if cam != null:
+		f = -cam.global_basis.z
+		f.y = 0
+		f = f.normalized() if f.length() > 0.01 else Vector3(0, 0, -1)
 	var flat := [f, Vector3(-f.z, 0, f.x)]
 	if at == Vector3.INF or cam == null or not cam.is_inside_tree():
 		return flat
@@ -102,10 +115,10 @@ func stick_axes(at: Vector3) -> Array:
 	if cam.is_position_behind(g):
 		return flat
 	var s := cam.unproject_position(g)
-	var hi := _ground_at(s + Vector2(0, -AXIS_PX))
-	var lo := _ground_at(s + Vector2(0, AXIS_PX))
-	var rt := _ground_at(s + Vector2(AXIS_PX, 0))
-	var lf := _ground_at(s + Vector2(-AXIS_PX, 0))
+	var hi := _ground_ray(cam, s + Vector2(0, -AXIS_PX))
+	var lo := _ground_ray(cam, s + Vector2(0, AXIS_PX))
+	var rt := _ground_ray(cam, s + Vector2(AXIS_PX, 0))
+	var lf := _ground_ray(cam, s + Vector2(-AXIS_PX, 0))
 	if Vector3.INF in [hi, lo, rt, lf]:
 		return flat
 	var up := Vector3(hi.x - lo.x, 0, hi.z - lo.z)
@@ -134,6 +147,16 @@ func input_to_world(v: Vector2, at := Vector3.INF) -> Vector3:
 	if v.length() < 0.05:
 		return Vector3.ZERO
 	var ax := stick_axes(at) if at != Vector3.INF or _in_up == Vector3.ZERO else [_in_up, _in_right]
+	var w: Vector3 = ax[1] * v.x - ax[0] * v.y
+	return w.normalized() * minf(v.length(), 1.0) if w.length() > 0.0001 else Vector3.ZERO
+
+
+## The game's stick-to-world mapping for any camera (x right, y down -> a ground direction): the world check's joystick
+## rule (WsgWorldGame.stick_map) drives it on every camera a mode has.
+static func stick_to_world(v: Vector2, c: Camera3D, at: Vector3) -> Vector3:
+	if v.length() < 0.05:
+		return Vector3.ZERO
+	var ax := axes_for(c, at)
 	var w: Vector3 = ax[1] * v.x - ax[0] * v.y
 	return w.normalized() * minf(v.length(), 1.0) if w.length() > 0.0001 else Vector3.ZERO
 

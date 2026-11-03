@@ -77,7 +77,7 @@ var _free_agents: Array = []
 static func create(team_id: String) -> Season:
 	var s := Season.new()
 	s.team = team_id
-	s.seed_value = randi()
+	s.seed_value = randi()  # wsg-rng-ok: a new save's own seed (every roll after it from this seed)
 	for id in DB.league_ids:
 		s.squads[id] = DB.team(id).squad.duplicate(true)
 	return s

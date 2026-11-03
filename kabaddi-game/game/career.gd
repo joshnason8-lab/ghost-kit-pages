@@ -29,7 +29,7 @@ var seed_value := 0
 static func create(p: Dictionary) -> Career:
 	var c := Career.new()
 	c.profile = p
-	c.seed_value = randi()
+	c.seed_value = randi()  # wsg-rng-ok: a new save's own seed (every roll after it from this seed)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = c.seed_value
 	var pl := DB.make_player(rng, String(p.role), 58, String(p.name))

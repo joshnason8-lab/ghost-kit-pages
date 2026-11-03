@@ -22,6 +22,11 @@ func run(venue: String, seed: int, seconds: float, audit: WsgPropAudit, tree: Sc
 	var m: Node = Game.current
 	audit.solid = m.arena.solid
 	Engine.time_scale = 3.0
+	# Nothing 3D is drawn while it plays (under a display - the world check's xvfb, llvmpipe - each frame took a
+	# fraction of a second to draw, and the match, its steps capped at 0.05 s, played seven seconds of the sixty);
+	# drawn again for the close-ups.
+	var was_3d := tree.root.disable_3d
+	tree.root.disable_3d = true
 	var t := 0.0
 	while t < seconds and is_instance_valid(m) and m.is_inside_tree():
 		await tree.process_frame
@@ -38,4 +43,5 @@ func run(venue: String, seed: int, seconds: float, audit: WsgPropAudit, tree: Sc
 			audit.body("%s (%s)" % [a.name, a.state], a.position, Athlete.PROP_R, 1.8)
 		audit.tick(dt)
 	Engine.time_scale = 1.0
+	tree.root.disable_3d = was_3d
 	return host

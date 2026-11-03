@@ -120,6 +120,9 @@ func _ready() -> void:
 	gb.mirror = material
 	body.posed.connect(_posed_cost)
 	_move_number()
+	# The referee, umpires, line judges and scorers: officials to the world check (WsgWorldGame.find_officials).
+	if who != null and who.team == 2:
+		body.add_to_group("wsg_official")
 
 
 ## The game's own body drawn again and this one gone (the graphics lowered to Low mid-match).

@@ -87,6 +87,13 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 
+      # The owner's notes, each a test for good (tests/owner_notes, ADOPTING 5.16): none may go, and every one passes.
+      - name: Owner notes (each a test for good)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sh tools/wsg/owner_notes_guard.sh
+          WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
+
       # The owner: nobody ever walks through a table, a bench, a chair or a board. A Watch-AI match at every ground,
       # every body on its feet checked against the ground's solid props each frame (WsgSolidProps, ADOPTING 5.15).
       - name: Props audit (no body inside a prop, every ground)
@@ -156,6 +163,27 @@ jobs:
             exit 1
           fi
 
+      # The foundation's release gate (ADOPTING 5.19): the owner's key, the version, the licensed motion inside the APK,
+      # nothing that is not the game in it, no big uncompressed texture, no duplicate; the size against the last beta.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev"
+          gh release download kabaddi-raid-beta --pattern '*.apk' --dir "$RUNNER_TEMP/prev" || echo "no previous beta APK"
+          PREV=$(ls "$RUNNER_TEMP"/prev/*.apk 2>/dev/null | head -1)
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk \
+            --version "$VERSION" ${PREV:+--previous "$PREV"} --out "$RUNNER_TEMP/gate"
+          cat "$RUNNER_TEMP/gate/RELEASE_GATE.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+          if-no-files-found: ignore
+
       - uses: actions/upload-artifact@v4
         with:
           name: kabaddi-raid-${{ env.VERSION }}-apk
@@ -219,3 +247,73 @@ jobs:
           gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
             --title "Foundation pilot: Kabaddi Raid ${VERSION}" --notes-file notes.md
           gh release view "$TAG"
+
+  # wsg_world_check (ADOPTING 5.18): the world rules every World Stage game keeps - props, crowd, feet, poses,
+  # officials, key sounds, loading, the joystick on every camera, the web build, the graphics levels - on the game's
+  # own code (game/world.gd). Its own job: it draws (xvfb, the crowd's and the props' sheets) and takes a while, so
+  # the APK does not wait on it; from 2026-11-03 12:00 UTC a failed rule fails this job, and so the run.
+  world-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH, and a display to draw on
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Web build (the world check reads what it packs)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          ls -la build/web
+
+      - name: World check (wsg_world_check)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          timeout 4800 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- \
+            --out "$RUNNER_TEMP/world" --web-pck build/web/index.pck
+          cat "$RUNNER_TEMP/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world

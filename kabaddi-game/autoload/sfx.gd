@@ -157,6 +157,10 @@ func play(sound: String, volume_db := 0.0, pitch := 1.0) -> void:
 
 
 ## The same, from a point on the ground (a tackle, a body hitting the mat).
+## Sounds that stay crisp at a distance (their kind, as WsgAudio.bright_kinds: "slap" is the tag, "thud" a hit).
+const BRIGHT := {"slap": "tag", "thud": "hit", "whistle": "whistle"}
+
+
 func play_at(sound: String, at: Vector3, volume_db := 0.0, pitch := 1.0) -> void:
 	_ensure()
 	sound = _variant(sound)
@@ -168,6 +172,9 @@ func play_at(sound: String, at: Vector3, volume_db := 0.0, pitch := 1.0) -> void
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.global_position = at
+	# The key hits (a tag's slap, a body onto the mat) stay crisp however far off: only quieter, never dulled by the
+	# distance filter (the owner on Hurling's post: "can't be heard"; WsgAudio.bright_kinds, the world check's sounds).
+	p.attenuation_filter_db = 0.0 if BRIGHT.has(sound.get_slice("_", 0)) else -24.0
 	p.play()
 
 

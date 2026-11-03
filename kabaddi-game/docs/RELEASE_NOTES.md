@@ -1,4 +1,16 @@
-**New in 0.14.6: nobody walks through the furniture, and a smoother start.**
+**New in 0.14.7: the game checks itself.** Nothing changes in how it plays; what changed is how it is tested.
+- Every build now plays whole matches by itself, hundreds of them from numbered seeds, faster than real time, and
+  checks every frame against kabaddi's rules (who is out and in what order they come back, raid timing, the lobby,
+  do-or-die, the score) and for anyone stuck, inside the furniture or standing oddly. Any match that goes wrong can be
+  replayed exactly from its number.
+- Your notes are now permanent tests: the stance twitch, the tag buzz for raider and defender, the stick on both
+  cameras, the news ticker, the crowd in their seats, the get-up twitch and bow legs are each checked on every build,
+  and a build fails if any of them comes back.
+- The shared World Stage checks (props, crowd, feet, poses, officials, key sounds, loading, the stick, the web build,
+  the graphics levels) run on every build too.
+- On a keyboard (the web version), Escape now pauses a match.
+
+**In 0.14.6: nobody walks through the furniture, and a smoother start.**
 - **Solid props**: players and officials walk round the benches, the scorers' table, the chairs and stools, the
   boards and the stands instead of through them. Out players walk to the front of the bench and sit on it; when
   revived they stand forward off it. Checked in every ground over whole matches.

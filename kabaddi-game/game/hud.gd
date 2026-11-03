@@ -591,7 +591,7 @@ func cant_feedback(kind: String) -> void:
 		l.outline_size = 12
 		l.outline_modulate = Color(0, 0, 0, 0.8)
 		m.add_child(l)
-		l.global_position = m.raider.global_position + Vector3(randf_range(-0.3, 0.3), 2.1, 0)
+		l.global_position = m.raider.global_position + Vector3(randf_range(-0.3, 0.3), 2.1, 0)  # wsg-rng-ok: a label's jitter on screen
 		var tw := l.create_tween()
 		tw.tween_property(l, "position:y", l.position.y + 0.6, 0.6)
 		tw.parallel().tween_property(l, "modulate:a", 0.0, 0.6)
@@ -694,7 +694,7 @@ func bubble(a: Node3D, text: String, color := Color.WHITE) -> void:
 	l.outline_size = 16
 	l.outline_modulate = Color(0, 0, 0, 0.85)
 	m.add_child(l)
-	l.global_position = a.global_position + Vector3(randf_range(-0.2, 0.2), 2.35, 0)
+	l.global_position = a.global_position + Vector3(randf_range(-0.2, 0.2), 2.35, 0)  # wsg-rng-ok: a label's jitter on screen
 	l.scale = Vector3.ONE * 0.6
 	var tw := l.create_tween()
 	tw.tween_property(l, "scale", Vector3.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
