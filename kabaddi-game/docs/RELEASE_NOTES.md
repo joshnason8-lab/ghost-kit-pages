@@ -1,4 +1,14 @@
-**New in 0.14.2: your list.**
+**New in 0.14.3: the crowd, seated properly on every ground.** Every spectator is now placed by the shared crowd
+system all the World Stage games use: each ground's stands, chairs, stools and standing room are declared, and every
+fan sits on their seat (not in it, not floating), has their feet on the floor or the step below, faces the court, and
+stands up properly when the crowd gets to its feet. It is checked fan by fan on all five grounds.
+- **Low**: our own Indian crowd (the same people, front and back), sitting, standing and cheering, placed on the seats.
+- **Medium and High**: the fans nearest the court are full 3D people who sit, clap with the clapping you hear, get up
+  and cheer, and turn their heads to follow the raider; the rest are the same cards as on Low.
+- The plastic chairs and stools at the village, the beach and the monsoon ground stand exactly where the fans sit;
+  the standing crowd at the village and the beach stand in a line behind the chairs instead of between them.
+
+**In 0.14.2: your list.**
 - **No news ticker**: the headlines scrolling along the foot of the home screen, the season and the cup are gone (the
   season and cup still have their front-page story).
 - **The crowd sits**: the fans in the stands are drawn sitting, knees forward and laps showing, from a little above as

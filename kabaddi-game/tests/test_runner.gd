@@ -479,14 +479,12 @@ func _run() -> void:
 		# Its fixed parts come with their baked lighting (tools/bake_lighting), the bake's own lights and sky taken out.
 		check(ar.baked and ar.shell.find_child("LightmapGI", false, false) != null
 			and ar.shell.find_children("*", "Light3D", false, false).is_empty(), "arena has its baked lighting: " + a.id)
-		if not Arena.crowd_sheet().is_empty():
-			var cards := ar.find_children("*", "MultiMeshInstance3D", false, false).filter(
-				func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("atlas") is Texture2D)
-			# Those sitting and those standing are drawn apart: on the beach, a few on chairs and the rest standing round.
-			var people := 0
-			for card in cards:
-				people += (card as MultiMeshInstance3D).multimesh.instance_count
-			check(people > 20, "the crowd is people from the sprite sheet: " + a.id)
+		if not Arena.card_art().is_empty():
+			# Our people as the shared crowd's cards (and on Medium and High the nearest as its 3D fans).
+			var people := ar.crowd_on_cards.size() + ar.crowd_in_3d.size()
+			check(people > 20 and (ar.crowd_cards == null) == ar.crowd_on_cards.is_empty()
+				and (ar.crowd_cards == null or ar.crowd_cards.placed_cards.size() == ar.crowd_on_cards.size()),
+				"the crowd is our people, placed by the shared foundation (%d): %s" % [people, a.id])
 		ar.queue_free()
 	# The league's name on the boards is in the game's language, and changes with it (the menu's ground stays built).
 	var ab := Arena.new()
@@ -507,22 +505,26 @@ func _run() -> void:
 	var mid: float = ab._clap_share
 	ab._clap_t = 0.0
 	await frames(60)
-	check(mid > 0.4 and ab._clap_share < 0.05 and (ab.crowd_mats.is_empty()
-		or float(ab.crowd_mats[0].get_shader_parameter("clap_share")) < 0.05),
+	check(mid > 0.4 and ab._clap_share < 0.05,
 		"the crowd claps while applause is heard, and stops after (%.2f, then %.2f)" % [mid, ab._clap_share])
 	ab.queue_free()
-	var sheet := Arena.crowd_sheet()
-	check(not sheet.is_empty() and (sheet.info.people as Array).size() >= 8 and (sheet.info.frames as Array).size() == 12
-		and (sheet.info.frames as Array).slice(8) == ["sit_look_l", "sit_look_r", "stand_look_l", "stand_look_r"],
-		"crowd sprite sheet: eight people in twelve poses, the last four watching to either side")
+	# Our crowd as the shared cards (tools/crowd/pack_cards.py): each person sitting, standing and cheering, from the
+	# front and from behind; every adult seated at the same height in their cell (so the cards pick any of them for a
+	# seat, not always the one whose legs fit it best), the children shorter (they stand).
+	var art := Arena.card_art()
+	var fans_seats: Array = (art.layout.fans as Dictionary).values().map(func(f): return float(f.seat))
+	check(not art.is_empty() and art.layout.poses == ["sit", "stand", "cheer"] and (art.layout.fans as Dictionary).size() >= 8
+		and int(art.layout.cols) * int(art.layout.rows) >= (art.layout.fans as Dictionary).size() * 3
+		and fans_seats.filter(func(v): return is_equal_approx(v, 0.42)).size() >= 6 and fans_seats.all(func(v): return v > 0.2 and v <= 0.42)
+		and art.back is Texture2D and art.back != art.atlas,
+		"crowd cards: our people sitting, standing and cheering, front and back, adults seated alike %s" % str(fans_seats))
 	# 7d. Medium and High's extra detail (0.12.0): the sixteen-person crowd, the players' 2K albedos, the courts' 2K
 	# surfaces, each a file of its own that only they load; Low's are the files it had before, and none of the 2K ones.
-	var low_sheet := Arena.crowd_sheet(0)
-	var hi_sheet := Arena.crowd_sheet(1)
-	check((low_sheet.info.people as Array).size() == 8 and (hi_sheet.info.people as Array).size() == 16
-		and (hi_sheet.atlas2 as Texture2D).get_width() == (low_sheet.atlas as Texture2D).get_width()
-		and not low_sheet.has("atlas2") and String(low_sheet.atlas.resource_path).ends_with("crowd_atlas.webp"),
-		"the crowd: eight people on Low, sixteen on Medium and High, the eight more from a sheet of their own")
+	var low_art := Arena.card_art(0)
+	var hi_art := Arena.card_art(1)
+	check((low_art.layout.fans as Dictionary).size() == 8 and (hi_art.layout.fans as Dictionary).size() == 16
+		and String(low_art.atlas.resource_path).ends_with("cards.webp") and String(hi_art.atlas.resource_path).ends_with("cards_hi.webp"),
+		"the crowd: eight people on Low, sixteen on Medium and High, from a sheet of their own")
 	var gfx_was7 := int(Game.settings.graphics)
 	var detail_paths := {}
 	for gfx in [Game.GFX_LOW, Game.GFX_MEDIUM]:
@@ -530,7 +532,7 @@ func _run() -> void:
 		var body: Dictionary = RiggedBody._load("player_01.krb")
 		detail_paths[gfx] = [String(Arena._texture("mat_albedo").resource_path),
 			String(Scenery.texture("surfaces/coast_sand_01/coast_sand_01_albedo_1k.jpg").resource_path),
-			String(RiggedBody.albedo_for(body).resource_path), String(Arena.crowd_sheet().get("atlas2", Arena.crowd_sheet().atlas).resource_path)]
+			String(RiggedBody.albedo_for(body).resource_path), String(Arena.card_art().atlas.resource_path)]
 	Game.settings.graphics = gfx_was7
 	check(detail_paths[Game.GFX_LOW].all(func(p): return not p.contains("_2k") and not p.contains("_hi")),
 		"Low loads none of the 2K or sixteen-person files %s" % str(detail_paths[Game.GFX_LOW]))
@@ -590,35 +592,17 @@ func _run() -> void:
 				check(ar.shell.find_children("Stands", "MeshInstance3D", true, false).size() == 1, id + ": the stands are one mesh")
 			var parts := ar.find_children("*", "GeometryInstance3D", true, false).filter(func(n): return n.visible).size()
 			check(parts <= 60, id + ": %d things to draw%s (60 at most)" % [parts, lvl])
-			# Each spectator's forward (their card's -z) points at the court's middle, and their card has their back
-			# drawn for a camera behind them (as over the stand it looks over). Headless, as here, a MultiMesh keeps no
-			# transforms, so from what the arena kept of each (Arena._crowd_cards), checked against the transforms
-			# themselves where a renderer keeps them.
-			var crowd := ar.find_children("*", "MultiMeshInstance3D", false, false).filter(
-				func(n): return n.material_override is ShaderMaterial and n.material_override.get_shader_parameter("atlas") is Texture2D)
-			var spectators := 0
-			var facing := 0
-			var backs := true
-			for card in crowd:
-				var m: ShaderMaterial = (card as MultiMeshInstance3D).material_override
-				backs = backs and m.get_shader_parameter("atlas_back") is Texture2D \
-					and m.get_shader_parameter("atlas_back") != m.get_shader_parameter("atlas")
-				var mm: MultiMesh = (card as MultiMeshInstance3D).multimesh
-				var faces: PackedVector3Array = card.get_meta("faces", PackedVector3Array())
-				var kept := faces.size() == 2 * mm.instance_count
-				var rendered := not mm.buffer.is_empty()   # a renderer keeps the transforms: what was kept must match them
-				for i in mm.instance_count:
-					spectators += 1
-					if not kept:
-						continue
-					var feet := faces[2 * i]
-					var fwd := faces[2 * i + 1]
-					if rendered and (mm.get_instance_transform(i).origin.distance_to(feet) > 0.001
-							or (-mm.get_instance_transform(i).basis.z.normalized()).distance_to(fwd) > 0.001):
-						continue
-					facing += int(Vector3(fwd.x, 0.0, fwd.z).normalized().dot(Vector3(-feet.x, 0.0, -feet.z).normalized()) > 0.7)
-			check(spectators > 20 and facing == spectators and backs,
-				id + ": every spectator faces the court (%d of %d), their backs drawn%s" % [facing, spectators, lvl])
+			# The owner's check (WsgCrowdVenue.audit, as tools/wsg/crowd_audit.gd): every spectator on this level seated
+			# on their seat, not in it, soles on the floor, nothing inside a seat, a step or a rail, facing the play - the
+			# cards on every level, and on Medium and High the 3D fans too; a camera behind a stand sees their backs.
+			# (On High a small ground's crowd can all be 3D: no cards.)
+			var cards_audit: Dictionary = ar.crowd_cards.audit(ar.crowd_venue, ar.crowd_placed) if ar.crowd_cards != null else {"cards": 0, "fails": []}
+			var m3d: Dictionary = WsgCrowdVenue.audit(ar.crowd3d, ar.crowd_venue, 0) if ar.crowd3d != null else {"fans": 0, "fails": []}
+			check(cards_audit.cards + m3d.fans > 20 and cards_audit.fails.is_empty() and m3d.fails.is_empty()
+				and (gfx == Game.GFX_LOW) == (ar.crowd3d == null)
+				and (ar.crowd_cards == null or bool(ar.crowd_cards.material.get_shader_parameter("has_back"))),
+				id + ": every spectator seated or standing properly, facing the play (%d cards, %d 3D)%s %s" % [cards_audit.cards,
+				m3d.fans, lvl, str(cards_audit.fails + m3d.fails)])
 			ar.queue_free()
 			await frames(1)
 	Game.settings.graphics = gfx_before

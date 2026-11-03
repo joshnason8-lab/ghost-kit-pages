@@ -115,12 +115,14 @@ func _tour() -> void:
 			await frames(30)
 			await shot("fans_%s_tv" % g)
 			var fc: Camera3D = fm.cam.cam
+			fm.cam.frozen = true
 			fm.cam.set_process(false)
 			fm.cam.set_physics_process(false)
 			fc.global_position = Vector3(0.0, 1.7, 6.0)
 			fc.look_at(Vector3(-11.0, 1.6, 2.0))
 			await frames(4)
 			await shot("fans_%s_near" % g)
+			fm.cam.frozen = false
 			fm.cam.set_process(true)
 			fm.cam.set_physics_process(true)
 		return

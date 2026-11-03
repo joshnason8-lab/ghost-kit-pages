@@ -150,6 +150,7 @@ func _render_person(path: String, col: int, sheets: Array[Image], masks: Array[I
 	if colour_mat is BaseMaterial3D:
 		mask_mat.set_shader_parameter("albedo_tex", (colour_mat as BaseMaterial3D).albedo_texture)
 	var ankle_rest := _ankle_y(sk, root)
+	var seat_m := 0.0
 	var lum_sum := [0.0, 0.0]
 	var lum_n := [0, 0]
 	for r in FRAMES.size():
@@ -163,6 +164,14 @@ func _render_person(path: String, col: int, sheets: Array[Image], masks: Array[I
 			# front a seated person's legs hung straight down from the body, standing on air over the step.
 			var tilt := deg_to_rad(SEAT_TILT) if FRAMES[r].begins_with("sit") or FRAMES[r].begins_with("clap") else 0.0
 			root.basis = Basis(Vector3.RIGHT, tilt) * Basis(Vector3.UP, PI * side)
+			if r == 0 and side == 0:
+				# Where the seat of the trousers is drawn, over the bottom of the cell (the floor under the feet), in the
+				# cell's metres: the shared crowd cards (WsgCrowdCards) seat each fan by it.
+				var hb := sk.find_bone("Hips")
+				var hips := (sk.global_transform * sk.get_bone_global_pose(hb)).origin
+				var seat_px := _cam.unproject_position(hips - Vector3(0, 0.1, 0)).y
+				var vp_h := float(_vp.size.y)
+				seat_m = (vp_h - seat_px) / vp_h * CELL_H - 0.02
 			var sheet := sheets[side]
 			var mask := masks[side]
 			var shots := []
@@ -210,7 +219,7 @@ func _render_person(path: String, col: int, sheets: Array[Image], masks: Array[I
 	var recolour := false
 	for word in RECOLOUR:
 		recolour = recolour or path.get_file().contains(word)
-	var out := {}
+	var out := {"seat": snappedf(seat_m, 0.001)}
 	for side in SIDES.size():
 		var top_lum: float = lum_sum[side] / maxf(1.0, float(lum_n[side]))
 		if not recolour:

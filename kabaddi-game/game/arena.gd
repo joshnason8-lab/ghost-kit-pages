@@ -25,7 +25,6 @@ static var use_baked := true   # off: the fixed parts built here, unlit by any b
 var arena_id := "dome"
 var shell: Node3D              # the ground's fixed parts
 var baked := false             # ... came with their baked lighting
-var crowd_mats: Array[ShaderMaterial] = []
 var sun: DirectionalLight3D
 var env: Environment
 var barefoot := false
@@ -38,156 +37,6 @@ var _clap_t := 0.0
 var _clap_share := 0.0
 var _banner_labels := []
 
-const CROWD_SHADER := """
-shader_type spatial;
-render_mode cull_back;
-uniform vec3 skin_tone : source_color = vec3(0.55, 0.38, 0.27);
-uniform float excitement = 0.0;
-varying vec3 v_col;
-void vertex() {
-	float ph = INSTANCE_CUSTOM.a * 6.2831;
-	float rate = 2.0 + excitement * 7.0;
-	float jump = max(0.0, sin(TIME * rate + ph * 3.0));
-	VERTEX.y += jump * (0.015 + excitement * 0.16);
-	vec3 skin = skin_tone * (0.7 + 0.6 * fract(INSTANCE_CUSTOM.a * 7.13));
-	v_col = mix(INSTANCE_CUSTOM.rgb, skin, COLOR.r);
-}
-void fragment() {
-	ALBEDO = v_col;
-	ROUGHNESS = 0.92;
-}
-"""
-
-## The crowd as cards cut from a sprite sheet of real people (tools/crowd/render_crowd.gd): each card turns
-## to face the camera, and picks its frame (sitting, clapping, standing to cheer) from the crowd's
-## excitement. Each spectator faces the court (their instance's -z): a camera behind them, as over the stand
-## it looks over, sees their back, from the sheet drawn from behind. Fans in shirts wear their instance's
-## colour, shaded by the shirt's own folds.
-const CROWD_CARD_SHADER := """
-shader_type spatial;
-render_mode cull_disabled;
-uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
-uniform sampler2D atlas_back : source_color, filter_linear_mipmap, repeat_disable;
-uniform sampler2D top_mask : filter_linear_mipmap, repeat_disable;
-uniform sampler2D top_mask_back : filter_linear_mipmap, repeat_disable;
-// Medium and High's second sheet (tools/crowd/variants.py): people from index people on, in their own clothes.
-uniform sampler2D atlas2 : source_color, filter_linear_mipmap, repeat_disable;
-uniform sampler2D atlas2_back : source_color, filter_linear_mipmap, repeat_disable;
-uniform float people = 8.0;   // people on the first sheet
-uniform float people2 = 8.0;  // on the second
-uniform float frames = 8.0;
-uniform bool standing = false;
-uniform float seat_push = 0.6;   // m nearer the eye a seated card is drawn (Arena.TIER_PUSH, CHAIR_PUSH)
-uniform float excitement = 0.0;
-uniform float top_lum[16];   // each person's shirt brightness, linear; 0 keeps their own clothes
-uniform float top_lum_back[16];   // the same from behind
-uniform float falloff = 0.0;  // under lights (an arena, floodlights at night): the back rows darker, 0 by day
-uniform float lift = 0.0;     // light of their own: under a roof on an overcast day they were black cut-outs
-// Clapping that is heard (Arena.clap): the share of the crowd clapping, claps a second, and how together (1: in time).
-uniform float clap_share = 0.0;
-uniform float clap_rate = 2.6;
-uniform float clap_sync = 0.0;
-// Where the play is (the raider): those sitting or standing still turn their heads to it (the sheets' look frames).
-uniform vec3 watch = vec3(0.0);
-uniform bool watching = false;
-uniform float look_frame = 8.0;   // the first look frame (sit to the left, sit right, stand left, stand right)
-varying flat vec2 cell;
-varying flat float dim;
-varying flat float mirror;
-varying flat float back;
-varying flat vec3 tint;
-varying flat float lum;
-void vertex() {
-	// Seen from behind when the camera is on the far side of them from where they face.
-	vec3 to_eye = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
-	back = step(0.0, dot(MODEL_MATRIX[2].xz, to_eye.xz));
-	// Face the camera, turning about the vertical only.
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz)), 0.0),
-		vec4(0.0, 1.0, 0.0, 0.0), vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0), MODEL_MATRIX[3]);
-	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0),
-		vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
-	if (seat_push > 0.0) {
-		// Someone sitting on a tier has their legs down the front of it, but their card stands where they sit, half
-		// a tier back: the tier hid them from the seat down. Drawn seat_push nearer the eye along its own line of sight
-		// (and as much smaller, round the feet), they are where they were on screen, legs and all, in front of it.
-		float d = length(MODELVIEW_MATRIX[3].xyz);
-		float k = max(d - seat_push, 0.5) / d;
-		MODELVIEW_MATRIX[3].xyz *= k;
-		MODELVIEW_MATRIX[0].xyz *= k;
-		MODELVIEW_MATRIX[1].xyz *= k;
-		MODELVIEW_MATRIX[2].xyz *= k;
-	}
-	MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
-	float slot = INSTANCE_CUSTOM.a * 16.0;   // person index + a random phase
-	float person = floor(slot);
-	float ph = fract(slot);
-	float keen = fract(ph * 3.71);
-	float beat = step(0.5, fract(TIME * (1.4 + excitement * 1.6) + ph * 5.0));
-	float base = standing ? 3.0 : 0.0;
-	float frame = base;
-	bool claps = fract(ph * 13.7) < clap_share;
-	float clap_beat = step(0.5, fract(TIME * clap_rate + ph * 5.0 * (1.0 - clap_sync)));
-	if (excitement > 0.5 + 0.45 * keen) {
-		if (claps && fract(ph * 2.3) < 0.6) {
-			frame = 4.0 + clap_beat;   // on their feet, clapping
-		} else {
-			frame = 6.0 + step(0.65, fract(TIME * 0.35 + ph * 3.0));   // on their feet, arms up or a fist
-		}
-		VERTEX.y += max(0.0, sin(TIME * 6.0 + ph * 40.0)) * 0.07 * excitement;
-	} else if (claps) {
-		frame = base + 1.0 + clap_beat;   // clapping along with what is heard
-	} else if (excitement > 0.2 + 0.4 * keen || fract(TIME * 0.03 + ph * 9.1) < 0.05) {
-		frame = base + 1.0 + beat;   // clapping
-	}
-	mirror = step(0.5, fract(ph * 7.77));
-	if (watching && frame == base && frames > look_frame) {
-		// Watching the play: to their side of the screen it is on, unless it is right in front of them. The sheet's
-		// "left" is the drawn figure's: seen from behind, or drawn mirrored, the other way round.
-		vec3 to_play = watch - MODEL_MATRIX[3].xyz;
-		vec3 right = INV_VIEW_MATRIX[0].xyz;
-		float across = dot(normalize(to_play.xz + vec2(1e-4)), normalize(right.xz));
-		if (abs(across) > 0.3 + 0.25 * fract(ph * 5.3)) {
-			bool to_right = across > 0.0;
-			if ((back > 0.5) != (mirror > 0.5)) {
-				to_right = !to_right;
-			}
-			frame = look_frame + (standing ? 2.0 : 0.0) + (to_right ? 1.0 : 0.0);
-		}
-	}
-	cell = vec2(person, frame);
-	dim = 1.0 - falloff * clamp((length(MODEL_MATRIX[3].xz) - 10.0) / 12.0, 0.0, 1.0);
-	tint = INSTANCE_CUSTOM.rgb;
-	lum = back > 0.5 ? top_lum_back[int(person)] : top_lum[int(person)];
-}
-void fragment() {
-	vec2 uv = vec2(mix(UV.x, 1.0 - UV.x, mirror), UV.y);
-	vec4 c;
-	if (cell.x < people) {
-		uv = (cell + uv) / vec2(people, frames);
-		c = back > 0.5 ? texture(atlas_back, uv) : texture(atlas, uv);
-	} else {
-		uv = (cell - vec2(people, 0.0) + uv) / vec2(people2, frames);
-		c = back > 0.5 ? texture(atlas2_back, uv) : texture(atlas2, uv);
-	}
-	vec3 col = c.rgb;
-	if (lum > 0.0 && tint.r + tint.g + tint.b > 0.003) {
-		float m = back > 0.5 ? texture(top_mask_back, uv).r : texture(top_mask, uv).r;
-		float l = dot(col, vec3(0.2126, 0.7152, 0.0722)) / lum;
-		col = mix(col, tint * clamp(l, 0.2, 1.5), m);
-	}
-	ALBEDO = col * dim;
-	EMISSION = col * dim * lift;
-	ALPHA = c.a;
-	ALPHA_SCISSOR_THRESHOLD = 0.5;
-	ROUGHNESS = 0.95;
-	SPECULAR = 0.2;
-	// Lit a little from above as well as from the front, like the heads and shoulders they are.
-	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 0.8, 0.0, 0.0)).xyz);
-}
-"""
-const CROWD_DIR := "res://assets/crowd/"
-static var _crowd_sheets := {}   # the crowd's sprite sheet once loaded, by detail (Medium and High's has 16 people,
-                                 # Low's 8): {} when the game has none
 
 ## A body drawn a second time (its material's next pass), flattened onto the floor along the sun's light and see-through
 ## black: its shadow, for when the sun casts none (Low graphics). The stencil lets each pixel be darkened once, however
@@ -392,6 +241,8 @@ func clap(sound: String, seconds: float) -> void:
 		return
 	_clap = c if _clap_t <= 0.0 or float(c[0]) >= float(_clap[0]) else _clap
 	_clap_t = maxf(_clap_t, seconds * 0.9)
+	if crowd3d != null:
+		crowd3d.clap(float(_clap[1]), float(_clap[2]), _clap_t)
 
 
 func _ready() -> void:
@@ -402,13 +253,10 @@ func _process(delta: float) -> void:
 	_excite = move_toward(_excite, 0.12, delta * 0.35)
 	_clap_t -= delta
 	_clap_share = move_toward(_clap_share, float(_clap[0]) if _clap_t > 0.0 else 0.0, delta * 1.5)
-	for m in crowd_mats:
-		m.set_shader_parameter("excitement", _excite)
-		m.set_shader_parameter("clap_share", _clap_share)
-		m.set_shader_parameter("clap_rate", _clap[1])
-		m.set_shader_parameter("clap_sync", _clap[2])
-		m.set_shader_parameter("watching", watching)
-		m.set_shader_parameter("watch", watch_at)
+	# The shared crowd (3D fans and cards) rises with the excitement and settles as it does.
+	WsgCrowd3D.set_excite(_excite)
+	if crowd3d != null and watching:
+		crowd3d.watch_ball(watch_at)
 
 
 # ---------------------------------------------------------------- materials
@@ -720,217 +568,135 @@ func _floor_shadow(strength: float) -> void:
 
 # ---------------------------------------------------------------- crowds and props
 
-func _person_mesh() -> ArrayMesh:
-	# One low-poly spectator: torso (shirt colour) and head (skin). Vertex colour red marks skin.
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var body := CapsuleMesh.new()
-	body.radius = 0.2
-	body.height = 0.85
-	body.radial_segments = 6
-	body.rings = 2
-	var head := SphereMesh.new()
-	head.radius = 0.12
-	head.height = 0.24
-	head.radial_segments = 6
-	head.rings = 4
-	_append(st, body, Transform3D(Basis(), Vector3(0, 0.42, 0)), Color(0, 0, 0))
-	_append(st, head, Transform3D(Basis(), Vector3(0, 0.97, 0)), Color(1, 0, 0))
-	st.generate_normals()
-	return st.commit()
+## The crowd, through the shared foundation (ADOPTING 5.1): each ground's spectators are declared (KabaddiVenues: who
+## sits where, on what, and who stands) and the foundation places them - seated on their seat, not in it, the soles on
+## the floor, facing the play - and checks them (tools/wsg/crowd_audit.gd). On every level our own people are drawn as
+## cards (WsgCrowdCards with our sheets, tools/crowd/pack_cards.py), sitting, standing or cheering, their backs seen from
+## behind, in one draw; on Medium and High the fans nearest the court are 3D (WsgCrowd3D), who clap with the clapping
+## heard and turn their heads to the raider. The chairs and stools are put where the venue's seats are.
+const CARDS := "res://assets/crowd/cards"
+const CROWD_SEED := 7
+## The 3D fans' skin and hair, as our people's (dark to light): WsgCrowd3D.set_looks.
+const LOOKS_SKIN := [Color(0.36, 0.23, 0.17), Color(0.45, 0.3, 0.2), Color(0.55, 0.37, 0.26), Color(0.62, 0.43, 0.31),
+	Color(0.7, 0.5, 0.37)]
+const LOOKS_HAIR := [Color(0.06, 0.05, 0.05), Color(0.1, 0.08, 0.07), Color(0.17, 0.12, 0.09), Color(0.6, 0.6, 0.6)]
+## How bright the cards are drawn (they take no light of the scene's own): as the people were by each ground's light.
+const CARD_BRIGHT := {"dome": 0.9, "stadium": 0.85, "village": 1.0, "monsoon": 0.8, "beach": 1.0}
+static var _card_art := {}
+
+var crowd_venue: WsgCrowdVenue
+var crowd_placed := {}           # crowd_venue.place(): every place, filled or not
+var crowd3d: WsgCrowd3D          # Medium and High: the fans nearest the court
+var crowd_cards: WsgCrowdCards   # every other fan (all of them on Low)
+var crowd_in_3d := PackedInt32Array()
+var crowd_on_cards := PackedInt32Array()
 
 
-func _append(st: SurfaceTool, mesh: PrimitiveMesh, xf: Transform3D, col: Color) -> void:
-	var arrays := mesh.get_mesh_arrays()
-	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-	for i in idx:
-		st.set_color(col)
-		st.add_vertex(xf * verts[i])
+## Our people as the shared cards: the layout and sheets for this graphics level (Low the eight; Medium and High
+## sixteen, the eight again in other clothes). hi forces one or the other. {} if the game has none.
+static func card_art(hi := -1) -> Dictionary:
+	var detail := Game.detail_textures() if hi < 0 else hi == 1
+	var sfx := "_hi" if detail and ResourceLoader.exists(CARDS + "_hi.webp") else ""
+	if not _card_art.has(sfx):
+		var art := {}
+		var layout = JSON.parse_string(FileAccess.get_file_as_string(CARDS + sfx + ".json")) if FileAccess.file_exists(CARDS + sfx + ".json") else null
+		if layout is Dictionary and ResourceLoader.exists(CARDS + sfx + ".webp"):
+			art = {"layout": layout, "atlas": load(CARDS + sfx + ".webp"), "mask": load(CARDS + sfx + "_mask.png"),
+				"back": load(CARDS + sfx + "_back.webp"), "back_mask": load(CARDS + sfx + "_back_mask.png")}
+		_card_art[sfx] = art
+	return _card_art[sfx]
 
 
-func _crowd(positions: Array, palette: Array, skin: Color, facing: Vector3 = Vector3.ZERO) -> void:
-	var keep := Game.crowd_density()
-	var chosen := []
+## This ground's crowd: palette the shirts most wear (the teams' colours among them), falloff how much darker the back
+## rows are under lights (0 by day).
+## extra_chairs: more plastic chairs drawn with the crowd's ([position, yaw]: the scorers').
+func _venue_crowd(palette: Array, hc: Color, ac: Color, falloff := 0.0, extra_chairs := []) -> void:
+	crowd_venue = KabaddiVenues.venue(arena_id)
+	crowd_placed = crowd_venue.place(CROWD_SEED)
+	_venue_seats(crowd_placed, extra_chairs)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
-	for p in positions:
-		if rng.randf() < keep:
-			chosen.append(p)
-	if chosen.is_empty():
+	var keep := Game.crowd_density()
+	var shirts := []
+	var lights := []
+	for i in crowd_placed.spots.size():
+		var p: Vector3 = crowd_placed.spots[i]
+		# Most in a colour of the palette; the rest (alpha 0) as the cards and fans choose: a team's or their own.
+		var c: Color = (palette[rng.randi() % palette.size()] as Color).lerp(Color(rng.randf(), rng.randf(), rng.randf()), 0.1)
+		shirts.append(c if rng.randf() < 0.8 else Color(0, 0, 0, 0))
+		lights.append(1.0 - falloff * clampf((Vector2(p.x, p.z).length() - 10.0) / 12.0, 0.0, 1.0))
+	crowd_in_3d = PackedInt32Array()
+	var gfx := int(Game.settings.graphics)
+	if gfx != Game.GFX_LOW and WsgCrowd3D.available():
+		crowd3d = WsgCrowd3D.new()
+		crowd3d.name = "Crowd3D"
+		add_child(crowd3d)
+		crowd3d.set_looks(LOOKS_SKIN, LOOKS_HAIR, WsgCrowd3D.LOOKS.legs)
+		crowd_in_3d = crowd3d.build_venue(crowd_venue, gfx, Vector3.ZERO, keep, CROWD_SEED, shirts, lights)
+		crowd3d.set_teams(hc, ac)
+	var drawn := {}
+	for i in crowd_in_3d:
+		drawn[i] = true
+	crowd_on_cards = PackedInt32Array()
+	for i in crowd_placed.spots.size():
+		if not drawn.has(i) and rng.randf() < keep:
+			crowd_on_cards.append(i)
+	var art := card_art()
+	if crowd_on_cards.is_empty():
 		return
-	if not crowd_sheet().is_empty():
-		# People on tiers sit; people on chairs and stools sit; people on the ground stand.
-		_crowd_cards(chosen.filter(func(p): return p.y > 0.2 and not _chair_spots.has(p)), palette, false, rng, facing)
-		_crowd_cards(chosen.filter(func(p): return _chair_spots.has(p)), palette, false, rng, facing, CHAIR_PUSH)
-		_crowd_cards(chosen.filter(func(p): return p.y <= 0.2), palette, true, rng, facing)
-		return
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_custom_data = true
-	mm.mesh = _person_mesh()
-	mm.instance_count = chosen.size()
-	for i in chosen.size():
-		var pos: Vector3 = chosen[i]
-		var look := (facing - pos)
-		look.y = 0
-		var basis := Basis()
-		if look.length() > 0.01:
-			basis = Basis.looking_at(look.normalized(), Vector3.UP)
-		var s := rng.randf_range(0.9, 1.08)
-		mm.set_instance_transform(i, Transform3D(basis.scaled(Vector3(s, s, s)), pos))
-		var c: Color = palette[rng.randi() % palette.size()]
-		c = c.lerp(Color(rng.randf(), rng.randf(), rng.randf()), 0.12)
-		mm.set_instance_custom_data(i, Color(c.r, c.g, c.b, rng.randf()))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	var sm := ShaderMaterial.new()
-	var sh := Shader.new()
-	sh.code = CROWD_SHADER
-	sm.shader = sh
-	sm.set_shader_parameter("skin_tone", skin)
-	mmi.material_override = sm
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	crowd_mats.append(sm)
-	add_child(mmi)
+	crowd_cards = WsgCrowdCards.new()
+	crowd_cards.name = "CrowdCards"
+	add_child(crowd_cards)
+	if not art.is_empty():
+		crowd_cards.use_art(art.atlas, art.mask, art.layout, art.back, art.back_mask)
+	crowd_cards.build(crowd_placed, crowd_on_cards, CROWD_SEED, shirts, lights)
+	crowd_cards.set_teams(hc, ac)
+	crowd_cards.brightness = float(CARD_BRIGHT.get(arena_id, 1.0))
 
 
-## The crowd's sprite sheet for this graphics level: on Low the eight people; on Medium and High sixteen, the eight
-## and, on a second sheet beside theirs, the eight again in other colours (tools/crowd/variants.py). hi forces one or
-## the other.
-static func crowd_sheet(hi := -1) -> Dictionary:
-	var detail := Game.detail_textures() if hi < 0 else hi == 1
-	var sfx := "_hi" if detail and ResourceLoader.exists(CROWD_DIR + "crowd_atlas_hi.webp") else ""
-	if not _crowd_sheets.has(sfx):
-		var sheet := {}
-		var f := FileAccess.open(CROWD_DIR + "crowd_atlas.json", FileAccess.READ)
-		if f and ResourceLoader.exists(CROWD_DIR + "crowd_atlas.webp"):
-			var info = JSON.parse_string(f.get_as_text())
-			if info is Dictionary:
-				sheet = {"info": info, "atlas": load(CROWD_DIR + "crowd_atlas.webp"),
-					"mask": load(CROWD_DIR + "crowd_mask.png")}
-				# From behind, if drawn (tools/crowd/render_crowd.gd); else the front again.
-				var has_back := ResourceLoader.exists(CROWD_DIR + "crowd_atlas_back.webp")
-				sheet["atlas_back"] = load(CROWD_DIR + "crowd_atlas_back.webp") if has_back else sheet.atlas
-				sheet["mask_back"] = load(CROWD_DIR + "crowd_mask_back.png") if has_back else sheet.mask
-				var g := FileAccess.open(CROWD_DIR + "crowd_atlas_hi.json", FileAccess.READ) if sfx != "" else null
-				var hi_info = JSON.parse_string(g.get_as_text()) if g else null
-				if hi_info is Dictionary:
-					sheet.info = hi_info
-					sheet["atlas2"] = load(CROWD_DIR + "crowd_atlas_hi.webp")
-					sheet["atlas2_back"] = load(CROWD_DIR + "crowd_atlas_hi_back.webp")
-		_crowd_sheets[sfx] = sheet
-	return _crowd_sheets[sfx]
+## The chairs and stools of the venue's chair and stool sections, one under every seat (filled or not), square to its
+## row, drawn in one go a kind with a soft shadow under each.
+func _venue_seats(placed: Dictionary, extra_chairs := []) -> void:
+	var kinds := {"plastic": "monobloc_chair", "stool": "folding_stool"}
+	var rows := {}
+	for o in placed.obstacles:
+		if o.what == "seat":
+			rows[int(o.section)] = (o.xf as Transform3D).basis
+	var lists := {}
+	var colours := {}
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12
+	for i in placed.spots.size():
+		var si: int = placed.section[i]
+		var kind: String = kinds.get(String(crowd_venue.sections[si].seat), "")
+		if kind == "" or not bool(placed.anchor_seat[i]) or not rows.has(si):
+			continue
+		# The seat's front faces the play: away from the row's back (the basis' z points away from the play).
+		var away: Vector3 = (rows[si] as Basis).z
+		var yaw := atan2(-away.x, -away.z)
+		if not lists.has(kind):
+			lists[kind] = []
+			colours[kind] = []
+		lists[kind].append([placed.spots[i], yaw])
+		colours[kind].append(_seat_colour(rng) if kind == "monobloc_chair" else Color.WHITE)
+	if not extra_chairs.is_empty():
+		if not lists.has("monobloc_chair"):
+			lists["monobloc_chair"] = []
+			colours["monobloc_chair"] = []
+		for c in extra_chairs:
+			lists["monobloc_chair"].append(c)
+			colours["monobloc_chair"].append(_seat_colour(rng))
+	for kind in lists:
+		_seats(kind, lists[kind], colours[kind])
 
 
-## Spectators as camera-facing cards, each facing the point facing (the court's middle): their instance's
-## -z points there, so the card shows their back to a camera behind them. Fans in shirts are picked more
-## often than the rest, and most wear a colour from the palette (the teams' colours among them); children are
-## fewer.
-## How far toward the eye a seated card is drawn (CROWD_CARD_SHADER's seat_push): on a tier, past the step that would
-## hide the legs hanging down its front; on a chair or stool, only past the seat's front edge, so the hips are on the seat
-## and the legs in front of it (drawn as far forward as on a tier, they stood in front of their stools; not at all, the
-## stool's seat and legs cut through them).
-const TIER_PUSH := 0.6
-const CHAIR_PUSH := 0.28
-
-
-func _crowd_cards(spots: Array, palette: Array, standing: bool, rng: RandomNumberGenerator, facing: Vector3, push := TIER_PUSH) -> void:
-	if spots.is_empty():
-		return
-	var sheet := crowd_sheet()
-	var info: Dictionary = sheet.info
-	var people: Array = info.people
-	var cell: Array = info.cell
-	var h := float(info.cell_height_m)
-	var w := h * float(cell[0]) / float(cell[1])
-	var weights := []
-	var lums := PackedFloat32Array()
-	lums.resize(16)
-	var lums_back := PackedFloat32Array()
-	lums_back.resize(16)
-	var total := 0.0
-	# A person in other colours (the sixteen-person sheet) shares the person's own share of the crowd.
-	var alike := {}
-	for p in people:
-		alike[int(p.get("base", -1))] = int(alike.get(int(p.get("base", -1)), 0)) + 1
-	for i in people.size():
-		var file := String(people[i].file)
-		var wt := 3.0 if float(people[i].top_luminance) > 0.0 else 1.5
-		if file.contains("boy") or file.contains("girl"):
-			wt = 0.8
-		wt /= float(alike.get(int(people[i].get("base", -1)), 1))
-		weights.append(wt)
-		total += wt
-		lums[i] = float(people[i].top_luminance)
-		lums_back[i] = float(people[i].get("top_luminance_back", people[i].top_luminance))
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_custom_data = true
-	mm.mesh = _card_mesh(w, h)
-	mm.instance_count = spots.size()
-	# Each one's feet and forward, kept for the tests: a headless run's MultiMesh keeps no transforms.
-	var faces := PackedVector3Array()
-	for i in spots.size():
-		var pos: Vector3 = spots[i]
-		# Feet on the ground, or on the tier below the seat; the sheet has 2 cm under the feet.
-		var feet := pos - Vector3(0, (0.0 if standing else 0.45) + 0.02, 0)
-		var s := rng.randf_range(0.93, 1.06)
-		var look := facing - feet
-		look.y = 0.0
-		var turn := Basis.looking_at(look.normalized(), Vector3.UP) if look.length() > 0.01 else Basis()
-		mm.set_instance_transform(i, Transform3D(turn.scaled(Vector3(s, s, s)), feet))
-		faces.append_array([feet, -turn.z])
-		var pick := rng.randf() * total
-		var person := 0
-		while person < people.size() - 1 and pick > weights[person]:
-			pick -= weights[person]
-			person += 1
-		var tint := Color(0, 0, 0)
-		if rng.randf() < 0.8:
-			var c: Color = palette[rng.randi() % palette.size()]
-			tint = c.lerp(Color(rng.randf(), rng.randf(), rng.randf()), 0.1).srgb_to_linear()
-		mm.set_instance_custom_data(i, Color(tint.r, tint.g, tint.b, (person + rng.randf_range(0.0, 0.999)) / 16.0))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.set_meta("faces", faces)
-	var sm := ShaderMaterial.new()
-	var sh := Shader.new()
-	sh.code = CROWD_CARD_SHADER
-	sm.shader = sh
-	sm.set_shader_parameter("atlas", sheet.atlas)
-	sm.set_shader_parameter("atlas_back", sheet.atlas_back)
-	sm.set_shader_parameter("top_mask", sheet.mask)
-	sm.set_shader_parameter("top_mask_back", sheet.mask_back)
-	sm.set_shader_parameter("people", float(info.get("columns", people.size())))
-	if sheet.has("atlas2"):
-		sm.set_shader_parameter("atlas2", sheet.atlas2)
-		sm.set_shader_parameter("atlas2_back", sheet.atlas2_back)
-		sm.set_shader_parameter("people2", float(info.get("columns2", 8)))
-	sm.set_shader_parameter("frames", float((info.frames as Array).size()))
-	sm.set_shader_parameter("look_frame", float((info.frames as Array).find("sit_look_l")) if (info.frames as Array).has("sit_look_l") else 99.0)
-	sm.set_shader_parameter("standing", standing)
-	sm.set_shader_parameter("seat_push", 0.0 if standing else push)
-	sm.set_shader_parameter("top_lum", lums)
-	sm.set_shader_parameter("top_lum_back", lums_back)
-	sm.set_shader_parameter("falloff", {"dome": 0.5, "stadium": 0.4}.get(arena_id, 0.0))
-	sm.set_shader_parameter("lift", {"monsoon": 0.3}.get(arena_id, 0.0))
-	mmi.material_override = sm
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	crowd_mats.append(sm)
-	add_child(mmi)
-
-
-func _card_mesh(w: float, h: float) -> ArrayMesh:
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(-w * 0.5, 0, 0), Vector3(w * 0.5, 0, 0), Vector3(w * 0.5, h, 0), Vector3(-w * 0.5, h, 0)])
-	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3.BACK, Vector3.BACK, Vector3.BACK, Vector3.BACK])
-	arrays[Mesh.ARRAY_TEX_UV] = PackedVector2Array([Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
-	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 2, 1, 0, 3, 2])
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
+## A plastic chair's colour at this ground: white, a few pale blue or cream; in the monsoon's shade, grey.
+func _seat_colour(rng: RandomNumberGenerator) -> Color:
+	if arena_id == "monsoon":
+		return Color(0.62, 0.64, 0.68)
+	if arena_id == "beach":
+		return [Color.WHITE, Color("e8eef4"), Color("f2e6c8"), Color("cfe3f2")][rng.randi() % 4]
+	return Color(1, 1, 1).darkened(rng.randf_range(0.0, 0.12)) if rng.randf() < 0.85 else Color("d8e4f0")
 
 
 ## Tiered stands on all four sides (into the shell), as one mesh: one draw for every tier (there were four a tier).
@@ -950,27 +716,6 @@ func _stand_boxes(inner_x: float, inner_z: float, tiers: int, mat: Material) -> 
 	# The stadium's, the biggest, a little coarser: at 0.15 m their lightmap alone needed more than a 1024 atlas, and the
 	# ground's went to 2048 (four times the memory). The separate boxes before had 0.19 to 0.54 m.
 	mi.set_meta("lm_texel", 0.25 if arena_id == "stadium" else 0.15)
-
-
-## The spectators' seats on those stands.
-func _stand_seats(inner_x: float, inner_z: float, tiers: int, gap_for_tunnel := true) -> Array:
-	var seats := []
-	var tier_d := 0.9
-	var tier_h := 0.45
-	for t in tiers:
-		var h := tier_h * (t + 1)
-		var off := t * tier_d
-		for sgn in [-1.0, 1.0]:
-			var z := -inner_z - off + 0.4
-			while z < inner_z + off - 0.4:
-				seats.append(Vector3(sgn * (inner_x + off + tier_d * 0.5), h, z))
-				z += 0.55
-			var x := -inner_x - off + 0.4
-			while x < inner_x + off - 0.4:
-				if not (gap_for_tunnel and absf(x) < 1.2 and t < 2):
-					seats.append(Vector3(x, h, sgn * (inner_z + off + tier_d * 0.5)))
-				x += 0.55
-	return seats
 
 
 ## The LED boards round the run-off: [centre, size, turn] for each side.
@@ -1013,15 +758,12 @@ const TV_EYE := Vector3(11.0, 5.8, 0.0)
 ## cut-outs further off, and all of them on Low (they look far more real than a cut-down tree at that distance, at 4
 ## triangles each: the shared assets' own rule).
 const NEAR_TREE := 25.0
-## The seats' height, for whoever sits on them.
-const SEAT_H := {"monobloc_chair": 0.44, "folding_stool": 0.44}
 ## The scorers' chairs at a local ground, behind their table (Officials sits them there).
 const SCORERS_CHAIRS := [[Vector3(-8.2, 0, -0.45), PI / 2], [Vector3(-8.2, 0, 0.45), PI / 2]]
 ## A canopy's middle and half size for each tree, at its own size (1): for the bake's stand-ins (_bake_lights).
 const CANOPY := {"rain_tree": [Vector3(0, 9.5, 0), Vector3(7.5, 3.2, 7.5)], "island_tree_a": [Vector3(0, 6.0, 0), Vector3(4.0, 2.6, 4.0)],
 	"island_tree_b": [Vector3(0, 5.2, 0), Vector3(4.0, 2.0, 4.0)]}
 
-var _chair_spots := {}  # where someone sits on a chair or stool (_seats), not on a tier: _crowd draws them less far forward
 var _blob_spots := []   # the seats' and tables' contact shadows, drawn in one go (_scenery_done)
 
 
@@ -1050,32 +792,15 @@ func _trees(list: Array, sway := 0.0) -> void:
 
 
 ## Seats, each [position, the way it faces (radians)]: kind monobloc_chair or folding_stool, drawn in one go, a soft
-## shadow under each. Returns a place on each for someone sitting on it, as _crowd takes them (a sitting person's
-## card a little forward of the seat, so its front edge does not cut across their knees).
-func _seats(kind: String, list: Array, colors := []) -> Array:
+## shadow under each.
+func _seats(kind: String, list: Array, colors := []) -> void:
 	var xf := []
-	var spots := []
 	for c in list:
 		var p: Vector3 = c[0]
 		var yaw: float = c[1]
 		xf.append(Scenery.at(p, yaw))
 		_blob_spots.append([p, 0.34, 0.34, yaw])
-		# On the seat's middle: drawn a little toward the eye (CHAIR_PUSH), from wherever it is seen, they sit on it.
-		# (0.2 m forward of the seat, as before, slid them off it sideways when the camera saw the seat side-on.)
-		var spot := p + Vector3(0, float(SEAT_H[kind]) + 0.02, 0)
-		spots.append(spot)
-		_chair_spots[spot] = true
 	Scenery.scatter(self, "seating/" + kind, xf, int(Game.settings.graphics) == Game.GFX_LOW, colors)
-	return spots
-
-
-## A row of seats from a to b (spaced gap apart), facing the way facing (radians).
-func _seat_row(a: Vector3, b: Vector3, gap: float, facing: float) -> Array:
-	var out := []
-	var n := int((b - a).length() / gap) + 1
-	for i in n:
-		out.append([a.lerp(b, float(i) / maxf(n - 1, 1)), facing])
-	return out
 
 
 ## Dry grass growing round a ground's edge and against what stands on it: clumps of cut-outs, in one go.
@@ -1258,7 +983,7 @@ func _dress_dome(hc: Color, ac: Color, banner: String) -> void:
 	_mat_label(banner, Vector3(0, 0.012, -HALF_L - 1.2), 0.0, 120)
 	_mat_label(banner, Vector3(0, 0.012, HALF_L + 1.2), PI, 120)
 	_ad_boards(8.6, 10.2, [hc, ac, Color("ff9a1f")], banner)
-	_crowd(_stand_seats(9.6, 11.2, 9), [hc, ac, hc, ac, Color("f3efe6"), Color("ff9a1f"), Color("2b2b2b")], Color("a06a48"), Vector3.ZERO)
+	_venue_crowd([hc, ac, hc, ac, Color("f3efe6"), Color("ff9a1f"), Color("2b2b2b")], hc, ac, 0.5)
 	var fill := OmniLight3D.new()
 	fill.position = Vector3(0, 9, 0)
 	fill.omni_range = 22.0
@@ -1285,7 +1010,7 @@ func _dress_stadium(hc: Color, ac: Color, banner: String) -> void:
 	_mat_label(banner, Vector3(0, 0.012, -HALF_L - 1.2), 0.0, 120)
 	_mat_label(banner, Vector3(0, 0.012, HALF_L + 1.2), PI, 120)
 	_ad_boards(9.0, 11.0, [hc, ac], banner)
-	_crowd(_stand_seats(13.0, 15.0, 12, false), [hc, ac, hc, ac, Color("f3efe6"), Color("1d4ed8"), Color("ff9933")], Color("a06a48"), Vector3.ZERO)
+	_venue_crowd([hc, ac, hc, ac, Color("f3efe6"), Color("1d4ed8"), Color("ff9933")], hc, ac, 0.4)
 	_skyline()
 
 
@@ -1368,31 +1093,9 @@ func _dress_village(hc: Color, ac: Color) -> void:
 	_trees(_village_trees(), 0.12)
 	Scenery.scatter(self, "buildings/indian_village_temple", [Scenery.at(VILLAGE_TEMPLE, PI / 2)], low)
 	_blob_spots.append([VILLAGE_TEMPLE, 2.7, 3.2, PI / 2])
-	# Plastic chairs in two rows along the far side, stools at the ends, and standing round the rest.
-	var chairs := _seat_row(Vector3(-10.5, 0, -7.6), Vector3(-10.5, 0, 7.6), 0.7, PI / 2)
-	chairs.append_array(_seat_row(Vector3(-11.35, 0, -7.25), Vector3(-11.35, 0, 7.25), 0.7, PI / 2))
-	var white := []
-	for i in chairs.size():
-		white.append(Color(1, 1, 1).darkened(rng.randf_range(0.0, 0.12)) if rng.randf() < 0.85 else Color("d8e4f0"))
-	chairs.append_array(SCORERS_CHAIRS)
-	var spots := _seats("monobloc_chair", chairs, white)
-	spots.resize(spots.size() - SCORERS_CHAIRS.size())   # Officials sits the scorers there
-	var stools := []
-	for end in [-1.0, 1.0]:
-		for i in 7:
-			var x := -3.3 + i * 1.1 + rng.randf_range(-0.2, 0.2)
-			stools.append([Vector3(x, 0, end * rng.randf_range(11.0, 11.6)), (0.0 if end < 0 else PI) + rng.randf_range(-0.3, 0.3)])
-	spots.append_array(_seats("folding_stool", stools))
-	for i in 300:
-		var a := TAU * i / 300.0 + rng.randf_range(-0.008, 0.008)
-		var r := 12.3 + (i % 3) * 0.75 + rng.randf_range(-0.3, 0.3)
-		var p := Vector3(cos(a) * r * 0.9, 0.0, sin(a) * r)
-		if p.x < -9.8 and absf(p.z) < 8.8:
-			p.x -= 2.6   # behind the chairs
-		if absf(p.z) > 10.6 and absf(p.x) < 4.5:
-			p.z += signf(p.z) * 1.4   # behind the stools
-		spots.append(p)
-	_crowd(spots, [Color("f3efe6"), Color("e0c35b"), Color("c44536"), Color("3a6ea5"), Color("6a994e"), Color("f28482"), hc, ac], Color("9a6345"), Vector3.ZERO)
+	# Plastic chairs in two rows along the far side, stools at the ends, and standing round the rest (KabaddiVenues).
+	_venue_crowd([Color("f3efe6"), Color("e0c35b"), Color("c44536"), Color("3a6ea5"), Color("6a994e"), Color("f28482"), hc, ac],
+		hc, ac, 0.0, SCORERS_CHAIRS)
 	# Dry grass round the ground's edge, and against the houses.
 	var clumps := []
 	for i in 40:
@@ -1448,22 +1151,8 @@ func _shell_monsoon() -> void:
 
 func _dress_monsoon(hc: Color, ac: Color) -> void:
 	_trees(_monsoon_trees(), 0.25)
-	var west := []
-	for s in _stand_seats(10.5, 10.5, 3):
-		if s.x < 0:
-			west.append(s)
-	# Under the tarpaulin: three rows of chairs facing the court, in its shade.
-	var chairs := []
-	for row in 3:
-		chairs.append_array(_seat_row(Vector3(-6.0, 0, -15.6 - row * 0.95), Vector3(2.0, 0, -15.6 - row * 0.95), 0.72, 0.0))
-	var shade := []
-	for c in chairs:
-		shade.append(Color(0.62, 0.64, 0.68))
-	chairs.append_array(SCORERS_CHAIRS)
-	var sat := _seats("monobloc_chair", chairs, shade)
-	sat.resize(sat.size() - SCORERS_CHAIRS.size())
-	west.append_array(sat)
-	_crowd(west, [Color("f3efe6"), Color("2b2b2b"), hc, ac, Color("1d4ed8"), Color("e0c35b")], Color("8a5a3f"), Vector3.ZERO)
+	# The west stand, and under the tarpaulin three rows of chairs facing the court, in its shade (KabaddiVenues).
+	_venue_crowd([Color("f3efe6"), Color("2b2b2b"), hc, ac, Color("1d4ed8"), Color("e0c35b")], hc, ac, 0.0, SCORERS_CHAIRS)
 	_rain()
 	_scenery_done()
 
@@ -1591,23 +1280,6 @@ func _dress_beach(hc: Color, ac: Color) -> void:
 	add_child(shore)
 	Scenery.scatter(self, "buildings/jagannath_tower", [Scenery.at(PURI_TOWER, atan2(TV_EYE.x - PURI_TOWER.x, TV_EYE.z - PURI_TOWER.z))],
 		true, [], false)
-	# Plastic chairs along the far side; standing round the rest, but for the sea's end.
-	var chairs := _seat_row(Vector3(-10.4, 0, -6.2), Vector3(-10.4, 0, 8.2), 0.72, PI / 2)
-	chairs.append_array(_seat_row(Vector3(-11.25, 0, -5.8), Vector3(-11.25, 0, 7.8), 0.72, PI / 2))
-	var col := []
-	for c in chairs:
-		col.append([Color.WHITE, Color("e8eef4"), Color("f2e6c8"), Color("cfe3f2")][rng.randi() % 4])
-	chairs.append_array(SCORERS_CHAIRS)
-	var spots := _seats("monobloc_chair", chairs, col)
-	spots.resize(spots.size() - SCORERS_CHAIRS.size())
-	for i in 220:
-		var a := TAU * i / 220.0
-		var r := 11.0 + (i % 2) * 0.8
-		var pos := Vector3(cos(a) * r * 0.9, 0.0, sin(a) * r)
-		if pos.z < -8.0:
-			continue
-		if pos.x < -9.6 and absf(pos.z) < 9.0:
-			pos.x -= 2.4   # behind the chairs
-		spots.append(pos)
-	_crowd(spots, [Color("f3efe6"), Color("f28482"), Color("84c7ff"), Color("ffd166"), hc, ac], Color("8f5a3c"), Vector3.ZERO)
+	# Plastic chairs along the far side; standing round the rest, but for the sea's end (KabaddiVenues).
+	_venue_crowd([Color("f3efe6"), Color("f28482"), Color("84c7ff"), Color("ffd166"), hc, ac], hc, ac, 0.0, SCORERS_CHAIRS)
 	_scenery_done()

@@ -433,3 +433,23 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
   the crowd's chant 16 checked takes at their own pitches. Credited in Licences and SOUNDS.md. No CC0 recording of a real
   raider's cant was found (Commons has only CC0 pronunciation clips, rate-limited from here; Freesound blocked).
 
+
+## 0.14.3: the crowd through the shared foundation (owner's directive, every game)
+
+- **Foundation** synced to 4d6aa03 (crowd placement, Low cards with back views). The licensed crowd re-baked (FORCE=1
+  tools/wsg/fetch_assets.sh): the data baked before the foundation grounded every frame had seated soles up to 6.8 cm
+  under the floor.
+- **Venues declared** (game/kabaddi_venues.gd, registered in game/crowd_venues.gd): the dome's and stadium's stepped
+  stands (sitting on the step behind, the dome's tunnel), the monsoon's west stand and tarpaulin chairs, the village's
+  chairs, stools and standing ring, the beach's chairs and ring. The chairs' seats sit at the back of their row's tread
+  (with the seat 0.2 m back the foundation sat the fans back into it to keep their toes on the tread: 3 cm in);
+  standing room at the village and beach is a line of its own behind the chairs (the ring's ends had cut into them).
+  crowd_audit: all five PASS (inside at most 2.4 cm, facing at most 7 degrees).
+- **Arena** builds every ground's crowd from KabaddiVenues.venue(id).place(): Low our people as WsgCrowdCards (use_art:
+  tools/crowd/pack_cards.py repacks the render_crowd sheets a cell a pose - sit, stand, cheer - front and back, the
+  shirt mask in R, each adult's sitting cell scaled to a common seat height 0.42 so the cards pick any adult for a seat,
+  the children shorter); Medium and High the nearest as WsgCrowd3D (build_venue; our skin and hair; clap with the
+  clapping heard, watch the raider), the rest as cards. Chairs and stools are placed under the venue's seats. The old
+  card shader, the stand seat lists and the chair spots are gone (render_crowd.gd now records each person's seat).
+  Lost against the old cards on Low: clapping and head-turn frames (the shared cards have sit, stand and cheer).
+- **Tests**: every ground at every level audited (cards and 3D, WsgCrowdVenue.audit); the card sheets' layout.

@@ -206,7 +206,7 @@ func build(spots: Array, facings: Array, density := 1.0, seed := 0, seated: Vari
 			xfs.append(pl)
 			# (g: the seat's light, its sign whether seated; a: the shirt's code. Small numbers: the Compatibility
 			# renderer keeps custom data in half floats.)
-			var code := shirt_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
+			var code := shirt_palette_code(shirts[i]) if i < shirts.size() and shirts[i] is Color else 0.0
 			var li := clampf(float(lights[i]) if i < lights.size() else 1.0, 0.05, 2.0)
 			# (r: the fan's own random number, plus 2 where their legs hang.)
 			var hang: bool = i < _dangle.size() and _dangle[i]
@@ -486,8 +486,34 @@ static var _sun := Vector3(0.35, 0.85, 0.4).normalized()
 static var _shade := 0.72
 
 
-## A shirt colour as the one number the shader reads (and the games' cut-outs: Hurling's Crowd._code), the nearest
-## of 256 it can make.
+## A shirt colour as the one number the 3D fans' shader reads (build() uses it for the shirts it is given): 1 plus the
+## nearest of SHIRTS, 256 colours that reach white, the pale neutrals and plain colours (a half float keeps it exact).
+## (shirt_code below, below 1, is the old hash the games' cut-out shaders decode; it could not make white or pale
+## shirts - white came out mint - Kho Kho, Pok Ta Pok.)
+static func shirt_palette_code(col: Color) -> float:
+	var best := 0
+	var bd := 9.0
+	for i in 256:
+		var c := shirt_palette(i)
+		var d := Vector3(c.r - col.r, c.g - col.g, c.b - col.b).length()
+		if d < bd:
+			bd = d
+			best = i
+	return 1.0 + (float(best) + 0.5) / 256.0
+
+
+## The 256 shirts: 16 greys black to white, then 20 hues (18 degrees apart) x 3 saturations x 4 values
+## (crowd_vat.gdshader decodes the same).
+static func shirt_palette(i: int) -> Color:
+	if i < 16:
+		var g := float(i) / 15.0
+		return Color(g, g, g)
+	var k := i - 16
+	return Color.from_hsv(float(k % 20) / 20.0, [0.3, 0.6, 0.95][(k / 20) % 3], [0.35, 0.55, 0.75, 0.95][k / 60])
+
+
+## A shirt colour as the one number the games' cut-outs decode (Hurling's Crowd._code: fract(code * vec3(7.13, 3.77,
+## 5.31))), the nearest of the 256 that hash makes.
 static func shirt_code(col: Color) -> float:
 	var best := 0.0
 	var bd := 9.0

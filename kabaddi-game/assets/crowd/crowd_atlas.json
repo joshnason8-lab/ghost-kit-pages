@@ -21,6 +21,7 @@
  "people": [
   {
    "file": "crowd_01_man_tshirt_rigged.glb",
+   "seat": 0.367,
    "top_luminance": 0.536,
    "top_luminance_back": 0.474,
    "top_pixels": 1998,
@@ -28,6 +29,7 @@
   },
   {
    "file": "crowd_02_man_fan_jersey_rigged.glb",
+   "seat": 0.374,
    "top_luminance": 0.084,
    "top_luminance_back": 0.063,
    "top_pixels": 1844,
@@ -35,6 +37,7 @@
   },
   {
    "file": "crowd_03_sikh_man_rigged.glb",
+   "seat": 0.433,
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
    "top_pixels": 1988,
@@ -42,6 +45,7 @@
   },
   {
    "file": "crowd_04_old_man_rigged.glb",
+   "seat": 0.34,
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
    "top_pixels": 1668,
@@ -49,6 +53,7 @@
   },
   {
    "file": "crowd_05_woman_salwar_rigged.glb",
+   "seat": 0.333,
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
    "top_pixels": 988,
@@ -56,6 +61,7 @@
   },
   {
    "file": "crowd_06_woman_saree_rigged.glb",
+   "seat": 0.35,
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
    "top_pixels": 390,
@@ -63,6 +69,7 @@
   },
   {
    "file": "crowd_09_boy_rigged.glb",
+   "seat": 0.223,
    "top_luminance": 0.358,
    "top_luminance_back": 0.311,
    "top_pixels": 532,
@@ -70,6 +77,7 @@
   },
   {
    "file": "crowd_10_girl_rigged.glb",
+   "seat": 0.276,
    "top_luminance": 0.0,
    "top_luminance_back": 0.0,
    "top_pixels": 494,

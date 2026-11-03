@@ -86,7 +86,7 @@ func run() -> void:
 		await _progress(done + _share("bodies") * float(i + 1) / float(bodies.size()))
 	done += _share("bodies")
 	t0 = _took("bodies", t0)
-	Arena.crowd_sheet()
+	Arena.card_art()
 	done += _share("crowd")
 	await _progress(done, true)
 	t0 = _took("crowd", t0)
