@@ -315,3 +315,9 @@ func in_match() -> bool:
 
 func save_paths() -> Array:
 	return [Game.SETTINGS_PATH, Game.CUP_PATH, Game.RECORDS_PATH]
+
+
+## Checks put off for this game, by whose leave and until when: the planter's foot slips under kho kho's AI (2-4 cm,
+## WsgSim seeds 101 and 103), a foundation fault the foundation is fixing; listed under the report's warnings till then.
+func deferred() -> Dictionary:
+	return {"foot slip": ["2026-11-06T12:00Z", "the lead, 2026-11-03: planter slips 2-4 cm under Kho Kho's AI (WsgSim seeds 101, 103); foundation fix pending"]}
