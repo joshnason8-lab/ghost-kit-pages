@@ -95,6 +95,8 @@ var _end_reason := ""
 var _last_kho_t := 0.0
 var _kho_armed := {}           # a kho pressed a moment early: {i, until}
 var _min_turns := 0            # minimum-chase turns played, plus one
+var staged := false            # built in steps (Game.play_match, under the loading overlay), not all in _ready
+var built := false             # all of it built: the match runs
 var replay: MatchReplay = null # the moments shown again (the shared foundation's WsgReplay: Medium and High), else null
 var _detail_t := 0.0
 
@@ -126,6 +128,15 @@ func _ready() -> void:
 	if user >= 0:
 		_diff[1 - user] = ai_k
 	_foul_rate = [0.05, 0.035, 0.02, 0.012][clampi(diff, 0, 3)]
+	if staged:
+		return   # built in steps under the loading overlay (Game.play_match): build_ground, build_players, build_rest
+	build_ground()
+	build_players()
+	build_rest()
+
+
+## The ground, its stands and its crowd (the longest part of a match's start).
+func build_ground() -> void:
 	arena = Arena.new(String(config.get("venue", "maidan")), fmt, [DB.kit(teams[0])[0], DB.kit(teams[1])[0]])
 	add_child(arena)
 	# The shared foundation draws the bodies made from here on (Medium and High: FoundationLink), not behind the menus.
@@ -133,11 +144,19 @@ func _ready() -> void:
 	FoundationLink.frozen = false
 	FoundationLink.paused = false
 	WsgFoundation.tier = int(Game.settings.graphics)
+
+
+## The players, the officials and the markers on the field.
+func build_players() -> void:
 	_build_people()
 	if everyone().any(func(a): return a.link != null):
 		replay = MatchReplay.new(self)
 		add_child(replay)
 	_build_markers()
+
+
+## The camera, the HUD and the first turn: from here the match runs.
+func build_rest() -> void:
 	cam = Camera3D.new()
 	cam.fov = 50.0
 	cam.near = 0.3
@@ -166,6 +185,7 @@ func _ready() -> void:
 	if not attract:
 		Sfx.crowd(0.4 * arena.atmosphere())
 		Sfx.venue(arena.kind, arena.surface())
+	built = true
 
 
 # ---------------------------------------------------------------- people
@@ -562,6 +582,8 @@ func _log(kind: String, extra_data := {}) -> void:
 # ---------------------------------------------------------------- the frame
 
 func _process(delta: float) -> void:
+	if not built:
+		return   # still being built under the loading overlay
 	if paused:
 		return
 	_rank_detail(delta)

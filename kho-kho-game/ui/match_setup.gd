@@ -221,7 +221,7 @@ func config(chase_first: int) -> Dictionary:
 
 func _on_go() -> void:
 	if watch:
-		Game.start_match(config(_rng.randi() % 2))
+		Game.play_match(config(_rng.randi() % 2))
 		return
 	_show_toss()
 
@@ -277,7 +277,7 @@ func _show_toss() -> void:
 				UI.refit(msg)
 				for ch in [[tr("CHASE_FIRST"), 0], [tr("DEFEND_FIRST"), 1]]:
 					var first: int = ch[1]
-					var cb := UI.button(String(ch[0]), first == 0, func(): Game.start_match(config(first)))
+					var cb := UI.button(String(ch[0]), first == 0, func(): Game.play_match(config(first)))
 					cb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 					row.add_child(cb)
 			else:
@@ -285,7 +285,7 @@ func _show_toss() -> void:
 				var they_chase := _rng.randf() < 0.35
 				msg.text = tr("TOSS_LOST").format({"team": DB.team_name(_sides[1])}) + ". " + (tr("TOSS_THEY_CHOSE_CHASE") if they_chase else tr("TOSS_THEY_CHOSE_DEFEND"))
 				UI.refit(msg)
-				var sb := UI.button(tr("START_MATCH"), true, func(): Game.start_match(config(1 if they_chase else 0)))
+				var sb := UI.button(tr("START_MATCH"), true, func(): Game.play_match(config(1 if they_chase else 0)))
 				sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 				row.add_child(sb))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL

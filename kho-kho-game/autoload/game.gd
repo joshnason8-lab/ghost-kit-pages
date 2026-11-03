@@ -338,6 +338,35 @@ func start_match(config: Dictionary) -> void:
 	_swap(m)
 
 
+## A match from a Start button (quick match, the toss, a championship match, Watch AI): the loading overlay (the
+## foundation's WsgLoading) up in the tap's own frame, then the match built in steps with a frame drawn after each, so
+## a slow phone never looks frozen (the owner: "users might think the game has frozen"). start_match builds it all at
+## once (the tests' and tools' way in).
+func play_match(config: Dictionary, buttons: Array = []) -> void:
+	if WsgLoading.busy():
+		return   # a second tap while one loads starts nothing
+	var host: Node = current if current and is_instance_valid(current) else main
+	var ld := WsgLoading.cover(host, buttons, {"dim": Color(C_BG, 0.92), "text": C_INK, "bar": C_SAFFRON, "spinner": C_SAFFRON,
+		"bar_back": Color(C_INK, 0.15), "title": tr("LOADING"), "font": font_bold,
+		"logo": load("res://assets/icon/icon_192.png") if ResourceLoader.exists("res://assets/icon/icon_192.png") else null})
+	ld.log_label = "match %s" % String(config.get("venue", ""))
+	ld.request(["res://game/match.gd", "res://game/hud.gd"])
+	var b := {}
+	ld.step("Match", func():
+		var m: Node = (ld.res("res://game/match.gd") as Script).new()
+		m.config = config
+		m.staged = true
+		Sfx.music(false)
+		_swap(m)
+		b.m = m)
+	ld.step("Ground", func(): b.m.build_ground(), 3.0)
+	ld.step("Players", func(): b.m.build_players(), 2.0)
+	ld.step("Ready", func(): b.m.build_rest())
+	if not await ld.run():
+		return
+	ld.done()
+
+
 func on_match_finished(result: Dictionary) -> void:
 	Records.add_match(result)
 	if String(result.config.get("mode", "quick")) == "cup":

@@ -1,6 +1,6 @@
 extends Node
-## How long a match takes to start, from the tap (Game.start_match, as every Start, Watch AI and championship button
-## calls it) to the first frame of the match drawn and to play, and the longest frame on the way (a stall the phone
+## How long a match takes to start, from the tap (Game.play_match, as every Start, Watch AI and championship button
+## calls it: the loading overlay, then the match built in steps) to the first frame of the match drawn and to play, and the longest frame on the way (a stall the phone
 ## shows as frozen). Each ground, the championship's start and Watch AI, on the graphics level given (0: Low):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/load_timing.tscn -- [graphics] [case]
 ## Measured here on desktop software rendering (llvmpipe): a phone's numbers differ; this compares entries and builds.
@@ -39,22 +39,33 @@ func _ready() -> void:
 		var t0 := Time.get_ticks_usec()
 		var last := t0
 		var worst := 0
-		Game.start_match(cfg)
+		# The real way in: a Start button's (Game.play_match: the loading overlay, then the match built in steps).
+		Game.play_match(cfg)
+		var ld := WsgLoading.current()
+		var bar: Array = []
+		if ld:
+			ld.progressed.connect(func(fr: float, _l: String): bar.append(fr))
+		await RenderingServer.frame_post_draw
+		var cover_ms := (Time.get_ticks_usec() - t0) / 1000.0
+		var covered := ld != null and is_instance_valid(ld) and ld.is_inside_tree()
 		var first := -1
-		var play := -1
 		while true:
 			await RenderingServer.frame_post_draw
 			var now := Time.get_ticks_usec()
 			worst = maxi(worst, now - last)
 			last = now
 			var m: Node = Game.current
-			if first < 0 and m and m.is_inside_tree():
+			if m and m.get("built") == true:
 				first = now - t0
-			if m and String(m.get("phase")) not in ["intro", ""]:
-				play = now - t0
 				break
 			if (now - t0) / 1e6 > PLAY_TIMEOUT:
 				break
-		print("LOAD %-28s first frame %6.0f ms   ready %6.0f ms   longest frame %6.0f ms" % [c[0], first / 1000.0,
-			play / 1000.0, worst / 1000.0])
+		var forward := true
+		for i in range(1, bar.size()):
+			forward = forward and float(bar[i]) >= float(bar[i - 1])
+		print("LOAD %-28s overlay %s at the first frame (%.0f ms)   playable %6.0f ms   longest frame %6.0f ms   bar %d moves%s, to %.2f" % [
+			c[0], "UP" if covered else "NOT up", cover_ms, first / 1000.0, worst / 1000.0, bar.size(),
+			"" if forward else " (WENT BACK)", float(bar[-1]) if not bar.is_empty() else 0.0])
+		for i in 30:
+			await get_tree().process_frame
 	get_tree().quit()

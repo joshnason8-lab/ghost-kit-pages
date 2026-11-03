@@ -22,6 +22,7 @@ func _ready() -> void:
 	_cups()
 	await _matches()
 	await _your_controls()
+	await _loading()
 	await _bodies()
 	await _owner_round()
 	await _grounds()
@@ -1359,3 +1360,37 @@ func _first_level() -> void:
 	check(Game.detect_graphics("Adreno (TM) 740", 3.5) == Game.GFX_LOW and Game.detect_graphics("Adreno (TM) 740", 8.0) == Game.GFX_MEDIUM
 		and Game.detect_graphics("Mali-G715", 8.0) == Game.GFX_MEDIUM,
 		"first run: under 4.5 GB Low; an ordinary or better phone Medium")
+
+
+## Start (the owner: "users might think the game has frozen"): the loading overlay (WsgLoading) is up in the tap's own
+## frame, a second tap starts nothing, the match is built in steps, and the bar only goes forward, to the end.
+func _loading() -> void:
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(10)
+	var cfg := {"home": "MAH", "away": "ODI", "venue": "school", "format": KhoRules.CLASSIC, "turn_len": 60.0, "user_team": 0,
+		"seed": 9, "mode": "quick", "test": true, "chase_first": 0}
+	var menu: Node = Game.current
+	Game.play_match(cfg)
+	var ld := WsgLoading.current()
+	check(ld != null and ld.is_inside_tree(), "Start: the loading overlay is up in the tap's own frame")
+	if ld == null:
+		return
+	var bar: Array = []
+	ld.progressed.connect(func(fr: float, _l: String): bar.append(fr))
+	Game.play_match(cfg)
+	check(WsgLoading.current() == ld and Game.current == menu, "a second tap while it loads starts nothing")
+	var guard := 0
+	while not (Game.current != menu and Game.current.get("built") == true) and guard < 900:
+		await frames(1)
+		guard += 1
+	var m: Node = Game.current
+	check(m != menu and m.get("built") == true and m.phase != "", "the match is built, in steps, and starts (%d frames)" % guard)
+	var forward := bar.size() > 2
+	for i in range(1, bar.size()):
+		forward = forward and float(bar[i]) >= float(bar[i - 1])
+	check(forward and float(bar[-1]) >= 0.999, "the bar moves forward only, to the end (%d moves)" % bar.size())
+	await frames(40)
+	check(not WsgLoading.busy(), "and the overlay goes once the match is up")
+	m.queue_free()
+	Game.current = null
+	await frames(2)
