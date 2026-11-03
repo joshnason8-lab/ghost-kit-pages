@@ -153,7 +153,11 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# A landing foot is still moving as it touches (a heel strike decelerates over a frame or two): it sticks
 			# where it lands. A swinging foot skimming the ground moves at about twice the body's speed: it does not.
 			# Once down it stays down until the clip lifts it.
-			is_down = h < 0.05 * sc if was else (h < 0.03 * sc and vel < 0.6 + body_speed * 0.8)
+			# A foot FLAT on the ground (heel and toe both down) is planted however fast the clip moves it: a swing never
+			# comes through flat, and one let slide there glided on the floor (a hard stop from a run: the clip brought
+			# the foot in flat 23 cm a frame and snapped it back 7 cm, read as swinging - the lead, 2026-11-03).
+			var flat := maxf(ank.y - floor_ankle, toe.y - (ground_y + _toe_rest * sc)) < 0.03 * sc
+			is_down = h < 0.05 * sc if was else (h < 0.03 * sc and (vel < 0.6 + body_speed * 0.8 or flat))
 			# A foot let go at the end of its reach is lifting: not down again until it has left the ground.
 			if _lifted[i] and float(_step[i]) < 0.0:
 				_waited[i] = int(_waited[i]) + 1
@@ -194,7 +198,9 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				# Down where it stepped to (until the clip lifts it, as any foot).
 				_step[i] = -1.0
 				_lifted[i] = false
-				_lock[i] = to
+				# Where the step drew it down (its last frame), not where the step would now aim: the body has gone on
+				# since, and the foot was planted 4-8 cm further on in the next frame, flat on the floor.
+				_lock[i] = Vector3(_hold[i].x, floor_ankle, _hold[i].z) if _hold[i] != Vector3.INF else to
 				_toe_lock[i] = Vector3.INF
 				_low[i] = INF
 				is_down = true

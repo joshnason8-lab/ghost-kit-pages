@@ -5,7 +5,9 @@ extends SceneTree
 ##   reads under 0.5 cm (the measure before 2026-11-04 summed the two halves: 2-3 cm of slide that was not there);
 ## - a planted foot pushed 3 cm along the ground reads 3 cm or more, wherever in the step the push comes;
 ## - the hurler walking with the planter off (the clips' own feet, which do slide) reads 5 cm or more at every
-##   speed, driven every frame as the world check drives a game's walker.
+##   speed, driven every frame as the world check drives a game's walker;
+## - a foot flat on the floor that slides in a frame (a landing snapped back) reads as a skid, a swing skimming the
+##   grass with its heel up does not.
 ##   godot --headless --fixed-fps 30 --path . -s tests/foot_slip_test.gd
 
 const L := 0.15            # ankle to toe along the ground
@@ -60,6 +62,27 @@ static func step(push: float, phase: String) -> Array:
 	return frames
 
 
+## A foot coming down flat and fast and snapped back by the clip as it lands (a hard stop from a run: 23 cm a frame
+## flat on the floor, then 7 cm back), and a walk's swing whose toe skims the grass (1.5 cm up, 10 cm a frame) with its
+## heel well up. [ankle, toe, ankle, toe] a frame, the right foot standing still.
+static func landing(snap: bool) -> Array:
+	var frames := []
+	var right_a := Vector3(0, ANKLE_Y, 0.4)
+	var right_t := right_a + Vector3(L, -ANKLE_Y, 0)
+	if snap:
+		for x in [-0.9, -0.6, -0.37, -0.14]:   # high, coming down
+			frames.append([Vector3(x, ANKLE_Y + 0.15, 0), Vector3(x + L, 0.12, 0), right_a, right_t])
+		for x in [0.09, 0.32, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]:   # flat on the floor: 23 cm, 23 cm, 7 cm back, still
+			frames.append([Vector3(x, ANKLE_Y + 0.005, 0), Vector3(x + L, 0.003, 0), right_a, right_t])
+	else:
+		for k in 12:
+			var x := -0.6 + k * 0.1
+			frames.append([Vector3(x, ANKLE_Y + 0.08, 0), Vector3(x + L, 0.015, 0), right_a, right_t])
+		for k in 8:
+			frames.append([Vector3(0.6, ANKLE_Y, 0), Vector3(0.6 + L, 0, 0), right_a, right_t])
+	return frames
+
+
 func check(what: String, ok: bool, got: String) -> void:
 	print("  %-58s %s  %s" % [what, "ok  " if ok else "FAIL", got])
 	if not ok:
@@ -77,6 +100,12 @@ func _initialize() -> void:
 		# (The positions are single-precision: 3 cm in steps comes back within a micrometre of 3.)
 		check("a planted foot pushed 3 cm (%s) reads 3 cm or more" % phase, s.steps == 2 and s.max_cm >= 3.0 - 1e-4,
 			"%d steps, %.2f cm" % [s.steps, s.max_cm])
+	var snap := WsgNoteChecks.foot_slip(landing(true))
+	check("a foot snapped back flat on the floor reads a skid over 2 cm", snap.skid_cm > 2.0,
+		"skid %.1f cm" % snap.skid_cm)
+	var skim := WsgNoteChecks.foot_slip(landing(false))
+	check("a swing skimming the grass, heel up, is no skid", skim.skid_cm < 0.5, "skid %.2f cm" % skim.skid_cm)
+	check("a pure roll is no skid", roll.skid_cm < 0.5, "skid %.2f cm" % roll.skid_cm)
 	if not FileAccess.file_exists("res://addons/wsg_foundation/data/mobility.res"):
 		print("Planter off: SKIPPED (no licensed clip library)")
 	else:

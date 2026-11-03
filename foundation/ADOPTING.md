@@ -1023,6 +1023,11 @@ func check() -> void:                     # may await; tree is the SceneTree
   heel-to-toe roll (one end still at a time) reads near 0, a foot sliding (both ends moving) reads in full. Before, it
   took each end's drift since the step began: a roll read 1-3 cm that was not there, and a slide that came back read
   less than it went (the planter off, a walk's 8 cm read 2.7). Your numbers move both ways - re-check your feet items.
+  It also returns `skid_cm`: the most a foot **flat on the floor** (heel and toe both within 2 cm of standing, this
+  frame and the last) moved in one frame, whatever the swing gate or your flags say. The feet rule and WsgSim's foot
+  slip fail over 2 cm (from the foundation commit that adds it). It catches the glide the slip cannot: a foot brought
+  in flat and fast, or snapped back as it lands (a hard stop from a run: 23 cm a frame, then 7 back, on the floor). A
+  walk's swing toe skimming the grass with its heel up is not flat and never counts.
 - `t_or_a_pose(body)` and `arms(body)`: an A-pose or T-pose, how far out the arms are, how bent the elbows.
 - `block_figure(node)`: no skinned body, or primitive shapes standing in for one.
 - `pose(body)` and `jitter(body, poses)`: twitching while standing.
