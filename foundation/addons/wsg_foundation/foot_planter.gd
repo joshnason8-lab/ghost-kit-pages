@@ -58,9 +58,13 @@ var _drawn_yaw := [NAN, NAN]                 # the way each foot pointed as last
 var _drawn_basis := [Basis(), Basis()]       # each foot's turn as last drawn (world)
 var _step_landed := [false, false]           # put down by its own step, its toe not yet down
 var _across := [0.0, 0.0]                    # easing across from where a let-go foot was held (1 -> 0 over release)
-## The most a foot easing back to the clip's moves across in a frame (m, the body's scale 1): a sprint's swing moves
-## up to 30-37 cm a frame low over the ground (tools/feet_calibrate, every game's walker).
-const CHASE_MAX := 0.35
+## The most a foot easing back to the clip's moves across in a frame (m, the body's scale 1): CHASE_MAX, or CHASE_OVER
+## more than the clip's own foot moves that frame if that is more - it catches up, never jumping the gap, and a
+## sprint's own swing (up to 30-37 cm a frame low over the ground - tools/feet_calibrate, every game's walker) is not
+## slowed. (35 cm flat let a stop from 8 m/s still jump 24 cm; the clip's move plus 15, 29.)
+const CHASE_MAX := 0.25
+const CHASE_OVER := 0.10
+var _clip_move := [0.0, 0.0]                 # how far the clip moved each ankle this frame
 var _chase_from := [Vector3.ZERO, Vector3.ZERO] # where each foot was drawn the frame before
 var _chasing := [false, false]               # catching up with the clip's foot at CHASE_MAX
 var _step := [-1.0, -1.0]                    # how far through that step (0..1); -1: none
@@ -161,6 +165,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			var vel := 0.0
 			if _prev[i] != Vector3.INF and delta > 0.0:
 				vel = Vector2(ank.x - _prev[i].x, ank.z - _prev[i].z).length() / delta
+			_clip_move[i] = vel * delta
 			_prev[i] = ank
 			if _hip_prev[i] != Vector3.INF and delta > 0.0:
 				_hip_vel[i] = Vector3(hip.x - _hip_prev[i].x, 0.0, hip.z - _hip_prev[i].z) / delta
@@ -331,9 +336,11 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			_w[i] = maxf(0.0, _w[i] - delta / release)
 		var target := ank
 		if (_w[i] > 0.0 or float(_across[i]) > 0.0) and _hold[i] != Vector3.INF:
-			# Held, or easing back to the clip from where it was held: up first, then across, so a foot let go does
-			# not skate over the ground catching up.
-			var hw: float = smoothstep(0.0, 0.6, _w[i])
+			# Held, or easing back to the clip from where it was held: up first (vw, quicker), across over the whole
+			# release (hw), lifting over the floor on the way, so a foot let go does not skate over the ground catching up.
+			# (Across only in the release's last frames - smoothstep(0, 0.6) - it stood still, then crossed 30-90 cm in
+			# a frame stopping from a sprint: Netball's walker 23 cm read as a jump, now 0.1.)
+			var hw: float = smoothstep(0.0, 1.0, _w[i])
 			# (Let go and not yet told whether the clip lifts it or keeps it down - a tick or two: kept where it was
 			# across, not eased over the ground toward the clip's foot - 7 cm in a frame, Hurling's gliding note.)
 			if _lifted[i] and float(_step[i]) < 0.0:
@@ -352,14 +359,15 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				# start).
 				var gap := Vector2(_hold[i].x - ank.x, _hold[i].z - ank.z).length()
 				target.y += minf(0.08 * sc, gap * 0.6) * sin(PI * (1.0 - hw))
-		# Easing back to the clip's foot (or still catching up with it): no faster than CHASE_MAX a frame across, until
-		# it has caught up (a stop from a sprint: the ease covered 50-90 cm of the gap in one frame, in the air).
+		# Easing back to the clip's foot (or still catching up with it): across no faster than CHASE_MAX/CHASE_OVER
+		# allow, until it has caught up (a stop from a sprint: the ease covered 50-90 cm of the gap
+		# in one frame, in the air).
 		if down or stepping != Vector3.INF:
 			_chasing[i] = false
 		elif (_w[i] > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i])) and _chase_from[i] != Vector3.ZERO:
 			var from: Vector3 = _chase_from[i]
 			var gap := Vector2(target.x - from.x, target.z - from.z)
-			var cap := CHASE_MAX * sc
+			var cap := maxf(CHASE_MAX * sc, CHASE_OVER * sc + float(_clip_move[i]))
 			if gap.length() > cap:
 				gap = gap.normalized() * cap
 				target.x = from.x + gap.x

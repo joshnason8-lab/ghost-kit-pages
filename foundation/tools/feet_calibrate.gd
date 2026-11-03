@@ -51,6 +51,7 @@ func _initialize() -> void:
 	var worstd := []
 	var perj := {}
 	var worstj := []
+	var landings := []
 	for side in 2:
 		var la := INF
 		var lt := INF
@@ -62,6 +63,10 @@ func _initialize() -> void:
 			var t0: Vector3 = frames[i - 1][side * 2 + 1]
 			var a: Vector3 = frames[i][side * 2]
 			var t: Vector3 = frames[i][side * 2 + 1]
+			# A foot that comes down flat (heel and toe within 1 cm) from a frame it was not: how far it moved into it.
+			if maxf(a.y - la, t.y - lt) < 0.01 and maxf(a0.y - la, t0.y - lt) >= 0.01:
+				var ml := minf(Vector2(a.x - a0.x, a.z - a0.z).length(), Vector2(t.x - t0.x, t.z - t0.z).length()) * 100.0
+				landings.append([ml, PATH[segs[i]][3], i, side, snappedf((a0.y - la) * 100.0, 0.1), snappedf((t0.y - lt) * 100.0, 0.1)])
 			if minf(a0.y - la, t0.y - lt) >= LOW or minf(a.y - la, t.y - lt) >= LOW:
 				continue
 			var mv := minf(Vector2(a.x - a0.x, a.z - a0.z).length(), Vector2(t.x - t0.x, t.z - t0.z).length()) * 100.0
@@ -124,6 +129,10 @@ func _initialize() -> void:
 	worstj.sort_custom(func(x, y): return x[0] > y[0])
 	for w in worstj.slice(0, 6):
 		print("CAL worst jump %.1f cm  %s  frame %d  side %d  heel %.1f toe %.1f cm up" % w)
+	landings.sort_custom(func(x, y): return x[0] > y[0])
+	print("CAL flat landings: %d" % landings.size())
+	for w in landings.slice(0, 6):
+		print("CAL landing %.1f cm  %s  frame %d  side %d  from heel %.1f toe %.1f cm up" % w)
 	var jp := _arg(args, "--json", "")
 	if jp != "":
 		var f := FileAccess.open(jp, FileAccess.WRITE)

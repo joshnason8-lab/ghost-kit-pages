@@ -9,9 +9,9 @@ extends RefCounted
 const FEET_MAX_CM := 2.0
 ## A standing foot's toe off the ground with its heel down (cm): boots resting toe-up (Hurling 0.20).
 const TOE_UP_MAX_CM := 1.0
-## A low foot's jump in one frame (WsgNoteChecks.foot_slip's jump_cm), at most: about twice the most any game's walker
-## reads walking to sprinting and cutting at 8 m/s (15.4 cm, tools/feet_calibrate, 2026-11-03). The lead sets it.
-const JUMP_MAX_CM := 30.0
+## A low foot's jump in one frame (WsgNoteChecks.foot_slip's jump_cm), at most: 1.6 times the most any game's walker
+## reads walking to sprinting and cutting at 8 m/s (15.4 cm, tools/feet_calibrate, 2026-11-03; the lead chose 25).
+const JUMP_MAX_CM := 25.0
 ## The stick's way against the camera's (degrees; WsgNoteChecks.joystick).
 const STICK_TOL := 25.0
 ## The loading overlay must be up within this many frames of the tap (the tap's own frame: 0).
