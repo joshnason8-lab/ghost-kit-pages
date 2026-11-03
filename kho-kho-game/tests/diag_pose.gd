@@ -42,13 +42,30 @@ func _initialize() -> void:
 		return
 	var counts := {}
 	var last_feet := {}
-	for frame in 30 * 300:
+	var still := {}   # (stuck, as WsgSim reads it: a body with a target over 1.5 m away, hardly moving) name -> [pos, s]
+	for frame in 30 * 600:
 		await process_frame
 		var st := g.state()
 		g.events()
 		g.rules()
 		if bool(st.get("finished", false)):
 			break
+		for b: Dictionary in g.bodies():
+			var tgt: Vector3 = b.target
+			var bp: Vector3 = b.pos
+			if bool(b.active) and tgt != Vector3.INF and Vector2(tgt.x - bp.x, tgt.z - bp.z).length() > 1.5:
+				var sv: Array = still.get(b.name, [bp, 0.0])
+				if (sv[0] as Vector3).distance_to(bp) < 0.15:
+					sv[1] = float(sv[1]) + 1.0 / 30.0
+					if float(sv[1]) > 4.0 and float(sv[1]) < 4.04:
+						for a3 in m.everyone():
+							if g._who(a3) == b.name:
+								_say("f%d %s still 4 s, target %s m away: act '%s', pos %s, goal %s, want %s, vel %s, d_state %s, to_square %s, phase %s" % [frame, b.name, snappedf(Vector2(tgt.x - bp.x, tgt.z - bp.z).length(), 0.1), a3.act, bp.snappedf(0.01), a3.goal, a3.want.snappedf(0.01), a3.vel.snappedf(0.01), m.d_state.get(a3, "-"), m._to_square.get(a3, "-"), m.phase])
+				else:
+					sv = [bp, 0.0]
+				still[b.name] = sv
+			else:
+				still.erase(b.name)
 		for a2 in m.everyone():
 			if a2.link == null or not is_instance_valid(a2.link.body):
 				continue
