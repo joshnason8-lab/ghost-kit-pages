@@ -2408,6 +2408,9 @@ func _show_card(pl: Player, card: String) -> void:
 
 
 func _walk_off(pl: Player) -> void:
+	if not pl.visible:
+		pl.want_vel = Vector3.ZERO     # (gone: not steered on - WsgSim read him as stuck)
+		return
 	# (Off over the near touchline, where the linesmen run: a spot every ground leaves free. It was 5 m out, behind
 	# the stadium's pitch wall - he never got there, so a man sent off stood at the wall and played on - WsgSim seed 8.)
 	var off := Vector3(pl.global_position.x, 0, -Pitch.HALF_W - 1.5)

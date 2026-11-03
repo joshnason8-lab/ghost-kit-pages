@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.10
+
+- **A man sent off really goes**: at the stadium a board just past the touchline could hold him a metre short of the
+  spot he walks off to, and he stood there for the rest of the match. He's now off once he's over the line.
+
 ## New in 0.24.9
 
 - **Steadier feet again**: a foot moves an even share of each step, and a foot that lets go lifts at once (the shared

@@ -857,6 +857,14 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.10, 3 November 2026)
+
+- **Walk-off** (WsgSim seed 8 on 1b6793c6, "away 15 hardly moved for 6 s"): a board past the touchline held the man
+  sent off 1.0 m short of his spot, and the "off" test wanted under 1.0 m. Now within 1.5 m; once gone he is no longer
+  steered, and the sim adapter counts only men visible and on the field as active. Suite 710/0; owner notes 21/21.
+- **The sim round closed** (the owner: rounds, not continuous). What remains is the foundation's: feet readings on
+  1b6793c6 (skids 20-35 cm a frame, a few metre-scale "slips" of bodies not posed for a while), sent to it.
+
 ## Done (0.24.9, 3 November 2026)
 
 - **Foundation 1b6793c6** (the 11-06 feet batch: far bodies read per frame, a planter.reset() a cut, the skid only of
