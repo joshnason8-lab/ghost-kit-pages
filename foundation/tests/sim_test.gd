@@ -159,6 +159,10 @@ func _initialize() -> void:
 		rp.active = false
 		var p2 := WsgSim._planted(rb)
 		print("planted: live %s, replaying %s, live again %s" % [p0, p1, p2])
+		rp.active = true
+		if not WsgSim._replaying(rb):
+			fails.append("a body under an active replay pose is not seen as replaying (its pose would be read again)")
+		rp.active = false
 		if not p0 or p1 or not p2:
 			fails.append("a replay's pose was measured as the planter's feet (live %s, replaying %s, live again %s)" % [p0, p1, p2])
 		rb.free()
