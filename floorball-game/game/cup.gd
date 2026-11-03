@@ -23,7 +23,7 @@ static func create(country: String, p_women := false) -> Cup:
 	var c := Cup.new()
 	c.user = country
 	c.women = p_women
-	c.seed = randi()
+	c.seed = randi()   # wsg-rng-ok: a new cup's own seed, drawn once when the player starts it (its draw then all from it)
 	var ids: Array = DB.team_ids()
 	ids.sort_custom(func(a, b): return DB.rating(a, p_women) > DB.rating(b, p_women))
 	var field: Array = ids.slice(0, 16)

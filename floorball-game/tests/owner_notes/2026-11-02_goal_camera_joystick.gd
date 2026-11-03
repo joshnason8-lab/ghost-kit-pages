@@ -13,6 +13,8 @@ const Lib := preload("res://tests/note_lib.gd")
 func check() -> void:
 	var m: Node = await Lib.live_match(tree, {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 4, "period": 4.0, "mode": "quick"})
 	m.set_physics_process(false)
+	if m.user_player == null:
+		m._set_user(m.skaters(0)[0])
 	var map := func(st: Vector2, _cam: Camera3D, at: Vector3) -> Vector3:
 		m.user_player.pos = Vector2(at.x, at.z)
 		m.touch.joystick = st

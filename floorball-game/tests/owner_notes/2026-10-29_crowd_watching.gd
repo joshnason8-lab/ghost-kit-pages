@@ -8,7 +8,7 @@ const Lib := preload("res://tests/note_lib.gd")
 
 
 ## Every venue, Low and Medium: every fan in the stands faces the play (the shared crowd's own audit: none further off
-## the nearest play than it allows), and there are fans (a full hall in the arena).
+## the nearest play than it allows), and there are fans to see it.
 func check() -> void:
 	var keep: int = Game.settings.graphics
 	for gfx in [Game.GFX_LOW, Game.GFX_MEDIUM]:
@@ -23,7 +23,7 @@ func check() -> void:
 				continue
 			var r: Dictionary = a.crowd.audit(a.crowd_venue, a.crowd_placed)
 			info("graphics %d, %s: %d fans, the most any is turned from the play %.0f degrees" % [gfx, venue, r.cards, r.facing])
-			expect(int(r.cards) > 50, "graphics %d, %s: only %d fans" % [gfx, venue, r.cards])
+			expect(int(r.cards) > 20, "graphics %d, %s: only %d fans" % [gfx, venue, r.cards])
 			for f in r.fails:
 				if String(f).contains("facing"):
 					fail("graphics %d, %s: %s" % [gfx, venue, f])

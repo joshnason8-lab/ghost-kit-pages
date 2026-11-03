@@ -6,7 +6,10 @@
 #    line (a fix taken another way). A game that must ship without one sets
 #    FOUNDATION_REQUIRED_SKIP="<commit>:<reason>[;<commit>:<reason>...]" - the log prints each reason.
 # 2. WARNS (never fails) if it is behind the branch's latest: run tools/wsg/sync_foundation.sh.
-# FOUNDATION_REQUIRED_FILE: a manifest to use instead of the branch's (a test).
+#    A commit whose date is a UTC time (2026-11-03T12:00Z) is required from then: before it, a game without it only
+#    warns (betas already in CI are not turned red mid-flight; sync it into the next one).
+# FOUNDATION_REQUIRED_FILE: a manifest to use instead of the branch's (a test). FOUNDATION_NOW: the time to judge by
+# (a test; default now, UTC).
 HERE=$(cd "$(dirname "$0")" && pwd)
 GAME=$(cd "$HERE/../.." && pwd)
 REPO=$(git -C "$GAME" rev-parse --show-toplevel)
@@ -26,7 +29,10 @@ else
 	git -C "$REPO" show FETCH_HEAD:foundation/REQUIRED > "$TMP/REQUIRED" 2>/dev/null || : > "$TMP/REQUIRED"
 fi
 FAIL=0
+NOW=${FOUNDATION_NOW:-$(date -u +%Y-%m-%dT%H:%MZ)}
 TAB=$(printf '\t')
+# ("#from<TAB>" lines: required from a time, hidden from older copies of this script.)
+sed "s/^#from$TAB//" "$TMP/REQUIRED" > "$TMP/REQUIRED.now"
 while IFS="$TAB" read -r commit date file marker why; do
 	case "$commit" in ''|'#'*) continue ;; esac
 	ok=""
@@ -44,9 +50,17 @@ while IFS="$TAB" read -r commit date file marker why; do
 		echo "::warning::check_foundation: shipping WITHOUT required foundation $commit ($why). Reason given: $skip"
 		continue
 	fi
+	case "$date" in
+	*T*)
+		if [ "$(expr "$NOW" \< "$date")" = 1 ]; then
+			echo "::warning::check_foundation: this game's foundation ($HAVE) lacks $commit, REQUIRED FROM $date (now $NOW): $why Sync it into your next build (tools/wsg/sync_foundation.sh)."
+			continue
+		fi
+		;;
+	esac
 	echo "::error::check_foundation: this game's foundation ($HAVE) lacks required $commit ($date): $why Run tools/wsg/sync_foundation.sh and commit."
 	FAIL=1
-done < "$TMP/REQUIRED"
+done < "$TMP/REQUIRED.now"
 git -C "$REPO" archive FETCH_HEAD foundation/addons/wsg_foundation | tar -x -C "$TMP"
 DIFF=$(diff -rq -x data -x VERSION -x '*.import' -x '*.uid' "$TMP/foundation/addons/wsg_foundation" "$ADDON" 2>&1 | head -20)
 if [ -n "$DIFF" ]; then

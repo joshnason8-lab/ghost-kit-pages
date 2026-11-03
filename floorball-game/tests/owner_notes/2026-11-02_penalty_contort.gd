@@ -7,8 +7,8 @@ const NOTE := {"id": "2026-11-02-penalty-contort", "game": "floorball", "date": 
 const Lib := preload("res://tests/note_lib.gd")
 
 
-## Penalty shots, three shots: after each, pulling up and coming back for the next, the shooter as drawn stays a
-## person - his chest never turned over 60 degrees from his hips, no T- or A-pose, no elbow bent past 160 degrees, no
+## Penalty shots, three shots: after each, coming back for the next (the walk back and the set-up), the shooter as
+## drawn stays a person - his chest never turned over 60 degrees from his hips, no T- or A-pose, no elbow bent past 160 degrees, no
 ## wrist over 70 degrees.
 func check() -> void:
 	if not Lib.have_foundation():
@@ -29,8 +29,8 @@ func check() -> void:
 			hooked.append(sh)
 			sh.link.body.posed.connect(func():
 				var s2 := String(m._so.get("stage", ""))
-				if not (s2 in ["end", "walk", "setup"]) and not (s2 == "run" and bool(m._so.get("shot", false))):
-					return
+				if not (s2 in ["walk", "setup"]):
+					return   # (coming back for the next shot: the shot's own follow-through turns the chest, as a real one)
 				var b: WsgBody = sh.link.body
 				var hips := b.bone_world("Hips").basis
 				var chest := b.bone_world("Spine2").basis

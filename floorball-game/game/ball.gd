@@ -252,7 +252,7 @@ func strike(v: Vector3, p, t: int, how := "stick") -> void:
 	last_team = t
 	last_how = how
 	tries = {}
-	_spin = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * v.length()
+	_spin = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * v.length()   # wsg-rng-ok: the drawn ball's spin only (its mesh turning), nothing in play
 
 
 func step(dt: float) -> void:

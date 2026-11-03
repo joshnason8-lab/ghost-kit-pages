@@ -21,6 +21,7 @@ func check() -> void:
 		for push: float in [1.0, 0.0, -1.0]:
 			m.set_physics_process(false)
 			p.respawn(g - Vector2(a * d, 0.0))
+			p.step(0.0)   # (respawn takes effect on the player's next step)
 			m.ball.release()
 			m.ball.carrier = p
 			m.ball.pos = Vector3(p.pos.x + a * 0.5, Ball.R, p.pos.y)

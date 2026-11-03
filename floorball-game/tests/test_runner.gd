@@ -762,14 +762,21 @@ func _joystick() -> void:
 		for y: float in [0.1, 0.6, 1.0]:
 			var vy: float = m.shot_lift(0.05, 22.0, d, y)
 			# Flown as the ball flies it.
-			var v := Vector2(22.0, vy)
-			var q := Vector2(0.0, 0.05)
-			while q.x < d:
-				var k := v.length()
-				v -= v * Ball.DRAG * k / 120.0
-				v.y -= Ball.G / 120.0
-				q += v / 120.0
-			worst = maxf(worst, absf(q.y - y))
+			var v := Vector3(22.0, vy, 0.0)
+			var b := Ball.new()
+			b.pos = Vector3(0.0, 0.05, 0.0)
+			b.vel = v
+			var at := b.pos.y
+			for k in 400:
+				var was := b.pos
+				b.vel -= b.vel * Ball.DRAG * b.vel.length() / 60.0
+				b.vel.y -= Ball.G / 60.0
+				b.pos += b.vel / 60.0
+				if b.pos.x >= d:
+					at = lerpf(was.y, b.pos.y, (d - was.x) / (b.pos.x - was.x))
+					break
+			b.free()
+			worst = maxf(worst, absf(at - y))
 	check(worst < 0.05, "shots: aimed at a height, the ball arrives there through the air (worst %.3f m)" % worst)
 	check(not m.has_method("call_timeout"), "no time-out (the owner: it did nothing)")
 	m.queue_free()

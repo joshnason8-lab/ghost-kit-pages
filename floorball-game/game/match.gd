@@ -528,14 +528,16 @@ static func shot_lift(y0: float, sp: float, d: float, y1: float) -> float:
 	var fly := func(vy: float) -> float:
 		var v := Vector2(sp, vy)
 		var p := Vector2(0.0, y0)
-		var dt := 1.0 / 120.0
+		var dt := 1.0 / float(Engine.physics_ticks_per_second)   # (the ball's own step: Ball.step each physics frame)
 		for i in 600:
 			var k := v.length()
 			v -= v * Ball.DRAG * k * dt
 			v.y -= Ball.G * dt
+			var was := p
 			p += v * dt
 			if p.x >= d:
-				break
+				# Where it crosses d, between the two steps.
+				return lerpf(was.y, p.y, (d - was.x) / maxf(p.x - was.x, 1e-6))
 		return p.y
 	var tt := d / sp
 	var a := (y1 - y0) / tt + 0.5 * Ball.G * tt
@@ -948,7 +950,7 @@ func _keeper_block() -> void:
 			_on_turnover(gk.team)
 		else:
 			var a := attack_dir(gk.team)
-			ball.strike(Vector3(a * randf_range(1.5, 4.0), 0.25, randf_range(-5.0, 5.0)), gk, gk.team, "body")
+			ball.strike(Vector3(a * _rng.randf_range(1.5, 4.0), 0.25, _rng.randf_range(-5.0, 5.0)), gk, gk.team, "body")
 			Sfx.play("save", -6.0)
 		_shot_live = {}
 		return

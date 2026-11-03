@@ -17,11 +17,13 @@ func check() -> void:
 	var a: float = m.attack_dir(0)
 	var x := -Rules.GOAL_LINE * a + a * 0.6
 	for kneel in [true, false]:
+		# (He goes down when the ball is in front of his goal, up in his crouch when it is far off.)
+		m.ball.release()
+		m.ball.set_spot(Vector2(x + a * (5.0 if kneel else 25.0), 0.0) if kneel else Vector2.ZERO)
 		for span: float in [1.0, 2.0, 3.0]:
 			gk.respawn(Vector2(x, -span * 0.5))
-			for f in 30:
+			for f in 40:
 				gk.want_vel = Vector2.ZERO
-				gk.act = "kneel" if kneel else ""
 				gk.step(1.0 / 60.0)
 				await tree.process_frame
 			var moves := []
@@ -32,7 +34,6 @@ func check() -> void:
 			for f in 240:
 				gk.want_vel = Vector2(0, 1.6)
 				gk.want_face = PI if a > 0.0 else 0.0
-				gk.act = "kneel" if kneel else ""
 				var p0 := gk.pos
 				gk.step(1.0 / 60.0)
 				await tree.process_frame
@@ -45,7 +46,7 @@ func check() -> void:
 						var e: Array = kf[side]
 						if float(e[2]) >= 0.0:
 							up += 1
-						elif prev.has(side) and (e[0] as Vector3).distance_to(prev[side]) > 0.005:
+						elif prev.has(side) and Vector2((e[0] as Vector3).x - (prev[side] as Vector3).x, (e[0] as Vector3).z - (prev[side] as Vector3).z).length() > 0.005:
 							slid += 1
 						prev[side] = e[0]
 					if up == 2:
@@ -58,6 +59,7 @@ func check() -> void:
 				hi = maxf(hi, s)
 				lo = minf(lo, s)
 			if kneel:
+				expect(float(gk.get("_kneel")) > 0.9, "the ball in front of his goal, he is not down on his knees")
 				info("on his knees over %.0f m: %.2f to %.2f m/s" % [span, lo, hi])
 				expect(hi > 0.0 and lo < hi * 0.45, "on his knees over %.0f m he glides (%.2f to %.2f m/s)" % [span, lo, hi])
 			else:

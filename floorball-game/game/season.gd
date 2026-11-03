@@ -26,7 +26,7 @@ static func create(club: String, p_women := false, p_seed := -1) -> Season:
 	var s := Season.new()
 	s.user = club
 	s.women = p_women
-	s.seed = randi() if p_seed < 0 else p_seed
+	s.seed = randi() if p_seed < 0 else p_seed   # wsg-rng-ok: a new season's own seed, drawn once when the player starts it (a test or the sim passes one)
 	s.clubs = DB.club_ids().duplicate()
 	s.fixtures.league = round_robin(s.clubs, club, s.seed)
 	return s
