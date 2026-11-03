@@ -11,6 +11,21 @@ func _initialize() -> void:
 	var dir := String(a[0]) if a.size() > 0 else "res://tests/owner_notes"
 	var strict := OS.has_environment("WSG_NOTES_STRICT")
 	var problems := []
+	# (Notes run on a fresh install's defaults - the owner's phone after an update keeps its settings, but a note must
+	# hold on the defaults: Floorball's stick-up-close passed locally on a stale "Real" pace and failed in CI at the
+	# default "Steady". Saved settings in user:// are named; with WSG_NOTES_FRESH=1 - set where the run is given an
+	# empty user dir, XDG_DATA_HOME=$(mktemp -d) - they fail it.)
+	# (Only files from before this run: what the game's autoloads write on a first launch - Kho Kho's detected graphics
+	# level in settings.json - is a fresh install's defaults, the same file a new player gets.)
+	var started := Time.get_unix_time_from_system() - Time.get_ticks_msec() / 1000.0
+	var saved := Array(DirAccess.get_files_at("user://")).filter(func(fn: String) -> bool:
+		return not fn.ends_with(".log") and FileAccess.get_modified_time("user://" + fn) < started - 2.0)
+	if not saved.is_empty():
+		var msg := "user:// holds %s: the notes run on those saved settings, not a fresh install's defaults (run with XDG_DATA_HOME=$(mktemp -d), as CI does)" % [saved]
+		if OS.has_environment("WSG_NOTES_FRESH"):
+			problems.append(msg)
+		else:
+			print("owner_notes: WARNING: " + msg)
 	var f := FileAccess.open(dir.path_join("INDEX.json"), FileAccess.READ)
 	if f == null:
 		printerr("owner_notes: no %s/INDEX.json" % dir)

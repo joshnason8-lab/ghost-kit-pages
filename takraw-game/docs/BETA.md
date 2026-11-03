@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.17: **How to Play's rules on the mixed quadrant.** The Rules page's "The regu" now says the mixed
+quadrant is two men and two women a side, and that the mixed format varies by tournament (the game plays the SEA
+Games and King's Cup way). Nothing else changes in play.
+
 New in 0.15.16: **the mixed quadrant.** Quick Match (and Watch AI) has a fifth event: four a side, two men and two
 women in each team - a man serving, a woman setting, a man and a woman striking - at the men's net, as at the SEA
 Games and the Thai King's Cup. Pick it under Event; the Women's switch makes no difference to it. Worth trying with

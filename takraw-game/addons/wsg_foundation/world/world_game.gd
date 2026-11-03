@@ -86,6 +86,14 @@ func find_bodies(root: Node) -> Array:
 		return true)
 
 
+## pose: why BODY's T- or A-pose now is by design, or "" if it is not - as WsgSimGame.bodies()' "pose_excuse". Counted
+## with its reason in the pose rule, not failed. Only for a pose the lead or owner has ruled designed, and narrowly: a
+## specific animation playing AND its contact condition holding (a hand on the pole in the pole-turn anim), never by
+## actor, role or gait.
+func pose_excuse(_body: Node) -> String:
+	return ""
+
+
 ## feet: one of the game's players as it plays (its character, scale and locomotor set up as in a match), standing
 ## at the origin under PARENT: [WsgBody, WsgLocomotor]; [] not wired. It is driven along the match path (walk, jog,
 ## a turn, a run, a stop).

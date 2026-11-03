@@ -670,6 +670,19 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The mixed format in the rules; owner notes on a fresh install (0.15.17)
+
+- **How to Play, Rules, "The regu"** (RULES_PLAYERS_TEXT, all 13 languages): one more sentence - the mixed quadrant is
+  two men and two women a side, and the mixed format varies by tournament (the lead: the game follows the SEA Games and
+  King's Cup event and claims nothing more). The Japanese and Chinese fonts cut again for 異 and 异.
+- **Foundation 70e571a -> 582bc16**: the owner notes' runner with WSG_NOTES_FRESH (d2112f7, 2846235), the world check's
+  WsgWorldGame.pose_excuse (unused here) and WsgSolidProps.path() stepping out of a prop first (Floorball's fetch).
+- **The owner's notes on a fresh install's defaults** (the lead, 2026-11-03; ADOPTING d2112f77): CI runs them with
+  `XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1`, so the settings the earlier steps saved cannot
+  leak in and any saved settings fail the run. They are run locally the same way. Our single job is the release gate the
+  foundation asks for (`needs: [build, owner-notes]`): the notes step comes before the export and the publish, so a
+  failing note stops the beta.
+
 ## The mixed quadrant (0.15.16)
 
 The open event of the SEA Games (its 2025 technical handbook: Group C, "Mixed Quadrant Event") and the Thai King's
@@ -888,7 +901,8 @@ The 27 notes, from the transcript of the owner's messages:
   - props solid at every venue.
 
 All 27 pass, with the licensed library, in about 8 minutes. CI runs `owner_notes_guard.sh` and then
-`WSG_NOTES_STRICT=1 ... -s res://tools/wsg/owner_notes.gd`.
+`XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 ... -s res://tools/wsg/owner_notes.gd` (a fresh
+install's defaults, from 0.15.17).
 
 ## The world rules, and the ball behind the bench (0.15.5)
 

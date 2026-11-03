@@ -136,12 +136,16 @@ jobs:
       # owner's own words with the date and the beta they were on, each measuring the very symptom they saw over its
       # whole range. The guard fails if a note once listed in INDEX.json is gone; the run fails on any note failing, or
       # skipped (this build has the licensed library, so nothing may be).
+      # On a fresh install's defaults (the lead, 2026-11-03; ADOPTING d2112f77): an empty user dir, so the settings the
+      # steps above saved cannot leak in, and WSG_NOTES_FRESH fails the run on any saved settings it finds.
+      # This one job is the release gate: the notes come before the export and the publish, so a failing note stops
+      # the beta from being built or published (the foundation's "needs: [build, owner-notes]", in one job).
       - name: The owner's notes (tests/owner_notes, each a test for good)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
           sh tools/wsg/owner_notes_guard.sh
-          WSG_NOTES_STRICT=1 timeout 2400 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee "$RUNNER_TEMP/owner_notes.log"
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 2400 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee "$RUNNER_TEMP/owner_notes.log"
 
       # The beta's signing key: the owner's, from the BETA_KEYSTORE_B64 secret (a PKCS12 keystore, base64; password
       # "android", alias "androiddebugkey"), so every build installs over the last and keeps the player's saves. Without
