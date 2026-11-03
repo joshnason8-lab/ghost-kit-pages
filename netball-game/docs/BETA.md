@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.8.8-beta
+
+- **A real crowd on Medium and High**: the stands in the arena, the hall's seats and the people standing round the park
+  court are now 3D people (most of them women), seated in the seats or standing behind the fence, their heads
+  following the ball, in the two teams' colours and their own; they cheer goals and applaud the breaks. Low as before.
+
 ## New in 0.8.7-beta
 
 - **How to Play, Positions**: each position has its own court: her areas lit, the rest dark, her bib where she
