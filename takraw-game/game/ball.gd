@@ -119,9 +119,9 @@ func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
 	# harder it was hit (kept slow enough that its weave doesn't seem to stand still).
 	var flat := Vector3(v.x, 0, v.z)
 	var axis := flat.cross(Vector3.UP).normalized() if flat.length() > 0.2 else Vector3.RIGHT
-	axis = axis.rotated(Vector3.UP, randf_range(-0.5, 0.5)) + Vector3(0, randf_range(-0.35, 0.35), 0)
+	axis = axis.rotated(Vector3.UP, randf_range(-0.5, 0.5)) + Vector3(0, randf_range(-0.35, 0.35), 0)   # wsg-rng-ok: the spin is drawn only (its flight: Ball.pos_at)
 	spin_axis = axis.normalized()
-	spin_rate = clampf(v.length() * 0.8, 5.0, 16.0) * (1.0 if randf() < 0.75 else -1.0)
+	spin_rate = clampf(v.length() * 0.8, 5.0, 16.0) * (1.0 if randf() < 0.75 else -1.0)   # wsg-rng-ok: drawn only
 	_trail_on = 0.5 if trail else 0.0
 
 

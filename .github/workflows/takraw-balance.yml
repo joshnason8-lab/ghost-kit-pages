@@ -1,0 +1,123 @@
+# Sepak Takraw Unleashed: has the play's balance moved? (The lead: 200+ seeds of 0.14.2's logic against the current
+# one, points conceded and set win rates with confidence intervals; the owner is told only if the shift is real.)
+# The perfect player (tests/user_bot.tscn: every touch in time, running to every mark) plays the same 200 seeds,
+# BOT_SEED 1-200, in each version: 10 parallel jobs a version, then one job compares them. Run it by hand.
+name: Sepak Takraw Unleashed · balance (0.14.2 against now)
+
+on:
+  push:
+    paths:
+      - ".github/workflows/takraw-balance.yml"   # (runs when this file changes; by hand once it is on the main branch)
+  workflow_dispatch:
+    inputs:
+      before:
+        description: "The version to compare against (a commit)"
+        default: "978528f"
+      seeds:
+        description: "Seeds per job (10 jobs a version)"
+        default: "20"
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [before, now]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - name: "The game at this version (no licensed library in either, so the same bodies: the game's own)"
+        run: |
+          REV=${{ matrix.version == 'before' && (inputs.before || '978528f') || github.sha }}
+          mkdir -p "$RUNNER_TEMP/game"
+          git archive "$REV" takraw-game | tar -x -C "$RUNNER_TEMP/game"
+          cd "$RUNNER_TEMP/game/takraw-game"
+          python3 tools/build_i18n.py
+          godot --headless --path . --import > /dev/null 2>&1 || true
+          godot --headless --path . --import > /dev/null 2>&1 || true
+          echo "REV=$REV" >> "$GITHUB_ENV"
+      - name: The perfect player, seed after seed
+        working-directory: ${{ runner.temp }}/game/takraw-game
+        run: |
+          N=${{ inputs.seeds || '20' }}
+          FROM=$(( ${{ matrix.shard }} * N + 1 ))
+          OUT="$RUNNER_TEMP/balance_${{ matrix.version }}_${{ matrix.shard }}.txt"
+          for s in $(seq $FROM $(( FROM + N - 1 ))); do
+            line=$(BOT_SEED=$s timeout 1500 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- perfect 1 0 2>&1 | grep -E "^perfect \(" | head -n 1)
+            echo "${{ matrix.version }} $REV seed $s: ${line:-NO RESULT}" | tee -a "$OUT"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: balance-${{ matrix.version }}-${{ matrix.shard }}
+          path: ${{ runner.temp }}/balance_${{ matrix.version }}_${{ matrix.shard }}.txt
+
+  compare:
+    needs: play
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/balance
+          pattern: balance-*
+          merge-multiple: true
+      - name: Points conceded and sets won, with 95% intervals
+        run: |
+          python3 - "$RUNNER_TEMP/balance" >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import glob, math, re, sys
+          rows = {"before": [], "now": []}
+          missing = {"before": 0, "now": 0}
+          for f in glob.glob(sys.argv[1] + "/*.txt"):
+              for line in open(f):
+                  v = line.split()[0]
+                  m = re.search(r"sets \[(\d+), (\d+)\] (\[\[.*?\]\])", line)
+                  if not m:
+                      missing[v] += 1
+                      continue
+                  won, lost = int(m.group(1)), int(m.group(2))
+                  conceded = sum(int(b) for a, b in re.findall(r"\[(\d+), (\d+)\]", m.group(3)))
+                  rows[v].append((won, lost, conceded))
+          def mean_ci(xs):
+              n = len(xs); mu = sum(xs) / n
+              sd = math.sqrt(sum((x - mu) ** 2 for x in xs) / (n - 1)) if n > 1 else 0.0
+              return mu, 1.96 * sd / math.sqrt(n)
+          def wilson(k, n):
+              if n == 0: return (0, 0, 0)
+              p = k / n; z = 1.96; d = 1 + z * z / n
+              c = (p + z * z / (2 * n)) / d; h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+              return p, c - h, c + h
+          print("## The perfect player: 0.14.2's logic against now\n")
+          print("| Version | Matches (no result) | Points conceded a match (95% CI) | Sets won (95% CI) | Matches won |")
+          print("|---|---|---|---|---|")
+          stats = {}
+          for v in ["before", "now"]:
+              r = rows[v]
+              if not r:
+                  print(f"| {v} | 0 ({missing[v]}) | - | - | - |"); continue
+              mu, ci = mean_ci([c for _, _, c in r])
+              sw, sl = sum(w for w, _, _ in r), sum(l for _, l, _ in r)
+              p, lo, hi = wilson(sw, sw + sl)
+              mw = sum(1 for w, l, _ in r if w > l)
+              stats[v] = (mu, ci, [c for _, _, c in r])
+              print(f"| {v} | {len(r)} ({missing[v]}) | {mu:.2f} ± {ci:.2f} | {100*p:.1f}% ({100*lo:.1f}-{100*hi:.1f}%) | {mw}/{len(r)} |")
+          if "before" in stats and "now" in stats:
+              (m0, _, a), (m1, _, b) = stats["before"], stats["now"]
+              se = math.sqrt((sum((x - m0) ** 2 for x in a) / (len(a) - 1)) / len(a) + (sum((x - m1) ** 2 for x in b) / (len(b) - 1)) / len(b))
+              d = m1 - m0
+              print(f"\nThe shift in points conceded: {d:+.2f} a match (95% CI {d - 1.96 * se:+.2f} to {d + 1.96 * se:+.2f}): " +
+                    ("a real shift (the interval leaves out 0)" if abs(d) > 1.96 * se else "no real shift (the interval takes in 0)"))
+          EOF
+          cat "$GITHUB_STEP_SUMMARY"

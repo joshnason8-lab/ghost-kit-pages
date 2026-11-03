@@ -212,6 +212,32 @@ jobs:
           rm -f ${PROJECT_DIR}/build/aligned.apk
           ls -la ${PROJECT_DIR}/build
 
+      # The release gate (the shared foundation's, ADOPTING §5.19), before the beta goes up. It checks:
+      #   - every signer is the owner's key;
+      #   - the version is the release's, in the file's name too;
+      #   - the licensed animation is in the APK;
+      #   - nothing is exported that should not be (tests, docs, tools, audit output, contact sheets);
+      #   - no big texture is uncompressed, and no stray or duplicated files;
+      #   - and it reports the size against the last beta.
+      # Its report is uploaded.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download sepak-takraw-unleashed-beta --repo "$GITHUB_REPOSITORY" -p '*.apk' -O "$RUNNER_TEMP/previous.apk" 2>/dev/null || true
+          PREV=""
+          if [ -s "$RUNNER_TEMP/previous.apk" ]; then PREV="--previous $RUNNER_TEMP/previous.apk"; fi
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/sepak-takraw-unleashed-${VERSION}.apk \
+            --version "$VERSION" $PREV --out "$RUNNER_TEMP/gate"
+
+      - name: Upload the release gate's report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+          if-no-files-found: warn
+
       - uses: actions/upload-artifact@v4
         with:
           name: sepak-takraw-unleashed-${{ env.VERSION }}-apk

@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.6: **nothing new to see; more checking behind the scenes.** Every note you have given is now a test the
+game must pass before each build goes out, and thousands of matches are played automatically every night to catch
+bugs before you do.
+
 New in 0.15.5: **a match no longer stops when the ball rolls behind a bench.** In 0.15.4 a ball that came to rest
 behind a team bench left the player fetching it walking up and down in front of the bench, and the next serve never
 came. Now he walks round the bench and picks it up. If the ball somehow can't be reached, the thrower is given it and

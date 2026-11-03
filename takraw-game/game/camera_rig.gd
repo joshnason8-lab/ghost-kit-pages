@@ -12,6 +12,7 @@ var _shake := 0.0
 var _replay := false
 var _replay_pos := Vector3.ZERO
 var _user_side := 0
+var rng := RandomNumberGenerator.new()   # its shake (seeded by the match: the stick's way is read from the camera)
 
 
 func setup(m: Node) -> void:
@@ -59,7 +60,7 @@ func follow(b: Vector3, delta: float, m: Node) -> void:
 	var shake := Vector3.ZERO
 	if _shake > 0.0:
 		_shake = maxf(0.0, _shake - delta * 2.5)
-		shake = Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * 0.08
+		shake = Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), 0) * _shake * 0.08
 	global_position = _pos + shake
 	look_at(_look)
 

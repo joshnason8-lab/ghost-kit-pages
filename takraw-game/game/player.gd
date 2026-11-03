@@ -16,6 +16,9 @@ var watch := true          # turn to face the ball (else the net)
 var stroll := false        # between points: walking somewhere, he turns to where he is going and walks there
 var face_to := Vector3.INF # a point he turns to face, in a move too (the thrower to the server); INF: none
 var look_to := Vector3.INF # what he watches, if not the ball (Match: the thrower watches the server)
+## His breath, sway and weight shifts while he waits (_life_pose): their own generator, seeded by the match from its
+## seed (the hand that holds the ball moves with them, so a match replays the same from its seed: WsgSim).
+var life_rng := RandomNumberGenerator.new()
 var carrying := false      # the ball in his hands (Match keeps it there): his right, held out in front standing, by his
                            # hip as he walks (one hand, as the real ones hold it: 0.14.3)
 var toss_crouch := false   # the thrower set to throw: down into his crouch, the ball held low (Match, before the toss)
@@ -109,9 +112,9 @@ func _ready() -> void:
 	add_child(_mine)
 	_yaw = Court.facing(side)
 	body.rotation.y = _yaw
-	_life = randf() * TAU
-	_life_rate = randf_range(0.85, 1.15)
-	_next_shift = randf_range(0.5, 4.0)
+	_life = life_rng.randf() * TAU
+	_life_rate = life_rng.randf_range(0.85, 1.15)
+	_next_shift = life_rng.randf_range(0.5, 4.0)
 
 
 static func ring_material() -> StandardMaterial3D:
@@ -418,8 +421,8 @@ func _life_pose(p: Dictionary, dt: float, now: float, speed: float) -> void:
 	var still := (1.0 - clampf(speed / 0.8, 0.0, 1.0)) * (1.0 - _w)
 	_ready_w = move_toward(_ready_w, ready_bounce, dt * 2.0)
 	if now >= _next_shift:
-		_next_shift = now + randf_range(2.5, 6.5) * (0.5 if ready_bounce > 0.5 else 1.0)
-		_shift_to = (1.0 if _shift_to <= 0.0 else -1.0) * randf_range(0.4, 1.0)
+		_next_shift = now + life_rng.randf_range(2.5, 6.5) * (0.5 if ready_bounce > 0.5 else 1.0)
+		_shift_to = (1.0 if _shift_to <= 0.0 else -1.0) * life_rng.randf_range(0.4, 1.0)
 	_shift += (_shift_to - _shift) * (1.0 - exp(-dt * (3.0 if _ready_w > 0.5 else 1.5)))
 	var b := sin(_life * 1.6)            # the breath, every 4 s or so
 	var sway := sin(_life * 0.7) * 1.5

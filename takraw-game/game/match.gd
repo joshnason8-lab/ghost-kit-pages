@@ -229,6 +229,7 @@ func build_people(ld: WsgLoading = null) -> void:
 ## The camera, the scoreboard and the controls.
 func build_view() -> void:
 	cam = CameraRig.new()
+	cam.rng.seed = hash([int(config.get("seed", 0)), "camera"])   # (its shake: the stick's way is read from it)
 	add_child(cam)
 	cam.setup(self)
 	if String(config.get("mode", "")) == "watch":
@@ -299,6 +300,7 @@ func _make_teams() -> void:
 				"height": float(pd.get("height", 1.76)), "women": women}
 			var p := Player.new(pd, 0, roles[i] if i < roles.size() else DB.POS_STRIKER, look)
 			p.slot = i
+			p.life_rng.seed = hash([int(config.get("seed", 0)), k, i])   # (the match's own rng untouched: its rallies as before)
 			add_child(p)
 			team.players.append(p)
 			stats[pd.id] = {"kills": 0, "aces": 0, "blocks": 0, "digs": 0, "errors": 0, "serves": 0, "num": pd.num, "pos": pd.pos, "team": k}

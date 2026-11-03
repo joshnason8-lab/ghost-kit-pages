@@ -52,7 +52,11 @@ static func create(p_kind: String, country: String, p_women := false, p_event :=
 	var a := [eight[0]]
 	var b := [eight[1]]
 	var rest: Array = eight.slice(2)
-	rest.shuffle()
+	for i in range(rest.size() - 1, 0, -1):   # (shuffled by the cup's own generator)
+		var j := rng.randi_range(0, i)
+		var t: Variant = rest[i]
+		rest[i] = rest[j]
+		rest[j] = t
 	for i in rest.size():
 		(a if i % 2 == 0 else b).append(rest[i])
 	c.groups = [a, b]

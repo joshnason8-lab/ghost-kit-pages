@@ -1,0 +1,144 @@
+# Sepak Takraw Unleashed in WsgSim (the shared foundation's match simulator, ADOPTING §5.17; tools/wsg/sim_ci.yml is
+# the template). Matches are played by the game's own code (game/sim.gd is its adapter), headless at 30 frames a
+# second, each from a seed:
+#   - on every push: the RNG lint, a determinism check, and the smoke batch (50 general seeds, every targeted kind x 3,
+#     every adopted case), with the input fuzzer playing a person's side. The batch runs as four shards side by side
+#     on the runner's four cores, merged into one report.
+#   - nightly: 2,400 matches over 16 parallel jobs, merged into one report.
+# Reports and failures are artifacts only, never inside the project.
+name: Sepak Takraw Unleashed · simulation
+
+on:
+  push:
+    paths:
+      - "takraw-game/**"
+      - ".github/workflows/takraw-sim.yml"
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: takraw-sim-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  GAME_DIR: takraw-game
+
+jobs:
+  smoke:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-editor
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+
+      - name: Put Godot on PATH
+        run: sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+
+      - name: Build translations
+        run: python3 ${GAME_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this run)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${GAME_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        run: |
+          godot --headless --path ${GAME_DIR} --import || true
+          godot --headless --path ${GAME_DIR} --import
+
+      - name: Every random roll from the seed (rng_lint)
+        run: sh ${GAME_DIR}/tools/wsg/rng_lint.sh ${GAME_DIR}/game
+
+      - name: Determinism (each seed twice, frame for frame)
+        run: godot --headless --fixed-fps 30 --path ${GAME_DIR} -s res://tools/wsg/sim.gd -- determinism --game res://game/sim.gd --seeds 2
+
+      - name: Smoke batch (four shards side by side, then merged)
+        run: |
+          pids=""
+          for k in 0 1 2 3; do
+            sh ${GAME_DIR}/tools/wsg/sim_shard.sh ${GAME_DIR} "$RUNNER_TEMP/sim/$k" --smoke --input --shard $k/4 > "$RUNNER_TEMP/smoke_$k.log" 2>&1 &
+            pids="$pids $!"
+          done
+          failed=0
+          for p in $pids; do wait $p || failed=1; done
+          tail -n 5 "$RUNNER_TEMP"/smoke_*.log
+          godot --headless --path ${GAME_DIR} -s res://tools/wsg/sim.gd -- merge --out "$RUNNER_TEMP/sim-smoke" "$RUNNER_TEMP"/sim/*/
+          head -n 80 "$RUNNER_TEMP/sim-smoke/SIM_REPORT.md"
+          exit $failed
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-smoke
+          path: ${{ runner.temp }}/sim-smoke
+          if-no-files-found: warn
+
+  nightly:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - run: python3 ${GAME_DIR}/tools/build_i18n.py
+      - run: sh ${GAME_DIR}/tools/wsg/fetch_assets.sh
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+      - run: godot --headless --path ${GAME_DIR} --import || true
+      - run: sh ${GAME_DIR}/tools/wsg/sim_shard.sh ${GAME_DIR} "$RUNNER_TEMP/sim/${{ matrix.shard }}" --from 1 --count 2400 --shard ${{ matrix.shard }}/16 --input
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sim-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/sim/${{ matrix.shard }}
+
+  report:
+    needs: nightly
+    if: always() && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/shards
+          pattern: sim-shard-*
+      - run: python3 ${GAME_DIR}/tools/build_i18n.py
+      - run: godot --headless --path ${GAME_DIR} --import || true
+      - run: godot --headless --path ${GAME_DIR} -s res://tools/wsg/sim.gd -- merge --out "$RUNNER_TEMP/sim-nightly" "$RUNNER_TEMP"/shards/*
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-nightly
+          path: ${{ runner.temp }}/sim-nightly

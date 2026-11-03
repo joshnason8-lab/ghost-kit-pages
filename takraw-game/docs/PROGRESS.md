@@ -670,6 +670,37 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Thousands of simulated matches: WsgSim (ADOPTING §5.17)
+
+`game/sim.gd` is the game's adapter to the shared simulator. Its matches are built by `Game.start_match`, as a Start
+tap builds them, and played by the game's own code: the AI, the ball, the rules, the officials and the props. They run
+headless at 30 frames a second, each from a seed.
+- **Every random roll from the seed** (`tools/wsg/rng_lint.sh`): the players' breath and weight shifts now come from
+  their own generator, seeded from the match's seed (the hand that holds the ball moves with them). So does the
+  camera's shake, because the stick's way is read from the camera. Both are seeded without drawing on the match's own
+  generator, so every match plays its rallies exactly as before. The tournament draw's shuffle now uses the cup's
+  generator. The ball's spin is drawn only (`# wsg-rng-ok`).
+- The game's own numbers-only results simulator moved from `game/sim.gd` to `game/score_sim.gd`; its class name, Sim,
+  is unchanged.
+- **Kinds:** random, extreme (the strongest against the weakest, best of three to 21, the hardest and easiest AI),
+  and four targeted kinds:
+  - scoring: close sides, a set to 15 (deuce and the cap);
+  - collisions: the venues with the most props, quadrant;
+  - completion: best of three to 21;
+  - human: a person's side.
+- A person's side, when the input fuzzer plays it, goes through the game's own controls: the touch stick, the three
+  buttons (as their keys press them), and the phone's Back (the pause menu).
+- **The score** is the points won over every set, so it never goes down at a new set. **The rules** checked every
+  frame: three touches a side at most, a set's points never past the cap, every set won a legal score, and each side's
+  players on court.
+- **The ball** is in play when it flies or rolls loose, but not in a replay. A replay moves it along the rally's path
+  again from the start; counting that showed as a ball through a bench and a net post (two smoke seeds, gone on
+  replay).
+- **Speed:** 12-14 times real time per process here (a one-set match in 25-50 s).
+- **CI:** `.github/workflows/takraw-sim.yml` runs on every push: the RNG lint, determinism, and the smoke batch with
+  the input fuzzer as four shards side by side. Every night it runs 2,400 matches over 16 jobs and merges them into
+  one report.
+
 ## The owner's notes, kept as tests for good (ADOPTING §5.16)
 
 The owner: "the regressions are getting worse." So every remark of theirs that can be measured is now a test in
