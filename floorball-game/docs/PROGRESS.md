@@ -227,7 +227,23 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
-### 0.9.7-beta: a loading screen on every start; doors in the boards, solid goals (3 November 2026)
+### 0.9.7-beta: a loading screen on every start; doors in the boards, solid goals; the owner's round 5 (3 November 2026)
+
+The owner's round 5:
+- **The goalkeeper caught and threw over and over** with players close: his own throw (8 m/s and more) reached him
+  as a "fast ball" in his crease, so he spilled it, caught the slow rebound and threw again, round and round, the
+  three seconds starting afresh each time. His own throw is no longer a save for him to make again.
+- **Shots lift**: the joystick as you shoot sets the height. Toward the goal (running at it), high, to just under the
+  bar; away from it, low along the floor; across, the corner, as before. And a shot aimed at a height now arrives at
+  it: the lift is solved by flying the ball through the air as it flies (before, the air's drag brought shots aimed
+  high in under their aim).
+- **No time-out** (it did nothing worth having): the button, the AI's, the card and their words are gone.
+- **Penalty shots' feet under the floor**: the shared foundation's body takes the game's own whole-body pose, and its
+  legs are not the game's lengths: a bent knee or a crouch put its toes up to 16 cm under the floor (the close camera
+  shows it). Every ankle and toe is now kept at least at its height standing, the body raised by what it lacks.
+- **Penalty shots: you skate in**: the shooter no longer skates in on his own. The joystick up takes him in, never
+  back; stood still for a second and a half the ball has stopped, and the shot is over (as the rule says).
+
 
 The owner's rules for every game (through the lead): a tap on Start or Play shows a loading screen at once, with a bar
 that moves, never a frozen menu; and nobody ever walks through a table, a bench or the boards, every asset solid.

@@ -383,16 +383,6 @@ func banner(text: String) -> void:
 	_banner_t = 2.2
 
 
-## A time-out being taken: the team, its seconds left, and (yours to play) a tap to play on. secs < 0 takes it away.
-func timeout_card(team: String, secs: int) -> void:
-	if secs < 0:
-		_banner_t = 0.0
-		return
-	_banner.text = tr("SIGN_TIMEOUT")
-	_banner_sub.text = "%s · 0:%02d" % [team, secs] + ("" if m.user_team < 0 else " · " + tr("TIMEOUT_SKIP"))
-	_banner_t = maxf(_banner_t, 0.6)
-
-
 func hint(text: String) -> void:
 	_hint.text = text
 	_hint_t = 2.4
@@ -531,14 +521,6 @@ func show_pause(on: bool) -> void:
 	c.add_child(v)
 	v.add_child(UI.label(tr("PAUSED"), "HeaderLabel", 54))
 	v.add_child(UI.button(tr("RESUME"), true, func(): m.set_paused(false)))
-	if m.user_team >= 0 and not bool(m.config.get("practice", false)):
-		var to_left: int = m.rules.timeouts[m.user_team]
-		var tob := UI.button(tr("TIMEOUT_BTN") if to_left > 0 else tr("TIMEOUT_USED"), false, func():
-			if m.call_timeout():
-				hint(tr("TIMEOUT_CALLED"))
-				m.set_paused(false))
-		tob.disabled = to_left <= 0
-		v.add_child(tob)
 	if bool(m.config.get("practice", false)):
 		v.add_child(UI.button(tr("PRACTICE_RESTART"), false, func():
 			m.set_paused(false)

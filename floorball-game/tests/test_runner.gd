@@ -40,11 +40,12 @@ func _ready() -> void:
 	await _aimed_penalty()
 	await _practice()
 	await _watch()
-	await _timeout_and_joystick()
+	await _joystick()
 	await _loading_overlay()
 	_signage()
 	await _match_parts()
 	await _solid_props()
+	await _keeper_throw()
 	await _coach()
 	await _crowd_faces()
 	_mocap()
@@ -645,7 +646,23 @@ func _practice() -> void:
 	rng.seed = 2
 	var guard := 0
 	var hidden_ok := true
+	# You skate the shooter in (nothing moves him on his own): the first shot left alone, he stands, and once the ball
+	# has stopped the shot is over; the rest skated in with the joystick up.
+	var first_t := -1
+	var first_x := 0.0
 	while m.phase != "over" and guard < 60 * 240:
+		var st0 := String(m._so.get("stage", ""))
+		if int(m._practice.get("shot", 0)) == 0:
+			m.touch.joystick = Vector2.ZERO
+			if st0 == "run" and first_t < 0:
+				first_t = guard
+				first_x = (m._so.shooter as Player).pos.x
+		else:
+			m.touch.joystick = Vector2(0, -1) if st0 == "run" else Vector2.ZERO
+		if first_t >= 0 and int(m._practice.get("shot", 0)) == 1 and first_t < 1e8:
+			check(guard - first_t < 60 * 4 and absf((m._so.shooter as Player).pos.x - first_x) < 1.0 and (m._practice.marks as Array)[0] == 0,
+				"practice: left alone the shooter stands; the ball stopped, the shot is over (%d frames)" % (guard - first_t))
+			first_t = int(1e9)
 		await get_tree().physics_frame
 		guard += 1
 		if guard == 120:
@@ -703,9 +720,8 @@ func _watch() -> void:
 	check(Engine.time_scale == 1.0 and Engine.physics_ticks_per_second == ticks, "left at 2x: the game back at its own pace")
 
 
-## A time-out is taken (both teams to their benches, the clock stopped, legs back), and the joystick follows the
-## camera: behind the goal, up the screen is up the rink.
-func _timeout_and_joystick() -> void:
+## The joystick follows the camera (behind the goal, up the screen is up the rink), and sets a shot's height.
+func _joystick() -> void:
 	var keep_cam: int = Game.settings.camera
 	var m: Node = (load("res://game/match.gd") as Script).new()
 	m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": 0, "seed": 4, "period": 4.0, "mode": "quick"}
@@ -733,26 +749,27 @@ func _timeout_and_joystick() -> void:
 	m.touch.joystick = Vector2.ZERO
 	check(bad.is_empty(), "the joystick follows the camera: every camera, the stick's way on the screen (%s)" % [bad])
 	m.cam.mode = Game.CAM_TV
-	# The time-out: called, taken at the next whistle, everyone to the benches, the legs back, then the restart.
-	for p: Player in m.players[0] + m.players[1]:
-		p.stamina = 0.5
-	check(m.call_timeout(0), "time-out: called")
-	guard = 0
-	while m.phase != "live" and guard < 900:
-		await get_tree().physics_frame
-		guard += 1
-	m._stop("faceoff", {"spot": Vector2.ZERO})
-	await get_tree().physics_frame
-	check(m._to_left > 0.0 and m.players[0].all(func(p): return p.stamina > 0.95), "time-out: taken at the whistle, everyone's legs back")
-	var clock: float = m.rules.clock
-	guard = 0
-	var near_bench := false
-	while m._to_left > 0.0 and guard < 60 * 15:
-		await get_tree().physics_frame
-		guard += 1
-		if m._to_left < 8.0:
-			near_bench = near_bench or (m.skaters(0)[0] as Player).pos.y < -Rules.WIDTH * 0.5 + 3.0
-	check(guard < 60 * 15 and near_bench and is_equal_approx(m.rules.clock, clock), "time-out: the teams at their benches, the clock stopped, then play goes on")
+	# Shot height: the joystick toward the goal lifts it, away keeps it low; aimed high, it arrives high.
+	var to_g := Vector2(1, 0)
+	var hi: float = m.shot_height(Vector2(1, 0), to_g)
+	var lo: float = m.shot_height(Vector2(-1, 0), to_g)
+	var mid: float = m.shot_height(Vector2.ZERO, to_g)
+	check(hi > 0.9 and lo < 0.15 and mid > 0.4 and mid < 0.6, "shots: the joystick toward the goal lifts the shot, away keeps it low (%.2f %.2f %.2f)" % [hi, mid, lo])
+	var worst := 0.0
+	for d: float in [5.0, 10.0, 16.0]:
+		for y: float in [0.1, 0.6, 1.0]:
+			var vy: float = m.shot_lift(0.05, 22.0, d, y)
+			# Flown as the ball flies it.
+			var v := Vector2(22.0, vy)
+			var q := Vector2(0.0, 0.05)
+			while q.x < d:
+				var k := v.length()
+				v -= v * Ball.DRAG * k / 120.0
+				v.y -= Ball.G / 120.0
+				q += v / 120.0
+			worst = maxf(worst, absf(q.y - y))
+	check(worst < 0.05, "shots: aimed at a height, the ball arrives there through the air (worst %.3f m)" % worst)
+	check(not m.has_method("call_timeout"), "no time-out (the owner: it did nothing)")
 	m.queue_free()
 	await frames(2)
 	Game.settings.camera = keep_cam
@@ -804,6 +821,38 @@ func _signage() -> void:
 
 ## The match's own pieces, each on a live AI match: a won tackle keeps the ball, a penalty's player walks to the
 ## penalty bench and comes back when it is over, the empty net, passive play.
+## The goalkeeper's throw with opponents close round him: he lets it go once (his own throw is not a save to make
+## again), never catching and throwing over and over.
+func _keeper_throw() -> void:
+	var regrabs := 0
+	for trial in 3:
+		var m: Node = (load("res://game/match.gd") as Script).new()
+		m.config = {"home": "SWE", "away": "FIN", "venue": "hall", "user_team": -1, "demo": true, "seed": 11 + trial, "period": 4.0}
+		add_child(m)
+		while m.phase != "live":
+			await get_tree().physics_frame
+		var gk: Player = m.keeper(0)
+		var a: float = m.attack_dir(0)
+		m.ball.release()
+		m.ball.hold(gk, Vector3(gk.pos.x, 0.7, gk.pos.y))
+		m.ball.last_player = gk
+		m.ball.last_team = 0
+		m.gk_hold = 0.0
+		var opp: Array = m.skaters(1)
+		for k in 3:
+			opp[k].respawn(gk.pos + Vector2(a * (1.0 + k * 0.6), (k - 1) * 1.2))
+		var was := true
+		for f in 300:
+			await get_tree().physics_frame
+			var now: bool = m.ball.held_by == gk
+			if now and not was and m.ball.last_player == gk:
+				regrabs += 1
+			was = now
+		m.queue_free()
+		await frames(2)
+	check(regrabs == 0, "507.15: the goalkeeper's throw with opponents close: let go once, not caught again (%d)" % regrabs)
+
+
 ## The props are solid (the owner's rule): the goal frames and nets stop a body from behind and the side; a shut door
 ## in the boards turns the ball as a board does, an open one lets it out (504).
 func _solid_props() -> void:
@@ -1240,6 +1289,19 @@ func _foundation() -> void:
 	check(unseen.is_empty(), "foundation: its body drawn for everyone on the rink, RiggedBody hidden (%s)" % [unseen])
 	check(sticks.is_empty(), "foundation: a stick in every skater's hands, none for the goalkeepers and referees (%s)" % [sticks])
 	check(still.is_empty(), "foundation: every body on the rink posed (every frame near the camera, every 2nd or 3rd far from it) (%s)" % [still])
+	# The feet on the floor, never in it: every ankle and toe at least at its height standing (FoundationLink._ground).
+	var sunk := 0.0
+	for i in 60:
+		await get_tree().process_frame
+		for p: Player in people:
+			if p.link == null or p.link.body == null or not p.visible:
+				continue
+			var sk: Skeleton3D = p.link.body.skeleton
+			for b: int in p.link._feet_rest:
+				if b >= 0:
+					var y: float = (sk.global_transform * sk.get_bone_global_pose(b)).origin.y
+					sunk = maxf(sunk, float(p.link._feet_rest[b]) - y - 0.01)
+	check(sunk <= 0.0, "foundation: nobody's feet under the floor (worst %.3f m)" % sunk)
 	# The fists on the shaft, over a few seconds of play: the top one always (the stick goes through it), the lower one
 	# nearly always (it slides along the shaft to where it reaches).
 	var n := 0

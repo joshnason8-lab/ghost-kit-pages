@@ -317,7 +317,36 @@ func update(dt: float) -> void:
 	legacy.hold = {}
 	# The skeleton's modifiers now, once (WsgBody.set_manual).
 	body.advance(dt)
+	_ground(dt)
 
+
+
+## The feet on the floor, never in it: the game's whole-body pose ("full") turns this rig's legs as the game's own
+## turn, and this rig's legs are not the game's lengths, so a bent knee or a crouch put its toes up to 16 cm under the
+## floor (a penalty shot's close camera showed it). Each ankle and toe kept at least at its height standing: the body
+## raised by whatever it lacks, at once, and let back down gently.
+const FEET := ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]
+var _feet_rest := {}          # bone index -> its height standing (over the body's origin)
+var _lift := 0.0
+
+
+func _ground(dt: float) -> void:
+	var sk: Skeleton3D = body.skeleton
+	if _feet_rest.is_empty():
+		for n: String in FEET:
+			var b := sk.find_bone(n)
+			if b >= 0:
+				_feet_rest[b] = (sk.global_transform * sk.get_bone_global_rest(b)).origin.y - body.global_position.y
+		if _feet_rest.is_empty():
+			_feet_rest[-1] = 0.0
+	var want := 0.0
+	for b: int in _feet_rest:
+		if b < 0:
+			continue
+		var y := (sk.global_transform * sk.get_bone_global_pose(b)).origin.y - body.global_position.y
+		want = maxf(want, float(_feet_rest[b]) - y)
+	_lift = want if want > _lift else move_toward(_lift, want, dt * 0.6)
+	body.position.y = _lift
 
 
 ## Both hands closed round the shaft (the fingers' turns solved once, WsgGrip, then laid on each time).

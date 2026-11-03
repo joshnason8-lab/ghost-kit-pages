@@ -299,9 +299,6 @@ func _physics_process(delta: float) -> void:
 		"live":
 			_live(dt)
 		"whistle":
-			if _to_left > 0.0:
-				_timeout_step(dt)
-				return
 			_stop_players()
 			_step_all(dt)
 			_tick_clock(dt, false)
@@ -518,6 +515,44 @@ func pass_to(p: Player, q: Player) -> void:
 	Sfx.play("pass", -6.0)
 
 
+## The height a shot is aimed at from the joystick j as it is struck (to_goal: from the shooter to the goal): pushed
+## toward the goal, high (to just under the bar); pulled away, low (along the floor); in between, mid height.
+static func shot_height(j: Vector2, to_goal: Vector2) -> float:
+	var fwd := j.dot(to_goal.normalized()) if j.length() > 0.2 and to_goal.length() > 0.01 else 0.0
+	return clampf(0.5 + fwd * 0.5, 0.08, Rules.GOAL_H - 0.12)
+
+
+## The upward speed a ball struck at horizontal speed sp from height y0 needs to be at height y1 after d metres, as
+## Ball flies it (its air drag on the whole velocity, gravity): two secant steps on a quick flight.
+static func shot_lift(y0: float, sp: float, d: float, y1: float) -> float:
+	var fly := func(vy: float) -> float:
+		var v := Vector2(sp, vy)
+		var p := Vector2(0.0, y0)
+		var dt := 1.0 / 120.0
+		for i in 600:
+			var k := v.length()
+			v -= v * Ball.DRAG * k * dt
+			v.y -= Ball.G * dt
+			p += v * dt
+			if p.x >= d:
+				break
+		return p.y
+	var tt := d / sp
+	var a := (y1 - y0) / tt + 0.5 * Ball.G * tt
+	var fa: float = fly.call(a) - y1
+	var b := a + 1.0
+	var fb: float = fly.call(b) - y1
+	for i in 2:
+		if absf(fb - fa) < 0.0001:
+			break
+		var c := b - fb * (b - a) / (fb - fa)
+		a = b
+		fa = fb
+		b = c
+		fb = fly.call(b) - y1
+	return b
+
+
 ## A shot at aim (a point in the goal's mouth). slap: wound up, harder, less accurate.
 func shoot(p: Player, aim: Vector3, slap := false) -> void:
 	if ball.carrier != p:
@@ -530,8 +565,9 @@ func shoot(p: Player, aim: Vector3, slap := false) -> void:
 	var sp := (22.0 if not slap else 30.0) * (0.75 + p.stat("shot") / 300.0) * _rng.randf_range(0.92, 1.06)
 	# The lift that brings it to the aimed height at the goal line, against gravity (drag ignored for the aim: the
 	# real ball slows and so dips a little: shots aimed high come in lower, as they do).
-	var tt := d / sp
-	var vy := (aim.y - from.y) / tt + 0.5 * Ball.G * tt
+	# The lift that brings it to the aimed height at the goal, through the air as the ball flies (shot_lift), so a
+	# shot aimed high arrives high rather than dipping under its aim.
+	var vy := shot_lift(from.y, sp, d, aim.y)
 	var v := Vector3(flat.x / d * sp, vy, flat.y / d * sp)
 	p.do("shoot", 0.42 if not slap else 0.6)
 	p.want_face = flat.angle()
@@ -899,8 +935,8 @@ func _keeper_block() -> void:
 		var reach := 0.62 if gk.act in ["kneel", "save_low"] else 0.45
 		if ball.pos.y > 1.3 or gk.pos.distance_to(b) > reach:
 			continue
-		if ball.last_player == gk and ball.speed() < 3.0:
-			continue
+		if ball.last_player == gk and (ball.speed() < 3.0 or ball.last_how == "gk_throw"):
+			continue   # (his own throw leaving him, or a ball he has just let go: not a save to make again)
 		if ball.speed() < 7.0:
 			ball.hold(gk, Vector3(gk.pos.x, 0.7, gk.pos.y))
 			ball.last_player = gk
@@ -1184,12 +1220,6 @@ func _end_replay() -> void:
 
 ## A tap (or a key) skips the replay.
 func _input(event: InputEvent) -> void:
-	if phase == "whistle" and _to_left > 0.0 and not paused and user_team >= 0:
-		# A tap ends a time-out (as its 30 seconds would end).
-		if (event is InputEventScreenTouch and event.pressed and event.position.x > get_viewport().get_visible_rect().size.x * 0.35) \
-				or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE):
-			_to_left = 0.0
-		return
 	if phase != "replay" or paused:
 		return
 	if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
@@ -1345,9 +1375,6 @@ func _stop(kind: String, d: Dictionary) -> void:
 			_restore_keeper(t)
 	if hud and user_team >= 0 and int(d.get("team", -1)) != user_team:
 		hud.coach("TIP_WHISTLE")
-	_ai_timeout()
-	if _timeout_team >= 0:
-		_take_timeout()
 	var why := String(d.get("why", ""))
 	var dirx := Vector2(attack_dir(int(d.get("team", 0))), 0)
 	match kind:
@@ -1686,6 +1713,7 @@ func _shootout(dt: float) -> void:
 				_whistle("long", -4.0)
 				_so.stage = "run"
 				_so.t = 0.0
+				_so.stall = 0.0
 				ball.carrier = _so.shooter
 				ball.last_team = t
 				ball.last_player = _so.shooter
@@ -1710,7 +1738,11 @@ func _shootout(dt: float) -> void:
 				_so_shot(sh, g)
 			_check_shot()
 			_step_all(dt)
-			var done = ball.in_goal != 0 or (bool(_so.shot) and (ball.speed() < 1.0 or ball.vel.x * s < 0.0 or ball.held_by != null)) or _so.t > 7.0
+			var stalled := not bool(_so.shot) and float(_so.get("stall", 0.0)) > STALL_S
+			if stalled and hud:
+				hud.hint(tr("SO_STOPPED"))
+			var done = ball.in_goal != 0 or (bool(_so.shot) and (ball.speed() < 1.0 or ball.vel.x * s < 0.0 or ball.held_by != null)) \
+				or _so.t > 9.0 or stalled
 			if done and bool(_so.get("practice", false)):
 				_so.stage = "end"
 				ball.held_by = null
@@ -1959,10 +1991,12 @@ func _on_action(id: String) -> void:
 						pass_to(user_player, best)
 					return
 				var aim: Vector3 = ai[user_team]._aim(user_player, g)
-				# The joystick's sideways push (on the rink, across it) picks the corner.
+				# The joystick as he shoots: its push across the rink picks the corner; toward the goal lifts the shot
+				# (running at the goal, it rises to the top corners), away from it keeps it on the floor.
 				var j := joy()
 				if absf(j.y) > 0.3:
 					aim.z = signf(j.y) * Rules.GOAL_W * 0.36
+				aim.y = shot_height(j, g - user_player.pos)
 				shoot(user_player, aim, user_player.pos.distance_to(g) > 9.0)
 		"PASS":
 			if ball.carrier == user_player:
@@ -2009,6 +2043,9 @@ const WIND_S := 0.55           # seconds to a full wind-up
 const WILD_S := 1.1            # held longer than this, the shot runs wild
 
 
+const STALL_S := 1.5   # a penalty shot's shooter stood still this long: the ball has stopped, the shot is over
+
+
 func _breakaway(sh: Player, gk: Player, s: float, dt: float) -> void:
 	if bool(_so.get("shot", false)):
 		# Shot: he pulls up and glides off to the side of the goal, never on into the goalkeeper.
@@ -2018,10 +2055,12 @@ func _breakaway(sh: Player, gk: Player, s: float, dt: float) -> void:
 		_keeper_mirror(gk, s, dt)
 		return
 	var j: Vector2 = touch.joystick if touch else Vector2.ZERO
-	# The camera is behind him: the joystick's right is his right (+z going toward +x), up is toward the goal.
-	var fwd := clampf(4.4 - j.y * 1.6, 3.0, 6.2)
+	# You skate him in: the camera is behind him, the joystick's up is toward the goal, its right his right (+z going
+	# toward +x). Never back (the ball must keep moving toward the goal); stood still too long, the shot is over.
+	var fwd := clampf(-j.y, 0.0, 1.0) * 6.2
 	sh.want_vel = Vector2(fwd * s, j.x * s * 3.6)
 	sh.want_face = 0.0 if s > 0.0 else PI
+	_so.stall = float(_so.get("stall", 0.0)) + dt if sh.vel.x * s < 0.4 and float(_so.t) > 0.6 else 0.0
 	_so.bite = maxf(0.0, float(_so.get("bite", 0.0)) - dt)
 	if bool(_so.get("winding", false)):
 		_so.wind = float(_so.get("wind", 0.0)) + dt
@@ -2343,74 +2382,6 @@ func quit_to_menu() -> void:
 func continue_after_interval() -> void:
 	if phase == "interval":
 		_next_period()
-
-
-var _timeout_team := -1
-var _to_left := 0.0           # a time-out being taken: its seconds left (match time)
-var _to_team := -1
-const TIMEOUT_PACE := 3.5       # the time-out shown this many times faster than it is
-
-
-## The time-out itself: every player to his team's bench (the goalkeepers too), the clock stopped, a card with the
-## seconds left; then the restart as it was to be.
-func _timeout_step(dt: float) -> void:
-	_to_left = maxf(0.0, _to_left - dt * TIMEOUT_PACE)
-	for t in 2:
-		var zone: Vector2 = sub_zone(t)
-		var mid := (zone.x + zone.y) * 0.5
-		var i := 0
-		for p: Player in players[t]:
-			if not p.on_rink or p.in_box:
-				continue
-			var spot := Vector2(mid + (i % 3 - 1) * 1.1, -Rules.WIDTH * 0.5 + 1.0 + (i / 3) * 0.9)
-			var d := spot - p.pos
-			p.want_vel = d.normalized() * minf(4.0, d.length() * 2.0) if d.length() > 0.15 else Vector2.ZERO
-			p.want_face = NAN if d.length() > 0.8 else -PI * 0.5
-			i += 1
-	_step_all(dt)
-	if hud:
-		hud.timeout_card(DB.team_name(String(config.home if _to_team == 0 else config.away)), ceili(_to_left))
-	if _to_left <= 0.0:
-		if hud:
-			hud.timeout_card("", -1)
-		_whistle("short", -4.0)
-		_setup_restart()
-
-
-## A time-out (202): one a team, 30 seconds, asked for any time and granted at the next stoppage.
-func call_timeout(team := -2) -> bool:
-	var t := user_team if team == -2 else team
-	if t < 0 or rules.timeouts[t] <= 0 or _timeout_team >= 0:
-		return false
-	rules.timeouts[t] -= 1
-	_timeout_team = t
-	return true
-
-
-## At a stoppage: a time-out asked for is taken now, the referee making the T. The 30 seconds are shown, not waited.
-func _take_timeout() -> void:
-	if _timeout_team < 0:
-		return
-	rules.log.append({"kind": "timeout", "team": _timeout_team, "period": rules.period, "t": rules.clock})
-	_ref_signal("timeout", Vector2.ZERO)
-	_whistle("double", -3.0)
-	# The 30 seconds, taken (shown at a few times their pace; a tap ends them): both teams to their benches, their
-	# coaches' words and a drink - everyone on the rink has his legs back after it.
-	_to_team = _timeout_team
-	_to_left = Rules.TIMEOUT_S
-	for t in 2:
-		for p: Player in players[t]:
-			p.stamina = 1.0
-	_timeout_team = -1
-
-
-## The AI's coach calls his time-out a goal down late in the third period, as coaches do.
-func _ai_timeout() -> void:
-	if rules.period != Rules.PERIODS or rules.remaining() > 180.0:
-		return
-	for t in 2:
-		if t != user_team and rules.timeouts[t] > 0 and int(rules.goals[t]) == int(rules.goals[1 - t]) - 1:
-			call_timeout(t)
 
 
 ## In a browser build, the state a playtest script reads (window.fs): where the ball and your player are on the

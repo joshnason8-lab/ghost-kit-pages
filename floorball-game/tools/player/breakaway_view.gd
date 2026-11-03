@@ -14,6 +14,7 @@ func _ready() -> void:
 	var m: Node = Game.current
 	for shot in 2:
 		while String(m._so.get("stage", "")) != "run" or bool(m._so.get("shot", false)) or (m._so.shooter as Player).pos.x < 3.5:
+			m.touch.joystick = Vector2(0, -1)   # (you skate him in: the joystick up)
 			await get_tree().physics_frame
 		var sh: Player = m._so.shooter
 		var cam: Camera3D = null
@@ -32,6 +33,7 @@ func _ready() -> void:
 				m._on_action("SHOOT")
 			if t == 72:
 				m.touch._key_held[0] = false
+			m.touch.joystick = Vector2(0, -1)
 			if cam:
 				cam.global_position = Vector3(sh.pos.x + 0.6, 1.2, sh.pos.y - 3.6)
 				cam.look_at(Vector3(sh.pos.x + 0.6, 0.75, sh.pos.y))

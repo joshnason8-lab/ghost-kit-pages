@@ -196,8 +196,8 @@ func step(dt: float) -> void:
 	# The boards: he stops at them (a body cannot pass through). One sent off the rink (off_boards: to the penalty bench)
 	# goes through a door in them, and only an open one; behind the boards, they stop him from that side.
 	var doors: Array = _doors()
-	if off_boards and Rules.through_door(pos, 0.2, doors):
-		pass
+	if off_boards and (doors.is_empty() or Rules.through_door(pos, 0.2, doors)):
+		pass   # (in a doorway; or a body on its own, in a test or a tool, with no rink round it)
 	elif off_boards and absf(pos.y) > Rules.HALF_W:
 		var side := signf(pos.y)
 		if absf(pos.y) < Rules.HALF_W + 0.3:
