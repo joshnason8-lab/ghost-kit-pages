@@ -140,7 +140,8 @@ func _audit(rule: String, registry: String, hook: String, tool: String, out: Str
 	r.lines.append("%s %s: exit %d; %s" % [tool.get_basename(), registry, code, last])
 	if code != 0:
 		r.fails.append("%s failed (exit %d): see %s" % [tool.get_basename(), code, out])
-	return r
+	# (Without this a failing audit was reported PASS - Sepak Takraw's "crowd | PASS | crowd_audit failed (exit 1)".)
+	return WsgWorldRules._close(r)
 
 
 func _write(dir: String, game_name: String, results: Array) -> void:

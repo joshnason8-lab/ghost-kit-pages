@@ -365,6 +365,10 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   (tests/balance_sim for 200-seed cells). Feet deferred with the lead's word until 2026-11-06 12:00 UTC (the sim's foot
   slip; the world check's feet rule once the world check reads deferrals).
 
+- **0.6.17-beta: shared foundation e9c234c.** The world check's props and crowd rules now fail on a failing audit
+  (they read PASS whatever the audit said); both pass here on the audits' own exit codes. The stands' front-row fans
+  stand back 0.6 m from a barrier.
+
 ## Next
 
 1. **The pok-ta-pok / pelota maya revival** as a third rule set on the festival court. The tournament rules are
