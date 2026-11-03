@@ -285,8 +285,25 @@ var placed := crowd3d.placed          # spots, facings, seat heights...: give yo
 Each fan faces the play (turned toward its nearest part, at most 50 degrees off square to the row) and their head and
 shoulders follow the ball (`watch_ball`). A seated fan is sized to the seat (soles on the floor, the seat of the
 trousers on the seat; the shins reach the last few cm), sits back as far as the seat back or the step behind allows,
-keeps their toes on the tread, and when the crowd gets up they step forward off the seat. Low: WsgCrowdCards (to come)
-takes the same `placed`.
+keeps their toes on the tread, and when the crowd gets up they step forward off the seat. Heads follow the ball in a
+ripple (each fan between the ball and where it was a moment ago), never all at once.
+
+**Low (and the stands the 3D fans do not reach): `WsgCrowdCards`** - the same places as flat cards of the shared
+fans, in ONE draw call for the whole venue:
+```gdscript
+var cards := WsgCrowdCards.new()
+add_child(cards)
+cards.build(v.place(seed), PackedInt32Array(), seed, shirts, lights)    # Low: every place
+# Medium/High: cards.build(crowd3d.placed, the indices not in used, ...) for the far stands
+cards.set_teams(home, away)
+cards.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
+```
+Each card's fan is sized to their seat (the seat of the trousers on it; lifted onto a stool or a wall top, the legs
+hanging), stands just in front of the seat so it never cuts through, and turns toward the camera at most 35 degrees
+off the way the fan faces (the play). They get up and cheer with `WsgCrowd3D.set_excite` like the 3D fans and wear
+the same shirts and looks. Your own card art instead: `cards.use_art(atlas, mask, layout)` before `build` (layout as
+`crowd/cards.json`; the cards are baked by `tools/bake_cards.gd` from the authored crowd). This replaces your own
+billboard crowd: drop it, or keep its art through `use_art`.
 
 **3. Register it for the audit**: `res://game/crowd_venues.gd`:
 ```gdscript
@@ -300,8 +317,9 @@ xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_a
 ```
 measures every fan (WsgCrowdVenue.audit: the seat of the trousers within -2..+3 cm of the seat, the soles within
 -2..+4 cm of the floor, nothing more than 2.5 cm into a seat, seat back, step or barrier, every fan within 35 degrees
-of the play, none backwards) and writes a contact sheet per venue (each section close up from in front and from the
-side, seated and on their feet) and crowd_audit.json. It exits 1 on any failure: fix the declaration (a seat height,
+of the play, none backwards) and every Low card (seated at their seat's height, in front of it, facing the play), and
+writes a contact sheet per venue (each section close up from in front and from the side, seated and on their feet,
+in 3D and as Low cards) and crowd_audit.json. It exits 1 on any failure: fix the declaration (a seat height,
 a tread) until it passes, and send the owner the sheets. The foundation's own test grounds (every kind) pass it:
 `tests/crowd_venues.gd`. Put it in CI with the clips fetched (your licensed crowd is the one shipped).
 

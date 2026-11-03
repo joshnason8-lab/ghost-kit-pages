@@ -398,3 +398,10 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   sheet per venue + JSON; vendored). Test grounds (every kind): tests/crowd_venues.gd, crowd_venue_test - all
   1,210 fans pass: hips -0.5..+1.5 cm, soles 0..-0.9 cm (hanging on stools/walls), inside <= 2.3 cm, facing <= 7 deg.
   Next: M2 ripple/lag of heads, M3 WsgCrowdCards (Low), then each game's venues.
+- Crowd placement M2 + M3: heads follow the ball in a ripple (ball_lag; each fan between it and the ball). Low:
+  `WsgCrowdCards` (crowd_cards.gd, crowd_card.gdshader) - the venue's places as flat cards of the six fans (seated,
+  standing, cheering: crowd/cards.png + cards_mask.png - shirt/skin/hair/legs shares - baked by tools/bake_cards.gd
+  from the authored crowd), one draw call a venue; sized to the seat (lifted onto stools and wall tops), in front of
+  it, turned to the camera at most 35 deg off the fan's facing; get up and cheer with set_excite; team colours,
+  per-spot shirts, set_looks. Audited (hips, in front of the seat, facing) in crowd_venue_test and crowd_audit
+  (whose sheet now has a Low row a section). ADOPTING 5.1.

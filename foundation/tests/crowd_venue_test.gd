@@ -44,6 +44,19 @@ func _initialize() -> void:
 				s.hips[0] if s.hips[0] < INF else 0.0, s.hips[1] if s.hips[1] > -INF else 0.0, s.feet[0], s.feet[1], s.inside, s.facing, s.backwards])
 		for f in a.fails:
 			fails.append("%s: %s" % [v[0], f])
+		# Low: the same places as cards, one draw call.
+		if WsgCrowdCards.available():
+			var cards := WsgCrowdCards.new()
+			root.add_child(cards)
+			cards.build(crowd.placed, PackedInt32Array(), 5)
+			var c := cards.audit(v[1], crowd.placed)
+			print("  %-20s %4d cards in 1 draw call  hips %+.3f..%+.3f  facing <= %2.0f deg" % ["Low (cards)", c.cards,
+				c.hips[0] if c.hips[0] < INF else 0.0, c.hips[1] if c.hips[1] > -INF else 0.0, c.facing])
+			if c.cards != crowd.placed.spots.size():
+				fails.append("%s: %d cards for %d places" % [v[0], c.cards, crowd.placed.spots.size()])
+			for f in c.fails:
+				fails.append("%s: %s" % [v[0], f])
+			cards.free()
 		crowd.free()
 	# The old way: the same places taken as feet, every seat SEAT high, no venue - the audit must catch it.
 	var v := arena()

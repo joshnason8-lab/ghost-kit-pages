@@ -1,8 +1,9 @@
 extends SceneTree
 ## A game's crowds, venue by venue, measured and photographed (the owner's check: fans sitting on their seats, not in
 ## them, soles on the floor, facing the play, standing properly). For each venue its game registers, the 3D crowd is
-## built (WsgCrowd3D.build_venue) and audited (WsgCrowdVenue.audit: every fan), and a contact sheet is written: each
-## section close up from in front and from the side, seated and on their feet (a big moment), with its numbers.
+## built (WsgCrowd3D.build_venue) and audited (WsgCrowdVenue.audit: every fan), and so are the Low cards
+## (WsgCrowdCards on every place), and a contact sheet is written: each section close up from in front and from the
+## side, seated and on their feet (a big moment), in 3D and as Low cards, with its numbers.
 ##   xvfb-run -a godot --path <game> --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- <registry.gd> <out dir> [quality]
 ## registry.gd (the game's, e.g. res://game/crowd_venues.gd): `static func venues() -> Array` of {"name": String,
 ## "venue": WsgCrowdVenue, "scene": optional path of the venue's scene (drawn instead of the plain boxes)}.
@@ -28,7 +29,8 @@ func _initialize() -> void:
 		var venue: WsgCrowdVenue = entry.venue
 		var res: Dictionary = await _venue(name, venue, entry.get("scene", ""), quality, out_dir)
 		report[name] = res
-		print("%s: %d fans, %s" % [name, res.fans, "PASS" if res.fails.is_empty() else "FAIL"])
+		print("%s: %d fans (3D), %d cards (Low), %s" % [name, res.fans, res.low.cards, "PASS" if res.fails.is_empty() else "FAIL"])
+		print("  %-22s cards: hips %s  facing <= %.0f deg" % ["Low", _range(res.low.hips), res.low.facing])
 		for s in res.sections:
 			var r: Dictionary = res.sections[s]
 			print("  %-22s %4d fans  hips %s  feet %s  inside %.3f  facing <= %.0f deg  backwards %d" % [s, r.fans,
@@ -75,6 +77,15 @@ func _venue(name: String, venue: WsgCrowdVenue, scene: String, quality: int, out
 	if scene == "":
 		_boxes(vp, crowd.placed.obstacles, venue)
 	var res := WsgCrowdVenue.audit(crowd, venue, 0)
+	# Low: the same places as cards (every one), measured too.
+	var cards := WsgCrowdCards.new()
+	vp.add_child(cards)
+	cards.build(crowd.placed, PackedInt32Array(), 7)
+	cards.set_looks(WsgCrowd3D.LOOKS.skin, WsgCrowd3D.LOOKS.hair, WsgCrowd3D.LOOKS.legs)
+	cards.visible = false
+	var low: Dictionary = cards.audit(venue, crowd.placed)
+	res["low"] = low
+	res.fails.append_array(low.fails)
 	var cam := Camera3D.new()
 	cam.fov = 50
 	vp.add_child(cam)
@@ -100,15 +111,18 @@ func _venue(name: String, venue: WsgCrowdVenue, scene: String, quality: int, out
 		var side_at: Vector3 = s.a + along * 0.6 + deep + Vector3.UP * 0.5
 		if s.has("barrier"):
 			front += Vector3.UP * float(s.barrier.get("height", 1.0))
-		shots.append([s, front, mid + Vector3.UP * 0.4, false])
-		shots.append([s, side, side_at, false])
-		shots.append([s, front, mid + Vector3.UP * 0.6, true])
-		shots.append([s, side, side_at, true])
+		for as_cards in [false, true]:
+			shots.append([s, front, mid + Vector3.UP * 0.4, false, as_cards])
+			shots.append([s, side, side_at, false, as_cards])
+			shots.append([s, front, mid + Vector3.UP * 0.6, true, as_cards])
+			shots.append([s, side, side_at, true, as_cards])
 	var cols := 4
 	var sheet := Image.create(CELL.x * cols, CELL.y * shots.size() / cols, false, Image.FORMAT_RGBA8)
 	var up_now := false
 	for n in shots.size():
 		var sh: Array = shots[n]
+		crowd.visible = not sh[4]
+		cards.visible = sh[4]
 		if sh[3] != up_now:
 			up_now = sh[3]
 			WsgCrowd3D.set_excite(1.0 if up_now else 0.0)
@@ -116,8 +130,12 @@ func _venue(name: String, venue: WsgCrowdVenue, scene: String, quality: int, out
 				await process_frame
 		cam.look_at_from_position(sh[1], sh[2], Vector3.UP)
 		var r: Dictionary = res.sections[sh[0].name]
-		label.text = "%s  %s, %s\nhips %s  feet %s\ninside %.3f  facing <= %.0f deg" % [sh[0].name, "side" if n % 2 == 1 else "front",
-			"on their feet" if up_now else "seated", _range(r.hips), _range(r.feet), r.inside, r.facing]
+		if sh[4]:
+			label.text = "%s  LOW cards  %s, %s\ncards: hips %s  facing <= %.0f deg" % [sh[0].name, "side" if n % 2 == 1 else "front",
+				"on their feet" if up_now else "seated", _range(low.hips), low.facing]
+		else:
+			label.text = "%s  %s, %s\nhips %s  feet %s\ninside %.3f  facing <= %.0f deg" % [sh[0].name, "side" if n % 2 == 1 else "front",
+				"on their feet" if up_now else "seated", _range(r.hips), _range(r.feet), r.inside, r.facing]
 		for k in 4:
 			await process_frame
 		sheet.blit_rect(vp.get_texture().get_image(), Rect2i(Vector2i.ZERO, CELL), Vector2i((n % cols) * CELL.x, (n / cols) * CELL.y))

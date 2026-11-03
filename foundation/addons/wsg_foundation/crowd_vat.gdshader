@@ -31,6 +31,7 @@ uniform float clap_time = 0.0;       // s on the clapping sound's clock
 uniform float clap_rate = 2.4;       // claps a second
 uniform float clap_sync = 0.6;       // 1: all on the beat
 uniform vec3 ball = vec3(0.0);       // what they watch (world), smoothed
+uniform vec3 ball_lag = vec3(0.0);   // the same, followed more slowly: each fan watches somewhere between the two
 uniform float watch = 1.0;           // how much they turn to it
 uniform vec4 team_a : source_color = vec4(0.1, 0.45, 0.2, 1.0);
 uniform vec4 team_b : source_color = vec4(0.8, 0.15, 0.1, 1.0);
@@ -158,7 +159,9 @@ void vertex() {
 	vec3 n = normalize(mix(n0, n1, keen));
 	// Watching the ball: the angle to it in the fan's own frame, a little each their own way; the shoulders take
 	// up to 30 degrees of it, the head the rest (up to 75 in all).
-	vec3 d = ball - MODEL_MATRIX[3].xyz;
+	// (Each their own way between the ball and where it was a moment ago: heads follow it in a ripple, never all at
+	// once, and none faster than the ball's own smoothing.)
+	vec3 d = mix(ball, ball_lag, hash(id * 23.1)) - MODEL_MATRIX[3].xyz;
 	vec3 ax = MODEL_MATRIX[0].xyz;
 	vec3 az = MODEL_MATRIX[2].xyz;
 	float yaw = atan(dot(d, ax) / dot(ax, ax), dot(d, az) / dot(az, az));

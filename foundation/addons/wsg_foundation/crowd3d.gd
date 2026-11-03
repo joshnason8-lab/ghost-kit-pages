@@ -504,11 +504,13 @@ static func shirt_code(col: Color) -> float:
 ## What they watch (world); eased so heads do not snap.
 func watch_ball(p: Vector3) -> void:
 	_ball = p if not _ball_set else _ball
+	_ball_lag = p if not _ball_set else _ball_lag
 	_ball_set = true
 	_target_ball = p
 
 
 var _target_ball := Vector3.ZERO
+var _ball_lag := Vector3.ZERO
 
 
 ## The rhythmic clapping is playing: claps a second, how much in unison (0..1), for how long.
@@ -527,6 +529,7 @@ func _process(delta: float) -> void:
 	var rate := 5.0 if target > excite else 0.7
 	excite = lerpf(excite, target, 1.0 - exp(-delta * rate))
 	_ball = _ball.lerp(_target_ball, 1.0 - exp(-delta * 3.0))
+	_ball_lag = _ball_lag.lerp(_ball, 1.0 - exp(-delta * 1.2))
 	_clap_time += delta
 	var clapping := 0.0
 	if _clap_left > 0.0:
@@ -535,6 +538,7 @@ func _process(delta: float) -> void:
 	for m in materials:
 		m.set_shader_parameter("excite", maxf(excite, clapping))
 		m.set_shader_parameter("ball", _ball)
+		m.set_shader_parameter("ball_lag", _ball_lag)
 		m.set_shader_parameter("clap_time", _clap_time)
 		m.set_shader_parameter("clap_rate", _clap_rate)
 		m.set_shader_parameter("clap_sync", _clap_sync)
