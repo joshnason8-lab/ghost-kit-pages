@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.1-beta
+
+- **A loading screen when you tap Start**: the screen dims at once with a moving bar, the buttons switch off so a
+  second tap does nothing, and the match is built a piece at a time so the phone never looks frozen (Quick Match,
+  Nations Cup, Club Season, Watch AI and Rematch).
+
 ## New in 0.9.0-beta
 
 - **Rope nets that sway**: the ball bulges the net as it drops through and the net swings and settles; a ball off
