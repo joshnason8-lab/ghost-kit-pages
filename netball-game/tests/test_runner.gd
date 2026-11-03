@@ -1450,8 +1450,8 @@ func _navigation() -> void:
 ## shared foundation's 3D people, on Low its cards, both where the venue declares them (CrowdVenues; the foundation's
 ## crowd audit measures each body against its seat: tools/wsg/crowd_audit.gd). Each person, as drawn, faces the play
 ## (within 35 degrees of its nearest part, as the audit has it, and within 60 of the court's middle); seated ones on a
-## seat 0.25-0.5 m over their feet, standing ones on the ground outdoors. Cards the broadcast camera sees from behind
-## (a card is a fan's front) are left out: only the near side's, where it stands behind them.
+## seat 0.25-0.5 m over their feet, standing ones on the ground outdoors. People within 6 m of the camera are left out
+## (a camera just behind a crowd), and only they.
 func _crowd_facing() -> void:
 	var was: int = int(Game.settings.graphics)
 	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
@@ -1490,20 +1490,19 @@ func _crowd_facing() -> void:
 				"cards" if g == Game.GFX_LOW else "3D people", as_cards, n])
 			check(off == 0, "%s, %s: every spectator stands on the ground or sits on a seat (%d off)" % [lv, venue, off])
 			if g == Game.GFX_LOW and venue == "outdoor" and not crowds.is_empty():
-				# The broadcast camera behind the near side's crowd: those cards are left out (the middle's at least), no
-				# others.
+				# A camera just behind the near side's crowd: the cards within 6 m of it left out, no others.
 				var c: Crowd = crowds[0]
-				c._hide_for(Vector3(0, 9.4, Court.HALF_W + 14.0))
+				var at := Vector3(-12.0, 1.7, Court.HALF_W + Court.RUNOFF + 3.0)
+				c._hide_for(at)
 				var hid := 0
 				var wrong := 0
 				for k in c.cards.placed_cards.size():
-					var i: int = c.cards.placed_cards[k][0]
-					var near := String(c.venue.sections[c.placed.section[i]].name).begins_with("near side")
+					var p: Vector3 = c.cards.placed_cards[k][1].origin
 					var hidden := c._hidden.has(Vector2i(c._groups.size() - 1, k))
 					hid += 1 if hidden else 0
-					if hidden and not near or near and absf(c.cards.placed_cards[k][1].origin.x) < 11.0 and not hidden:
+					if hidden != (Vector2(p.x - at.x, p.z - at.z).length() < Crowd.NEAR_HIDE):
 						wrong += 1
-				check(hid > 0 and wrong == 0, "Low, outdoor: the near side's cards left out from behind, no others (%d left out, %d wrong)" % [hid, wrong])
+				check(hid > 0 and wrong == 0, "Low, outdoor: the cards near the camera left out, no others (%d left out, %d wrong)" % [hid, wrong])
 			m.queue_free()
 			await frames(2)
 	Game.settings.graphics = was
@@ -1622,20 +1621,23 @@ func _sounds_in_play() -> void:
 ## The textures Low draws with in each venue, as they were before Medium and High got sharper ones (recorded from
 ## 0.6.0-beta): Low loads exactly these, at these sizes; Medium and High load the sharper copies (Game.HD_TEX). Since the
 ## crowd placement (after 0.8.8) Low has a crowd in every venue, the shared foundation's cards (CrowdVenues): their
-## two sheets, cards.png and cards_mask.png, are the only textures added.
+## four sheets (cards.png, cards_mask.png and the same from behind, cards_back*.png) are the only textures added.
 const LOW_TEXTURES := {
-	"arena": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 576x576",
-		"res://addons/wsg_foundation/crowd/cards_mask.png 576x576", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+	"arena": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 768x768",
+		"res://addons/wsg_foundation/crowd/cards_back.png 768x768", "res://addons/wsg_foundation/crowd/cards_back_mask.png 768x768",
+		"res://addons/wsg_foundation/crowd/cards_mask.png 768x768", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
 		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/arena_atlas.jpg 1024x2048",
 		"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg 1024x1024"],
-	"hall": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 576x576",
-		"res://addons/wsg_foundation/crowd/cards_mask.png 576x576", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+	"hall": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 768x768",
+		"res://addons/wsg_foundation/crowd/cards_back.png 768x768", "res://addons/wsg_foundation/crowd/cards_back_mask.png 768x768",
+		"res://addons/wsg_foundation/crowd/cards_mask.png 768x768", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
 		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/hall_atlas.jpg 1024x1024",
 		"res://assets/venue/surfaces/ceiling_interior_albedo_1k.jpg 1024x1024",
 		"res://assets/venue/surfaces/concrete_block_wall_normal_1k.jpg 1024x1024",
 		"res://assets/venue/surfaces/white_maple_veneer_albedo_1k.jpg 1024x1024"],
-	"outdoor": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 576x576",
-		"res://addons/wsg_foundation/crowd/cards_mask.png 576x576", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
+	"outdoor": ["<ImageTexture> 128x64", "res://addons/wsg_foundation/crowd/cards.png 768x768",
+		"res://addons/wsg_foundation/crowd/cards_back.png 768x768", "res://addons/wsg_foundation/crowd/cards_back_mask.png 768x768",
+		"res://addons/wsg_foundation/crowd/cards_mask.png 768x768", "res://assets/player/hero_albedo.jpg 1024x1024", "res://assets/player/hero_mask.png 512x512",
 		"res://assets/ui/bib_letters.png 896x128", "res://assets/venue/outdoor_atlas.jpg 2048x2048",
 		"res://assets/venue/outdoor_cards.png 2048x1024", "res://assets/venue/skies/netball_court_sky_2k.jpg 2048x1024",
 		"res://assets/venue/surfaces/asphalt_02_albedo_1k.jpg 1024x1024",

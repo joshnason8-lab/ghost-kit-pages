@@ -18,10 +18,8 @@ var _cheer := 0.0                # seconds of a cheer left (a goal, the end of a
 var _tension := 0.0              # the attack near a goal: the keen ones up before the shot
 static var _tint := Color.WHITE
 ## People this close to the camera (m, flat) are left out: seen from just behind (the Courtside camera over a hall's
-## stand, the close shot of the post beside the park's crowd) they would fill the bottom of the screen. Cards are also
-## left out while the camera is behind them: a card is the fan's front, so from behind it would look the wrong way.
+## stand, the close shot of the post beside the park's crowd) they would fill the bottom of the screen.
 const NEAR_HIDE := 6.0
-const BEHIND := -0.2             # a card is behind the camera's view of it past this (cos of the angle off its facing)
 var _groups: Array = []          # [multimesh, transforms as placed, facings (cards; empty: 3D), flat box round them, node]
 var _hidden := {}                # Vector2i(group, instance) -> true: left out for now
 var _cam_at := Vector3.INF
@@ -101,9 +99,8 @@ func everyone() -> Array:
 	return out
 
 
-## Leaves out the people within NEAR_HIDE of the camera and the cards it sees from behind, putting back those it no
-## longer does: only when the camera has moved. A mesh with everyone in it left out is not drawn at all (a draw call
-## saved: the hall's cards behind the broadcast camera).
+## Leaves out the people within NEAR_HIDE of the camera, putting back those it no longer is: only when the camera has
+## moved. A mesh with everyone in it left out is not drawn at all.
 func _hide_for(c: Vector3) -> void:
 	if c.distance_squared_to(_cam_at) < 0.04:
 		return
@@ -111,9 +108,8 @@ func _hide_for(c: Vector3) -> void:
 	var c2 := Vector2(c.x, c.z)
 	for gi in _groups.size():
 		var g: Array = _groups[gi]
-		var is_cards := not (g[2] as Array).is_empty()
 		var box: Rect2 = g[3]
-		if not is_cards and not box.grow(NEAR_HIDE).has_point(c2) and not _hidden.has(gi):
+		if not box.grow(NEAR_HIDE).has_point(c2) and not _hidden.has(gi):
 			continue
 		var mm: MultiMesh = g[0]
 		var xfs: Array = g[1]
@@ -123,9 +119,6 @@ func _hide_for(c: Vector3) -> void:
 			var xf: Transform3D = xfs[k]
 			var o := Vector2(xf.origin.x, xf.origin.z)
 			var hide := o.distance_squared_to(c2) < NEAR_HIDE * NEAR_HIDE
-			if is_cards and not hide:
-				var f: Vector3 = g[2][k]
-				hide = Vector2(f.x, f.z).normalized().dot((c2 - o).normalized()) < BEHIND
 			var key := Vector2i(gi, k)
 			if hide != _hidden.has(key):
 				# (Hidden: shrunk to nothing where they stand; the shaders' sums stay finite.)
