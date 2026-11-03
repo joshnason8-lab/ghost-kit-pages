@@ -38,6 +38,7 @@ var _resume_in := -1          # frames until the person taps Resume after the ap
 var _pose_fixed := false
 var _epoch := 0               # stretches of play (bodies(): names)
 var _clock_was := 0.0
+var _paused_for := 0          # frames the human's match has been paused
 
 
 func game_name() -> String:
@@ -135,6 +136,7 @@ func start(config: Dictionary, seed: int, tree: SceneTree) -> Node:
 	_pose_fixed = false
 	_epoch = 0
 	_clock_was = 0.0
+	_paused_for = 0
 	Game.settings.sound = false
 	Game.settings.coach = false
 	Game.settings.coached = true
@@ -226,6 +228,17 @@ func state() -> Dictionary:
 		_resume_in -= 1
 		if _resume_in == 0 and m.paused:
 			m.set_paused(false)   # the person back in the game taps Resume
+	# What the person does on the screens the stick and the three buttons cannot reach: Resume on the pause menu after
+	# a few seconds (Back over the interval screen closes it rather than resuming), and Continue at an interval (yours
+	# waits for it) once its screen has been up a while.
+	if human_team() >= 0:
+		_paused_for = _paused_for + 1 if m.paused else 0
+		if _paused_for > 150:
+			m.set_paused(false)
+			_paused_for = 0
+			_events.append({"type": "sim_resume"})
+		if m.phase == "break" and not m.paused and m.phase_t > Match.HUDDLE_S + 2.0:
+			m.skip_break()
 	return _state_now()
 
 
