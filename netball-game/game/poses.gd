@@ -18,6 +18,45 @@ static func ready(alert := 1.0) -> Dictionary:
 	}
 
 
+## Standing in play at ease (the owner: "their stance is too rigid when not moving, with their hands out"): knees
+## soft, upright, arms hanging relaxed with the elbows a little bent and the hands by her hips; breathing, her weight
+## shifting slowly from foot to foot, her head turning a little now and then. hands (0-1): her hands lifted loosely in
+## front of her at her waist, ready for a pass (only while it may come to her). t: seconds (never restarting: nothing
+## jumps); v: her own way of standing (each 0-1: how bent her elbows are and how far her arms hang out, her stance's
+## depth, the rhythm of her breathing and swaying, her head's), so no two stand alike. down: arms straight down, still
+## (out of play beside the thrower).
+static func idle(t: float, hands := 0.0, v := Vector4(0.5, 0.5, 0.5, 0.5), down := false) -> Dictionary:
+	var br := sin(t * TAU / lerpf(3.4, 4.8, v.z))
+	var sway := sin(t * TAU / lerpf(5.5, 9.0, v.y) + v.x * 6.0)
+	var look := sin(t * TAU / lerpf(6.0, 11.0, v.w) + v.w * 9.0) * smoothstep(0.2, 0.9, absf(sin(t * TAU / 13.0 + v.z * 5.0)))
+	var bend := lerpf(12.0, 30.0, v.x)
+	var out := lerpf(5.0, 11.0, v.y)
+	var k := clampf(hands, 0.0, 1.0)
+	var p := {
+		"hips_y": -0.012 - 0.022 * v.y,
+		"hips_x": 0.022 * sway,
+		"hips": Vector3(1.5, 0, -2.5 * sway),
+		"spine": Vector3(2.0 + 1.0 * br + 3.0 * k, 0, 1.6 * sway),
+		"chest": Vector3(1.0 - 1.5 * br, 0, 1.2 * sway),
+		"neck": Vector3.ZERO,
+		"head": Vector3(-2.0 - 2.0 * k, 9.0 * look * (1.0 - k), -1.5 * sway),
+		"upperarm_l": Vector3(lerpf(-4.0 + 1.5 * br, -20.0, k), 0, lerpf(out, 12.0, k)),
+		"forearm_l": Vector3(lerpf(-bend, -62.0, k), lerpf(-8.0, -25.0, k), 0),
+		"hand_l": Vector3(0, 0, lerpf(-4.0, 0.0, k)),
+		"upperarm_r": Vector3(lerpf(-4.0 + 1.5 * br, -20.0, k), 0, -lerpf(out, 12.0, k)),
+		"forearm_r": Vector3(lerpf(-bend, -62.0, k), lerpf(8.0, 25.0, k), 0),
+		"hand_r": Vector3(0, 0, lerpf(4.0, 0.0, k)),
+		"thigh_l": Vector3(-6, 0, 3), "shin_l": Vector3(10, 0, 0), "foot_l": Vector3(-4, 0, 0),
+		"thigh_r": Vector3(-6, 0, -3), "shin_r": Vector3(10, 0, 0), "foot_r": Vector3(-4, 0, 0),
+	}
+	if down:
+		for s in ["l", "r"]:
+			var sx := 1.0 if s == "l" else -1.0
+			p["upperarm_" + s] = Vector3(3, 0, 6.0 * sx)
+			p["forearm_" + s] = Vector3(-10, -8.0 * sx, 0)
+	return p
+
+
 ## Holding the ball at the chest, landed, ready to pass: pivot is handled by Player turning the whole body.
 static func hold() -> Dictionary:
 	var p := ready(1.0)
@@ -124,26 +163,33 @@ static func defend_ball(lean := 1.0, shot := false) -> Dictionary:
 	return p
 
 
-## Marking a player without the ball: low, side-on, one arm out toward the passing lane.
-static func mark(side := 1.0) -> Dictionary:
-	var p := ready(1.0)
-	p.hips_y = -0.07
-	p.thigh_l = Vector3(-24, 0, 14)
-	p.thigh_r = Vector3(-24, 0, -14)
-	p.shin_l = Vector3(36, 0, 0)
-	p.shin_r = Vector3(36, 0, 0)
-	if side > 0.0:
-		p.upperarm_l = Vector3(-60, 0, 50)
-		p.forearm_l = Vector3(-20, 0, 0)
-	else:
-		p.upperarm_r = Vector3(-60, 0, -50)
-		p.forearm_r = Vector3(-20, 0, 0)
+## Marking a player without the ball: low and side-on, her arms loose and a little out from her sides, ready (not held
+## out: the owner's "too rigid ... hands out"); lift (0-1): now and then one arm out toward the passing lane (side 1:
+## her left), for a moment. v: her own way of standing (idle).
+static func mark(side := 1.0, lift := 0.0, v := Vector4(0.5, 0.5, 0.5, 0.5)) -> Dictionary:
+	var p := ready(0.6)
+	p.hips_y = -0.05
+	p.spine = Vector3(7, 0, 0)
+	p.thigh_l = Vector3(-18, 0, 12)
+	p.thigh_r = Vector3(-18, 0, -12)
+	p.shin_l = Vector3(28, 0, 0)
+	p.shin_r = Vector3(28, 0, 0)
+	var bend := lerpf(28.0, 42.0, v.x)
+	for s in ["l", "r"]:
+		var sx := 1.0 if s == "l" else -1.0
+		p["upperarm_" + s] = Vector3(-12, 0, 16.0 * sx)
+		p["forearm_" + s] = Vector3(-bend, -10.0 * sx, 0)
+	var arm := "l" if side > 0.0 else "r"
+	var ax := 1.0 if arm == "l" else -1.0
+	p["upperarm_" + arm] = (p["upperarm_" + arm] as Vector3).lerp(Vector3(-55, 0, 45.0 * ax), lift)
+	p["forearm_" + arm] = (p["forearm_" + arm] as Vector3).lerp(Vector3(-22, 0, 0), lift)
 	return p
 
 
 ## A shooter holding (posting) by the post: feet wide, low, her defender on her back, one arm out where she wants the
-## ball (side "l" or "r": her left or right arm), the other bent back to feel for her defender.
-static func post(side := "l") -> Dictionary:
+## ball (side "l" or "r": her left or right arm; out 0-1: held out, or lowered between calls), the other bent back to
+## feel for her defender.
+static func post(side := "l", out := 1.0) -> Dictionary:
 	var p := ready(1.0)
 	var o := "r" if side == "l" else "l"
 	var sx := 1.0 if side == "l" else -1.0
@@ -152,8 +198,9 @@ static func post(side := "l") -> Dictionary:
 	p.thigh_r = Vector3(-18, 0, -16)
 	p.shin_l = Vector3(30, 0, 0)
 	p.shin_r = Vector3(30, 0, 0)
-	p["upperarm_" + side] = Vector3(-95, 0, 28.0 * sx)
-	p["forearm_" + side] = Vector3(-12, 0, 0)
+	# (out 0-1: the arm held out for the ball, or lowered between calls.)
+	p["upperarm_" + side] = Vector3(-14, 0, 14.0 * sx).lerp(Vector3(-95, 0, 28.0 * sx), out)
+	p["forearm_" + side] = Vector3(-38, 0, 0).lerp(Vector3(-12, 0, 0), out)
 	p["upperarm_" + o] = Vector3(10, 0, -30.0 * sx)
 	p["forearm_" + o] = Vector3(-40, 0, 0)
 	return p

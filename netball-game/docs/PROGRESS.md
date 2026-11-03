@@ -233,7 +233,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 3. A home-and-away Club Season (14 rounds) as an option, and a finals series with a second chance for the top two.
 4. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
 5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-6. The umpires as a model too if the owner wants (docs/MESHY_BRIEF.md); the upload key and the closed test (store/PLAY_STORE.md).
+6. The upload key and the closed test (store/PLAY_STORE.md). (The umpires are the players' model now, 0.8.6.)
 7. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
 
 ## Decisions
