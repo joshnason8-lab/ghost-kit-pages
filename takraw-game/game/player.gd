@@ -47,6 +47,7 @@ var _target_was := Vector3.INF
 var _carry_w := 0.0        # eased: how much his arms hold the ball
 var _hold := 1.0           # eased: the ball held out in front (standing) .. by his hip (walking)
 var _crouch := 0.0         # eased: how far down into the thrower's crouch (Moves.LOW_HOLD)
+var _check_t := 0.0        # (step_for_check's own clock)
 var _life := 0.0           # his own clock for the small movements of a man standing (each his own pace)
 var _life_rate := 1.0
 var _shift := 0.0          # his weight: -1 on his left foot .. 1 on his right
@@ -289,10 +290,31 @@ func tick(dt: float, now: float) -> void:
 	# Turned as quickly as a man pivots (the planted foot stays where it is as he turns on it: RealBody._planted), more
 	# quickly to square up for a move.
 	# (and a turn builds up, as a body's does, rather than starting at full speed: the planted foot strained)
+	_turn_to(want_yaw, dt)
+	_pose(dt, now)
+
+
+## Turned toward WANT_YAW as a man pivots (see tick).
+func _turn_to(want_yaw: float, dt: float) -> void:
 	var turn := wrapf(want_yaw - _yaw, -PI, PI) * minf(1.0, 10.0 * dt)
 	var most := YAW_MOVE if move != "" else YAW_MAX
 	_yaw_rate = move_toward(_yaw_rate, clampf(turn / maxf(dt, 0.001), -most, most), (YAW_ACCEL if move == "" else YAW_ACCEL * 3.0) * dt)
 	_yaw = wrapf(_yaw + _yaw_rate * dt, -PI, PI)
+
+
+## One frame of him going at V (world, m/s) and turning to FACING (yaw), posed as in play - his stride, his planted
+## feet - with no match: the world check's Low walker (World.walker_low).
+func step_for_check(dt: float, v: Vector3, facing: float) -> void:
+	_check_t += dt
+	vel = Vector3(v.x, 0.0, v.z)
+	position += vel * dt
+	_turn_to(facing, dt)
+	_pose(dt, _check_t)
+
+
+## His pose this frame from how he is going (vel, _yaw) and the move he is in: the move if one is playing, blended over
+## his stride or the ready stance, his planted feet (RealBody), the shared foundation's body when he has one.
+func _pose(dt: float, now: float) -> void:
 	# The pose: the move if one is playing, blended over the run or the ready stance.
 	var speed := vel.length()
 	var local := vel.rotated(Vector3.UP, -_yaw)

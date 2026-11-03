@@ -159,17 +159,33 @@ func bodies() -> Array:
 		for pp in m.players_on(side):
 			var pl: Player = pp
 			var link: FoundationLink = pl.body.link
-			out.append({"name": "side %d player %d" % [side, pl.slot], "pos": pl.global_position,
+			var e := {"name": "side %d player %d" % [side, pl.slot], "pos": pl.global_position,
 				"radius": Player.BODY_R, "height": Player.BODY_H, "body": link.body if link else null, "active": on and pl.move == "",
-				"target": pl.target})
+				"target": pl.target}
+			if link == null:
+				e["feet"] = _feet_of(pl.body)   # (Low: his own body, as drawn - what the owner sees on an A16)
+			out.append(e)
 	var offs: Officials = m.get("_officials")
 	for o in offs.list:
 		if not o.standing:
 			continue
-		var link: FoundationLink = (o.body as RealBody).link
-		out.append({"name": "official", "pos": (o.body as Node3D).global_position, "radius": 0.25, "height": 1.8,
-			"body": link.body if link else null, "active": on, "target": o.home + o.off_to})
+		var rb: RealBody = o.body
+		var link: FoundationLink = rb.link
+		var e := {"name": "official", "pos": rb.global_position, "radius": 0.25, "height": 1.8,
+			"body": link.body if link else null, "active": on, "target": o.home + o.off_to}
+		if link == null:
+			e["feet"] = _feet_of(rb)
+		out.append(e)
 	return out
+
+
+## A body's drawn feet for WsgSim (RealBody.feet), none while the match is not in play: in the game's own replay (Low)
+## every body is put back where the rally began and, after it, where it was - a cut, not a step.
+func _feet_of(rb: RealBody) -> Callable:
+	return func() -> Array:
+		if not _alive() or bool(m.paused) or int(m.state) in [int(m.S.REPLAY), int(m.S.OVER), int(m.S.INTRO)]:
+			return []
+		return rb.feet()
 
 
 func ball() -> Dictionary:
@@ -200,9 +216,10 @@ func bounds() -> AABB:
 	return AABB(Vector3(r.position.x - 1.0, -0.5, r.position.y - 1.0), Vector3(r.size.x + 2.0, 40.0, r.size.y + 2.0))
 
 
-## Put off with the lead's word, until a time (then it fails again): the players' planted feet sliding 2.5-4.4 cm a
-## step on Medium and High, walking briskly with the ball (2.2 m/s), mostly as they come out of a pick-up into the
-## carry walk. The feet there are the shared foundation's locomotor and planter; the Foundation is fixing them.
+## Put off with the lead's word, until a time (then it fails again): planted feet on Medium and High - the shared
+## foundation's locomotor and planter draw them - sliding 2.5-4.4 cm a step carrying the ball (0.15.11). On the
+## foundation's 11-06 feet batch (d70ac7d) a smoke still finds, all on Medium and High, officials' feet sliding 4.4-6.9
+## cm a step and jumping 29-47 cm in a frame, and players' 3.3-6.3 cm and 25.1: sent to the Foundation.
 func deferred() -> Dictionary:
 	return {"foot slip": ["2026-11-06T12:00Z",
 		"players carrying at 2.2 m/s, 2.5-4.4 cm, foundation planter; Foundation fixing (lead approved 12:30Z)"]}

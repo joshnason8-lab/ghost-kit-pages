@@ -670,6 +670,33 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The foundation's 11-06 feet batch, and Low measured (0.15.14)
+
+- **Foundation 3b3563f -> d70ac7d** (REQUIRED 41c84347 from 2026-11-06 12:00 UTC). The 11-06 feet batch: a body
+  posed every 2nd or 3rd frame read per frame, a planter reset read as a cut, the skid counted only on a held foot; the
+  planter's own step crossing an even share a frame, and a foot let go lifting from its first frame (Medium and High:
+  the 7.3 cm flat move as a player pulled up). And Low: WsgFootPlanter.bone_map, WsgWorldGame.walker_low() and the
+  world check's feet_low rule, WsgSim's "feet" for a body the game draws itself.
+- **walker_low()** (game/world.gd): a Player's own RealBody, driven a frame at a time as play poses it
+  (Player.step_for_check: his stride for how he goes, his turn - Player.tick's pose is now its own _pose, and its turn
+  _turn_to), its feet as drawn (RealBody.feet()). feet_low on it: every segment of the match path within the bounds
+  (worst slip 1.8 cm walking - a warning, 0.2 cm from the bound; skid 0.8 cm; jump 9.7 cm).
+- **WsgSim reads the Low bodies' feet** (game/sim.gd: "feet" for every player and standing official the game draws
+  itself; none in the game's own replay, which puts every body back where the rally began and then where it was).
+- **WsgFootPlanter on the Low bodies, measured again on this batch** against 0.15.13's own planter (the same seeded
+  regu, 2 x 150 s): glide share 20% against 14%, flat-foot skids over 2 cm 1556 against 11, the planted step's slip
+  (90th percentile) 9.2 cm against 2.3, jumps over 25 cm 7 against 9. Low keeps its own planter; the Foundation has
+  the flat let-go.
+- **The WsgSim foot-slip deferral stays** (until 2026-11-06 12:00 UTC, the lead's): with it dropped, a smoke on this
+  batch still fails foot slip on Medium and High (the foundation's bodies) - officials' planted feet sliding 2.2-6.9 cm
+  a step and jumping 26-47 cm in a frame, players' 3.3-6.3 cm and 25.1. Sent to the Foundation and the lead.
+- **Low's officials step every frame.** Read for the first time, the standing officials' feet on Low jumped 48-79 cm
+  in a frame as they stepped out of the ball's way: Low posed them every second frame, so a step moved two frames'
+  worth at a time, 15 times a second. Now one stepping (or going back to his place) is posed every frame, one standing
+  still every second frame as before (Officials._stepping). The same seeded regu, 2 x 150 s: officials' jumps over
+  25 cm 94 -> 1 (worst 79 -> 27 cm), over 15.4 cm 163 -> 6; CPU the same. Their planted step's slip (90th percentile
+  about 8 cm) is next.
+
 ## On Low, a foot steps instead of jumping (0.15.13)
 
 The owner, playing on Low (the Galaxy A16): players still glide getting into position to spike or block, going for

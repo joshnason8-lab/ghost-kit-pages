@@ -36,6 +36,7 @@ class One:
 	var vel := Vector3.ZERO
 	var back_t := 0.0             # when he steps back to his place
 	var stride := 0.0             # the stride's phase while he steps
+	var held := 0.0               # time since he was last posed (Low poses one standing still every second frame)
 	var flag: Node3D
 
 const FLAG := Color("d8262e")
@@ -47,7 +48,6 @@ var solid: WsgSolidProps = null   # the venue's props (Arena.solid): stepping as
 var _t := 0.0
 var _rng := RandomNumberGenerator.new()
 var _skip := false
-var _held := 0.0
 var _ball_was := Vector3.INF
 var _ball_v := Vector3.ZERO
 
@@ -95,15 +95,24 @@ func tick(dt: float, ball: Vector3, live: bool) -> void:
 	for o in list:
 		if o.standing:
 			_dodge(o, ball)
-	_held += dt
-	if int(Game.settings.graphics) == Game.GFX_LOW:
+	# On Low an official standing still is posed every second frame (half his cost); one stepping, every frame: posed
+	# every second frame as he stepped out of the ball's way, his feet moved two frames' worth at a time, 15 times a
+	# second (WsgSim, reading Low's feet: jumps of 48-78 cm in a frame, a planted foot sliding 10-76 cm).
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
+	if low:
 		_skip = not _skip
-		if _skip:
-			return
-	var step := _held
-	_held = 0.0
 	for o in list:
+		o.held += dt
+		if low and _skip and not _stepping(o):
+			continue
+		var step := o.held
+		o.held = 0.0
 		_pose(o, step, ball, live)
+
+
+## Stepping out of the ball's way or back to his place (not yet there), or still moving.
+static func _stepping(o: One) -> bool:
+	return o.standing and (o.vel.length() > 0.05 or (o.off_to - o.off).length() > 0.02)
 
 
 ## Out of the ball's way: if it will pass within REACH of him in the next 0.7 s, below his head, a quick step to the

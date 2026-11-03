@@ -882,15 +882,13 @@ func _no_foot_jumps_low() -> void:
 	add_child(m)
 	var runs := {}    # player -> [[L ankle, L toe, R ankle, R toe] each frame of the run he is in]
 	var done: Array = []
-	var bones := ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]
 	for i in 30 * 60:
 		m._process(1.0 / 30.0)
 		m.set("_start_replay_after", -1.0)
 		for side in 2:
 			for pp in m.players_on(side):
 				var pl: Player = pp
-				var sk: Skeleton3D = pl.body.skeleton
-				var fe: Array = bones.map(func(n): return sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_" + n)).origin)
+				var fe: Array = pl.body.feet()
 				var run: Array = runs.get(pl, [])
 				# (a new run when he is put somewhere new: a restart)
 				if not run.is_empty() and Vector2((fe[0] as Vector3).x - (run[-1][0] as Vector3).x, (fe[0] as Vector3).z - (run[-1][0] as Vector3).z).length() > 1.5:

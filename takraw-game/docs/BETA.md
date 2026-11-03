@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.14: **on Medium and High, a foot let go lifts off the floor at once.** As a player pulled up from a
+run, the foot he was about to step with could slide a few centimetres flat along the floor (up to 7 cm) before it
+lifted; now it rises from the first frame. On Low, a line judge stepping out of the ball's way now moves smoothly:
+his steps were drawn only every other frame, so his feet jumped. Nothing else changes in play.
+
 New in 0.15.13: **on Low, a player's foot steps instead of jumping.** On Low (where the Galaxy A16 plays), a foot
 kept on the floor as a player moved past it used to be put down again a stride on in a single frame, a jump of 32 to
 68 cm that read as a slide; that happened over 450 times in five minutes of a match. Now the foot lifts and steps

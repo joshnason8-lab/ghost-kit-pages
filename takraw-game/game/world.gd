@@ -101,6 +101,19 @@ func walker(parent: Node) -> Array:
 	return [body, loco]
 
 
+## Low (the Galaxy A16's): the game's own body - a Player's RealBody, its feet planted by RealBody._planted - driven a
+## frame at a time as play poses it (Player.step_for_check: his stride for how he goes, his turn), its feet as drawn.
+func walker_low(parent: Node) -> Variant:
+	var keep: int = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_LOW   # (no foundation body under him: Low draws his own)
+	var p := Player.new({}, 0, DB.POS_TEKONG, {})
+	parent.add_child(p)
+	Game.settings.graphics = keep
+	var drive := func(dt: float, v: Vector3, facing: float) -> void: p.step_for_check(dt, v, facing)
+	var feet := func() -> Array: return p.body.feet()
+	return [p, drive, feet]
+
+
 ## The graphics level as the Settings screen sets it (ui/settings_screen.gd): a level chosen, not Auto, and handed to
 ## the shared foundation (WsgFoundation.tier: its bodies, crowd and budgets). Game's levels are the foundation's tiers.
 func set_tier(t: int) -> void:

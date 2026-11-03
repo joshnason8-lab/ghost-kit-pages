@@ -272,6 +272,17 @@ func bone_world(name: String) -> Vector3:
 	return skeleton.global_transform * skeleton.get_bone_global_pose(i).origin
 
 
+## His feet as drawn on Low: [left ankle, left toe, right ankle, right toe] (world), planted (RealBody._planted sets the
+## pose itself: nothing changes it after). With a link (Medium and High) this is the game's pose under the drawn body.
+func feet() -> Array:
+	if skeleton == null:
+		return []
+	var out := []
+	for n in ["LeftFoot", "LeftToeBase", "RightFoot", "RightToeBase"]:
+		out.append(skeleton.global_transform * skeleton.get_bone_global_pose(int(_rig.index[n])).origin)
+	return out
+
+
 ## A pose bone's rotation from its parent: degrees (Vector3, pitch-twist-roll) or a Quaternion.
 static func local_rot(v) -> Quaternion:
 	if v is Quaternion:
