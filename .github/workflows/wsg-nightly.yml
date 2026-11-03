@@ -1,0 +1,84 @@
+# World Stage Games: a WsgSim batch for every game, run by hand (Actions → "WSG nightly simulation" → Run workflow).
+# The owner wants simulations in rounds, not continuously, so there is no schedule: start a round when one is wanted.
+# GitHub runs scheduled workflows only from the default branch, so this workflow on main asks each game's sim workflow
+# (<game>-sim.yml, from the foundation's tools/wsg/sim_ci.yml) to run on its own branch (workflow_dispatch with
+# ref: <branch>).
+#
+# A game is dispatched when its branch carries .github/workflows/*-sim.yml with `workflow_dispatch:` among its
+# triggers, and that workflow has run at least once (a push), so GitHub knows it. A game without one yet is listed as
+# skipped, not failed. Add a game: add its branch to GAME_BRANCHES.
+#
+# Queueing: each game's batch is 16 shards plus a merge job, and a public repository runs 20 jobs at once, so
+# the games' batches queue behind one another.
+name: WSG nightly simulation
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these branches (space-separated); empty: every game'
+        required: false
+        default: ''
+permissions:
+  actions: write
+  contents: read
+concurrency:
+  group: wsg-nightly
+  cancel-in-progress: false
+env:
+  GAME_BRANCHES: >-
+    claude/hurling-game
+    claude/floorball-game
+    claude/netball-game
+    claude/kho-kho-game
+    claude/kind-clarke-3g5fqs
+    claude/kabaddi-game-concept-asnz07
+    claude/pok-ta-pok-game
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch each game's sim workflow on its branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -u
+          branches="${ONLY:-$GAME_BRANCHES}"
+          failed=0
+          {
+            echo "## WSG simulation round: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo
+            echo "| Branch | Sim workflow | Result |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for b in $branches; do
+            row() { echo "| \`$b\` | $1 | $2 |" >> "$GITHUB_STEP_SUMMARY"; echo "$b: $1: $2"; }
+            if ! files=$(gh api -X GET "repos/$REPO/contents/.github/workflows" -f ref="$b" --jq '.[].name' 2>/dev/null); then
+              row "-" "skipped: no branch or no .github/workflows"
+              echo "::warning::$b: no branch or no .github/workflows"
+              continue
+            fi
+            sims=$(printf '%s\n' "$files" | grep -E -- '-sim\.ya?ml$' || true)
+            if [ -z "$sims" ]; then
+              row "-" "skipped: no *-sim.yml yet"
+              continue
+            fi
+            for wf in $sims; do
+              body=$(gh api -X GET "repos/$REPO/contents/.github/workflows/$wf" -f ref="$b" --jq '.content' | base64 -d)
+              if ! printf '%s\n' "$body" | grep -qE '^[^#]*workflow_dispatch'; then
+                row "\`$wf\`" "skipped: no workflow_dispatch trigger (add it)"
+                echo "::warning::$b: $wf has no workflow_dispatch trigger"
+                continue
+              fi
+              if err=$(gh workflow run "$wf" --ref "$b" -R "$REPO" 2>&1); then
+                row "\`$wf\`" "dispatched"
+              else
+                row "\`$wf\`" "FAILED: $(echo "$err" | tr '\n|' '  ' | cut -c1-160)"
+                echo "::error::$b: $wf: $err"
+                failed=1
+              fi
+            done
+          done
+          exit $failed
