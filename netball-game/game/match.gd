@@ -208,6 +208,8 @@ func _build_officials() -> void:
 		add_child(u)
 		umpires.append(u)
 	ball = Ball.new()
+	ball.solid = arena.solid   # off the venue's props (WsgSolidProps)
+	ball.struck.connect(_on_struck)
 	add_child(ball)
 	cam = CameraRig.new()
 	cam.mode = Game.CAM_TV if watch else int(Game.settings.camera)   # Watch AI: the broadcast's camera
@@ -276,7 +278,8 @@ func _reserves(ld: WsgLoading = null) -> void:
 			root.add_child(b)
 			b.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			var at := TeamAI.bench_spot(t) + Vector2((float(i) - (n - 1) * 0.5) * 0.75, 1.3)
-			b.position = Vector3(at.x, 0.0, at.y)
+			# On the floor in front of the bench, clear of it and the boards (never in a prop: WsgSolidProps.free_spot).
+			b.position = arena.solid.free_spot(Vector3(at.x, 0.0, at.y), Player.BODY_R, Player.BODY_H)
 			b.rotation.y = PI
 			b.apply(Poses.at_ease())
 			# On the player's model in a tracksuit of the team's colours (the foundation, Medium and High): posed once.
@@ -765,7 +768,7 @@ func _run_loose() -> void:
 	var b := ball.court_pos()
 	if not Court.on_court(b) and ball.pos.y < 0.4:
 		var crossed := Court.clamp_court(b)
-		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")
+		_award(Rules.throw_in(last_touch, crossed), null, "throw_in")   # (it rolls on, off the boards or the bench)
 		return
 	if ball.pos.y > 2.6:
 		return
@@ -843,6 +846,32 @@ func _on_bounce(at: Vector3, speed: float) -> void:
 	Sfx.play_at("bounce_floor" if arena.indoor() else "bounce_court", at, -10.0 + 4.0 * clampf(speed / 6.0, 0.0, 1.0), randf_range(0.95, 1.05))
 
 
+## The ball off one of the venue's props (Ball.struck, WsgSolidProps): its knock, and the rules. The goal post, its
+## pad and the ring are in play (R: a ball off the post is play on); anything else stands outside the court, so a ball
+## in play that touches it is out of court there (a throw-in from where it crossed), and rolls on from it, dead.
+const GOAL_PROPS := ["goal post", "post pad", "ring", "ring arm", "goal light"]
+
+
+func _on_struck(hit: Dictionary) -> void:
+	var at: Vector3 = hit.pos
+	var speed := float(hit.get("speed", 0.0))
+	if heard() and speed > 0.8 and not (ball.f_struck and ball.state == "flight"):
+		var metal := String(hit.get("sound", "")) == "clang"
+		Sfx.play_at("rim" if metal else "bounce", at, -14.0 + 6.0 * clampf(speed / 8.0, 0.0, 1.0), randf_range(0.92, 1.08))
+	if phase != "live" or ball.state == "flight":
+		return
+	var outside := not (String(hit.name) in GOAL_PROPS)
+	if not pass_info.is_empty():
+		# A pass that met a prop on its way is loose from there (and lost, if it went out).
+		var from: Player = pass_info.get("from")
+		if from and outside:
+			stats[String(from.data.id)].turnovers += 1
+		pass_info = {}
+	if not outside:
+		return
+	_award(Rules.throw_in(last_touch, Court.clamp_court(Vector2(at.x, at.z))), null, "throw_in")   # (rolling on from it)
+
+
 ## Footsteps of the players running near the ball, and indoors the squeak of a shoe on a hard cut. Kept sparse (a
 ## step at most every 0.12 s, a squeak every 0.9 s) so fourteen players never make a din.
 func _movement_sounds(dt: float) -> void:
@@ -896,6 +925,11 @@ func shoot() -> void:
 	game_event.emit("shot_start", {"by": pl.pos, "dist": dist, "value": value})
 
 
+## How far (m, across the floor) from the ring's middle a shot leaves the hands at least: the ring's tube and the ball
+## as it rises past the tube's level.
+const SHOT_CLEAR := 0.45
+
+
 ## The shot's flight, frame by frame: released at 0.75 s, through the ring (or off it) when it arrives.
 func _run_shot(dt: float) -> void:
 	var pl: Player = shot_info.by
@@ -912,12 +946,22 @@ func _run_shot(dt: float) -> void:
 				# On the ring's rim (the ball's middle just outside its inside edge).
 				var off := Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.21, 0.29)
 				to += Vector3(off.x, 0.0, off.y)
-			ball.throw("shot", pl.hand_point() + Vector3(0, 0.15, 0), to)
+			var from := pl.hand_point() + Vector3(0, 0.15, 0)
+			# Released over her head, not from under the ring (it goes up past the ring's tube, never through it).
+			var off_r := Vector2(from.x - ring.x, from.z - ring.z)
+			var axis := Vector2(pl.p.x - ring.x, pl.p.y - ring.z)
+			if off_r.length() < SHOT_CLEAR and axis.length() > off_r.length():
+				var k := clampf((SHOT_CLEAR - off_r.length()) / (axis.length() - off_r.length()), 0.0, 1.0)
+				var o := off_r.lerp(axis, k)
+				from = Vector3(ring.x + o.x, from.y, ring.z + o.y)
+			ball.throw("shot", from, to)
+			ball.through_ring = bool(shot_info.goal)   # (in, by the rules' call: through the ring's middle)
 			Sfx.play("pass", -12.0, 0.9)
 		return
 	if ball.state == "flight" and ball.f_t >= ball.f_dur:
 		var ring := Court.ring_centre(pl.dir)
-		if shot_info.goal:
+		# (A miss stops where it touched the ring, the post or its arm (Ball.f_struck), so the rebound starts clear of it.)
+		if shot_info.goal and not ball.f_struck:
 			_goal(pl, int(shot_info.value))
 			return
 		# Off the ring: a rebound. The shooter may take it herself (it touched the goal post).

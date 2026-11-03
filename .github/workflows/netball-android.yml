@@ -25,13 +25,13 @@ env:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120   # (the tests, the props audit and the world check play many matches)
     permissions:
       contents: write   # to publish the beta release (below)
     steps:
       - uses: actions/checkout@v4
 
-      - name: Shared foundation up to date? (a warning only)
+      - name: Shared foundation (fails without a required commit)
         run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
 
       - uses: actions/setup-java@v4
@@ -102,6 +102,34 @@ jobs:
         run: |
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      # The owner: nobody walks through a table, a bench or a board, and the ball bounces off them. A Watch-AI match at
+      # every venue (the arena at Low too): any body more than 2 cm into a prop, or any ball step through one, fails.
+      # The close-ups go to the runner's temp folder (never into the project, so never into the APK).
+      - name: Props audit (bodies and the ball against every prop, every venue)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://tests/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 150 2>&1 | tee prop_audit.log | grep -v "^$" | tail -40
+          if grep -q "SCRIPT ERROR" prop_audit.log; then grep -A4 "SCRIPT ERROR" prop_audit.log; exit 1; fi
+
+      # The world rules every game keeps (the foundation's docs/WORLD_RULES.md, ADOPTING §5.18) on our own code
+      # (game/world.gd): props, crowd, planted feet, no T/A-pose or block figure, the umpires dressed as officials, key
+      # sounds crisp at a distance, the loading overlay at the tap, the stick on every camera, no licensed data on the
+      # Web, each mode within its graphics tier. A failing rule fails the build from 2026-11-03 12:00 UTC. (No Web export
+      # here: the Web preset's exclude filter is checked; the pack is not built.)
+      - name: World check (the foundation's world rules on our modes)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
+
+      - name: World check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
 
       # The beta key: the owner's shared keystore (repository secret BETA_KEYSTORE_B64, PKCS12, storepass and keypass
       # "android", alias "androiddebugkey"), so every beta installs over the last. Without the secret, a throwaway

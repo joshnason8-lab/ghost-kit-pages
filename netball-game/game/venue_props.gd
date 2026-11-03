@@ -15,6 +15,9 @@ var uvs := PackedVector2Array()
 var uv2s := PackedVector2Array()
 var idx := PackedInt32Array()
 var venue := ""
+## Every model placed: [the name asked for, its transform] (Arena registers each as a solid prop: WsgSolidProps).
+var placed: Array = []
+var _bounds := {}         # model name -> its AABB, worked out once
 
 
 func _init(p_venue: String, low: bool) -> void:
@@ -59,6 +62,24 @@ func add(name: String, xf: Transform3D, tint := Color.WHITE) -> void:
 	var src_idx: PackedInt32Array = a[Mesh.ARRAY_INDEX]
 	for i in src_idx:
 		idx.append(base + i)
+	placed.append([name, xf])
+
+
+## A placed model's own bounds (the model drawn at this graphics level), in its own space.
+func bounds(name: String) -> AABB:
+	var n := pick(name)
+	if _bounds.has(n):
+		return _bounds[n]
+	if not _arrays.has(n):
+		if not _names.has(n):
+			return AABB()
+		_arrays[n] = _src.surface_get_arrays(_names[n])
+	var v: PackedVector3Array = _arrays[n][Mesh.ARRAY_VERTEX]
+	var ab := AABB(v[0], Vector3.ZERO)
+	for q in v:
+		ab = ab.expand(q)
+	_bounds[n] = ab
+	return ab
 
 
 ## Places a model standing at p (on the floor), turned yaw radians, scaled by s.

@@ -289,6 +289,41 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   the goal that makes a two-goal lead now ends it. Tests `_ball_flight`, `_ball_in_play`, `_net_sway`,
   `_advantage_clear`, `_two_goal_lead` (`test_runner.tscn -- ball` runs only these); tests/ball_shots.tscn renders a goal at the post frame by frame and
   a lob and a chest pass from the side with their paths, the old ones beside them.
+- **Solid props** (the owner: "There will NEVER be a time when a player or referee should walk through a table or
+  bench etc. A ball should also bounce off these items."): foundation synced to 8f688ff (WsgSolidProps, prop_audit;
+  CI's foundation step now fails without a required commit). Arena.solid: each builder declares what it builds where
+  it builds it (posts r 0.05, pads r 0.19 "padding", ring arms and the rings' tubes, goal lights, LED boards, tables,
+  chairs, benches, the arena bowl's front wall and stepped rows, the hall's walls, wall pads, stand, portable boards,
+  backboards and their rings, scoreboard, ball cage; the park's chain-link fences and floodlight poles) and every
+  VenueProps model from its own bounds (`placed`, `bounds()`); what is not solid is skipped with a reason (nets,
+  overhead lights and trusses, wall clocks, tree cut-outs). Bodies: Player.advance and Umpire.advance step through
+  `solid.move()` (one memo each), then the venue's floor (Arena.floor_rect: inside the boards, walls or fences; the
+  crowd is not a prop) and `push_out`; their velocity is the step they really took only when a prop turned it (so a
+  match away from props plays exactly as before). Out-of-play walks (to and from the bench, huddles, umpires to the
+  middle) follow `solid.path()`. A target or catch point in a prop moves to the nearest free spot. The ball: loose
+  balls and dead balls still rolling through `solid.bounce()` (each prop's restitution and friction, Ball's own floor);
+  a flight that meets a prop comes off it loose (a shot stops where it touched the ring, post or arm: the rebound
+  starts clear of it); a held ball never goes into a prop (the holder gives way); a shot that is in passes the ring
+  only coming down, and is released at least 0.45 m out from under the ring. Rules: a ball in play that touches a prop
+  outside the court is out of court there, and a ball called out rolls on after the whistle (off the boards, the
+  bench); the goal post, pad and ring are in play; a goal-line throw-in by the post is taken clear of its pad. The
+  arena's reserves stand clear in front of the boards (their benches are behind them). tests/prop_runs.gd and
+  tools/wsg/prop_audit.gd (CI, after the tests) over a 240 s Watch-AI match at the arena, hall and park (Medium) and the
+  arena at Low: 0 bodies in a prop, 0 ball steps through one. Test `_solid_props` (`test_runner.tscn -- solid`).
+  `_gait_in_match` measures arms only when they are the run's (arms_w < 0.5): a leap's arms coming down at a mark
+  read as "out" once a prop changed the match's course. Cost: 26 bodies and the ball about 0.3 ms a frame here; no
+  draw call (colliders are not drawn). `_matches` counts the umpires' calls over its three short AI matches (a 5-minute
+  match's two or three calls can come to none, as one did once props changed its course).
+- **World check** (ADOPTING §5.18; foundation synced to 637662a: planted feet, the world rules, graphics tiers):
+  `game/world.gd` (WsgWorldGame) starts each mode with its screen's own Play handler (quick, cup, league, Watch AI),
+  two umpires (their foundation bodies), our player's model as the walker, Sfx's key sounds (Sfx.BRIGHT: the rim,
+  the net, the whistles and the ball's bounces now carry no distance filter and are heard from 30 m at most), the
+  stick through CameraRig.court_dir on the TV, Low and End cameras, the props and crowd registries, set_tier as the
+  Settings screen sets it. CI runs it after the props audit (artifact `world-check`); the job's timeout is 120 min.
+  Foundation now d4e3107 (the planter's feet within 2 cm, no doubled running landings); netball-arms' defend (arms up
+  toward the ball, soft elbows) merged. Our model on the planter: walk 1.6 cm worst slip, jog 0.5, turned 1.1, run
+  0.2, stop 0.0; cadence sprinting and cutting at 6 m/s 3.1 landings a second. perf_probe Low peaks (draw calls /
+  triangles): arena 99/53.9k, hall 100/72.4k, park 99/56.9k (draw calls as before; the solids are not drawn).
 - **A loading screen on every Start button** (the owner: "when you click start game there is a loading delay ...
   users might think the game has frozen"; it was one main-thread stall, 238-1252 ms desktop Low, 600-1040 Medium):
   the foundation synced to 2cd59a7 for its WsgLoading (ADOPTING 5.14). `Game.start_match_loading(config)` serves

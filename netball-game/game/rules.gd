@@ -358,7 +358,14 @@ static func throw_in_spot(at: Vector2) -> Vector2:
 		out.y = signf(at.y) * (Court.HALF_W + 0.1)
 	if absf(at.x) >= Court.HALF_L - 0.01:
 		out.x = signf(at.x) * (Court.HALF_L + 0.1)
+		# Beside the goal post, never in its pad (a thrower stands clear of it, as near the line).
+		if absf(out.y) < POST_CLEAR:
+			out.y = POST_CLEAR * (signf(at.y) if at.y != 0.0 else 1.0)
 	return out
+
+
+## How far from the post's middle a thrower on the goal line stands: its pad (19 cm) and her (Player.BODY_R), and 5 cm.
+const POST_CLEAR := 0.19 + 0.25 + 0.05
 
 
 ## Whose positions may take a pass at p for a team attacking dir: everyone allowed in that area (the AI picks the

@@ -57,6 +57,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "solid" in OS.get_cmdline_user_args():
+		# (Only the props: tests/test_runner.tscn -- solid)
+		await _solid_props()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "loading" in OS.get_cmdline_user_args():
 		# (Only the loading overlay on the Start buttons: tests/test_runner.tscn -- loading)
 		await _loading_overlay()
@@ -110,6 +116,7 @@ func _ready() -> void:
 	await _umpire_goal_line()
 	await _huddle()
 	await _reserves()
+	await _solid_props()
 	_tags()
 	await _coach()
 	await _navigation()
@@ -663,6 +670,7 @@ func _ball_free_in_play() -> void:
 	var hung := 0
 	var fr := {"f": 0, "at": []}
 	m.ball.bounced.connect(func(_at, _sp): fr.at.append(fr.f))
+	m.ball.struck.connect(func(_h): fr.at.append(fr.f))   # (off a prop: a bounce, as off the floor)
 	for f in 7200:
 		# (2400 frames at least, and on until the match has given enough free frames of each kind: how many a match
 		# gives depends on its course.)
@@ -1077,6 +1085,7 @@ func _matches() -> void:
 	var cases := [["AUS", "NZL", "arena"], ["RSA", "MWI", "outdoor"], ["SGP", "SRI", "hall"]]
 	var all_shots := 0
 	var all_goals := 0
+	var all_calls := {}
 	for c in cases:
 		var res := await _play({"home": c[0], "away": c[1], "venue": c[2], "user_team": -1, "demo": true, "seed": 11,
 			"quarter_s": 75.0, "quarter": 15, "mode": "quick"})
@@ -1095,7 +1104,11 @@ func _matches() -> void:
 		all_shots += shots
 		all_goals += goals
 		var calls: Dictionary = res.calls
-		check(calls.size() > 0, "%s v %s: the umpires call infringements (%s)" % [c[0], c[1], calls])
+		for k in calls:
+			all_calls[k] = int(all_calls.get(k, 0)) + int(calls[k])
+		print("  %s v %s: calls %s" % [c[0], c[1], calls])
+	# (Over the three: a short match's handful of calls can come to none, as a real one's can.)
+	check(all_calls.size() > 1, "the umpires call infringements in AI matches (%s)" % [all_calls])
 	var pct := float(all_goals) / maxf(1.0, float(all_shots))
 	check(pct > 0.65 and pct < 0.95, "shooting at a real rate over three matches (%d%% of %d)" % [int(pct * 100), all_shots])
 	check(all_goals >= 18, "goals at about a real rate (%d in three 5-minute matches)" % all_goals)
@@ -1426,7 +1439,8 @@ func _gait_in_match(venue: String, seed: int) -> void:
 				all[q].erase("at_l")
 				all[q].erase("at_r")
 		for q in people:
-			var running: bool = q.vel.length() > 3.0 and (not (q is Player) or q.act in ["run", "mark", "post", "ready", "defend", "defend_shot", "out_of_play", "huddle"])
+			# (Her arms the run's: not on the frame they are still coming down from a move, a leap's or a catch's.)
+			var running: bool = q.vel.length() > 3.0 and (not (q is Player) or q.act in ["run", "mark", "post", "ready", "defend", "defend_shot", "out_of_play", "huddle"] and q.arms_w < 0.5)
 			var st: Dictionary = all[q]
 			var abd0: float = st.abd
 			var slip0: float = st.slip
@@ -2013,6 +2027,76 @@ func _reserves() -> void:
 					var p := Vector2(b.position.x, b.position.z)
 					by_bench = by_bench and not Court.on_court(p) and p.distance_to(TeamAI.bench_spot(0 if p.x < 0.0 else 1)) < 3.0
 			check(by_bench, "High: the %d reserves stand by their benches" % n)
+		m.queue_free()
+		await frames(2)
+	Game.settings.graphics = was
+
+
+## The venues' props are solid (WsgSolidProps, the owner: "nobody walks through a table or bench; the ball bounces off
+## these items"): a player with Keep me onside off run at the officials' table, a bench, the far boards or fence and a
+## goal post never goes into one and stays on the venue's floor; a goal-line throw-in near the post is taken clear of
+## its pad; a ball rolled at the near boards comes back off them; a missed shot stops clear of the ring; the reserves
+## stand clear of their benches. (tools/wsg/prop_audit.gd checks whole matches: CI.)
+func _solid_props() -> void:
+	var was := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_HIGH
+	for venue in ["arena", "hall", "outdoor"]:
+		var m := _study_match(5, {"venue": venue})
+		await frames(3)
+		m.set_process(false)
+		var solid: WsgSolidProps = m.arena.solid
+		check(solid.props.size() > 20, "%s: its props are solid (%d)" % [venue, solid.props.size()])
+		var pl: Player = m.player_at(0, "WD")
+		var worst := 0.0
+		var on_floor := true
+		var reached := true
+		for run: Array in [[Vector2(-1.0, 8.0), Vector2(0.0, 30.0)], [Vector2(5.5, 8.0), Vector2(6.5, 30.0)],
+				[Vector2(-5.0, -8.0), Vector2(-5.0, -30.0)], [Vector2(12.5, 0.3), Vector2(19.0, -0.2)], [Vector2(-14.0, 3.0), Vector2(-40.0, 3.0)]]:
+			pl.place(run[0])
+			pl.fenced = false
+			for f in 150:
+				pl.target = run[1]
+				pl.want_speed = 7.0
+				pl.set_act("run")
+				pl.advance(1.0 / 30.0)
+				worst = maxf(worst, float(solid.penetration(Vector3(pl.p.x, 0, pl.p.y), Player.BODY_R)[0]))
+				on_floor = on_floor and m.arena.floor_rect.grow(0.01).has_point(pl.p)
+			reached = reached and pl.p.distance_to(run[0]) > 2.0
+		check(worst <= 0.02 and on_floor and reached, "%s: run at the table, a bench, the boards and a post, she goes round or stops (%.3f m into a prop at worst, on the floor %s)" % [venue, worst, on_floor])
+		# A throw-in from the goal line beside the post: clear of its pad.
+		var spot := Rules.throw_in_spot(Vector2(Court.HALF_L, 0.05))
+		check(float(solid.penetration(Vector3(spot.x, 0, spot.y), Player.BODY_R)[0]) <= 0.0 and spot.x > Court.HALF_L,
+			"%s: a throw-in by the post is taken from outside the line, clear of its pad (%s)" % [venue, spot])
+		# The reserves: clear of the benches and the boards.
+		var rs := m.get_node_or_null("Reserves")
+		var clear := rs != null
+		if rs:
+			for b in rs.get_children():
+				if b is ToonBody:
+					clear = clear and float(solid.penetration((b as Node3D).position, Player.BODY_R)[0]) <= 0.0
+		check(clear, "%s: the reserves stand clear of their bench and the boards" % venue)
+		# A ball knocked hard at the near side, low, comes back off what is there (the boards, the bench).
+		m.ball.loose(Vector3(4.6, 0.45, 10.2), Vector3(0, 0.5, 7.0))
+		var back := false
+		var deepest := 0.0
+		for f in 90:
+			m.ball.step(1.0 / 30.0)
+			back = back or m.ball.vel.z < -0.3
+			var h := solid.sweep(m.ball.pos, m.ball.pos, Ball.R)
+			if h.hit:
+				deepest = maxf(deepest, float(h.get("depth", 0.0)))
+		if venue != "outdoor":   # (the park's near side is open: the crowd stands there)
+			check(back and deepest < 0.01, "%s: a ball knocked at the near side comes back off it (in %.3f m at most)" % [venue, deepest])
+		# A missed shot: it stops where it touched the ring, clear of it, for the rebound.
+		var ring := Court.ring_centre(1)
+		m.ball.through_ring = false
+		m.ball.throw("shot", Vector3(12.0, 2.3, 0.5), ring + Vector3(0.25, 0.05, 0.0))
+		for f in 60:
+			m.ball.step(1.0 / 30.0)
+			if m.ball.f_struck:
+				break
+		check(m.ball.f_struck and not solid.sweep(m.ball.pos, m.ball.pos, Ball.R).hit,
+			"%s: a missed shot stops against the ring, clear of it (%s)" % [venue, m.ball.pos])
 		m.queue_free()
 		await frames(2)
 	Game.settings.graphics = was
