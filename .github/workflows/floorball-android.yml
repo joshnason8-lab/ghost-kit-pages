@@ -233,18 +233,19 @@ jobs:
 
           This release is replaced by every new beta build: this page always has the newest one.
           EOF
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          # (Tried again on a refusal: 0.9.11's create met a passing HTTP 403 just after the delete, leaving no beta page
-          # at all until a re-run.)
-          for i in 1 2 3 4 5; do
-            if gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
-                --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md; then
-              break
-            fi
-            [ "$i" = 5 ] && exit 1
-            echo "release create failed (try $i); again in $((i * 20)) s"
-            sleep $((i * 20))
-          done
+          # Never an empty tag (0.9.11: the create met an HTTP 403 just after the old release was deleted, and no beta was
+          # left until a re-run): the new release is made first under a temporary tag, tried up to five times, while the
+          # old one stays up; only then is the old one deleted and the new one moved onto the tag.
+          NEXT="${TAG}-next"
+          try() { for i in 1 2 3 4 5; do "$@" && return 0; [ "$i" = 5 ] && return 1; echo "failed (try $i): $*"; sleep $((i * 20)); done; }
+          gh release delete "$NEXT" --cleanup-tag --yes 2>/dev/null || true
+          try gh release create "$NEXT" "$APK" --prerelease --target "$GITHUB_SHA" \
+            --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            try gh release delete "$TAG" --cleanup-tag --yes
+          fi
+          try gh release edit "$NEXT" --tag "$TAG"
+          gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$NEXT" 2>/dev/null || true   # (the temporary tag left behind)
           gh release view "$TAG"
 
       # The shared foundation's pilot (claude/floorball-foundation-pilot): a pre-release of its own, never the beta's.
