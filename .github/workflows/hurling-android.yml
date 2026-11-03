@@ -188,7 +188,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 1800 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd crowd_audit 2>&1 | tee crowd_audit.log
+          timeout 1800 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "$RUNNER_TEMP/crowd_audit" 2>&1 | tee crowd_audit.log
           if grep -q "SCRIPT ERROR" crowd_audit.log; then grep -A4 "SCRIPT ERROR" crowd_audit.log; exit 1; fi
 
       - name: The owner's notes are never removed (every note once listed is still there)
@@ -331,6 +331,29 @@ jobs:
             echo "PACK_NEW=1" >> "$GITHUB_ENV"
           fi
           echo "PACK=$PACK" >> "$GITHUB_ENV"
+
+      # The shared foundation's release gate (ADOPTING §5.19): the owner's key, the version, the licensed data in the APK
+      # and nowhere public, nothing but the game in the export, compressed textures; the size against the last beta.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/previous"
+          PREV=""
+          if gh release download ash-and-leather-beta --pattern 'hurling-heroes-*-beta.apk' --dir "$RUNNER_TEMP/previous" 2>/dev/null; then
+            PREV=$(ls "$RUNNER_TEMP"/previous/*.apk | grep -v 32bit | head -1)
+          fi
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/hurling-heroes-${VERSION}.apk \
+            --version "$VERSION" ${PREV:+--previous "$PREV"} --out "$RUNNER_TEMP/gate"
+
+      - name: Release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+          if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v4
         with:
