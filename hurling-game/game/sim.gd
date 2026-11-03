@@ -161,6 +161,18 @@ func ball() -> Dictionary:
 		"live": m.ball.state == Sliotar.FREE or m.ball.state == Sliotar.OUT}
 
 
+## The fetch-behind-prop case: the ball dead at SPOT, behind one of the ground's big props, and the nearest outfield
+## man sent for it (Match.send_fetch), round the props by their path, as he would run for it.
+func fetch(spot: Vector3) -> Dictionary:
+	var pl: Player = m.send_fetch(spot)
+	if pl == null:
+		return {}
+	# (The time his way round takes at his top speed, and half as long again - a stand's length is a long way round
+	# to its back - never less than the foundation's own.)
+	var secs := maxf(WsgSim.FETCH_S, m.fetch_way_length() / pl.top_speed() * 1.5 + 3.0)
+	return {"who": "%s %d" % [["home", "away"][pl.team], pl.num], "seconds": secs, "arrive": WsgSim.FETCH_ARRIVE_M}
+
+
 func solid() -> WsgSolidProps:
 	return m.stadium.solid
 

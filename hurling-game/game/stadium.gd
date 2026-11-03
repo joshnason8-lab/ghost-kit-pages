@@ -465,6 +465,8 @@ func _goal_frames(g: Geo, grow: float) -> void:
 				g.box(Vector3(fx, 1.35, fz + 0.15 * zs), Vector3(0.02, 0.28, 0.3) + Vector3.ONE * grow * 2.0, Color("e8b020") if d == 0.0 else Color("d9d9d9"), 0.0, false)
 
 
+const RAIL_GATE := 2.0      # m: a gate's opening in the rail round a club's field
+
 func _rail(g: Geo, inset: float, h := 1.0) -> void:
 	var c := Color("b9bfc4")
 	g.solid_spec = {"name": "rail", "material": "metal"}
@@ -476,13 +478,22 @@ func _rail(g: Geo, inset: float, h := 1.0) -> void:
 	for e in [[Vector3(-x, 0, -z), Vector3(-gap, 0, -z)], [Vector3(-gap_in, 0, -z), Vector3(gap_in, 0, -z)],
 			[Vector3(gap, 0, -z), Vector3(x, 0, -z)], [Vector3(-x, 0, z), Vector3(x, 0, z)],
 			[Vector3(-x, 0, -z), Vector3(-x, 0, z)], [Vector3(x, 0, -z), Vector3(x, 0, z)]]:
-		var a: Vector3 = e[0]
-		var b: Vector3 = e[1]
-		g.cylinder(a + Vector3(0, h, 0), b + Vector3(0, h, 0), 0.03, 0.03, c, 4, false)
-		var n := int(a.distance_to(b) / 3.0)
-		for i in n + 1:
-			var p := a.lerp(b, float(i) / n)
-			g.cylinder(p, p + Vector3(0, h, 0), 0.025, 0.025, c, 4, false)
+		# A gate in a long run a fifth of the way from each end (a club's rail has its gates: without them no one
+		# could walk off the field to a ball gone behind the clubhouse - the sim's fetch case).
+		var runs: Array = [[e[0], e[1]]]
+		var run_len := (e[0] as Vector3).distance_to(e[1])
+		if run_len > 30.0:
+			var gw := RAIL_GATE / run_len
+			runs = [[e[0], (e[0] as Vector3).lerp(e[1], 0.2 - gw * 0.5)], [(e[0] as Vector3).lerp(e[1], 0.2 + gw * 0.5),
+				(e[0] as Vector3).lerp(e[1], 0.8 - gw * 0.5)], [(e[0] as Vector3).lerp(e[1], 0.8 + gw * 0.5), e[1]]]
+		for run: Array in runs:
+			var a: Vector3 = run[0]
+			var b: Vector3 = run[1]
+			g.cylinder(a + Vector3(0, h, 0), b + Vector3(0, h, 0), 0.03, 0.03, c, 4, false)
+			var n := maxi(1, int(a.distance_to(b) / 3.0))
+			for i in n + 1:
+				var p := a.lerp(b, float(i) / n)
+				g.cylinder(p, p + Vector3(0, h, 0), 0.025, 0.025, c, 4, false)
 
 
 ## A covered stand along x from x0 to x1, its front at z0 (toward the pitch), rows rising away (dir -1: toward -z).

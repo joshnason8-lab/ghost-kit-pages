@@ -56,6 +56,10 @@ var _dead_w := 0.0           # and with it dead
 var live_real := 0.0         # real seconds the ball has been live this match (tests/score_check)
 var _subs_due: Array = []    # substitutions asked for, made at the next break: [{off: Player, pd: Dictionary}]
 var _leaving: Array = []     # the men substituted, walking off
+var fetcher: Player = null    # a man gone for a ball dead off the field (send_fetch), till he has it
+var fetch_spot := Vector3.INF
+var _fetch_way := PackedVector3Array()   # his way there round the props (FetchRoute)
+var _fetch_router: FetchRoute = null
 var coach: Coach = null      # the coach's tips, in your first match (Settings > Coach's tips)
 var replay: Replay           # the last seconds kept, and a score or a wide shown again from behind the goal
 var wsg_replay: WsgReplay    # the shared foundation's bodies as drawn, kept for the replay (FoundationLink)
@@ -568,7 +572,7 @@ func _step(dt: float, delta: float) -> void:
 		P.DEAD:
 			_brains(dt)
 			_run_clock(dt)
-			if phase_t > DEAD_T:
+			if phase_t > DEAD_T and fetcher == null:
 				_begin_setup()
 		P.SETUP:
 			_brains(dt)
@@ -935,6 +939,9 @@ func _brains(dt: float) -> void:
 				pl.want_vel = Vector3.ZERO
 				pl.face_to = Vector3(Pitch.HALF_L * dir(pl.team), 0, 0)
 				continue
+			if pl == fetcher:
+				_fetch_step(pl)
+				continue
 			if pl == active and phase in [P.LIVE, P.THROW_IN, P.SET, P.SETUP] and controls.visible:
 				_user_move(pl, dt)
 				continue
@@ -987,6 +994,60 @@ func _brains(dt: float) -> void:
 				target = plan[0]
 				speed = _jog(pl, target)
 			_steer(pl, target, speed)
+
+
+## The ball dead at SPOT, off the field (behind a stand, a wall, a bench), and the nearest outfield man not keeping
+## goal sent for it, round the ground's props (FetchRoute; Player.integrate steers him off them besides); play waits
+## till he has it. The sim's fetch-behind-prop case (WsgSimGame.fetch, game/sim.gd).
+func send_fetch(spot: Vector3) -> Player:
+	var best: Player = null
+	var bd := INF
+	for pl in all_players():
+		var p := pl as Player
+		if p.visible and p.on_pitch() and not p.is_keeper() and not p.down(now) and p.role == "":
+			var d := p.global_position.distance_to(spot)
+			if d < bd:
+				bd = d
+				best = p
+	if best == null:
+		return null
+	_whistle_dead(false)
+	ball.state = Sliotar.DEAD
+	ball.vel = Vector3.ZERO
+	ball.global_position = Vector3(spot.x, Sliotar.RADIUS, spot.z)
+	fetcher = best
+	fetch_spot = Vector3(spot.x, 0.0, spot.z)
+	if _solid():
+		if _fetch_router == null:
+			var x := Pitch.HALF_L + 60.0
+			var z := Pitch.HALF_W + 60.0
+			_fetch_router = FetchRoute.new(stadium.solid, AABB(Vector3(-x, 0, -z), Vector3(x * 2.0, 2.0, z * 2.0)), Player.BODY_R)
+		_fetch_way = _fetch_router.route(best.global_position, fetch_spot)
+	else:
+		_fetch_way = PackedVector3Array([fetch_spot])
+	return best
+
+
+## How far the fetcher's way is (m), from where he is round the props to the ball.
+func fetch_way_length() -> float:
+	return FetchRoute.length(fetcher.global_position, _fetch_way) if fetcher != null else 0.0
+
+
+## The fetcher's run, turn to turn of his way; he has it within a stride.
+func _fetch_step(pl: Player) -> void:
+	var at := pl.global_position
+	if Vector2(fetch_spot.x - at.x, fetch_spot.z - at.z).length() < 0.6:
+		pl.want_vel = Vector3.ZERO
+		fetcher = null
+		phase_t = 0.0
+		return
+	while _fetch_way.size() > 1 and Vector2(_fetch_way[0].x - at.x, _fetch_way[0].z - at.z).length() < 1.0:
+		_fetch_way.remove_at(0)
+	var d := _fetch_way[0] - at
+	d.y = 0.0
+	pl.face_to = Vector3.ZERO
+	var last := _fetch_way.size() == 1
+	pl.want_vel = d.normalized() * (minf(pl.top_speed(), maxf(d.length() * 2.2, 1.5)) if last else pl.top_speed())
 
 
 ## Each goal as a player must go round it: the posts and the net behind them (s: the end, -1 or +1), in x and z.
