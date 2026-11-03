@@ -187,7 +187,7 @@ static func mark(side := 1.0, lift := 0.0, v := Vector4(0.5, 0.5, 0.5, 0.5)) -> 
 	var arm := "l" if side > 0.0 else "r"
 	var ax := 1.0 if arm == "l" else -1.0
 	p["upperarm_" + arm] = (p["upperarm_" + arm] as Vector3).lerp(Vector3(-55, 0, 45.0 * ax), lift)
-	p["forearm_" + arm] = (p["forearm_" + arm] as Vector3).lerp(Vector3(-22, 0, 0), lift)
+	p["forearm_" + arm] = (p["forearm_" + arm] as Vector3).lerp(Vector3(-38, 0, 0), lift)    # (its elbow soft)
 	return p
 
 
@@ -205,7 +205,7 @@ static func post(side := "l", out := 1.0) -> Dictionary:
 	p.shin_r = Vector3(30, 0, 0)
 	# (out 0-1: the arm held out for the ball, or lowered between calls.)
 	p["upperarm_" + side] = Vector3(-14, 0, 14.0 * sx).lerp(Vector3(-95, 0, 28.0 * sx), out)
-	p["forearm_" + side] = Vector3(-38, 0, 0).lerp(Vector3(-12, 0, 0), out)
+	p["forearm_" + side] = Vector3(-38, 0, 0).lerp(Vector3(-32, 0, 0), out)    # (the elbow soft: a target, not a bar)
 	p["upperarm_" + o] = Vector3(10, 0, -30.0 * sx)
 	p["forearm_" + o] = Vector3(-40, 0, 0)
 	return p
