@@ -1040,15 +1040,24 @@ func check() -> void:                     # may await; tree is the SceneTree
 - `bright(au, kinds)`: key sounds kept crisp at a distance.
 - The crowd: `WsgCrowdVenue.audit`. Props: `WsgPropAudit`.
 
-**Run and guard them in CI:**
+**Run and guard them in CI, and gate the release on them:**
 ```yaml
+  owner-notes:
+    steps:
       - run: sh <game>/tools/wsg/owner_notes_guard.sh   # reads INDEX.json's history (deepens a shallow checkout)
-      - run: WSG_NOTES_STRICT=1 godot --headless --path <game> --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
+      - run: XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 godot --headless --path <game> --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
+  publish:
+    needs: [build, owner-notes]   # a failing note blocks the release (the lead, 2026-11-03: Floorball 0.9.14 published on a red notes job)
 ```
-The runner fails on:
+The publish job must `need` the owner-notes job: a note the owner made a permanent test that fails is a release
+blocker, not a report. The runner fails on:
 - any failed note;
 - a file not in the index;
-- a listed note whose file is gone.
+- a listed note whose file is gone;
+- with `WSG_NOTES_FRESH=1`, saved files in `user://` (settings): notes hold on a fresh install's defaults, so the
+  run gets an empty user dir (`XDG_DATA_HOME=$(mktemp -d)`, as above; an earlier step in the job saving settings
+  cannot leak in). Run them locally the same way. Without it the runner only warns. (Floorball's stick-up-close
+  passed locally on a stale "Real" pace and failed in CI at the default "Steady".)
 
 The guard fails if any id that was ever in `INDEX.json` has been removed.
 
