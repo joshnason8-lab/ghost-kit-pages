@@ -467,3 +467,19 @@ kept). Medium and High draw everyone with the shared foundation (GRAPHICS.md, "T
 - WsgFootFlat.attach on every foundation body (ADOPTING 5.10): our models' soles rise 0 to 1.9 degrees at rest (player_09
   1.9, player_03 1.8, player_08 1.2, the referee 0.1, the rest 0), under its 2 degrees: none needs turning.
 - test_runner: the cards' layout has the clap and look poses; the cards clap while applause is heard.
+
+## 0.14.5: the loading overlay on every start (owner via the lead; foundation edebcd5, ADOPTING 5.14)
+
+- Every match start goes through Game.start_match (Play, Watch, cup, season, tutorial lessons); from a screen it puts
+  up WsgLoading in the tap's own frame (the screen's buttons off, a second tap ignored), loads match.gd and the
+  ground's baked shell (assets/grounds/<id>/<id>.tscn) on the loader's thread, then builds the match in slices:
+  Match._ready checkpoints after the ground's sky, its shell, its dressing (Arena.build takes the overlay), each of
+  the 14 players and the officials, with the tree paused between so nothing half-built runs. Then three frames of the
+  match running under the overlay, so its first drawing (shaders made for the GPU) happens behind it. Not for the
+  menu's backdrop matches, nor with Game.loading_overlay off (test_runner's matches built at once).
+- Measured (this machine: software OpenGL under xvfb, Low; not the A16): main-thread slices at most 188 ms (the dome,
+  first ground loaded), about 50 ms otherwise; the longest frame is the first drawing of the 3D match, 1.6-2.7 s here
+  (5.2 s with an empty shader cache), under the overlay. Before: up to 1.5 s in the tap itself and then 1.7-3.0 s
+  of a frozen menu.
+- test_runner: the overlay up in the tap's frame with the buttons off, one load for two taps, the bar only forward,
+  the match built under it, the tree running again after, and the match playing.

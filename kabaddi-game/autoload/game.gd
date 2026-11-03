@@ -396,6 +396,60 @@ func goto_menu() -> void:
 ## mode ("quick"|"cup"|"career"), knockout (bool), control ("all"|"career"),
 ## career_player (Dictionary, optional), user_team (0 or 1)
 func start_match(config: Dictionary) -> void:
+	# From a button (every Play, Watch AI, a cup or season fixture, a rematch): the shared loading overlay answers the
+	# tap in its own frame (the owner: "users might think the game has frozen"), the screen's buttons go dead, and the
+	# match is built under it in slices, a frame drawn between (Match._ready's checkpoints). Not for the menu's
+	# backdrop match, nor when the overlay is off (tests that build a match and look at it at once).
+	if not loading_overlay or bool(config.get("attract", false)) or main == null:
+		_start_match_now(config)
+		return
+	if WsgLoading.busy():
+		return   # a second tap while one is loading
+	var buttons: Array = current.find_children("*", "BaseButton", true, false) if is_instance_valid(current) else []
+	var ld := WsgLoading.cover(main, buttons, load_look())
+	ld.log_label = "match " + String(config.get("arena", "dome"))
+	# On the loader's thread: the match's script and its ground's baked parts (the biggest file a match loads).
+	var shell := Arena.shell_path(String(config.get("arena", "dome")))
+	ld.request(["res://game/match.gd"] + ([shell] if ResourceLoader.exists(shell) else []))
+	ld.step(tr("LOADING"), func(): await _build_match(config, ld), 4.0)
+	# Then a few frames of the match running under the overlay: its first drawing (the camera on the court, every
+	# material's shaders made for the GPU - seconds on a slow phone, and no frame can be cut there) happens behind it.
+	# (Steps of their own, so the overlay times each frame as a frame, not as work.)
+	ld.step(tr("LOADING"), func(): get_tree().paused = false, 0.3)
+	for i in 2:
+		ld.step(tr("LOADING"), func(): pass, 0.3)
+	# The tree holds still while the match is half built (nothing runs on it between the slices); the overlay runs on.
+	get_tree().paused = true
+	var ok: bool = await ld.run()
+	get_tree().paused = false
+	if ok:
+		ld.done()
+
+
+## Turned off by the tests that start a match and look at it in the same frame.
+var loading_overlay := true
+
+
+## The overlay in the game's colours: its night blue, saffron bar and spinner, the display font, a hint to read.
+func load_look() -> Dictionary:
+	return {"dim": Color(C_BG, 0.92), "text": C_INK, "bar": C_SAFFRON, "bar_back": C_PANEL_HI, "spinner": C_SAFFRON,
+		"title": tr("LOADING"), "font": font_display,
+		"tips": [tr("HINT_RAID_AUTO"), tr("HINT_DEFEND"), tr("HINT_DOD"), tr("HINT_FIVE_SECONDS")]}
+
+
+func _build_match(config: Dictionary, ld: WsgLoading) -> void:
+	var s: Script = ld.res("res://game/match.gd") if ld.res("res://game/match.gd") else load("res://game/match.gd")
+	var m: Node = s.new()
+	m.config = config
+	m.loading = ld
+	Sfx.music(false)
+	_swap(m)          # its _ready runs to its first checkpoint here, then on, a slice a frame
+	if not m.is_built:
+		await m.built
+	m.loading = null
+
+
+func _start_match_now(config: Dictionary) -> void:
 	var s: Script = load("res://game/match.gd")
 	var m: Node = s.new()
 	m.config = config

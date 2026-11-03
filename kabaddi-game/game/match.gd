@@ -182,7 +182,14 @@ const WALKOUT_HOLD := 3.6      # ... standing in line this long
 const WALKOUT_LEN := 7.0       # ... and the intro this long in all
 
 
+## The loading overlay this match is built under (Game.start_match from a button), or null: built in one go.
+var loading: WsgLoading = null
+var is_built := false
+signal built
+
+
 func _ready() -> void:
+	var ld := loading
 	# A seed in the config plays the same match every time (tests); otherwise each match is its own.
 	if config.has("seed"):
 		rng.seed = int(config.seed)
@@ -223,7 +230,9 @@ func _ready() -> void:
 	arena = Arena.new()
 	add_child(arena)
 	var banner := "LEAGUE_NAME" if DB.team(config.home).kind == "league" else "MENU_CUP"
-	arena.build(String(config.get("arena", "dome")), kit[0], kit[1], banner)
+	await arena.build(String(config.get("arena", "dome")), kit[0], kit[1], banner, ld)
+	if ld:
+		await ld.checkpoint(0.35)
 
 	for t in 2:
 		var tm: Dictionary = teams[t]
@@ -258,11 +267,15 @@ func _ready() -> void:
 			stats[a.pid()] = {"raid": 0, "tackle": 0}
 			for k in BOX:
 				stats[a.pid()][k] = 0
+			if ld:
+				await ld.checkpoint(0.35 + 0.45 * float(t * 7 + i + 1) / 14.0)
 	_order_slots()
 	officials = Officials.new()
 	add_child(officials)
 	officials.setup(self)
 	_floor_shadows()
+	if ld:
+		await ld.checkpoint(0.85)
 	if FoundationLink.enabled():
 		wsg_replay = WsgReplay.new()
 		add_child(wsg_replay)
@@ -313,6 +326,8 @@ func _ready() -> void:
 			occasion = tr(String(config.derby))
 		hud.show_intro(DB.team_name(teams[0].id), DB.team_name(teams[1].id), tr(_arena_name()), occasion,
 			[teams[0].id, teams[1].id] if walkout else [])
+	is_built = true
+	built.emit()
 
 
 func _arena_name() -> String:

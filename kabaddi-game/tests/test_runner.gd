@@ -15,6 +15,7 @@ func _ready() -> void:
 	# The shared foundation (FoundationLink, on Medium and High when this machine has the licensed clips; CI may not) is
 	# tested in its own section; elsewhere the matches run without it, as a build without the clips does, in CI's time.
 	FoundationLink.off = true
+	Game.loading_overlay = false   # matches built at once, to look at in the same frame; _loading_overlay tests it on
 	await _run()
 
 
@@ -638,6 +639,8 @@ func _run() -> void:
 	# 7c. Sounds: every recording the game plays is in assets/audio and loads, and every sound the code names is one
 	# the game has; the grounds' ambiences loop; a paused match plays nothing; the volume sliders reach their buses.
 	_check_sounds()
+
+	await _loading_overlay()
 
 	# 8. Captured motion clips load and play on an athlete.
 	var clip := MocapClip.load_file("res://tests/fixtures/walk_clip.json")
@@ -2258,3 +2261,42 @@ func _foundation(available: bool) -> void:
 	Game.settings.graphics = was
 	Game.settings.tags = was_tags
 	Game.save_settings()
+
+
+## The owner: "when you click start game there is a loading delay ... users might think the game has frozen". Every
+## start goes through Game.start_match: from a screen, the shared overlay (WsgLoading) is up in the tap's own frame with
+## the screen's buttons dead, a second tap starts nothing, the bar only goes forward, the match is built in slices
+## under it (the tree held still between them), and then it goes and the match plays.
+func _loading_overlay() -> void:
+	Game.loading_overlay = true
+	Game.show_screen("res://ui/quick_setup.gd")
+	await frames(3)
+	var screen: Node = Game.current
+	var btns: Array = screen.find_children("*", "BaseButton", true, false)
+	var cfg := {"home": "MUM", "away": "PUN", "arena": "village", "mode": "quick", "length": 0, "difficulty": 1, "autoplay": true}
+	var f0 := Engine.get_process_frames()
+	Game.start_match(cfg)
+	var ld := WsgLoading.current()
+	var same_frame := ld != null and Engine.get_process_frames() == f0 and btns.all(func(b): return not is_instance_valid(b) or (b as BaseButton).disabled)
+	Game.start_match(cfg)   # a second tap
+	var one := WsgLoading.current() == ld
+	var bar := 0.0
+	var back := false
+	var n := 0
+	var t_end := Time.get_ticks_msec() + 60000   # by the clock: headless, frames run far faster than real ones
+	while WsgLoading.busy() and Time.get_ticks_msec() < t_end:
+		await get_tree().process_frame
+		n += 1
+		if is_instance_valid(ld):
+			back = back or ld.shown() < bar - 0.001
+			bar = maxf(bar, ld.shown())
+	var m: Node = Game.current
+	var rep: Dictionary = ld.report if is_instance_valid(ld) else {}
+	check(same_frame and one and not back and bar > 0.9 and m.get_script() == load("res://game/match.gd") and m.is_built
+		and not get_tree().paused and not WsgLoading.busy() and rep.get("frames", 0) >= 3,
+		"Start: the loading overlay up in the tap's frame, the buttons off, one load for two taps, the bar only forward, the match built under it (%s)" % JSON.stringify(rep))
+	await frames(20)
+	check(m.phase != "" and is_instance_valid(m.hud) and m.hud.visible, "the match plays after the overlay")
+	Game.loading_overlay = false
+	Game.goto_menu()
+	await frames(3)

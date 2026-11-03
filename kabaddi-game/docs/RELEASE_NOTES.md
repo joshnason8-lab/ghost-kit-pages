@@ -1,4 +1,9 @@
-**New in 0.14.4: the crowd claps and watches on Low again.** On Low graphics the fans clap in time with the clapping
+**New in 0.14.5: a loading screen the moment you tap Play.** Tapping Play, Watch, a cup or season fixture or a lesson
+now dims the screen at once with "Loading…", a spinner, a bar that fills as the match is built, and a tip to read; the
+buttons stop answering so a second tap can't start a second match. On a slow phone the wait no longer looks like the
+game has frozen.
+
+**In 0.14.4: the crowd claps and watches on Low again.** On Low graphics the fans clap in time with the clapping
 you hear and turn their heads to follow the raider, as they did before 0.14.3 (the shared crowd now has those poses).
 
 **In 0.14.3: the crowd, seated properly on every ground.** Every spectator is now placed by the shared crowd

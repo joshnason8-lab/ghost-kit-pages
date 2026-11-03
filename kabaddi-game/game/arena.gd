@@ -72,10 +72,13 @@ const BAKE_SKY := {"beach": 0.45}
 
 ## banner_text: the league's name on the boards and the run-off, a translation key (or words to show as they are), in
 ## capitals in the game's language, and redrawn when the language changes.
-func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text: String) -> void:
+## ld: the loading overlay it is built under (Game.start_match), a frame drawn between its parts; null: in one go.
+func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text: String, ld: WsgLoading = null) -> void:
 	_banner_key = banner_text
 	arena_id = p_arena_id if p_arena_id in ["stadium", "village", "monsoon", "beach"] else "dome"
 	_env()
+	if ld:
+		await ld.checkpoint(0.08)
 	var path := GROUNDS + "%s/%s.tscn" % [arena_id, arena_id]
 	if use_baked and ResourceLoader.exists(path):
 		shell = (load(path) as PackedScene).instantiate()
@@ -92,12 +95,19 @@ func build(p_arena_id: String, home_color: Color, away_color: Color, banner_text
 		shell.name = "Shell"
 		add_child(shell)
 		_shell()
+	if ld:
+		await ld.checkpoint(0.2)
 	var banner := _banner()
 	_dress(home_color, away_color, banner)
 	for l in find_children("*", "Label3D", true, false):
 		if (l as Label3D).text == banner:
 			l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 			_banner_labels.append(l)
+
+
+## The baked fixed parts of a ground (assets/grounds/<id>/<id>.tscn), for the loader's thread to fetch ahead.
+static func shell_path(id: String) -> String:
+	return GROUNDS + "%s/%s.tscn" % [id, id]
 
 
 func _banner() -> String:
