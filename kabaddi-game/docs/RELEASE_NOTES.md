@@ -1,4 +1,8 @@
-**New in 0.14.20: Break free always answers.**
+**New in 0.14.21: a smaller player's catch-up steps no longer snap.** The shared foot planting no longer holds
+back a catch-up step on a slightly smaller body (it was read as too small to be a step, then snapped a frame later).
+Nothing else changes; on Low a planted foot drifts at most 0.9 cm in a step, as before.
+
+**In 0.14.20: Break free always answers.**
 - **No dead presses**: held, after a lion jump out of the hold failed, Break free did nothing for 1.4 s - as long as three
   defenders take to bring you down, so every press after the first was lost. Now a failed try has you back trying a
   quarter of a second later, a press made while a try is still going is kept and made the moment it is over, and the

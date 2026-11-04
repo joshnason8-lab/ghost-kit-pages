@@ -689,3 +689,15 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   steps it after, as the skeleton is posed), so on the frame a fade ended it stood one step behind - the suite's
   "every joint lies on the game body's" caught the hips 2.3 cm off as a defender's move faded to his ready. `_place(dt)`
   now uses the weight after the step (`Layer.weight_after`). The 2.0 cm bound is unchanged.
+
+## 0.14.21: foundation 50f9e87 (fd879f98 + 706e3a6d)
+
+- fd879f98: the release rate limit's 25 cm "a jump" threshold never below 25 cm on a smaller body (random#13: BAN_5's
+  23.8 cm catch-up held back and snapped as 26.6) - random#13 ok locally. 706e3a6d: planter tolerances by the body's
+  size (rigs not in metres; Kabaddi's unchanged). 50f9e87: REQUIRED (8dc70d9, 0bd11720) - check_foundation passes.
+- feet_low equal to 0.14.16 on every line (the lead's gate): standing 0.6, walk 0.9 / 2.8, jog 0.2 / 16.3, jog turned
+  0.1 / 11.9, run 1.2 / 8.0, stop 0.1 / 8.3. Suite, owner notes (9, fresh), feet, props, officials, pose, tackle_check
+  19/19 pass.
+- Open (with the lead): targeted:props#103 fails in the smoke's shard 3 - PAK_9 standing in "ready" (the game's pose
+  at full weight, no fade, posed every 2nd frame), a flat foot 2.2 cm in a frame. Only after a random match in the same
+  process (alone, or after targeted ones: ok), and any instrumentation flips it to ok.
