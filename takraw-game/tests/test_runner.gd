@@ -1317,7 +1317,7 @@ func _three_serves() -> void:
 		var sc := Vector2i(int(m.points[0]), int(m.points[1]))
 		if int(m.state) == int(m.S.TOSS) and sc != last:
 			last = sc
-			tosses.append([sc.x, sc.y, int(m.server)])
+			tosses.append([sc.x, sc.y, int(m.server), m.hud.serve_turn(), int(m.serves_in_turn)])
 		await frames(1)
 	var bad := []
 	for i in range(1, tosses.size()):
@@ -1330,6 +1330,14 @@ func _three_serves() -> void:
 			bad.append("%d-%d" % [a, b])
 	check(int(m.state) == int(m.S.OVER) and tosses.size() >= 15, "the 3-serve rule: a match played to its end (%d serves)" % tosses.size())
 	check(bad.is_empty(), "the 3-serve rule: the serve passed after every third point, and every point from deuce (wrong at %s)" % [bad])
+	# The scoreboard says which of the three it is ("2/3"; nothing from deuce, when it alternates).
+	var shown_bad := []
+	for t in tosses:
+		var deuce: bool = int(t[0]) >= 14 and int(t[1]) >= 14
+		var want: String = "" if deuce else "%d/3" % (int(t[4]) + 1)
+		if String(t[3]) != want:
+			shown_bad.append("%d-%d %s" % [int(t[0]), int(t[1]), t[3]])
+	check(not tosses.is_empty() and shown_bad.is_empty(), "the 3-serve rule: the scoreboard shows the serve's number in its turn (wrong at %s)" % [shown_bad])
 	m.queue_free()
 	await frames(2)
 

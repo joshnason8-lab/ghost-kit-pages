@@ -670,6 +670,19 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The 3-serve rule on the scoreboard (0.15.23)
+
+UI polish while sepak raga waits (the lead: hold it until the Foundation's RealBody scale fix makes its ring note's
+feet pass; it is kept ready on the local branch hold/sepak-raga):
+- **The scoreboard** (hud.gd): under the serving side's ball, which of the side's three serves it is ("1/3", "2/3",
+  "3/3": in figures, not dots, which read as time-outs - the owner) when the match is on the 3-serve rule
+  (Match.serves_each 3); nothing from deuce (the serve alternates every point then) or on today's rule.
+- **How to Play, Rules, The serve** (RULES_SERVE_TEXT, 13 languages): one more sentence - from 2013 to 2024 each side
+  served three times in a row, and Quick Match can play that rule too.
+- test_runner (_three_serves): at every toss of the match on the 3-serve rule, the scoreboard's figure is the serve's
+  number in its side's turn (nothing from deuce). fit_audit's match is on the 3-serve rule, so the figure is in the
+  picture in every language.
+
 ## Foundation 31f60da: the planter's 3b70001 batch, corrected (0.15.22)
 
 - **Foundation a40a95e -> 31f60da** (3b70001, 9ad1c8a, 31f60da): a let-go foot stood down a step off steps there; a

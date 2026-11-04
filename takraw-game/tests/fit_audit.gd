@@ -543,8 +543,9 @@ func _cup() -> void:
 
 
 func _match() -> void:
+	# (On the 3-serve rule: the scoreboard's "1/3" under the serving side's ball is in the picture too.)
 	Game.start_match({"home": "LAO", "away": "MYA", "venue": "mall", "event": "regu", "sets": 3, "points": 15,
-		"difficulty": 1, "mode": "quick", "user_team": 0, "stage": tr("SEMI_FINAL"), "seed": 3})
+		"difficulty": 1, "mode": "quick", "user_team": 0, "stage": tr("SEMI_FINAL"), "seed": 3, "serves": 3})
 	await frames(30)
 	await audit("match_intro")
 	var m: Node = Game.current

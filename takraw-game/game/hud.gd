@@ -140,8 +140,19 @@ func _build_scoreboard() -> void:
 		pts.add_theme_font_size_override("font_size", 36)
 		pts.custom_minimum_size = Vector2(40, 0)
 		pts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var serve := Icon.make("ball", 14, Game.C_GOLD)
+		# Who serves: the ball by his score; under the 3-serve rule (2013-2024, Match.serves_each) which of his three
+		# it is under it, in figures ("2/3": not dots, which read as time-outs - the owner).
+		var serve := VBoxContainer.new()
+		serve.alignment = BoxContainer.ALIGNMENT_CENTER
+		serve.add_theme_constant_override("separation", 0)
 		serve.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var ball_icon := Icon.make("ball", 14, Game.C_GOLD)
+		ball_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		serve.add_child(ball_icon)
+		var serve_n := UI.label("", "EyebrowLabel", 11, Game.C_GOLD)
+		serve_n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		serve_n.visible = false
+		serve.add_child(serve_n)
 		if side == 0:
 			h.add_child(col)
 			h.add_child(serve)
@@ -153,7 +164,7 @@ func _build_scoreboard() -> void:
 			col.alignment = BoxContainer.ALIGNMENT_CENTER
 			name_row.alignment = BoxContainer.ALIGNMENT_END
 			sets_row.alignment = BoxContainer.ALIGNMENT_END
-		_score_l.append({"panel": panel, "sb": sb, "name": nm, "crest": crest, "pts": pts, "sets": sets_row, "serve": serve})
+		_score_l.append({"panel": panel, "sb": sb, "name": nm, "crest": crest, "pts": pts, "sets": sets_row, "serve": serve, "serve_n": serve_n})
 		bar.add_child(panel)
 		if side == 0:
 			var mid := PanelContainer.new()
@@ -175,6 +186,18 @@ func _build_scoreboard() -> void:
 			bar.add_child(mid)
 
 
+## Under the 3-serve rule, which of his side's three serves the next one is ("2/3"); "" under today's rule, or from
+## deuce (the serve alternates every point then).
+func serve_turn() -> String:
+	if int(m.serves_each) <= 1:
+		return ""
+	var a := int(m.points[0])
+	var b := int(m.points[1])
+	if a >= int(m.set_points) - 1 and b >= int(m.set_points) - 1:
+		return ""
+	return "%d/%d" % [int(m.serves_in_turn) + 1, int(m.serves_each)]
+
+
 ## The scoreboard as the broadcast camera shows the court: side 1 (x > 0) on the left of the screen.
 func set_score() -> void:
 	for panel_i in 2:
@@ -194,6 +217,9 @@ func set_score() -> void:
 		sets_row.visible = int(m.sets_to_win) > 1
 		(sets_row.get_child(0) as Label).text = tr("HUD_SETS").format({"n": int(m.sets[team])})
 		(s.serve as Control).modulate.a = 1.0 if int(m.server) == team else 0.0
+		var n: Label = s.serve_n
+		n.text = serve_turn()
+		n.visible = n.text != "" and int(m.server) == team
 	m.arena.show_score(String(m.teams[0].short), int(m.points[0]), int(m.sets[0]), String(m.teams[1].short), int(m.points[1]),
 		int(m.sets[1]))
 	_mid_set.text = tr("SET_N_TO").format({"n": m.set_no, "p": m.set_points})
