@@ -59,6 +59,14 @@ func _ready() -> void:
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(8)
 	await shot("12_settings")
+	# The World Finals' hub (a new cup: the groups, the next game) and Penalty shots.
+	Game.new_cup("SWE")
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(8)
+	await shot("13_world_finals")
+	Game.start_match({"home": "SWE", "away": "FIN", "venue": "arena", "user_team": 0, "mode": "practice", "practice": true, "period": 20.0, "seed": 3})
+	await frames(240)
+	await shot("14_penalty_shots")
 	get_tree().quit()
 
 
