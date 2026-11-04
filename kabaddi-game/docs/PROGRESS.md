@@ -638,3 +638,12 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   first 4,200 frames: officials' frames sidestepping faster than 1 m/s 921 -> 394 (turning only) -> 106 at exactly the
   cap; the fastest sidestep 2.0 -> 1.0 m/s.
 
+## 0.14.17: foundation 3b70001 (a landing foot planted as it touches)
+
+- Foundation 3b70001: a landing foot is planted as it touches (at 4 cm, only when its toe and ankle are both already
+  slow - a40a95e's first try planted a still-swinging Low foot and raised the Low walk's jump 2.8 -> 12.6 cm, and a
+  Medium foot skidded 16.0 cm in extreme#42; that build was cancelled before it published and reverted). The planter
+  also steps a foot let go out of reach after a handback instead of planting it where the clip stands it (OFFICIAL_0's
+  14.9 cm in extreme#10), and WsgSim honours --kinds with --from.
+- The lead's gate - Low at or under 0.14.16 on every line - measured here before it went out (see the commit).
+
