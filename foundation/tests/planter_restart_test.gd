@@ -5,7 +5,10 @@ extends SceneTree
 ##    let go to slide after the body (Sepak Takraw's players out of a set piece: 7 cm);
 ##  - a body carried on faster than its clip's stride: the feet the planter lets go at their reach take steps of their
 ##    own, and a step's toe stays over the floor until it lands - not skimming it, read as a planted foot sliding
-##    (Sepak Takraw: 3.6 cm) - and the feet rule (WsgNoteChecks.foot_slip) passes (12.3 cm flat skid before).
+##    (Sepak Takraw: 3.6 cm) - and the feet rule (WsgNoteChecks.foot_slip) passes (12.3 cm flat skid before);
+##  - a far body, drawn (its planter run) every 3rd frame, coming down while going on at 0.64 m/s: planted on the first
+##    draw within the touch (4 cm), its speed read over the 3 frames' ticks - read over one, 3 times as fast, it was
+##    planted a draw late, 6.4 cm on, read as a planted slide (Kabaddi's far players).
 ##   godot --headless --fixed-fps 30 --path . -s tests/planter_restart_test.gd
 
 var fails := []
@@ -36,6 +39,10 @@ func _initialize() -> void:
 		fails.append("carried: a planted foot slid %.1f cm in a step (2.0 at most)" % float(s[2].max_cm))
 	if float(s[2].skid_cm) > 2.0:
 		fails.append("carried: a foot flat on the ground slid %.1f cm in one frame (2.0 at most)" % float(s[2].skid_cm))
+	var far: float = await _landing_far(hero.skeleton)
+	print("landing, drawn every 3rd frame: planted with the ankle %.1f cm over its standing height (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
+	if far < 0.02:
+		fails.append("landing, drawn every 3rd frame: planted with the ankle %.1f cm up - a draw late, 6.4 cm on (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
 	hero.queue_free()
 	print("PLANTER RESTART TEST: ", "PASS" if fails.is_empty() else "FAIL %s" % [fails])
 	quit(0 if fails.is_empty() else 1)
@@ -162,3 +169,29 @@ func _tiptoe(own: Skeleton3D, rise: float) -> void:
 			if absf(ank.y + v.rotated(axis, -a).y - want) < absf(ank.y + v.rotated(axis, -best).y - want):
 				best = a
 		own.set_bone_pose_rotation(foot, (parent.inverse() * Basis(axis, -best) * g).get_rotation_quaternion())
+
+
+## Both feet coming down 0.3 cm a frame from 6 cm up while the body goes on at 0.64 m/s: the planter ticked every
+## frame but run (and the pose read) only every 3rd, as a far body is drawn. How high the left ankle was over its height
+## standing on the floor when first planted.
+func _landing_far(src: Skeleton3D) -> float:
+	var r := _rig(src)
+	var holder: Node3D = r[0]
+	var own: Skeleton3D = r[1]
+	var pl: WsgFootPlanter = r[2]
+	var ankle := own.find_bone("LeftFoot")
+	var standing := own.get_bone_global_rest(ankle).origin.y   # (the rest pose stands on y 0)
+	var planted_at := [INF]
+	own.skeleton_updated.connect(func():
+		if pl.active and float(pl.contact[0]) > 0.5 and planted_at[0] == INF:
+			planted_at[0] = (own.global_transform * own.get_bone_global_pose(ankle).origin).y)
+	holder.position.y = 0.06
+	for k in 45:
+		pl.active = k % 3 == 0
+		pl.body_speed = 0.64
+		holder.position.x += 0.64 / 30.0
+		holder.position.y = maxf(0.0, holder.position.y - 0.003)
+		pl.tick(1.0 / 30.0)
+		await process_frame
+	holder.queue_free()
+	return float(planted_at[0]) - standing

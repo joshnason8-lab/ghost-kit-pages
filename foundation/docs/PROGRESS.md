@@ -708,3 +708,11 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   - Dropped: a rest-height override for Takraw's own Low body (their bench: walk 19.3 cm, glide 41%).
   - Left: Takraw extreme#4 official 5.8, completion#103 4.2; Kabaddi Medium, Floorball extreme#3/#6, Kho Kho toe
     creep, Hurling 2.6-8.4 slides and 29-40 cm flat skids (its failure files in hand), Pok Ta Pok LLA_1 25.1 jump.
+- **Planted slides, second round (Kabaddi Medium)**: a planter run's time is every tick's since its last run (a game
+  ticking without drawing read its feet too fast); a landing foot touches at 4 cm over its floor (TOUCH_H, never less
+  on a body scaled down) - over the feet rule's 3 cm, whose ankle floor (where a heel-up stance plants it) is higher
+  than the planter's rest floor: the rule read landings down a draw before the planter planted them. Kabaddi 328d7dd,
+  --input: of 12 slides, knockout#103 OFFICIAL_1 7.6, extreme#14 IND_8 4.6, extreme#16 OFFICIAL_2 #18 4.4, extreme#44
+  POL_10 3.5 and OFFICIAL_2 4.1, random#39 KEN_9 4.5, random#41 PUN_9 6.4 -> clean. Left: POL_11 6.0, OFFICIAL_2 #45
+  8.3, IND_7 4.6, OFFICIAL_1 3.8, PUN_9 5.6; CI's IND_11 31.4 jump and OFFICIAL_0 14.9 sideways start (not reproduced
+  locally). All 7 suites, feet rules and owner notes as before (Floorball's 3 old stick notes); cadence unchanged.
