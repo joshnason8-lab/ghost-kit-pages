@@ -83,6 +83,9 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 ## the body is going), and is planted there: the clip, its stride too short for the body (a sharp turn, a start or
 ## stop harder than its clips), kept it on the ground behind, and it slid there 3 to 13 cm (WsgSim's demo).
 const STEP_TIME := 0.2
+## A knee the IK would put more than this behind its hip-ankle line as the body faces (m, on a grown leg) bends forward
+## instead (WsgNoteChecks.KNEE_BACK reads 0.04 as backward).
+const KNEE_BACK_MAX := 0.03
 ## How far a step's toe stays over the floor until it lands (m, the body's scale 1): over the feet rule's 3 cm touch.
 const STEP_CLEAR := 0.035
 ## How far off where a let-go foot is held the clip may stand it down before it steps there instead (m, scale 1): the
@@ -170,6 +173,9 @@ func _cache(sk: Skeleton3D) -> void:
 	var rest_fwd: Vector3 = sk.get_bone_global_rest(_ix[0][3]).origin - sk.get_bone_global_rest(_ix[0][2]).origin
 	var rest_z: Vector3 = sk.get_bone_global_rest(_ix[0][0]).basis * Vector3(0, 0, 1)
 	_thigh_z_fwd = 1.0 if Vector2(rest_z.x, rest_z.z).dot(Vector2(rest_fwd.x, rest_fwd.z)) >= 0.0 else -1.0
+	var way := Vector3(rest_fwd.x, 0.0, rest_fwd.z)
+	var hip_bone := sk.get_bone_parent(_ix[0][0])
+	_fwd_hips = (sk.get_bone_global_rest(hip_bone).basis.inverse() * way) if hip_bone >= 0 else way
 	_unit = unit_scale
 	if _unit <= 0.0:
 		var leg_len: float = sk.get_bone_global_rest(_ix[0][0]).origin.distance_to(sk.get_bone_global_rest(_ix[0][1]).origin) \
@@ -233,6 +239,7 @@ func reset() -> void:
 const STALE_FRAMES := 3
 var _ran_at := -1
 var _thigh_z_fwd := 1.0                     # the thigh's +Z forward (1) or backward (-1) on this rig (_cache)
+var _fwd_hips := Vector3.ZERO                # the body's forward at rest (the feet's heel to toe), in the hips' own space
 
 
 ## One step of the game's time (the locomotor calls it from drive()): the feet's contacts and holds are worked out
@@ -791,6 +798,22 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	if pole.length() < 0.0001 or pole.dot(fwd) <= 0.0:
 		pole = fwd
 	var new_knee := hip + dir * x + pole.normalized() * h
+	# Never clearly behind the body: a knee put KNEE_BACK_MAX behind the hip-ankle line as the body faces (its forward at
+	# rest, carried by the hips - not the thigh's own, which a step's swung-up thigh turns over the hip: 8-20 cm behind,
+	# held 4 frames, on Kabaddi's raider and the test hurler at 4.5 m/s) bends to the body's front instead. (Only then:
+	# taken always, a leg turned out bent 14 degrees the wrong way about its own hinge - the owner's arm-wrong-way note.)
+	var hip_bone := sk.get_bone_parent(leg[0])
+	if hip_bone >= 0 and _fwd_hips != Vector3.ZERO and h > 0.0:
+		var level := sk.get_bone_global_pose(hip_bone).basis * _fwd_hips
+		level.y = 0.0
+		if level.length() > 0.0001:
+			level = level.normalized()
+			var off := new_knee - hip - dir * (new_knee - hip).dot(dir)
+			var sc_k := (a + b) / 0.9          # (the leg's length against a grown one's, in the rig's units)
+			if off.dot(level) < -KNEE_BACK_MAX * sc_k:
+				var p2 := level - dir * level.dot(dir)
+				if p2.length() > 0.0001:
+					new_knee = hip + dir * x + p2.normalized() * h
 	var ankle := hip + dir * d
 	var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis
 	var th_b := Basis(Quaternion((knee - hip).normalized(), (new_knee - hip).normalized())) * th.basis
