@@ -490,6 +490,12 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   "Through the ring" row: both gone where there are no rings. Nothing else found against the world rules and the
   owner's notes.
 
+- **0.6.35-beta: the Low players' feet stay planted.** The shared foundation's toon foot lock (f4fc2f04): on Low
+  (the owner's A16) the players are the game's own bodies posed from the capture by WsgToonDriver, and their feet
+  slid 7-15 cm a step; the driver now locks the ball of the foot to the ground (the game passes it, Player.TOE).
+  World check feet_low PASS even enforced (walk 1.3 cm, jog, turn, run and stop 0.0), ahead of its 11-08 date.
+  Also the foundation's planter fixes since 0.6.33 (scaled-down bodies, rigs not in metres).
+
 ## Next
 
 1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
