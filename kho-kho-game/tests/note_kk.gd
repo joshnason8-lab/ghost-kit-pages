@@ -47,19 +47,10 @@ static func frames(tree: SceneTree, n: int) -> void:
 		await tree.process_frame
 
 
-## The foundation's knees rule (WsgNoteChecks.KNEE_BENT / KNEE_BACK, enforced 2026-11-06 12:00): a leg is bent when its
-## knee is over 1.5 cm off the hip-ankle line, and a bent knee over 4 cm behind it is backwards.
-const KNEE_BENT := 0.015
-const KNEE_BACK := 0.04
-
-
-## Every drawn player's knees for n frames: [legs seen, problems, stats] - a problem is a leg whose knee, bent (over
-## KNEE_BENT off the line from his hip to his ankle), stood more than KNEE_BACK behind that line (behind: against the way he
-## faces - forward from his hips, as the foundation's knees rule reads it (hips_forward), not the way his toe points: a
-## swinging leg's foot, folded up behind, points back), with
-## how often and how far. Read as drawn: in the skeleton's skeleton_updated, after its modifiers (the foot planter's
-## legs) - outside it Godot reports the bones without them. Low: ModelBody's skeleton; Medium and High: the
-## foundation's body. mixamorig_ names or the plain ones.
+## Every drawn player's knees for n frames, by the foundation's knees rule (WsgNoteChecks.knees, read in
+## skeleton_updated: forward from the hips, a leg bent past KNEE_BENT, backwards past KNEE_BACK): [legs seen, {leg:
+## {"bent", "back", "run" (longest run of backward frames), "worst" (m), "act"}}]. Low: ModelBody's skeleton; Medium and
+## High: the foundation's body.
 static func knees(tree: SceneTree, m: Node, n: int) -> Array:
 	var stats := {}
 	var hooked := []
@@ -72,79 +63,38 @@ static func knees(tree: SceneTree, m: Node, n: int) -> Array:
 				sk = a.body.skeleton
 			if sk == null or hooked.has(sk):
 				continue
+			var legs: Array = WsgNoteChecks.leg_bones(sk)
+			if legs.is_empty():
+				continue
 			hooked.append(sk)
-			sk.skeleton_updated.connect(_knee_read.bind(a, sk, stats))
+			sk.skeleton_updated.connect(_knee_read.bind(a, sk, legs, stats))
 		await tree.process_frame
 	for sk in hooked:
 		if is_instance_valid(sk):
 			for c in sk.skeleton_updated.get_connections():
 				if c.callable.get_method() == "_knee_read":
 					sk.skeleton_updated.disconnect(c.callable)
-	var problems := []
-	for who in stats:
-		var s: Dictionary = stats[who]
-		if int(s.back) > 0:
-			problems.append("%s: knee behind the hip-ankle line on %d of %d bent frames, %.0f cm at worst (act '%s')" % [who, s.back, s.bent, float(s.worst) * 100.0, s.act])
-	return [stats.size(), problems, stats]
+	return [stats.size(), stats]
 
 
-static func _knee_read(a: Node, sk: Skeleton3D, stats: Dictionary) -> void:
+static func _knee_read(a: Node, sk: Skeleton3D, legs: Array, stats: Dictionary) -> void:
 	if not is_instance_valid(a) or not sk.is_visible_in_tree():
 		return
-	var fwd := hips_forward(sk)
-	if fwd == Vector3.ZERO:
-		return
-	for side in ["Left", "Right"]:
-		var ix := []
-		for b in ["UpLeg", "Leg", "Foot"]:
-			var i := sk.find_bone("mixamorig_" + side + b)
-			ix.append(i if i >= 0 else sk.find_bone(side + b))
-		if ix.has(-1):
+	var read: Array = WsgNoteChecks.knees(sk, legs)
+	for i in read.size():
+		var front := float(read[i][0])
+		if float(read[i][1]) <= WsgNoteChecks.KNEE_BENT:
 			continue
-		var X := sk.global_transform
-		var H: Vector3 = X * sk.get_bone_global_pose(ix[0]).origin
-		var K: Vector3 = X * sk.get_bone_global_pose(ix[1]).origin
-		var A: Vector3 = X * sk.get_bone_global_pose(ix[2]).origin
-		var axis := (A - H).normalized()
-		var off := (K - H) - axis * (K - H).dot(axis)
-		if off.length() <= KNEE_BENT:
-			continue
-		var d := off.dot(fwd)
-		var who := "%s %s" % [String(a.data.get("name", a.name)), side.to_lower()]
-		var s: Dictionary = stats.get(who, {"bent": 0, "back": 0, "worst": 0.0, "act": ""})
+		var who := "%s %s" % [String(a.data.get("name", a.name)), "left" if i == 0 else "right"]
+		var s: Dictionary = stats.get(who, {"bent": 0, "back": 0, "run": 0, "now": 0, "worst": 0.0, "act": ""})
 		s.bent += 1
-		if d < -KNEE_BACK:
+		if front < -WsgNoteChecks.KNEE_BACK:
 			s.back += 1
-			if -d > float(s.worst):
-				s.worst = -d
+			s.now += 1
+			s.run = maxi(int(s.run), int(s.now))
+			if -front > float(s.worst):
+				s.worst = -front
 				s.act = String(a.act)
+		else:
+			s.now = 0
 		stats[who] = s
-
-
-## The way the body faces, as the foundation's knees rule reads it: the rest pose's forward (both feet's heel-to-toe at
-## rest) carried by the hips bone as it turns now - the drawn body's own, not the game's facing (a cut or a heading lag
-## turned the foundation's body away from it). Flat, unit; ZERO if the rig has no hips or feet.
-static func hips_forward(sk: Skeleton3D) -> Vector3:
-	var hips := sk.find_bone("mixamorig_Hips")
-	if hips < 0:
-		hips = sk.find_bone("Hips")
-	if hips < 0:
-		return Vector3.ZERO
-	var rest_fwd := Vector3.ZERO
-	for side in ["Left", "Right"]:
-		var f := sk.find_bone("mixamorig_%sFoot" % side)
-		var t := sk.find_bone("mixamorig_%sToeBase" % side)
-		if f < 0:
-			f = sk.find_bone(side + "Foot")
-			t = sk.find_bone(side + "ToeBase")
-		if f < 0 or t < 0:
-			return Vector3.ZERO
-		rest_fwd += sk.get_bone_global_rest(t).origin - sk.get_bone_global_rest(f).origin
-	rest_fwd.y = 0.0
-	if rest_fwd.length() < 0.0001:
-		return Vector3.ZERO
-	# Into the hips' rest frame, then out by the hips as they are now, then to the world.
-	var local := sk.get_bone_global_rest(hips).basis.inverse() * rest_fwd
-	var now: Vector3 = sk.global_transform.basis * (sk.get_bone_global_pose(hips).basis * local)
-	now.y = 0.0
-	return now.normalized() if now.length() > 0.0001 else Vector3.ZERO

@@ -339,6 +339,10 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   CI: defenders 12-25 cm on 3-18% of bent frames): the note's forward was the game's facing, the drawn body's can lag
   it; it now reads forward from the hips as the foundation's knees rule does (note_kk.hips_forward), and High is put
   off to 2026-11-06 12:00 (the lead: "High WsgBody knees under trace, foundation"); Low held from now.
+- Foundation f080f27 (e04af650 now its own - nothing carried; the "knees" world rule from 11-06 12:00 and
+  "knee_strays" from 11-13): world check knees PASS at Low, Medium and High (Low 1-4 single strays, deferred). The note
+  now calls WsgNoteChecks.knees with the lead's thresholds (over 2 frames running, over 0.5%, or over 15 cm fails;
+  fewer, shorter strays put off to 11-13 as knee_strays).
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

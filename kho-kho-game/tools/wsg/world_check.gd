@@ -1,7 +1,7 @@
 extends SceneTree
 ## wsg_world_check: the world rules (docs/WORLD_RULES.md) on the game's own code, one entry point for every game's CI.
 ##   godot --headless --fixed-fps 30 --path . -s res://tools/wsg/world_check.gd -- --out DIR [--game res://game/world.gd]
-##       [--only props,crowd,feet,pose,officials,sounds,loading,joystick,web,tiers] [--web-pck build/web/index.pck]
+##       [--only props,crowd,feet,feet_low,pose,knees,knee_strays,officials,sounds,loading,joystick,web,tiers] [--web-pck build/web/index.pck]
 ##       [--presets res://export_presets.cfg] [--reuse crowd=DIR,props=DIR] [--draw-modes]
 ##   ... -- --out DIR --merge DIR1,DIR2,...    (the reports of parallel --only jobs as one; exits 1 if any rule failed)
 ## The game's hooks are res://game/world.gd (extends WsgWorldGame); a rule it does not wire FAILS ("not wired"), unless
@@ -17,9 +17,11 @@ const ENFORCED_FROM := "2026-11-03T12:00Z"
 ## Rules enforced later than that, for every game (the lead, 2026-11-03: the feet rule's walker read 2.1-2.2 cm on the
 ## walk on three games' rigs at 888e222 - a foundation fault - so feet from the next day). Before its time a rule's
 ## failure is reported as deferred. WSG_WORLD_ENFORCE=1 enforces these now too.
-const RULE_FROM := {"feet": "2026-11-04T12:00Z", "feet_low": "2026-11-08T12:00Z"}
+const RULE_FROM := {"feet": "2026-11-04T12:00Z", "feet_low": "2026-11-08T12:00Z", "knees": "2026-11-06T12:00Z", "knee_strays": "2026-11-13T12:00Z"}
+## Why a rule is put off for every game until its RULE_FROM (the default: a foundation fault being fixed).
+const RULE_WHY := {"knee_strays": "planter step swing flick, #82 (the lead, 2026-11-04)"}
 
-const RULES := ["props", "crowd", "feet", "feet_low", "pose", "officials", "sounds", "loading", "joystick", "web", "tiers"]
+const RULES := ["props", "crowd", "feet", "feet_low", "pose", "knees", "knee_strays", "officials", "sounds", "loading", "joystick", "web", "tiers"]
 
 
 func _initialize() -> void:
@@ -120,6 +122,13 @@ func _initialize() -> void:
 					r = WsgWorldRules.sounds(game, sv)
 				"tiers":
 					r = await WsgWorldRules.tiers(game, sv)
+				"knees":
+					r = await WsgWorldRules.knees(game, sv)
+				"knee_strays":
+					# (Read in the knees rule's own pass: one play of every mode at every tier for both.)
+					if WsgWorldRules.knee_strays_last.is_empty():
+						await WsgWorldRules.knees(game, sv)
+					r = WsgWorldRules.knee_strays_last
 				"web":
 					r = WsgWorldRules.web(presets, pck)
 		if not r.is_empty() and r.has("status") and r.status in ["fail", "not wired"]:
@@ -129,7 +138,7 @@ func _initialize() -> void:
 			var why := ""
 			if RULE_FROM.has(rule) and now < String(RULE_FROM[rule]) and OS.get_environment("WSG_WORLD_ENFORCE") != "1":
 				until = String(RULE_FROM[rule])
-				why = "this rule fails the build from %s for every game (foundation fault being fixed)" % until
+				why = "this rule fails the build from %s for every game (%s)" % [until, RULE_WHY.get(rule, "foundation fault being fixed")]
 			var dd: Variant = deferred.get(rule, [])
 			if dd is Array and (dd as Array).size() >= 2 and String(dd[1]).strip_edges() != "" and now < String(dd[0]):
 				until = String(dd[0])
