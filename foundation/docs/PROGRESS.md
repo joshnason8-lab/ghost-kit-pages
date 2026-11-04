@@ -761,3 +761,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     Older, still open: extreme#16 (ump_a 35.9 jump in the smoke, 6.2/6.7 slides), dream#103 9.3, dream#101 ump_b 6.6-7.4,
     extreme#44 4.5, human#103 4.3; Kho Kho's 5 CI jumps (collisions#101 31.0, random#29 29.9, extreme#34 27.1,
     fouls#101 25.5, dream#101 25.2).
+- **706e3a6d: the planter's metre tolerances by the body's size, not the skeleton's world scale (rigs not in metres)**:
+  Sepak Takraw's RealBody sits under a 0.01 node (rests in cm): its skeleton's world scale 0.0101 made every metre
+  tolerance 100 times too small and a standing foot was never planted. The planter finds the rig's unit from the leg's
+  rest length (a power of ten; unit_scale overrides) and scales its tolerances by sc / unit; rest heights keep sc.
+  planter_restart_test runs every case on a cm copy of its rig too (on the old planter: a standing foot never planted).
+  Measured on Takraw c5ac572 (sim, no deferrals, --input) - officials planted/flat/jump cm, before -> after: random#1
+  16.9/8.5/0 -> 0/0/0; extreme#28 37.6/30.1/30.0 -> 0/3.8/0; #30 7.4/7.3/0 -> 0; #44 10.3/8.3/0 -> 3.2/0/0; #48
+  38.0/22.8/0 -> 0. Takraw's probe (seeds 7, 11): officials skids >2 cm 3 -> 0, p90 4.7 -> 0.2 (one jump >25 both,
+  41.1 now: Takraw's pose throws a stepping official's foot 19-32 cm a frame - Takraw gating its contact_fn); players on
+  the planter (Takraw's wsg modes, its production flag) jumps >25 / skids >2 / p90: own 9/11/2.3, wsg 2/0/0.4, wsgown
+  0/5/0.2 - the switch is the lead's call. Other games: suites, notes, feet as before; Low bodies built from a game's
+  own glb also gain (Kho Kho Low walk 1.5 -> 0.4 cm, jump 8.6 -> 4.9; Takraw Low standing 1.3 -> 0.7).
