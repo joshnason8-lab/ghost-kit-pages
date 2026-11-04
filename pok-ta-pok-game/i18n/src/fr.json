@@ -301,5 +301,8 @@
   "RULES_MAYA": "Pelota maya (renouveau)",
   "RULES_MAYA_TEXT": "Le jeu qui renaît aujourd'hui au Guatemala, au Belize, au Yucatán et au Quintana Roo, joué ici selon les règles du Guatemala sur les terrains de pierre. Quatre par camp, la hanche seule. Chaque camp frappe une fois, puis la balle doit passer chez l'autre. La balle au-delà de la ligne de fond adverse vaut 4 points. L'anneau gagne le match. Deux mi-temps de 13 minutes : le camp qui mène aux points à la fin gagne.",
   "RULES_MAYA_RECON": "Pelota maya : reconstitué",
-  "RULES_MAYA_RECON_TEXT": "Les sources ne disent pas tout, alors ces points suivent l'ulama et sont reconstitués : une balle qui meurt dans votre moitié ou sort sur le côté donne 1 point à l'autre camp ; une touche avec autre chose que la hanche, ou une deuxième frappe de suite de votre camp, leur donne 1 point ; le service est lancé pour rebondir ; à égalité à la fin, le point suivant gagne."
+  "RULES_MAYA_RECON_TEXT": "Les sources ne disent pas tout, alors ces points suivent l'ulama et sont reconstitués : une balle qui meurt dans votre moitié ou sort sur le côté donne 1 point à l'autre camp ; une touche avec autre chose que la hanche, ou une deuxième frappe de suite de votre camp, leur donne 1 point ; le service est lancé pour rebondir ; à égalité à la fin, le point suivant gagne.",
+  "VENUE_MARKERS": "Terrain classique à marqueurs (crépuscule)",
+  "RULES_MARKERS": "Le terrain à marqueurs",
+  "RULES_MARKERS_TEXT": "Les terrains mayas plus anciens, de la période classique (comme à Copán), n'avaient pas d'anneaux : trois marqueurs ronds en pierre étaient scellés dans le sol de l'allée, le long de son milieu. On ne sait pas comment ils servaient au jeu : ici, ils marquent le terrain, sans plus, et il n'y a pas de tir à l'anneau. Règles classiques, points jusqu'à huit."
 }

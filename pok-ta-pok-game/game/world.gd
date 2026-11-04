@@ -73,7 +73,7 @@ func start_mode(mode: String, parent: Node) -> void:
 	parent.add_child(host)
 	Game.current = host
 	var cfg: Dictionary = (MODES[mode] as Dictionary).duplicate()
-	cfg.merge({"seed": 5, "length": 0.0, "difficulty": 1, "ritual": cfg.venue in ["stone", "night"]})
+	cfg.merge({"seed": 5, "length": 0.0, "difficulty": 1, "ritual": cfg.venue in ["stone", "night", "markers"]})
 	Game.start_match(cfg)
 
 

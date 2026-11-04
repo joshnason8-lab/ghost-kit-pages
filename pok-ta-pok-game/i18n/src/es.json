@@ -301,5 +301,8 @@
   "RULES_MAYA": "Pelota maya (renacimiento)",
   "RULES_MAYA_TEXT": "El juego que ha renacido en Guatemala, Belice, Yucatán y Quintana Roo, aquí con las reglas de Guatemala en las canchas de piedra. Cuatro por lado, solo la cadera. Cada lado golpea una vez y la pelota debe cruzar al otro lado. La pelota por la línea de fondo contraria vale 4 puntos. El aro gana el partido. Dos tiempos de 13 minutos: gana el lado con más puntos al final.",
   "RULES_MAYA_RECON": "Pelota maya: reconstruido",
-  "RULES_MAYA_RECON_TEXT": "Las fuentes no lo dicen todo, así que estas partes siguen al ulama y son una reconstrucción: si la pelota muere en tu mitad o sale por el lado, 1 punto para el otro lado; si toca algo que no sea la cadera, o tu lado golpea dos veces seguidas, 1 punto para ellos; el saque se lanza para que bote; empatados al final, gana el siguiente punto."
+  "RULES_MAYA_RECON_TEXT": "Las fuentes no lo dicen todo, así que estas partes siguen al ulama y son una reconstrucción: si la pelota muere en tu mitad o sale por el lado, 1 punto para el otro lado; si toca algo que no sea la cadera, o tu lado golpea dos veces seguidas, 1 punto para ellos; el saque se lanza para que bote; empatados al final, gana el siguiente punto.",
+  "VENUE_MARKERS": "Cancha clásica con marcadores (atardecer)",
+  "RULES_MARKERS": "La cancha de marcadores",
+  "RULES_MARKERS_TEXT": "Las canchas mayas más antiguas, del periodo Clásico (como en Copán), no tenían aros: tres marcadores redondos de piedra estaban empotrados en el piso del callejón, a lo largo de su centro. No se sabe cómo se usaban en el juego, así que aquí solo marcan la cancha y no hay tiro al aro. Reglas clásicas, puntos hasta ocho."
 }

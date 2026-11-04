@@ -7,17 +7,18 @@ extends RefCounted
 
 const SHOTS := 120            # balls struck off the court at the props, after the match
 
-const TEAMS := {"village": ["ESC", "LLA"], "festival": ["LLA", "ESC"], "stone": ["PIS", "VAL"], "night": ["VAL", "PIS"]}
+const TEAMS := {"village": ["ESC", "LLA"], "festival": ["LLA", "ESC"], "stone": ["PIS", "VAL"], "night": ["VAL", "PIS"],
+	"markers": ["PIS", "VAL"]}
 
 
 static func venues() -> Array:
-	return ["village", "festival", "stone", "night"]
+	return ["village", "festival", "stone", "night", "markers"]
 
 
 func run(venue: String, seed: int, seconds: float, audit: WsgPropAudit, tree: SceneTree) -> Node:
 	Game.settings.sound = false
 	Game.settings.coach = false
-	var classic := venue in ["stone", "night"]
+	var classic := venue in ["stone", "night", "markers"]
 	var m: Node = (load("res://game/match.gd") as Script).new()
 	m.config = {"home": TEAMS[venue][0], "away": TEAMS[venue][1], "venue": venue, "rules": "classic" if classic else "ulama",
 		"user_team": -1, "seed": seed, "length": 0.0, "mode": "watch", "difficulty": seed % 3, "ritual": true}

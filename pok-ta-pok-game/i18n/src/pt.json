@@ -301,5 +301,8 @@
   "RULES_MAYA": "Pelota maya (renascimento)",
   "RULES_MAYA_TEXT": "O jogo que renasce hoje na Guatemala, em Belize, no Yucatán e em Quintana Roo, jogado aqui com as regras da Guatemala nas quadras de pedra. Quatro de cada lado, só o quadril. Cada lado golpeia uma vez e a bola deve cruzar para o outro lado. A bola além da linha de fundo adversária vale 4 pontos. O aro vence a partida. Dois tempos de 13 minutos: no fim vence o lado com mais pontos.",
   "RULES_MAYA_RECON": "Pelota maya: reconstruído",
-  "RULES_MAYA_RECON_TEXT": "As fontes não dizem tudo, por isso estas partes seguem o ulama e são reconstruídas: uma bola que morre na sua metade ou sai pela lateral dá 1 ponto ao outro lado; um toque com algo que não seja o quadril, ou um segundo golpe seguido do seu lado, dá-lhes 1 ponto; o saque é lançado para quicar; empatados no fim, vence o ponto seguinte."
+  "RULES_MAYA_RECON_TEXT": "As fontes não dizem tudo, por isso estas partes seguem o ulama e são reconstruídas: uma bola que morre na sua metade ou sai pela lateral dá 1 ponto ao outro lado; um toque com algo que não seja o quadril, ou um segundo golpe seguido do seu lado, dá-lhes 1 ponto; o saque é lançado para quicar; empatados no fim, vence o ponto seguinte.",
+  "VENUE_MARKERS": "Quadra clássica com marcadores (entardecer)",
+  "RULES_MARKERS": "A quadra dos marcadores",
+  "RULES_MARKERS_TEXT": "As quadras maias mais antigas, do período Clássico (como em Copán), não tinham aros: três marcadores redondos de pedra ficavam embutidos no piso do corredor, ao longo do centro. Não se sabe como eram usados no jogo, então aqui só marcam a quadra e não há arremesso ao aro. Regras clássicas, pontos até oito."
 }

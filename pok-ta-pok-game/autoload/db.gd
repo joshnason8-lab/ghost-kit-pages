@@ -29,8 +29,11 @@ const VENUES := {
 	"festival": {"rules": "ulama", "sky": "kloofendal_48d_partly_cloudy_puresky", "time": "day", "floor": "earth", "region": "sin"},
 	"stone": {"rules": "classic", "sky": "qwantani_noon_puresky", "time": "day", "floor": "stone", "region": "may"},
 	"night": {"rules": "classic", "sky": "kloppenheim_02_puresky", "time": "night", "floor": "stone", "region": "may"},
+	# The Classic-period court (docs/RULES.md R12): no rings - three markers set in the alley floor, as at Copán.
+	"markers": {"rules": "classic", "sky": "qwantani_dusk_2_puresky", "time": "dusk", "floor": "stone", "region": "may",
+		"rings": false},
 }
-const VENUE_ORDER := ["village", "festival", "stone", "night"]
+const VENUE_ORDER := ["village", "festival", "stone", "night", "markers"]
 
 const GIVEN := ["Juan", "José", "Jesús", "Ramón", "Rafael", "Óscar", "Héctor", "Luis", "Miguel", "Ángel", "Eduardo",
 	"Saúl", "Martín", "Julio", "Gilberto", "Fermín", "Abel", "Rubén", "Isidro", "Cruz", "Lorenzo", "Teodoro", "Efraín",
@@ -124,7 +127,8 @@ func venue(id: String) -> Dictionary:
 
 func venues_for(rules: String) -> Array:
 	var court := "classic" if rules == "maya" else rules   # the revival plays on the stone courts
-	return VENUE_ORDER.filter(func(v): return String(VENUES[v].rules) == court)
+	# (not the markers court: no ring there, and the revival's ring wins outright, M1)
+	return VENUE_ORDER.filter(func(v): return String(VENUES[v].rules) == court and (rules != "maya" or bool(VENUES[v].get("rings", true))))
 
 
 ## Teams that fit a court's rules first (the Sinaloa towns for ulama, the Maya towns for the stone court), then the rest.

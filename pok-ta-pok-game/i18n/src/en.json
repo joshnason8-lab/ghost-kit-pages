@@ -301,5 +301,8 @@
   "RULES_MAYA": "Pelota maya (revival)",
   "RULES_MAYA_TEXT": "The game revived today in Guatemala, Belize, Yucatán and Quintana Roo, played here by Guatemala's rules on the stone courts. Four a side, the hip only. Each side strikes once, then the ball must cross to the other side. The ball over the other side's end line scores 4 points. The ring wins the match outright. Two halves of 13 minutes: the side ahead on points at the end wins.",
   "RULES_MAYA_RECON": "Pelota maya: reconstructed",
-  "RULES_MAYA_RECON_TEXT": "The sources do not say everything, so these parts follow ulama and are reconstructed: a ball that dies in your half or goes out at the side gives 1 point to the other side; a touch with anything but the hip, or a second strike in a row by your side, gives them 1 point; the serve is thrown down to bounce; level at time, the next point wins."
+  "RULES_MAYA_RECON_TEXT": "The sources do not say everything, so these parts follow ulama and are reconstructed: a ball that dies in your half or goes out at the side gives 1 point to the other side; a touch with anything but the hip, or a second strike in a row by your side, gives them 1 point; the serve is thrown down to bounce; level at time, the next point wins.",
+  "VENUE_MARKERS": "Classic court with markers (dusk)",
+  "RULES_MARKERS": "The markers court",
+  "RULES_MARKERS_TEXT": "The older Maya courts, of the Classic period (as at Copán), had no rings: three round stone markers were set in the alley floor down its middle. How they were used in play is not known, so in the game they mark the court and nothing more, and there is no ring shot. Classic rules, points to eight."
 }

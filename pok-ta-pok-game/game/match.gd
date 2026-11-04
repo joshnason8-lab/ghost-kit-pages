@@ -74,6 +74,7 @@ func _ready() -> void:
 	var vid := String(config.get("venue", "village"))
 	rules = String(config.get("rules", DB.venue(vid).rules))
 	court = Court.new(rules)
+	court.ringed = bool(DB.venue(vid).get("rings", true))
 	count = Rules.Count.new(rules, String(config.get("urria", Game.settings.get("urria", "3_7"))))
 	limit_s = float(config.get("length", 10)) * 60.0
 	if rules == Rules.MAYA and limit_s <= 0.0:
@@ -245,7 +246,7 @@ func kick_off() -> void:
 	set_process(true)
 
 
-const RITUAL_VENUES := ["stone", "night"]
+const RITUAL_VENUES := ["stone", "night", "markers"]
 var ritual: Ritual
 
 
@@ -973,7 +974,7 @@ func _user_stick() -> Vector3:
 ## The ring shot (classic court): striking within reach of the middle with the stick held toward a wall aims the ball
 ## at that wall's ring. Returns the ring's side, or 0 when this is no ring shot.
 func ring_shot(p: Player, stick: Vector3) -> int:
-	if not court.classic() or absf(stick.z) < 0.7:
+	if not court.classic() or court.rings().is_empty() or absf(stick.z) < 0.7:
 		return 0
 	var ax := absf(p.global_position.x)
 	if ax < RING_SHOT_X.x or ax > RING_SHOT_X.y:
@@ -990,7 +991,7 @@ func ring_shot(p: Player, stick: Vector3) -> int:
 ## The computer goes for the ring now and then on a strike within reach of it (halved in 0.6.3, when it began meeting
 ## the ball with the hip several times as often: the ring stays the rare thing it is).
 func ai_ring_shot(p: Player) -> int:
-	if not court.classic() or rng.randf() > [0.02, 0.04, 0.07][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 2)]:
+	if not court.classic() or court.rings().is_empty() or rng.randf() > [0.02, 0.04, 0.07][clampi(int(config.get("difficulty", Game.settings.difficulty)), 0, 2)]:
 		return 0
 	return ring_shot(p, Vector3(0, 0, signf(p.global_position.z) if absf(p.global_position.z) > 0.1 else 1.0))
 

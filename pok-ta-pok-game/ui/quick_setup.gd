@@ -84,7 +84,7 @@ func _build() -> void:
 	flow.add_theme_constant_override("h_separation", 28)
 	flow.add_theme_constant_override("v_separation", 14)
 	opts[1].add_child(flow)
-	if DB.venue(_venue).rules == Rules.CLASSIC:
+	if DB.venue(_venue).rules == Rules.CLASSIC and bool(DB.venue(_venue).get("rings", true)):
 		# The stone courts: the reconstructed classic game, or the revival as played today.
 		var games := [Rules.CLASSIC, Rules.MAYA]
 		flow.add_child(UI.field(tr("THE_GAME"), UI.chips([tr("RULES_NAME_CLASSIC"), tr("RULES_NAME_MAYA")], games.find(_rules()), func(i):

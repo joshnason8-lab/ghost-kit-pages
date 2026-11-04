@@ -62,6 +62,7 @@ func _ready() -> void:
 	await _ai_plays("stone", "classic")
 	await _ai_plays("stone", "maya")
 	await _maya_match()
+	await _markers_court()
 	await _watch_ai()
 	await _stick_in_walkout()
 	await _stick_camera("village", "ulama")
@@ -1102,6 +1103,31 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 ## ground, never rolled along it; through two minutes of an AI match the ball is met with the hip standing far more
 ## often than dived for on the ground, and rallies go on.
 const SERVE_TOSS_MIN := 1.6   # the serve goes up at least this high (m; the owner, 0.6.8: "toss the ball up higher")
+
+
+## The Classic-period court (R12): no rings, three floor markers; the classic rules without the ring shot; not the
+## revival (its ring wins outright).
+func _markers_court() -> void:
+	check(Game.rules_at("markers") == Rules.CLASSIC and "markers" in DB.venues_for(Rules.CLASSIC) and not ("markers" in DB.venues_for(Rules.MAYA)),
+		"R12: the markers court plays the classic rules, never the revival")
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "PIS", "away": "VAL", "venue": "markers", "rules": "classic", "user_team": -1, "seed": 9, "length": 0.0,
+		"mode": "test", "difficulty": 2, "ritual": false}
+	add_child(m)
+	await frames(2)
+	var mk: MeshInstance3D = m.venue.get_node_or_null("markers")
+	check(m.court.rings().is_empty() and mk != null and mk.mesh != null and mk.mesh.get_surface_count() > 0,
+		"R12: no rings on the markers court, and its floor markers drawn")
+	var p: Player = m.teams[0].players[0]
+	p.global_position = Vector3(-6.0, 0, 3.0)
+	check(m.ring_shot(p, Vector3(0, 0, 1)) == 0 and m.ai_ring_shot(p) == 0, "R12: no ring shot on the markers court, yours or the computer's")
+	for f in 30 * 60:
+		await get_tree().process_frame
+	var touches: int = int(m.tstats[0].strikes) + int(m.tstats[1].strikes) + int(m.tstats[0].dives) + int(m.tstats[1].dives)
+	check(touches >= 10 and m.ring_shots == 0 and int(m.tstats[0].ring) + int(m.tstats[1].ring) == 0,
+		"R12: a match plays on the markers court, never through a ring (%d touches, %d rayas)" % [touches, m.log_rayas.size()])
+	m.queue_free()
+	await frames(2)
 
 
 ## The revival in a match (M1-M6): the stone court, four a side, two halves to the clock, the end line 4 points, a

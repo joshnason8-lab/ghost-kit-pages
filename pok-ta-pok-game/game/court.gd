@@ -36,6 +36,11 @@ var rules := Rules.ULAMA
 var solid: WsgSolidProps = null
 
 
+## The stone court's rings (R13). The Classic-period court (the markers court) has none: three floor markers instead
+## (docs/RULES.md R12); the venue sets it (DB.VENUES "rings": false).
+var ringed := true
+
+
 func _init(p_rules := Rules.ULAMA) -> void:
 	rules = p_rules
 
@@ -69,9 +74,9 @@ func floor_y(x: float, z: float) -> float:
 	return 0.0
 
 
-## The rings' centres (classic): one in each wall at the analco.
+## The rings' centres (classic): one in each wall at the analco (none on the markers court).
 func rings() -> Array:
-	if not classic():
+	if not classic() or not ringed:
 		return []
 	var out := []
 	for s in [-1.0, 1.0]:

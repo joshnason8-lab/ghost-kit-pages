@@ -18,6 +18,7 @@ const AMBIENCE := {
 	"festival": ["", 0.0, "", 0.0, "dog_bark", Vector2(40.0, 90.0), -26.0],
 	"stone": ["amb_crickets", -30.0, "", 0.0, "bird", Vector2(3.0, 9.0), -18.0],
 	"night": ["amb_crickets", -18.0, "amb_fire", -20.0, "", Vector2.ZERO, 0.0],
+	"markers": ["amb_crickets", -24.0, "", 0.0, "bird", Vector2(5.0, 12.0), -20.0],   # the forest court at dusk
 }
 ## Medium and High: long stereo recordings of the same places (Low keeps the short beds above).
 const AMBIENCE_HQ := {
@@ -25,6 +26,7 @@ const AMBIENCE_HQ := {
 	"festival": ["", 0.0, "", 0.0, "dog_bark", Vector2(40.0, 90.0), -26.0],
 	"stone": ["amb_forest_hq", -17.0, "", 0.0, "bird", Vector2(8.0, 18.0), -20.0],
 	"night": ["amb_night_hq", -17.0, "amb_torch_hq", -19.0, "", Vector2.ZERO, 0.0],
+	"markers": ["amb_forest_hq", -18.0, "", 0.0, "bird", Vector2(10.0, 22.0), -21.0],
 }
 const HQ_SOUNDS := ["amb_village_hq", "amb_forest_hq", "amb_night_hq", "amb_torch_hq", "crowd_loop_hq", "crowd_cheer_2", "crowd_cheer_3",
 	"applause_2"]
@@ -146,7 +148,7 @@ func play_var(kind: String, volume_db := 0.0, pitch := 1.0) -> void:
 		play("%s_%d" % [kind, 1 + randi() % n], volume_db, pitch)
 
 
-## The court's surroundings (AMBIENCE: "village", "festival", "stone", "night"); "" stops them.
+## The court's surroundings (AMBIENCE: "village", "festival", "stone", "night", "markers"); "" stops them.
 func ambience(kind: String) -> void:
 	_ensure()
 	_amb_kind = kind if AMBIENCE.has(kind) and enabled() else ""

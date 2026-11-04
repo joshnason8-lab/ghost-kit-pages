@@ -38,6 +38,7 @@ func build(p_id: String, p_court: Court, home_colour := Color.WHITE, away_colour
 	info = DB.venue(id)
 	court = p_court
 	court.solid = solid
+	court.ringed = bool(info.get("rings", true))   # the markers court has none (R12)
 	_rng.seed = hash(id)
 	# Under the loading overlay (WsgLoading, after Start), a frame is drawn between the parts so the bar moves; without
 	# it (the tests, the match behind the menus) it is built straight through.
@@ -419,7 +420,40 @@ func _stone_court() -> void:
 	lm.vertex_color_use_as_albedo = true
 	lm.vertex_color_is_srgb = true
 	_mesh(lines.commit(), lm, "lines")
+	if not court.ringed:
+		_floor_markers(al)
 	_pyramid(Vector3(-20.0, 0, -85.0), 36.0)
+
+
+## The Classic-period court (docs/RULES.md R12): no rings, three round stone markers set flush in the alley floor down
+## its centre line, as at Copán - one at the analco and one in each half. Their use in play is not known: they are
+## drawn, not scored (the ball runs over them as over the floor).
+const MARKER_R := 0.62
+func _floor_markers(al: float) -> void:
+	var g := Geo.new(1.2)
+	for x in [-al * 0.55, 0.0, al * 0.55]:
+		var c := Vector3(x, 0.0, 0.0)
+		_disc_band(g, c, 0.0, MARKER_R * 0.18, 0.012, Color(0.78, 0.72, 0.62))          # the centre boss
+		_disc_band(g, c, MARKER_R * 0.18, MARKER_R * 0.72, 0.009, Color(0.86, 0.81, 0.71))   # the face
+		_disc_band(g, c, MARKER_R * 0.72, MARKER_R * 0.8, 0.011, Color(0.6, 0.53, 0.44))    # the carved band
+		_disc_band(g, c, MARKER_R * 0.8, MARKER_R, 0.009, Color(0.8, 0.74, 0.64))          # the rim
+	_mesh(g.commit(), Geo.surface("broken_wall", Color(1, 1, 1), 0.92), "markers")
+
+
+## A flat ring band on the floor (ri 0: a disc), h above it, facing up.
+func _disc_band(g: Geo, c: Vector3, ri: float, ro: float, h: float, col: Color, seg := 32) -> void:
+	for i in seg:
+		var t0 := TAU * float(i) / float(seg)
+		var t1 := TAU * float(i + 1) / float(seg)
+		var o0 := c + Vector3(cos(t0) * ro, h, sin(t0) * ro)
+		var o1 := c + Vector3(cos(t1) * ro, h, sin(t1) * ro)
+		var i0 := c + Vector3(cos(t0) * ri, h, sin(t0) * ri)
+		var i1 := c + Vector3(cos(t1) * ri, h, sin(t1) * ri)
+		# Wound to face up (Geo.quad: (b - a) x (c - a) along +y).
+		if (o1 - o0).cross(i1 - o0).y > 0.0:
+			g.quad(o0, o1, i1, i0, col)
+		else:
+			g.quad(o1, o0, i0, i1, col)
 
 
 ## A stepped pyramid with a temple on top, on the skyline over the trees (built plain; a carved one is in

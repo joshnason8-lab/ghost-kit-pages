@@ -301,5 +301,8 @@
   "RULES_MAYA": "Pelota maya (rinascita)",
   "RULES_MAYA_TEXT": "Il gioco rinato oggi in Guatemala, Belize, Yucatán e Quintana Roo, giocato qui con le regole del Guatemala sui campi di pietra. Quattro per parte, solo l'anca. Ogni parte colpisce una volta, poi la palla deve passare dall'altra parte. La palla oltre la linea di fondo avversaria vale 4 punti. L'anello vince la partita. Due tempi da 13 minuti: alla fine vince la parte in vantaggio ai punti.",
   "RULES_MAYA_RECON": "Pelota maya: ricostruito",
-  "RULES_MAYA_RECON_TEXT": "Le fonti non dicono tutto, quindi queste parti seguono l'ulama e sono ricostruite: una palla che muore nella tua metà o esce di lato dà 1 punto all'altra parte; un tocco con altro che l'anca, o un secondo colpo di fila della tua parte, dà loro 1 punto; il servizio è lanciato per rimbalzare; in parità alla fine, vince il punto successivo."
+  "RULES_MAYA_RECON_TEXT": "Le fonti non dicono tutto, quindi queste parti seguono l'ulama e sono ricostruite: una palla che muore nella tua metà o esce di lato dà 1 punto all'altra parte; un tocco con altro che l'anca, o un secondo colpo di fila della tua parte, dà loro 1 punto; il servizio è lanciato per rimbalzare; in parità alla fine, vince il punto successivo.",
+  "VENUE_MARKERS": "Campo classico con marcatori (tramonto)",
+  "RULES_MARKERS": "Il campo con i marcatori",
+  "RULES_MARKERS_TEXT": "I campi maya più antichi, del periodo classico (come a Copán), non avevano anelli: tre marcatori rotondi di pietra erano incassati nel pavimento del corridoio, lungo il suo centro. Non si sa come fossero usati nel gioco, quindi qui segnano soltanto il campo e non c'è il tiro all'anello. Regole classiche, punti fino a otto."
 }

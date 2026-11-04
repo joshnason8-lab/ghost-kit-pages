@@ -242,6 +242,8 @@ func match_length(rules: String) -> float:
 ## The game played at a court: the earth courts' ulama; on the stone courts, the one chosen (classic or the revival).
 func rules_at(venue_id: String) -> String:
 	var r := String(DB.venue(venue_id).rules)
+	if r == Rules.CLASSIC and not bool(DB.venue(venue_id).get("rings", true)):
+		return r   # the markers court: no ring, so not the revival (its ring wins outright, M1)
 	return String(settings.get("stone_rules", "classic")) if r == Rules.CLASSIC else r
 
 
