@@ -36,7 +36,7 @@ func _ready() -> void:
 		rows.append([tr("REC_LONGEST_RUN"), UI.bits(["%d:%02d" % [s / 60, s % 60], String(r.longest_run_by)])])
 	var titles: Dictionary = r.get("titles", {})
 	for k in titles:
-		rows.append([tr("REC_TITLES") + " · " + tr("CUP_WORLD" if k == "world" else "CUP_NATIONAL"), str(int(titles[k]))])
+		rows.append([tr("REC_TITLES") + " · " + tr({"world": "CUP_WORLD", "national": "CUP_NATIONAL", "league": "CUP_LEAGUE"}.get(String(k), "CUP_WORLD")), str(int(titles[k]))])
 	for row in rows:
 		var a := UI.label(String(row[0]), "", 20, Game.C_MUTED)
 		a.size_flags_horizontal = Control.SIZE_EXPAND_FILL

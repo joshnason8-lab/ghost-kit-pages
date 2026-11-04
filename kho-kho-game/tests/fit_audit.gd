@@ -488,6 +488,8 @@ func _cup() -> void:
 	await audit("cup_pick")
 	var cup = Game.new_cup("national", "ASM", true)
 	cup.sim_round(false)
+	# Your stars on the hub, with long names (the longest a squad can draw).
+	cup.stars = {"Venkatalakshmi Subramaniam": {"outs": 12, "run": 0.0}, "Rajalakshmi Chandrasekaran": {"outs": 0, "run": 187.0}}
 	Game.save_cup()
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(12)

@@ -349,5 +349,6 @@
   "HELP_CONTACT_TEXT": "Found a bug, or have a question? Email {email}. Say what happened and what you expected, your phone's model, and the game's version ({v}). A screenshot helps.",
   "PRIVACY_SUMMARY": "Kho Kho Rush collects no personal data. There is no account, no advertising, no analytics and no in-app purchase, and the game has no permission to use the internet. Your settings and progress stay on your phone.",
   "PRIVACY_FULL": "The full policy (in English)",
-  "REPLAY": "Replay"
+  "REPLAY": "Replay",
+  "CUP_STARS": "Your stars"
 }

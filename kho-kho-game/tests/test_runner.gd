@@ -649,6 +649,26 @@ func _grounds() -> void:
 # ---------------------------------------------------------------- championships
 
 func _cups() -> void:
+	# Your stars: your side's players over the matches you play (outs added up, the longest single defence kept),
+	# nobody from the other side, and saved with the championship.
+	var sc: Cup = Cup.create("world", "IND")
+	check(sc.top_stars() == [[], []], "championship stars: none before a match")
+	var m1 := {"config": {"user_team": 0}, "stats": {
+		"a": {"name": "Asha", "side": 0, "outs": 3, "best_run": 40.0, "run": 0.0},
+		"b": {"name": "Bina", "side": 0, "outs": 1, "best_run": 95.0, "run": 0.0},
+		"z": {"name": "Zoya", "side": 1, "outs": 9, "best_run": 300.0, "run": 0.0}}}
+	var m2 := {"config": {"user_team": 1}, "stats": {
+		"a": {"name": "Asha", "side": 1, "outs": 2, "best_run": 10.0, "run": 60.0},
+		"z": {"name": "Zoya", "side": 0, "outs": 9, "best_run": 300.0, "run": 0.0}}}
+	sc.add_stars(m1)
+	sc.add_stars(m2)
+	var top := sc.top_stars()
+	check(top[0] == ["Asha", 5] and top[1][0] == "Bina" and is_equal_approx(float(top[1][1]), 95.0),
+		"championship stars: top chaser Asha 5 outs over two matches, longest defence Bina 95 s, the other side's ignored (%s)" % str(top))
+	var back_s := Cup.from_dict(JSON.parse_string(JSON.stringify(sc.to_dict())))
+	check(back_s.top_stars()[0] == ["Asha", 5], "championship stars: saved and loaded with the championship")
+	sc.add_stars({"config": {}, "stats": {}})
+	check(sc.top_stars()[0] == ["Asha", 5], "championship stars: a match without your side adds nothing")
 	for kind in Cup.KINDS:
 		for women in [false, true]:
 			var team: String = {"world": "IND", "national": "MAH", "league": "BBS"}[kind]

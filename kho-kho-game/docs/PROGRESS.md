@@ -68,7 +68,8 @@ The kho kho game, built overnight on 21-22 October 2026 on branch `claude/kho-kh
    docs/RULES.md checked against a printed KKFI rule book (the rulebook sites were blocked from here).
 2. A real phone at Low (a Galaxy A0x/A1x): frame rate, warmth, and whether the coach tips teach the game in a
    minute to someone who has never played it.
-3. The City League's own season mode: squads that change, a player draft, a season's records.
+3. The City League's own season mode: squads that change, a player draft (a championship's own records - your
+   stars, the most outs and the longest defence - since 0.12.11).
 4. Defending feel: a juke button, and the AI's chasers reading your defender's runs.
 5. Meshy models when the owner chooses (docs/MESHY_BRIEF.md).
 
@@ -309,6 +310,13 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   the play or within 15 m of the camera - feet_low worst slips 3-14 -> 0-2.1 cm, run skid 9.4 -> 0.2, sqrt cadence kept; its
   own cost 0.3-0.5 ms a frame for 18 bodies (tests/low_planter_bench.gd). Published in place (no -next tag: the 403s).
   The deferral: any foot slip to 11-06 12:00, then a planted slide up to 2.5 cm to 11-13.
+- 0.12.11: a championship's stars (Cup.stars: your side's outs added up and longest single defence over the matches you
+  play, saved with it; Cup.top_stars; the hub's "Your stars"; CUP_STARS in all 14 languages; tests in test_runner and
+  the fit audit with long names). Records names a league title as the City League. Owner notes run on a fresh install
+  (XDG_DATA_HOME, WSG_NOTES_FRESH). Foundation 5c2304e/a40a95e (planter: afresh after an idle, a stepping toe 3.5 cm up,
+  a planter's time every tick since its last run) - Low's stop 1.7 cm. A Medium/High "planter off through the pose's
+  fade" try (2c2f85a, then keep_pose) changed none of the defenders' 25-33 cm jumps (they are not in the fade) and was
+  reverted (the lead): the foundation's 3b700012 fixes 7 of the 9; it waits on a Low regression fix before it is synced.
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

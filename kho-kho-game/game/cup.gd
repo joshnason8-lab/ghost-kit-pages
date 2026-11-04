@@ -21,6 +21,9 @@ var ties: Array = []          # this knockout round's pairs [a, b]
 var ko_results: Array = []    # [stage, a, b, score a, score b, winner]
 var champion := ""
 var sched: Array = []         # the league's rounds of pairs
+## Your players over the championship (the matches you play, not the ones the AI plays for you): name -> {"outs": a
+## chaser's outs, "run": a defender's longest single defence in seconds}.
+var stars := {}
 var seed := 1
 
 
@@ -151,6 +154,7 @@ func record_user_result(result: Dictionary) -> void:
 	var p := user_fixture()
 	if p.is_empty():
 		return
+	add_stars(result)
 	var cfg: Dictionary = result.config
 	var home := String(cfg.home)
 	var sc: Array = result.score
@@ -160,6 +164,37 @@ func record_user_result(result: Dictionary) -> void:
 	else:
 		record(p[0], p[1], int(sc[1]), int(sc[0]), (1 - w) if w >= 0 else -1)
 	sim_round(false)
+
+
+## Your side's players' outs and longest defences from a match you played, added to the championship's.
+func add_stars(result: Dictionary) -> void:
+	var u := int(result.get("config", {}).get("user_team", -1))
+	if u < 0:
+		return
+	var all: Dictionary = result.get("stats", {})
+	for id in all:
+		var st: Dictionary = all[id]
+		if int(st.get("side", -1)) != u:
+			continue
+		var nm := String(st.get("name", ""))
+		var me: Dictionary = stars.get(nm, {"outs": 0, "run": 0.0})
+		me.outs = int(me.outs) + int(st.get("outs", 0))
+		me.run = maxf(float(me.run), maxf(float(st.get("best_run", 0.0)), float(st.get("run", 0.0))))
+		stars[nm] = me
+
+
+## Your best chaser (most outs) and best defender (longest single defence) so far: [name, outs] and [name, seconds],
+## or empty arrays before any.
+func top_stars() -> Array:
+	var chaser := []
+	var runner := []
+	for nm in stars:
+		var me: Dictionary = stars[nm]
+		if int(me.outs) > 0 and (chaser.is_empty() or int(me.outs) > int(chaser[1])):
+			chaser = [nm, int(me.outs)]
+		if float(me.run) > 0.0 and (runner.is_empty() or float(me.run) > float(runner[1])):
+			runner = [nm, float(me.run)]
+	return [chaser, runner]
 
 
 ## Plays every match of the round left (including yours, if sim_user).
@@ -270,7 +305,7 @@ func user_group() -> int:
 
 func to_dict() -> Dictionary:
 	return {"sched": sched, "kind": kind, "women": women, "user": user, "teams": teams, "groups": groups, "results": results, "round": round,
-		"stage": stage, "ties": ties, "ko": ko_results, "champion": champion, "seed": seed}
+		"stage": stage, "ties": ties, "ko": ko_results, "champion": champion, "seed": seed, "stars": stars}
 
 
 static func from_dict(d: Dictionary) -> Cup:
@@ -288,4 +323,5 @@ static func from_dict(d: Dictionary) -> Cup:
 	c.champion = String(d.get("champion", ""))
 	c.seed = int(d.get("seed", 1))
 	c.sched = d.get("sched", [])
+	c.stars = d.get("stars", {})
 	return c

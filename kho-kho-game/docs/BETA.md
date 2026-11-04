@@ -9,6 +9,15 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.11
+
+- **Your stars in a championship.** The championship's page now shows your side's best chaser (the most outs over
+  the matches you have played in it) and best defender (the longest single defence), under the difficulty. The
+  City League, the national and the world championships all keep them, and they are saved with the championship.
+- The record book names a City League title as the City League (it was counted as a national title).
+- **Feet** on Medium and High: the shared foundation's planter steps a foot down more cleanly after a pause and keeps
+  a stepping toe off the ground till it lands; on Low a stop slides 1.7 cm at most (2.1 before).
+
 ## What's new in 0.12.10
 
 - **Feet stay put on Low**, the setting phones like the A16 play on: the players' feet no longer slide as they walk,

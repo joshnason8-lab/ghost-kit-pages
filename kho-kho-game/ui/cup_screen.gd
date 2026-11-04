@@ -146,6 +146,20 @@ func _hub(c) -> void:
 	# How hard your opponents play: the same setting as Quick match and Settings, changed here between matches.
 	if String(c.stage) != "done":
 		left.add_child(UI.difficulty_field(self))
+	# Your stars so far: the chaser with the most outs and the defender with the longest defence, over the matches
+	# you have played in this championship.
+	var top: Array = c.top_stars()
+	if not (top[0].is_empty() and top[1].is_empty()):
+		left.add_child(UI.label(tr("CUP_STARS").to_upper(), "EyebrowLabel", 14, Game.C_SAFFRON))
+		if not top[0].is_empty():
+			var l1 := UI.label("%s · %s %d" % [tr("COL_OUTS"), String(top[0][0]), int(top[0][1])], "", 18, Game.C_INK)
+			UI.fit(l1, 2)
+			left.add_child(l1)
+		if not top[1].is_empty():
+			var secs := int(top[1][1])
+			var l2 := UI.label("%s · %s %d:%02d" % [tr("COL_BEST"), String(top[1][0]), secs / 60, secs % 60], "", 18, Game.C_INK)
+			UI.fit(l2, 2)
+			left.add_child(l2)
 	# The knockout results so far.
 	for r in c.ko_results:
 		var line := UI.label("%s · %s %d – %d %s" % [_stage_word(String(r[0])), DB.team_name(r[1]), int(r[3]), int(r[4]), DB.team_name(r[2])],
