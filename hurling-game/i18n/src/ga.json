@@ -159,7 +159,7 @@
   "CALL_SAVED": "Sábháilte",
   "CALL_MISSED": "Amú",
   "CALL_NO_GOAL": "NÍL CÚL ANN",
-  "NO_GOAL_HAND": "Ní féidir cúl a scóráil leis an lámh: poc amach.",
+  "NO_GOAL_HAND": "Ní féidir cúl a scóráil leis an lámh: saorphoc amach.",
   "CALL_SHOULDER": "Gualainn, agus an sliotar caillte",
   "CALL_FLICK": "Bainte dá chamán",
   "CALL_HOOK": "Hiúcáil!",
@@ -469,5 +469,8 @@
   "LOAD_TIP_4": "Buaileann cor ón gcúl nó bac ón tosach an liathróid ar ais gan calaois.",
   "HAWKEYE": "Hawk-Eye",
   "HAWKEYE_YES": "TÁ · cúilín",
-  "HAWKEYE_NO": "NÍL · amú"
+  "HAWKEYE_NO": "NÍL · amú",
+  "CALL_NO_SCORE": "NÍL SCÓR ANN",
+  "NO_POINT_HAND": "Ní féidir cúilín a scóráil leis an lámh: saorphoc amach.",
+  "NO_SCORE_CARRY": "Iompraithe thar an líne: saorphoc amach."
 }

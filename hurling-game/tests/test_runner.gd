@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _keeper_jerseys()
 	await _hawk_eye()
 	await _sin_bin_watch()
+	await _hand_score()
 	await _subs()
 	await _sent_off_walks_off()
 	await _tactics()
@@ -101,7 +102,7 @@ func _rules_scores() -> void:
 	check(Pitch.score_kind(Vector3(70, 3.0, 3.4)) == "", "Scores: outside the posts is wide")
 	check(Pitch.score_kind(Vector3(70, 25.0, 1.0)) == "point", "Scores: high over the posts, inside their line, is a point")
 	check(not Rules.score_counts("goal", "hand_pass"), "Scores: no goal from a hand-pass")
-	check(Rules.score_counts("point", "hand_pass"), "Scores: a hand-passed point stands")
+	check(not Rules.score_counts("point", "hand_pass"), "Scores: no point from the hand either (3.1, 4.13)")
 	check(not Rules.score_counts("point", "throw") and not Rules.score_counts("goal", "carry"), "Scores: nothing thrown or carried over the line")
 	check(Rules.score_counts("goal", "strike") and Rules.score_counts("goal", "deflect") and Rules.score_counts("point", "65"), "Scores: struck, deflected, from a 65")
 	check(Rules.shootout_counts("goal") and not Rules.shootout_counts("point"), "Shoot-out: only goals count")
@@ -198,7 +199,7 @@ func _rules_fouls() -> void:
 	var ds := Rules.dissent_spot(Vector3(0, 0, 4), 1.0)
 	check(is_equal_approx(ds.x, 30.0), "Dissent: the free moves on 30 m")
 	check(is_equal_approx(Rules.dissent_spot(Vector3(40, 0, 0), 1.0).x, Pitch.HALF_L - 20.0), "Dissent: no nearer than the 20 m line")
-	check(Rules.may_play_advantage("FOUL_STEPS", false, true), "Advantage: for a technical foul with space")
+	check(not Rules.may_play_advantage("FOUL_STEPS", true, true), "Advantage: never for a technical foul (5.44)")
 	check(not Rules.may_play_advantage("FOUL_PULL_DOWN", false, false), "Advantage: not for an aggressive foul on a man held up")
 	check(Rules.may_play_advantage("FOUL_PULL_DOWN", true, false), "Advantage: for an aggressive foul with a goal chance")
 	check(Rules.ADVANTAGE_S == 5.0, "Advantage: up to five seconds")
@@ -206,14 +207,19 @@ func _rules_fouls() -> void:
 
 
 func _rules_cards() -> void:
-	check(Rules.card_for("FOUL_STRIKE", false, false, 0, 0, 0) == "red", "Striking an opponent: red")
-	check(Rules.card_for("FOUL_PULL_DOWN", true, false, 0, 0, 0) == "yellow", "A cynical pull-down: yellow")
-	check(Rules.card_for("FOUL_PULL_DOWN", true, false, 0, 1, 0) == "red", "A second yellow is a red")
-	check(Rules.card_for("FOUL_TRIP", true, true, Rules.GRADE_SENIOR, 0, 0) == "black", "Denying a goal chance (senior county): black, the sin bin")
-	check(Rules.card_for("FOUL_TRIP", true, true, Rules.GRADE_SENIOR, 1, 0) == "red", "A black after a yellow: red")
-	check(Rules.card_for("FOUL_PULL_DOWN", true, false, 0, 0, 1) == "red", "A yellow after a black: red (1.2(ix)(e))")
-	check(Rules.card_for("FOUL_TRIP", true, true, Rules.GRADE_CLUB, 0, 0) == "yellow", "Club hurling has no black card")
-	check(Rules.card_for("FOUL_STEPS", false, false, 0, 0, 0) == "", "A technical foul: no card")
+	check(Rules.card_for("FOUL_STRIKE", 0, false, 0, 0, 0) == "red", "Striking an opponent: red")
+	for f in ["FOUL_PULL_DOWN", "FOUL_TRIP", "FOUL_HURLEY"]:
+		check(Rules.card_for(f, 0, false, 0, 0, 0) == "yellow", "%s: a caution every time (5.1, 5.2, 5.6)" % f)
+	check(Rules.card_for("FOUL_PULL_DOWN", 0, false, 0, 1, 0) == "red", "A second yellow is a red")
+	for f in ["FOUL_HOLD_MAN", "FOUL_CHARGE"]:
+		check(Rules.card_for(f, 0, false, 0, 0, 0) == "" and Rules.card_for(f, 1, false, 0, 0, 0) == "yellow", "%s: a caution the second time (5.10, 5.11)" % f)
+	for f in ["FOUL_PUSH", "FOUL_KEEPER", "FOUL_HOOK_HURLEY"]:
+		check(Rules.card_for(f, 1, false, 0, 0, 0) == "" and Rules.card_for(f, 2, false, 0, 0, 0) == "yellow", "%s: a caution only when persistent (5.12-5.15)" % f)
+	check(Rules.card_for("FOUL_TRIP", 0, true, Rules.GRADE_SENIOR, 0, 0) == "black", "Denying a goal chance (senior county): black, the sin bin")
+	check(Rules.card_for("FOUL_TRIP", 0, true, Rules.GRADE_SENIOR, 1, 0) == "red", "A black after a yellow: red")
+	check(Rules.card_for("FOUL_PULL_DOWN", 0, false, 0, 0, 1) == "red", "A yellow after a black: red (1.2(ix)(e))")
+	check(Rules.card_for("FOUL_TRIP", 0, true, Rules.GRADE_CLUB, 0, 0) == "yellow", "Club hurling has no black card")
+	check(Rules.card_for("FOUL_STEPS", 0, false, 0, 0, 0) == "", "A technical foul: no card")
 	check(Rules.SIN_BIN_MIN == 10, "The sin bin: ten minutes")
 
 
@@ -636,6 +642,35 @@ func _sin_bin_watch() -> void:
 	m.queue_free()
 	await frames(2)
 
+
+
+## The owner (from the Official Guide, 3.1 and 4.13): a player in possession may not score with the hand - a goal or a
+## point. In a match the umpires wave it off and the defenders have a free from where the hand-pass was made.
+func _hand_score() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "COR", "venue": "county", "user_team": -1, "seed": 4, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	var s := float(m.dir(0))
+	var from := Vector3((Pitch.HALF_L - 12.0) * s, 1.2, 4.0)
+	m.phase = m.P.LIVE
+	m.ball.last_team = 0
+	m.ball.last_kind = "hand_pass"
+	m.ball.set_meta("hand_from", from)
+	var pts: int = m.score[0][1]
+	m._over_end_line(Vector3(Pitch.HALF_L * s, Pitch.BAR_H + 1.5, 0.5), s)
+	check(m.score[0][1] == pts, "a hand-passed point does not count")
+	var r: Dictionary = m.restart
+	check(String(r.get("kind", "")) == "free" and int(r.get("team", -1)) == 1 and Vector3(r.spot).distance_to(Vector3(from.x, 0, from.z)) < 0.6,
+		"... a free out to the defenders from where the hand-pass was made (%s)" % r)
+	# A struck point still counts.
+	m.phase = m.P.LIVE
+	m.ball.last_kind = "strike"
+	m._over_end_line(Vector3(Pitch.HALF_L * s, Pitch.BAR_H + 1.5, 0.5), s)
+	check(m.score[0][1] == pts + 1, "a struck point counts")
+	m.queue_free()
+	await frames(2)
 
 func _sent_off_walks_off() -> void:
 	for venue in ["stadium", "county", "parish"]:

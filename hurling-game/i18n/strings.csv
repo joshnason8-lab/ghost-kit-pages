@@ -159,7 +159,7 @@ CALL_SAVE,Saved!,Sábháilte!
 CALL_SAVED,Saved,Sábháilte
 CALL_MISSED,Missed,Amú
 CALL_NO_GOAL,NO GOAL,NÍL CÚL ANN
-NO_GOAL_HAND,A goal cannot be scored with the hand: puck-out.,Ní féidir cúl a scóráil leis an lámh: poc amach.
+NO_GOAL_HAND,A goal cannot be scored with the hand: a free out.,Ní féidir cúl a scóráil leis an lámh: saorphoc amach.
 CALL_SHOULDER,Shouldered off the ball,"Gualainn, agus an sliotar caillte"
 CALL_FLICK,Flicked off his hurley,Bainte dá chamán
 CALL_HOOK,Hooked!,Hiúcáil!
@@ -464,3 +464,6 @@ LOAD_TIP_4,A hook from behind or a block from in front wins the ball back withou
 HAWKEYE,Hawk-Eye,Hawk-Eye
 HAWKEYE_YES,TÁ · point,TÁ · cúilín
 HAWKEYE_NO,NÍL · wide,NÍL · amú
+CALL_NO_SCORE,NO SCORE,NÍL SCÓR ANN
+NO_POINT_HAND,A point cannot be scored with the hand: a free out.,Ní féidir cúilín a scóráil leis an lámh: saorphoc amach.
+NO_SCORE_CARRY,Carried over the line: a free out.,Iompraithe thar an líne: saorphoc amach.

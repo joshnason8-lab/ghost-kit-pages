@@ -92,6 +92,7 @@ var sent_off := false
 var sin_bin_until := -1.0        # Match.watch (s) when he may come back
 var yellows := 0
 var blacks := 0
+var fouls := {}               # his aggressive fouls this match, by caution group (Rules.caution_group)
 var ball_hand := false           # the ball shows in his left hand
 var ball_stick := false          # the ball rides on his bas
 var visible_on_screen := true

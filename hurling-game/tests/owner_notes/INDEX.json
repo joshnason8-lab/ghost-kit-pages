@@ -168,6 +168,30 @@
    "date": "2026-11-03",
    "version": "Hurling 0.21.0",
    "words": "Players are still gliding/hovering some when running or strafing sideways."
+  },
+  {
+   "id": "2026-11-04-yellow-cards",
+   "file": "2026-11-04_yellow_cards.gd",
+   "game": "hurling",
+   "date": "2026-11-04",
+   "version": "Hurling 0.24.13",
+   "words": "Follow the GAA Official Guide: caution every pull-down, trip and careless hurley, plus holding or charging on the second offence."
+  },
+  {
+   "id": "2026-11-04-hand-scores",
+   "file": "2026-11-04_hand_scores.gd",
+   "game": "hurling",
+   "date": "2026-11-04",
+   "version": "Hurling 0.24.13",
+   "words": "Follow the GAA Official Guide: a player in possession can't score with the hand, hand-passed points included. Restart is a free out."
+  },
+  {
+   "id": "2026-11-04-advantage",
+   "file": "2026-11-04_advantage.gd",
+   "game": "hurling",
+   "date": "2026-11-04",
+   "version": "Hurling 0.24.13",
+   "words": "Follow the GAA Official Guide: advantage for aggressive fouls only."
   }
  ]
 }

@@ -159,7 +159,7 @@
   "CALL_SAVED": "Saved",
   "CALL_MISSED": "Missed",
   "CALL_NO_GOAL": "NO GOAL",
-  "NO_GOAL_HAND": "A goal cannot be scored with the hand: puck-out.",
+  "NO_GOAL_HAND": "A goal cannot be scored with the hand: a free out.",
   "CALL_SHOULDER": "Shouldered off the ball",
   "CALL_FLICK": "Flicked off his hurley",
   "CALL_HOOK": "Hooked!",
@@ -463,5 +463,8 @@
   "LOAD_TIP_4": "A hook from behind or a block from in front wins the ball back without a foul.",
   "HAWKEYE": "Hawk-Eye",
   "HAWKEYE_YES": "TÁ · point",
-  "HAWKEYE_NO": "NÍL · wide"
+  "HAWKEYE_NO": "NÍL · wide",
+  "CALL_NO_SCORE": "NO SCORE",
+  "NO_POINT_HAND": "A point cannot be scored with the hand: a free out.",
+  "NO_SCORE_CARRY": "Carried over the line: a free out."
 }

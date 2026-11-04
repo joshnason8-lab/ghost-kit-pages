@@ -19,14 +19,13 @@ static func fmt(goals: int, points: int) -> String:
 	return "%d-%d" % [goals, points]
 
 
-## Does a ball that crossed between the posts score, given how it was last played? A goal cannot be scored with a
-## hand-pass, nor by throwing or carrying the ball over the line; a point can be hand-passed, if it is a legal hand-pass.
-## kind: "goal" or "point" (where it crossed, Pitch.score_kind); how: the last play ("strike", "hand_pass", "kick",
-## "throw", "carry", "deflect", "free", "65", "sideline", "penalty", "puck_out").
+## Does a ball that crossed between the posts score, given how it was last played? A player in possession may not
+## score with the hand(s) - a goal or a point - nor by carrying the ball over the line (3.1 Exceptions, 4.12, 4.13; a
+## ball in flight struck with the hand counts, 3.2, but the game has no such play). kind: "goal" or "point" (where it
+## crossed, Pitch.score_kind); how: the last play ("strike", "hand_pass", "kick", "throw", "carry", "deflect", "free",
+## "65", "sideline", "penalty", "puck_out").
 static func score_counts(kind: String, how: String) -> bool:
-	if how in ["throw", "carry"]:
-		return false
-	if kind == "goal" and how == "hand_pass":
+	if how in ["throw", "carry", "hand_pass"]:
 		return false
 	return kind == "goal" or kind == "point"
 
@@ -304,18 +303,44 @@ static func penalty_strike_ok(strike_pos: Vector3, dir: float) -> bool:
 
 # ---------------------------------------------------------------- discipline (Rules of Control, Rule 6; 5.45)
 
-## The card for a foul: "" none, "yellow", "red", "black" (sin bin, ten minutes). cynical: committed to stop an
-## attack rather than in playing the ball; denial: it denied a goal-scoring opportunity inside the 20 m line or the
-## arc, which is a black card and a penalty where Rule 5.45 applies (senior inter-county). Any two of a yellow and a
-## black is a red (Rules of Control 1.2(ix)(e)).
-static func card_for(foul: String, cynical: bool, denial: bool, grade: int, yellows: int, blacks: int) -> String:
+## Cautions for each kind of aggressive foul (Playing Rules of Hurling 5): a pull-down, a trip and a careless hurley
+## every time (5.1, 5.2, 5.6); holding and charging the second time (5.10, 5.11); pushing, charging the goalkeeper and
+## striking a hurley only when persistent (5.12-5.15: the third time here).
+const CAUTION_NOW := ["FOUL_PULL_DOWN", "FOUL_TRIP", "FOUL_HURLEY"]
+const CAUTION_SECOND := ["FOUL_HOLD_MAN", "FOUL_CHARGE"]
+const CAUTION_PERSISTENT := ["FOUL_PUSH", "FOUL_KEEPER", "FOUL_HOOK_HURLEY"]
+const PERSISTENT := 3
+
+
+## Which caution group a foul counts in ("" for none): a player's fouls are counted per group (card_for's prior).
+static func caution_group(foul: String) -> String:
+	if foul in CAUTION_NOW:
+		return "now"
+	if foul in CAUTION_SECOND:
+		return "second"
+	if foul in CAUTION_PERSISTENT:
+		return "persistent"
+	return ""
+
+
+## The card for a foul: "" none, "yellow", "red", "black" (sin bin, ten minutes). prior: the fouls of this one's
+## caution group (caution_group) the player has given away already this match; denial: it denied a goal-scoring
+## opportunity inside the 20 m line or the arc, which is a black card and a penalty where Rule 5.45 applies (senior
+## inter-county). Any two of a yellow and a black is a red (Rules of Control 1.2(ix)(e)).
+static func card_for(foul: String, prior: int, denial: bool, grade: int, yellows: int, blacks: int) -> String:
 	var card := ""
 	if foul == "FOUL_STRIKE":
 		card = "red"
 	elif denial and foul in DENIAL and black_card_applies(grade):
 		card = "black"
-	elif aggressive(foul) and (cynical or denial or foul in ["FOUL_HURLEY", "FOUL_KEEPER"]):
-		card = "yellow"
+	else:
+		match caution_group(foul):
+			"now":
+				card = "yellow"
+			"second":
+				card = "yellow" if prior >= 1 else ""
+			"persistent":
+				card = "yellow" if prior >= PERSISTENT - 1 else ""
 	if card == "yellow" and (yellows >= 1 or blacks >= 1):
 		return "red"
 	if card == "black" and (yellows >= 1 or blacks >= 1):
@@ -330,12 +355,11 @@ static func black_card_applies(grade: int) -> bool:
 const SIN_BIN_MIN := 10
 
 
-## Advantage: for a technical foul the referee may wait up to five seconds to see if the fouled side gains from
-## playing on; for an aggressive foul only where there is a clear goal-scoring chance or the fouled player has time
-## and space (2021 wording). A player held up in a tackle gets the free.
+## Advantage (5.44): "When an Aggressive Foul is committed" the referee may play on for up to five seconds where there
+## is a clear goal-scoring chance or the fouled player has time and space; a technical foul is always a free.
 static func may_play_advantage(foul: String, goal_chance: bool, time_and_space: bool) -> bool:
 	if not aggressive(foul):
-		return time_and_space or goal_chance
+		return false
 	return goal_chance or time_and_space
 
 

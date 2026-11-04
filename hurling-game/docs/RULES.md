@@ -30,8 +30,9 @@ rested on a single excerpt hold: the puck-out's 13 m travel (Rule 2.6), the diss
 line (6.4), advantage for up to five seconds (5.44) and the black card (5.45). The check corrected: the distance at a
 free and a 65 (20 m, not 13, and for the taker's teammates too), the sideline's 13 m (teammates too), the free from
 the centre of the 20 m line (laid out as a penalty), the black card's grades and its zone, a yellow after a black (a
-red), and the temporary substitutes (blood and head injuries only). Three differences are left for the owner (below,
-"Left as they are").
+red), and the temporary substitutes (blood and head injuries only). Three more the owner chose to follow as the
+Guide has them (4 November 2026): the cautions for each foul, no scoring with the hand, and advantage for aggressive
+fouls only.
 
 ## The field, goals and equipment (Rules of Specification)
 
@@ -58,7 +59,7 @@ red), and the temporary substitutes (blood and head injuries only). Three differ
 | Rule | In the game | Test |
 |---|---|---|
 | A goal (over the goal line, between the posts, under the bar) is worth 3; a point (over the bar, between the posts) 1; the score is written goals-points (2-18) | `Rules.total`, `Rules.fmt`, `Pitch.score_kind`; the scoreboard shows "1-14 (17)" | "Scores: ..." |
-| No goal from a hand-pass; a legal hand-passed point stands; nothing thrown or carried over the line | `Rules.score_counts`; a hand-passed goal is waved off by the umpires and restarted with a puck-out | "no goal from a hand-pass", "a hand-passed point stands" |
+| A player in possession may not score with the hand - no goal and no point from a hand-pass - nor carry it over the line (3.1, 4.12, 4.13); a ball in flight struck with the hand counts (3.2) | `Rules.score_counts`; the umpires wave it off and the defenders have a free from where the hand-pass was made (the game has no hand strike of a ball in flight) | "no point from the hand either", "a hand-passed point does not count" |
 | A ball over the posts' tops, inside their line, is a point | Any height counts | "high over the posts" |
 | Off a post or the bar it stays in play | The sliotar rebounds | (match) |
 
@@ -117,15 +118,16 @@ opponent's hurley when he is not playing the ball, charging the goalkeeper in hi
 opponent. In the game each tackle can be a foul: more often from behind and when a defender is desperate to stop a
 goal. Technical and aggressive fouls are kept apart (`Rules.TECHNICAL`, `Rules.AGGRESSIVE`).
 
-**Advantage** (2015, reworded 2021): the referee may play on for up to five seconds, one arm straight up; for an
-aggressive foul only with a clear goal chance or time and space; if nothing comes of it he brings it back for the
-free. In the game: as written; a shot, a score or the fouled side losing the ball ends it.
+**Advantage** (5.44): "When an Aggressive Foul is committed", the referee may play on for up to five seconds, one arm
+straight up, where there is a clear goal chance or the fouled player has time and space; if nothing comes of it he
+brings it back for the free. A technical foul is always a free. In the game: as written; a shot, a score or the
+fouled side losing the ball ends it.
 
 ## Discipline (Rules of Control, Rule 6; Playing Rules of Hurling 5.45)
 
 | Rule | In the game | Test |
 |---|---|---|
-| Yellow card: a caution; any two of a yellow and a black is a red (1.2(ix)(e)), sent off, not replaced | Cynical pull-downs, trips and holds, careless hurleys, charging the goalkeeper | "A second yellow is a red", "A yellow after a black" |
+| Yellow card: a caution; any two of a yellow and a black is a red (1.2(ix)(e)), sent off, not replaced. Every pull-down, trip and careless hurley (5.1, 5.2, 5.6); holding or charging the second time (5.10, 5.11); pushing, charging the goalkeeper or striking a hurley when persistent (5.12-5.15) | As written (`Rules.card_for`, a player's fouls counted by group; "persistent" is the third) | "A second yellow is a red", "A yellow after a black" |
 | Red card: striking an opponent, kicking, stamping, dangerous use of the hurley ... | Striking an opponent | "Striking an opponent: red" |
 | **Black card** (5.45): pulling down, tripping or a careless hurley on a player in possession that denies a goal chance inside the 20 m line (not within 25 m of a sideline) or the arc (Definitions 9): a penalty, and ten minutes in the sin bin; after a yellow or a black, a red. It applies "only to Inter-County Senior, Under 20 and Minor (Under 17)" games: **not in club hurling** (nor inter-county junior) | Grade: Senior county has it. Club does not: there the foul is a free by the ordinary rules (a penalty only inside the large rectangle, a free on the 20 m line inside the 20 m line) | "Denying a goal chance (senior county): black", "Club hurling has no black card", "Club: a denial ... not a penalty" |
 
@@ -160,15 +162,3 @@ coats). In the game:
 Camogie is governed by the Camogie Association, with its own rules (60 minutes, a 45 instead of the 65, hand-passed
 goals allowed, a lighter sliotar, different contact rules). The game does not play it yet; it would need those rules
 done properly, not a re-skin.
-
-## Left as they are (for the owner)
-
-Three places where the full text differs from what the game does, left alone because each changes how matches play:
-- **Which fouls are a yellow.** The Guide cautions every pull-down, trip and careless hurley (5.1, 5.2, 5.6), and
-  holding and charging on the second time (5.10, 5.11); the game cautions only the cynical ones.
-- **Scoring with the hand.** "A player on the team attacking a goal and who is in possession of the ball may not
-  score ... with the hand(s)" (3.1, 4.13): no hand-passed point either, only a ball in flight struck with the hand
-  (3.2), and the foul is a free out where it happened. The game lets a legal hand-passed point stand and waves off a
-  hand-passed goal with a puck-out.
-- **Advantage for technical fouls.** Rule 5.44 plays advantage when "an Aggressive Foul is committed"; the game also
-  plays it for technical fouls.

@@ -259,7 +259,7 @@ func snapshot() -> Dictionary:
 		var arr := []
 		for pl in teams[k].players:
 			var p: Player = pl
-			arr.append({"id": String(p.data.id), "y": p.yellows, "b": p.blacks, "r": p.sent_off, "bin": p.sin_bin_until,
+			arr.append({"id": String(p.data.id), "y": p.yellows, "b": p.blacks, "fc": p.fouls.duplicate(), "r": p.sent_off, "bin": p.sin_bin_until,
 				"f": p.fatigue})
 		slots.append(arr)
 		var ids := []
@@ -317,6 +317,7 @@ func _resume_state() -> void:
 						break
 			pl.yellows = int(sl.y)
 			pl.blacks = int(sl.b)
+			pl.fouls = (sl.get("fc", {}) as Dictionary).duplicate()
 			pl.sent_off = bool(sl.r)
 			pl.sin_bin_until = float(sl.bin)
 			pl.fatigue = float(sl.f)
@@ -1899,6 +1900,7 @@ func _hand_pass(pl: Player, to: Player) -> void:
 		_release(pl)
 		ball.global_position = from
 		ball.launch(v, pl, "hand_pass")
+		ball.set_meta("hand_from", from)   # (a hand-passed score is a foul there, 4.13: the free out is from here)
 		ball.set_meta("t_launch", now)
 		ball.set_meta("shot", {})
 		_chase_t = 0.0
@@ -2108,12 +2110,21 @@ func _over_end_line(c: Vector3, s: float) -> void:
 
 
 func _disallowed(att: int, c: Vector3, s: float) -> void:
-	# A goal by a hand-pass, a throw or carried in: not allowed; the defenders puck it out.
+	# A score by the hand (a goal or a point), a throw or carried in: a foul (4.12, 4.13) - the defenders' free from
+	# where it happened (the hand-pass; for a carry, the line it was carried over).
 	_whistle_dead()
+	set_meta("no_scores", int(get_meta("no_scores", 0)) + 1)
+	var how := String(ball.last_kind)
 	officials.umpire_signal(s, "sig_wide", c.z)
-	hud.banner(tr("CALL_NO_GOAL"), Game.C_DANGER)
-	hud.call_line(tr("NO_GOAL_HAND"))
-	_award({"kind": "puck_out", "team": 1 - att, "spot": Vector3((Pitch.HALF_L - Pitch.SMALL_D * 0.5) * s, 0, 0)}, 2.4)
+	var goal := Pitch.score_kind(c) == "goal"
+	hud.banner(tr("CALL_NO_GOAL") if goal else tr("CALL_NO_SCORE"), Game.C_DANGER)
+	if how == "hand_pass":
+		hud.call_line(tr("NO_GOAL_HAND") if goal else tr("NO_POINT_HAND"))
+	else:
+		hud.call_line(tr("NO_SCORE_CARRY"))
+	var at: Vector3 = ball.get_meta("hand_from", c) if how == "hand_pass" else c
+	at = Pitch.clamp_in(Vector3(at.x, 0, at.z), 0.5)
+	_award({"kind": "free", "team": 1 - att, "spot": at}, 2.4)
 
 
 ## Roadmap 5: Hawk-Eye at the stadium (as at Croke Park and Thurles): a point or a wide over the bar within HAWK_NEAR
@@ -2405,7 +2416,12 @@ func _aggressive_foul(by: Player, on: Player, foul: String, denial: bool) -> voi
 	var fouled := on.team
 	var spot := on.global_position
 	var award := Rules.free_for(foul, spot, fouled, dir(fouled), denial, grade)
-	var card := Rules.card_for(foul, denial or rng.randf() < 0.18, denial, grade, by.yellows, by.blacks)
+	# His fouls of this one's caution group so far (a second hold, a persistent push: Rules.card_for).
+	var group := Rules.caution_group(foul)
+	var prior := int(by.fouls.get(group, 0))
+	if group != "":
+		by.fouls[group] = prior + 1
+	var card := Rules.card_for(foul, prior, denial, grade, by.yellows, by.blacks)
 	if foul in ["FOUL_PULL_DOWN", "FOUL_TRIP", "FOUL_CHARGE"] and rng.randf() < 0.6:
 		on.play("fall")
 		on.down_until = now + 1.1
