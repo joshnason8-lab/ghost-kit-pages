@@ -743,3 +743,22 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - tests/knee_probe.tscn: the same measure per actor, any tier (KP_ALL=1: every actor). With e04af65 at Low all seven
   officials read clean here (the scorers bent every frame, all forward); the foundation's two officials at ~48% are
   being looked at with them (forward from the officials' rig's hips?).
+
+## 0.14.25: the seated scorers out of the planter (the lead / the foundation, 2026-11-04)
+
+- RiggedBody: a body in state "sit" keeps its own legs (planter.keep_pose) - the foundation's fix for Kho Kho's
+  kneeling chasers (a planter not in keep_pose clamps the ankles to its floor and folds the knees). Kabaddi's scorers
+  read forward on Low before and after (0/720 backward each); now the planter does not touch them at all.
+- Owner note 2026-11-04-knees-forward names the officials: the umpires (OFFICIAL_1/2) and the seated scorers
+  (OFFICIAL_5/6) must be measured on Low and High, each official's backward/bent said. On Medium/High it now reads the
+  joints as drawn (FoundationLink.measure, toes added to MEASURED): read from outside the skeleton's update, the bones
+  are the pose before the modifiers (the pose layer, the planter) - 0.14.24's High numbers were that, and the High
+  scorers looked to stand straight-legged; drawn, they sit (bent every frame, all forward).
+- High as drawn (tests/knee_probe.tscn -- 2 15, dome autoplay): 519 of 12,679 bent knee-frames backward (4.1%):
+  ~370 under the foundation's locomotor (FoundationLink "move" and "upper": a defender standing idle, 314 frames up
+  to 11 cm; an umpire signalling, up to 19 cm) and ~150 under the game's pose laid on the foundation's bodies
+  ("full": raiding, ready, recovering - up to 28 cm). In "full" the drawn legs are the game skeleton's to the
+  millimetre (FoundationLink._legs faithful); on those frames the knee is in front of the body (body_facing) and the
+  toes point back against it - the feet, not the knees - while the raid stance's stills look right: being traced
+  (Kabaddi's). The rest is with the foundation. The note says High until the foundation's "knees" rule is enforced
+  (2026-11-06 12:00 UTC), then fails it. Low: 0 of 11,479.

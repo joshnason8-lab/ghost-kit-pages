@@ -1,4 +1,7 @@
-**New in 0.14.24: a guard on knees.** A new automatic check plays a match on Low and on High and fails the build if
+**New in 0.14.25: the scorers' legs are their own.** On Low the scorers seated at the table keep their sitting
+pose's legs; the foot planting no longer tries to plant a seated scorer's feet.
+
+**In 0.14.24: a guard on knees.** A new automatic check plays a match on Low and on High and fails the build if
 a knee bends backwards (outside dives, holds, jumps and falls). On Low every knee now bends forward.
 
 **In 0.14.23: knees bend the right way on Low.** On Low graphics the shared foot planting could bend a

@@ -340,7 +340,8 @@ var measure := false:
 		if v and body and not body.posed.is_connected(_measure):
 			body.posed.connect(_measure)
 var last := {}
-const MEASURED := ["Hips", "Spine2", "Head", "LeftHand", "LeftUpLeg", "LeftLeg", "LeftFoot", "RightUpLeg", "RightLeg", "RightFoot"]
+const MEASURED := ["Hips", "Spine2", "Head", "LeftHand", "LeftUpLeg", "LeftLeg", "LeftFoot", "RightUpLeg", "RightLeg", "RightFoot",
+	"LeftToeBase", "RightToeBase"]
 
 
 func _measure() -> void:

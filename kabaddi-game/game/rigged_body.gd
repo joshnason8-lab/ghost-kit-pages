@@ -816,8 +816,11 @@ func _ground(g: Dictionary, hips: Vector3, h: Node3D) -> Vector3:
 		if planter == null:
 			_plant_feet(g, fk, dt, settling)
 		else:
-			# Its feet for the planter only when nothing of ours has them: no leg held or reaching for a hold, no kick.
-			_planter_free = held.is_empty() and foot_goal.is_empty() and kick_w <= 0.0
+			# Its feet for the planter only when nothing of ours has them: no leg held or reaching for a hold, no kick,
+			# not seated (the scorers sit the match out: their legs are the sitting pose's, not the planter's to IK down
+			# to a floor - Kho Kho's kneeling chasers had their knees folded backwards that way, the foundation 2026-11-04).
+			_planter_free = held.is_empty() and foot_goal.is_empty() and kick_w <= 0.0 \
+				and not (ath != null and str(ath.get("state")) == "sit")
 	else:
 		_release_plants(g, fk, dt)
 	# Back on the floor after the feet were laid flat and planted, then down for a held leg to reach its hold,

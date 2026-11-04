@@ -6,6 +6,7 @@ extends Node
 ## the branch (2026-11-04: Kabaddi's Low officials bent knees backward with the planter's IK on seated legs).
 
 var stats := {}   # actor -> [bent, backward, worst cm, state at the worst]
+var sides := {}   # "side state mode" -> backward knee-frames (the foundation's bodies)
 
 
 func _ready() -> void:
@@ -40,6 +41,8 @@ func _ready() -> void:
 		tk += int(s[1])
 		if int(s[1]) > 0 or OS.get_environment("KP_ALL") != "":
 			print("KNEE %-24s bent %5d backward %5d worst %5.1f cm (%s)" % [k, s[0], s[1], s[2], s[3]])
+	for k2 in sides:
+		print("SIDE %-30s %d" % [k2, sides[k2]])
 	print("KNEES gfx %d: %d of %d bent knee-frames backward, %d actors" % [int(Game.settings.graphics), tk, tb, keys.size()])
 	get_tree().quit(0)
 
@@ -49,13 +52,20 @@ func _measure(a: Athlete) -> void:
 		return
 	var link = a.model.get("link")
 	if link != null and link.body != null and link.body.is_visible_in_tree():
-		# Medium/High: the foundation's body as drawn (forward the way the foot points).
+		# Medium/High: the foundation's body as drawn (FoundationLink.measure: outside the skeleton's update Godot gives
+		# the bones before its modifiers). Forward the way the foot points.
+		if not link.measure:
+			link.measure = true
+			return
+		var j: Dictionary = link.last
 		var key2 := "%s %s" % [String(a.data.get("id", "?")), String(a.data.get("role", ""))]
 		for sd in ["Left", "Right"]:
-			var hip: Vector3 = link.body.bone_world(sd + "UpLeg").origin
-			var knee: Vector3 = link.body.bone_world(sd + "Leg").origin
-			var ank: Vector3 = link.body.bone_world(sd + "Foot").origin
-			var toe: Vector3 = link.body.bone_world(sd + "ToeBase").origin
+			if not (j.has(sd + "UpLeg") and j.has(sd + "ToeBase")):
+				continue
+			var hip: Vector3 = j[sd + "UpLeg"]
+			var knee: Vector3 = j[sd + "Leg"]
+			var ank: Vector3 = j[sd + "Foot"]
+			var toe: Vector3 = j[sd + "ToeBase"]
 			if rad_to_deg((knee - hip).angle_to(ank - knee)) < 15.0:
 				continue
 			var f := Vector3(toe.x - ank.x, 0.0, toe.z - ank.z)
@@ -69,12 +79,11 @@ func _measure(a: Athlete) -> void:
 			stats[key2][0] += 1
 			if d < -0.04:
 				stats[key2][1] += 1
-				print("BACK %s %s %s %.1f cm mode=%s w=%.2f every=%d vel=%s facing=%s toe=%s frame=%d" % [key2, sd, a.state,
-					-d * 100.0, link.mode, link.legacy.weight, link.pose_every, a.move_vel, a.facing, f.normalized(),
-					Engine.get_process_frames()])
+				var tag := "%s %s %s" % [sd, a.state, link.mode]
+				sides[tag] = int(sides.get(tag, 0)) + 1
 				if -d * 100.0 > float(stats[key2][2]):
 					stats[key2][2] = -d * 100.0
-					stats[key2][3] = String(a.state)
+					stats[key2][3] = tag
 		return
 	if a.model.rig == null or a.model.rig.skeleton == null:
 		return

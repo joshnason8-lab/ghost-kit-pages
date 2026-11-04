@@ -32,6 +32,7 @@ func _level(gfx: int) -> void:
 	var back := 0
 	var worst := 0.0
 	var worst_who := ""
+	var officials := {}   # OFFICIAL_i -> [bent, backward]: the umpires (1, 2) and the seated scorers (5, 6) by name
 	for i in int(SECONDS * 30.0):
 		await U.frames(tree, 1)
 		if not is_instance_valid(m):
@@ -41,9 +42,16 @@ func _level(gfx: int) -> void:
 		for a in m.find_children("*", "Athlete", true, false):
 			if String(a.state) in EXCUSED:
 				continue
+			var who := String(a.data.get("id", ""))
 			for leg in _legs(a):
 				bent += 1
 				var d: float = leg
+				if who.begins_with("OFFICIAL_"):
+					if not officials.has(who):
+						officials[who] = [0, 0]
+					officials[who][0] += 1
+					if d > 0.04:
+						officials[who][1] += 1
 				if d > 0.04:
 					back += 1
 					if d > worst:
@@ -51,6 +59,13 @@ func _level(gfx: int) -> void:
 						worst_who = "%s (%s)" % [String(a.data.get("id", "?")), String(a.state)]
 	var at: String = ["Low", "Medium", "High"][gfx]
 	expect(bent > 0, at + ": no bent knees measured (no legs drawn?)")
+	# The umpires on their lines and the scorers seated at the table (the lead: the foundation's two bodies a mode).
+	for o in ["OFFICIAL_1", "OFFICIAL_2", "OFFICIAL_5", "OFFICIAL_6"]:
+		expect(officials.has(o), at + ": %s's knees not measured" % o)
+	var said := []
+	for o in officials:
+		said.append("%s %d/%d" % [o, officials[o][1], officials[o][0]])
+	info(at + ": officials backward/bent: " + ", ".join(said))
 	var now := OS.get_environment("WSG_NOW") if OS.get_environment("WSG_NOW") != "" else Time.get_datetime_string_from_system(true).left(16) + "Z"
 	if gfx != Game.GFX_LOW and now < HIGH_FROM:
 		if back > int(bent * 0.005) or worst > 0.15:
@@ -72,9 +87,15 @@ func _legs(a: Athlete) -> Array:
 		return out
 	var link = a.model.get("link")
 	if link != null and link.body != null and link.body.is_visible_in_tree():
+		# The joints as drawn (FoundationLink.measure: read as the skeleton is posed - outside its update Godot gives
+		# the bones before the modifiers, the pose layer's and the planter's work missing).
+		if not link.measure:
+			link.measure = true
+			return out
+		var j: Dictionary = link.last
 		for s in ["Left", "Right"]:
-			out.append_array(_one(link.body.bone_world(s + "UpLeg").origin, link.body.bone_world(s + "Leg").origin,
-				link.body.bone_world(s + "Foot").origin, link.body.bone_world(s + "ToeBase").origin))
+			if j.has(s + "UpLeg") and j.has(s + "ToeBase"):
+				out.append_array(_one(j[s + "UpLeg"], j[s + "Leg"], j[s + "Foot"], j[s + "ToeBase"]))
 		return out
 	var rig: RiggedBody = a.model.rig
 	if rig == null or rig.skeleton == null or not rig.skeleton.is_visible_in_tree():
