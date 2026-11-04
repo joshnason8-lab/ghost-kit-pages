@@ -108,6 +108,7 @@ func run() -> void:
 	print("Loaded (ms): %s" % times)
 	Game.loading = false
 	Game.loaded.emit()
+	Game._redraw_mode(Game.current)   # (the home screen, drawn only when it changes from here: Game.quiet_menus)
 	var tw := create_tween()
 	tw.tween_property(_root, "modulate:a", 0.0, FADE)
 	await tw.finished

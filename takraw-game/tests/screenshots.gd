@@ -18,6 +18,7 @@ func _ready() -> void:
 		only = a[2]
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
+	Game.quiet_menus = false   # (it waits on drawn frames: every screen drawn every frame)
 	Game.settings.sound = false
 	Game.settings.graphics = Game.GFX_HIGH
 	Game.delete_season()

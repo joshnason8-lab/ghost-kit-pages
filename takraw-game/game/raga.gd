@@ -55,6 +55,7 @@ var _end_text: Label
 static func open(buttons: Array = []) -> void:
 	if WsgLoading.busy():
 		return
+	OS.low_processor_usage_mode = false   # (the overlay's bar, then the circle being built: every frame - Game.quiet_menus)
 	var ld := WsgLoading.cover(Game.main, buttons, Game.load_look())
 	ld.parts().root.theme = Game.theme
 	ld.log_label = "raga"
@@ -70,6 +71,7 @@ static func open(buttons: Array = []) -> void:
 	ld.step("Venue", func(): await built.r.build(ld), 3.0)
 	ld.warm(func(): return built.r, "Drawing", 4.0)
 	if not await ld.run():
+		Game._redraw_mode(Game.current)
 		return
 	await ld.done()
 	if is_instance_valid(built.get("r")) and built.r == Game.current:

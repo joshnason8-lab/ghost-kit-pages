@@ -15,6 +15,13 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.27: **menus that rest.** The menus (Quick Match, Settings, Records, How to Play, the season and cup
+screens, the result, and the home screen on Low) are now drawn only when something on them changes, so a phone
+sitting on a menu does far less work and its battery lasts longer. Taps, scrolling, the tiles fading in and the loading
+bar all move as before. Matches, sepak raga and the home screen on Medium and High (with a match playing behind it)
+are drawn every frame, as before. Tell us if a menu ever looks stuck or blank, for instance after switching back to
+the game.
+
 New in 0.15.26: **one touch is one touch.** Sepak raga's end card and the record book say "1 touch", not "1
 touches". A polish pass on Low (every venue, sepak raga, the menus, the season and cup screens and the result, at
 1600x720) found nothing else. Nothing else changes.

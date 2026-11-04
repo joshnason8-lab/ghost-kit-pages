@@ -40,6 +40,11 @@ func _ready() -> void:
 		_animate_in()
 
 
+## The attract match playing behind it (Medium and High): drawn every frame (Game.quiet_menus).
+func live_backdrop() -> bool:
+	return _sv != null
+
+
 func _start_attract() -> void:
 	if _match and is_instance_valid(_match):
 		_match.queue_free()

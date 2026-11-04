@@ -670,6 +670,23 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Menus drawn only when they change (0.15.27)
+
+The lead (from the Low polish pass: the menus drew every frame, the busiest 120-225 draw calls): low-processor mode
+in the 2D menus, for the A16's battery; never in a 3D mode, sepak raga or a menu with a live backdrop.
+- **Game._swap** sets OS.low_processor_usage_mode for the screen it puts up (Game.quiet_menus, quiet_screen): on for
+  a Control, unless its live_backdrop() says otherwise (the home screen's attract match on Medium and High); off for a
+  match and sepak raga (Node3D). Off from a loading overlay's tap (play_match, Raga.open: its bar, then the mode being
+  built), back on if the load fails; off while the game first loads (its warm-up), on when it is done. Back from the
+  background, the screen is drawn again (NOTIFICATION_APPLICATION_RESUMED, FOCUS_IN). The tools that wait on a drawn
+  frame (tests/screenshots.gd, tools/media/trailer.gd) turn quiet_menus off.
+- **Measured with a renderer** (xvfb, 1600x720, Low; frames drawn of frames run): the home screen still, 0 of 147;
+  its tiles fading in, 19 of 21; a pointer onto a button and a press, 1 each (the change drawn); How to Play flung,
+  27 of 49 while it glides (0 -> 330 px), then 0; the loading overlay and the match, every frame (27 of 27, 16 of 16).
+- test_runner (_quiet_menus): on for the home screen (Low), Quick Match, Settings, Records, How to Play, the season and
+  cup screens; off for the home screen with its match behind (Medium), a match, sepak raga; the home screen's tiles
+  still fade in. _loading_overlay: Quick Match quiet, every frame from the tap on Play.
+
 ## A Low polish pass (0.15.26)
 
 The lead: a polish pass on Low, as the other games had - stills at 1600x720 in every venue (park, beach, mall,

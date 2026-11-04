@@ -144,6 +144,10 @@ func _notification(what: int) -> void:
 		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
 			if current and is_instance_valid(current) and current.has_method("set_paused") and not bool(current.get("paused")):
 				current.set_paused(true)
+		NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN:
+			# (back from the background: a menu drawn only when it changes is drawn again now - quiet_menus)
+			if current is CanvasItem and is_instance_valid(current):
+				(current as CanvasItem).queue_redraw()
 
 
 ## Back: close what is open over the screen (a list being picked from, a question), pause or resume a match, leave a
@@ -366,6 +370,26 @@ func _swap(node: Node) -> void:
 		current.queue_free()
 	current = node
 	main.add_child(node)
+	_redraw_mode(node)
+
+
+## The game's own 2D menus are drawn only when something on them changes (OS.low_processor_usage_mode; the lead,
+## 2026-11-04, for the A16's battery: its busiest screens are 120-225 draw calls, drawn every frame for nothing). A tap,
+## a tween, a scroll's fling or a label's change still draws. A 3D mode (a match, sepak raga) and a screen with a live
+## backdrop (the home screen's attract match on Medium and High: live_backdrop()) are drawn every frame, and so is
+## everything from a loading overlay's tap on (play_match, Raga.open). quiet_menus off: every frame, everywhere (the
+## tools that wait on a drawn frame: tests/screenshots.gd, tools/media/trailer.gd).
+var quiet_menus := true
+
+
+func _redraw_mode(node: Node) -> void:
+	# (not while the game first loads: its warm-up draws the home screen's looks frame by frame - loading_screen.gd)
+	OS.low_processor_usage_mode = quiet_menus and not loading and is_instance_valid(node) and quiet_screen(node)
+
+
+## A screen drawn only when it changes: one of the game's 2D menus (a Control), not a 3D mode and without a live backdrop.
+static func quiet_screen(node: Node) -> bool:
+	return node is Control and not (node.has_method("live_backdrop") and bool(node.call("live_backdrop")))
 
 
 func show_screen(script_path: String, args := {}) -> Node:
@@ -402,6 +426,7 @@ func start_match(config: Dictionary) -> void:
 func play_match(config: Dictionary, buttons: Array = []) -> void:
 	if WsgLoading.busy():
 		return
+	OS.low_processor_usage_mode = false   # (the overlay's bar, then the match being built: every frame)
 	var ld := WsgLoading.cover(main, buttons, load_look())
 	ld.parts().root.theme = theme
 	ld.log_label = "match"
@@ -423,6 +448,7 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 	# of its own, not every one in the match's first frame - 6-12 s on a first launch, before).
 	ld.warm(func(): return built.m, "Drawing", 4.0)
 	if not await ld.run():
+		_redraw_mode(current)
 		return   # (the script did not load: the overlay has gone, the buttons are back)
 	await ld.done()   # (held up until the frames run smoothly: the first one he sees is the match under way)
 	last_load = ld.report

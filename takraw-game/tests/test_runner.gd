@@ -41,6 +41,7 @@ func _ready() -> void:
 	_stick_follows_screen()
 	await _watch_ai()
 	await _loading_overlay()
+	await _quiet_menus()
 	await _play_as_and_officials()
 	await _matches()
 	await _three_serves()
@@ -1125,6 +1126,48 @@ func _watch_ai() -> void:
 ## off; it stays up, frame after frame, until the match has started; the bar only goes forward, moves in many frames and reaches the end; a second start and Back do nothing meanwhile; the match is built
 ## in steps (no step's slice of main-thread work over the foundation's 250 ms), drawn a part at a time (the warm-up)
 ## and held till its frames come smoothly (the settle); then it starts, every part of it shown, its clock running. Every Start button goes the same way (play_match).
+## The game's 2D menus are drawn only when something on them changes (Game.quiet_menus, OS.low_processor_usage_mode;
+## the lead, 2026-11-04, for the A16's battery); a match, sepak raga and the home screen with its attract match
+## behind it (Medium and High) are drawn every frame. A menu's own animation still runs (the home screen's tiles fade
+## in: a tween's change is a redraw).
+func _quiet_menus() -> void:
+	var keep: int = Game.settings.graphics
+	var on := {}
+	Game.settings.graphics = Game.GFX_LOW
+	var home: Node = Game.show_screen("res://ui/main_menu.gd")
+	await frames(2)
+	on["home (Low)"] = OS.low_processor_usage_mode
+	await get_tree().create_timer(0.8).timeout
+	var faded := not (home.get("_cards") as Array).is_empty()
+	for c in home.get("_cards"):
+		faded = faded and (c as Control).modulate.a > 0.99
+	for sc in ["quick_setup", "settings_screen", "records_screen", "howto_screen", "season_hub", "cup_screen"]:
+		Game.show_screen("res://ui/%s.gd" % sc)
+		await frames(1)
+		on[sc] = OS.low_processor_usage_mode
+	Game.settings.graphics = Game.GFX_MEDIUM
+	Game.show_screen("res://ui/main_menu.gd")
+	await frames(2)
+	var live := not OS.low_processor_usage_mode
+	Game.settings.graphics = Game.GFX_LOW
+	Game.start_match({"home": "THA", "away": "MAS", "venue": "park", "sets": 1, "points": 15, "user_team": 0, "seed": 3})
+	await frames(2)
+	var in_match := not OS.low_processor_usage_mode
+	var r := Raga.new()
+	r.config = {"auto": true, "seed": 3}
+	Game._swap(r)
+	await frames(2)
+	var in_raga := not OS.low_processor_usage_mode
+	Game.goto_menu()
+	await frames(2)
+	var quiet := on.values().all(func(v): return bool(v))
+	check(quiet and OS.low_processor_usage_mode, "the menus drawn only when they change: %s, and the home screen again" % [on])
+	check(faded, "a menu's animation still runs, drawn only when it changes: the home screen's tiles faded in")
+	check(live and in_match and in_raga, "drawn every frame: the home screen with its match behind (Medium) %s, a match %s, sepak raga %s" % [live, in_match, in_raga])
+	Game.settings.graphics = keep
+	OS.low_processor_usage_mode = false
+
+
 func _loading_overlay() -> void:
 	var qs: Node = Game.show_screen("res://ui/quick_setup.gd")
 	await frames(3)
@@ -1133,6 +1176,7 @@ func _loading_overlay() -> void:
 	if btn == null:
 		return
 	var at := btn.get_global_rect().get_center()
+	var quiet_before := OS.low_processor_usage_mode
 	for pressed in [true, false]:
 		var ev := InputEventMouseButton.new()
 		ev.button_index = MOUSE_BUTTON_LEFT
@@ -1143,6 +1187,8 @@ func _loading_overlay() -> void:
 	var ld := WsgLoading.current()
 	check(ld != null and ld.is_inside_tree() and (ld.parts().root as Control).visible and btn.disabled,
 		"a tap on Play: the loading overlay up and the button off in the tap's own frame")
+	check(quiet_before and not OS.low_processor_usage_mode,
+		"Quick match is drawn only when it changes; from the tap on Play, every frame (the overlay's bar, the match built)")
 	if ld == null:
 		return
 	check((ld.parts().title as Label).text == tr("LOADING"), "the overlay says Loading in the game's language")

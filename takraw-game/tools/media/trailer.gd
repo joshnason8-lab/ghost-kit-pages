@@ -69,6 +69,7 @@ func _ready() -> void:
 	vertical = mode == "vertical"
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
+	Game.quiet_menus = false   # (it waits on drawn frames: every screen drawn every frame)
 	Game.reset_settings_for_tests()
 	Game.settings.graphics = Game.GFX_HIGH
 	Game.settings.sound = mode == "trailer" or mode == "vertical"
