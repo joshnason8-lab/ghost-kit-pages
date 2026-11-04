@@ -1470,8 +1470,14 @@ out of reach (as it is meant to; a dubki slips arms round the middle), and an an
   itself (where the held ankle can be dragged to) would change.
 - **A thigh helper as the raider lands** keeps hold at full stretch while the thigh drops away from him, up to 0.13 m
   off it, for the last 0.2 s before he lets go (`join`, `chain`, `crowd`; as before).
-- **Letting go to get up from the floor,** an ankle holder's hands swing back to the get-up pose over the let-go's
-  0.15 s however far that is: up to 1.3 m in five frames in `slip` (17 m/s at the fastest), as before.
+- **Letting go to get up from the floor,** an ankle holder's hands swing back from the hold at up to 5 m/s now
+  (`slip`, `catch`; 9-11 m/s before 0.14.18). Measured 2026-11-04: the swing was the pose's own, not the let-go's - the
+  pose's wrist moved 9-11 m/s in the body's own frame (the hips 0.6 m/s) in the first 0.15 s of `recover`, while the
+  dive eased out at 14/s (1 -> 0.53 -> 0.28), the fall pose eased in and `getup_front` blended in over three frames.
+  Capping the let-go's own hand speed, easing the dive out alone, or slowing the get-up clip's blend alone each left
+  it at 9-11 m/s; together - the dive out at 3/s (`Athlete.DIVE_OUT`), a get-up clip in at 3/s
+  (`HumanModel.GETUP_IN`) - the arms come back over a third of a second. Still faster than a calm reach; the rest is
+  the get-up clip's own first frames.
 - **A defender getting up outside the sideline's margin** (a dive that carried him past it) is put back inside it in
   the frame he stands: 0.3 m in a frame, once in these eight matches. The clamp has done this all along.
 

@@ -100,6 +100,7 @@ const READY_HINGE := 0.5     # rad the pelvis tips forward per unit of crouch, s
 const READY_WIDEN := 0.08    # ... and rad each leg goes further out: feet about 0.45 m apart
 const HELD_HINGE := 0.6      # share of that hinge a raider held round the middle bends into, struggling
 const HAUL_DIG := 0.5        # how much more of his body an ankle holder on the floor hauls with (_apply_struggle)
+const GETUP_IN := 3.0        # per s: a get-up clip's blend in over the hand-made pose (_apply_clip)
 const MOVE_FADE := 0.28      # s to cross-fade from one running clip to the next
 const MOVE_RATE := Vector2(0.5, 1.8)   # slowest and fastest a running clip is played, against how fast it was captured
 const SHUFFLE_ARMS_OWN := 0.8   # how much of a side-shuffle's arms are his own (hand-made ready arms), not the clip's
@@ -925,8 +926,11 @@ func _apply_clip(delta: float) -> void:
 	var want := 0.0
 	if clip and (clip_time >= 0.0 or _wait_shown):
 		want = 1.0 if not clip_loop else clampf(1.0 - (speed - 0.8) / 2.0, 0.0, 1.0)
-	# A quick move comes in fast: its clip already starts from the run-up.
-	clip_weight = move_toward(clip_weight, want, delta * (6.0 if clip_loop else 14.0))
+	# A quick move comes in fast: its clip already starts from the run-up. A get-up from the floor comes in over a
+	# third of a second (GETUP_IN), as the dive eases out (Athlete.DIVE_OUT): at the quick moves' rate an ankle holder
+	# letting go to get up swung his arms from the hold to the clip's in 0.1 s, 9-11 m/s at the hands.
+	var rate := 6.0 if clip_loop else (GETUP_IN if clip and String(clip.name).begins_with("getup") else 14.0)
+	clip_weight = move_toward(clip_weight, want, delta * rate)
 	if _prev_clip and _prev_weight > 0.0:
 		_prev_weight = move_toward(_prev_weight, 0.0, delta * 6.0)
 		_prev_time += delta * _prev_rate

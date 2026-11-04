@@ -405,6 +405,11 @@ func body_facing() -> Vector3:
 	return Vector3(-sin(_vis_yaw), 0.0, -cos(_vis_yaw)) if _vis_yaw != INF else facing
 
 
+## How fast the dive pose eases out (per second; it eases in at 14): letting go to get up, the arms come back from
+## the hold over a third of a second, not in one tenth (5 m/s at the hands, from 9-11).
+const DIVE_OUT := 3.0
+
+
 func _pose(delta: float) -> void:
 	var m := model
 	var k := clampf(delta * 10.0, 0.0, 1.0)
@@ -574,7 +579,8 @@ func _pose(delta: float) -> void:
 	m.lean = lerpf(m.lean, want_lean, k)
 	m.reach = lerpf(m.reach, want_reach, clampf(delta * 20.0, 0.0, 1.0))
 	m.kick = lerpf(m.kick, want_kick, clampf(delta * 18.0, 0.0, 1.0))
-	m.dive = lerpf(m.dive, want_dive, clampf(delta * 14.0, 0.0, 1.0))
+	# Into a dive at once; out of it more slowly (DIVE_OUT), with the get-up clip coming in (HumanModel.GETUP_IN).
+	m.dive = lerpf(m.dive, want_dive, clampf(delta * (14.0 if want_dive > m.dive else DIVE_OUT), 0.0, 1.0))
 	m.fallen = lerpf(m.fallen, want_fallen, k)
 	m.struggle = lerpf(m.struggle, want_struggle, k)
 	m.celebrate = lerpf(m.celebrate, want_celebrate, k)

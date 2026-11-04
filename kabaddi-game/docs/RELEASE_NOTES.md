@@ -1,4 +1,8 @@
-**New in 0.14.17: feet that land and stay.** On every graphics level, a foot coming down at the end of a step is held
+**New in 0.14.18: getting up without flinging the arms.** A defender who has held a raider on the floor and lets go
+to get up brings his arms back from the hold over a third of a second, instead of flinging them back in a tenth (his
+hands were moving at 10 m/s; now about 5).
+
+**In 0.14.17: feet that land and stay.** On every graphics level, a foot coming down at the end of a step is held
 where it touches the floor from the moment it touches, instead of a frame later: players and officials stopping,
 starting and turning no longer slide a landing foot a few centimetres along the mat. On Low, a walking player's planted
 foot now moves half a centimetre at most (it was nearly one).

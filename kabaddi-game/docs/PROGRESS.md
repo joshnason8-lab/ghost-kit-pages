@@ -647,3 +647,13 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   14.9 cm in extreme#10), and WsgSim honours --kinds with --from.
 - The lead's gate - Low at or under 0.14.16 on every line - measured here before it went out (see the commit).
 
+## 0.14.18: getting up from a hold without flinging the arms
+
+- Letting go of a hold on the floor to get up, the arms came back from the hold to the get-up clip's in about 0.1 s
+  (9-11 m/s at the hands in tackle_check's slip and catch). It was the pose's own swing, not the let-go's: the dive
+  eased out at 14/s while getup_front blended in over three frames. The dive now eases out at 3/s
+  (Athlete.DIVE_OUT) and a get-up clip blends in at 3/s (HumanModel.GETUP_IN): 4.8-5.3 m/s. Either alone left it at
+  9-11 (docs/TACKLE_SYSTEM.md). Into a dive is as quick as before.
+- tackle_check's breakfree scenario is not as expected (1 Break-free press, not 2; the raider's middle rises 9 cm at
+  0.4 s instead of dropping) - already so on 0.14.17, and with the Low planter off; to be traced.
+
