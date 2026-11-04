@@ -496,6 +496,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   World check feet_low PASS even enforced (walk 1.3 cm, jog, turn, run and stop 0.0), ahead of its 11-08 date.
   Also the foundation's planter fixes since 0.6.33 (scaled-down bodies, rigs not in metres).
 
+- **0.6.36-beta: the knees rule; shared foundation f080f277.** The world check's new "knees" rule (a knee more than
+  4 cm behind its hip-ankle line; enforced from 2026-11-06 12:00 UTC, after backwards knees were seen in another
+  game) reads the game's own Low bodies through world.gd's leg_bones (thigh, shin, foot, facing +Z) and excuses only
+  the dive (knee_excuse). Backward knees: 0 in every mode at Low, Medium and High (5.7-9.6k bent knee-frames a run);
+  knee_strays PASS. Also the foundation's planter knee pole (e04af650). Sim smoke: 83 matches, 0 failed; the
+  deferred foot jumps (28.5-45.7 cm, three AI-only matches) are with the foundation.
+
 ## Next
 
 1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
