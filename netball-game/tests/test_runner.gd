@@ -95,6 +95,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "match2" in OS.get_cmdline_user_args():
+		# (Only the after-goal change, obstruction's signal and the seated reserves: tests/test_runner.tscn -- match2)
+		await _match2()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -139,6 +145,7 @@ func _ready() -> void:
 	await _reserves()
 	await _solid_props()
 	await _rules2()
+	await _match2()
 	_tags()
 	await _coach()
 	await _navigation()
@@ -2039,7 +2046,7 @@ func _huddle() -> void:
 	await frames(2)
 
 
-## The reserves stand in front of their benches on Medium and High; Low draws none (it stays as it was).
+## The reserves sit on their benches on Medium and High (_match2 measures the seat); Low draws none (as it was).
 func _reserves() -> void:
 	var was := int(Game.settings.graphics)
 	for g in [Game.GFX_LOW, Game.GFX_HIGH]:
@@ -2056,7 +2063,7 @@ func _reserves() -> void:
 				for b in r.get_children():
 					var p := Vector2(b.position.x, b.position.z)
 					by_bench = by_bench and not Court.on_court(p) and p.distance_to(TeamAI.bench_spot(0 if p.x < 0.0 else 1)) < 3.0
-			check(by_bench, "High: the %d reserves stand by their benches" % n)
+			check(by_bench, "High: the %d reserves by their benches" % n)
 		m.queue_free()
 		await frames(2)
 	Game.settings.graphics = was
@@ -2097,14 +2104,16 @@ func _solid_props() -> void:
 		var spot := Rules.throw_in_spot(Vector2(Court.HALF_L, 0.05))
 		check(float(solid.penetration(Vector3(spot.x, 0, spot.y), Player.BODY_R)[0]) <= 0.0 and spot.x > Court.HALF_L,
 			"%s: a throw-in by the post is taken from outside the line, clear of its pad (%s)" % [venue, spot])
-		# The reserves: clear of the benches and the boards.
+		# The reserves: on their bench, clear of it and the boards (Match.reserve_parts: seated, her body over the seat
+		# and her lower legs in front of it).
 		var rs := m.get_node_or_null("Reserves")
 		var clear := rs != null
 		if rs:
 			for b in rs.get_children():
 				if b is ToonBody:
-					clear = clear and float(solid.penetration((b as Node3D).position, Player.BODY_R)[0]) <= 0.0
-		check(clear, "%s: the reserves stand clear of their bench and the boards" % venue)
+					for part: Array in Match.reserve_parts(b):
+						clear = clear and float(solid.penetration(part[0], part[1], part[2])[0]) <= 0.0
+		check(clear, "%s: the reserves sit clear of their bench and the boards" % venue)
 		# A ball knocked hard at the near side, low, comes back off what is there (the boards, the bench).
 		m.ball.loose(Vector3(4.6, 0.45, 10.2), Vector3(0, 0.5, 7.0))
 		var back := false
@@ -4387,3 +4396,302 @@ func _r2_pass_runs_on() -> void:
 	check(seen >= 2 and worst <= 6.0, "a pass nobody reached is met within 6 m (%d passes, %.1f m at most)" % [seen, worst])
 	m.queue_free()
 	await frames(2)
+
+
+# ---------------------------------------------------------------- -- match2
+
+## The after-goal tactical change (2024), the obstruction signal drawn, the reserves seated on their benches
+## (docs/PROGRESS.md "The after-goal change, obstruction's signal, the reserves on their benches").
+func _match2() -> void:
+	print("-- match2")
+	await _m2_goal_change()
+	await _m2_ai_goal_change()
+	await _m2_obstruction()
+	await _m2_seated()
+
+
+## A pick for an after-goal change: an on-court player of team t with someone on the bench for her position.
+func _m2_changeable(m: Match, t: int) -> Player:
+	for pos in ["GA", "GS", "WA", "WD", "GD", "GK", "C"]:
+		var pl := m.player_at(t, pos)
+		if pl and m.next_on(pl) >= 0:
+			return pl
+	return null
+
+
+## The after-goal change is allowed only after a goal (never in play); asked for in the goal's stoppage it is made as
+## the teams line up for the centre pass, and the centre pass is whistled no later for it.
+func _m2_goal_change() -> void:
+	var m := _study_match(52, {"user_team": 0, "demo": false})
+	await frames(3)
+	await _wait_live(m)
+	var pl := _m2_changeable(m, 0)
+	_m2(pl != null, "match2: someone on the bench for a change")
+	if pl == null:
+		m.queue_free()
+		return
+	var id0 := String(pl.data.id)
+	_m2(m.phase == "live" and not m.can_goal_change(0) and not m.can_goal_change(1) and not m.goal_change(pl) and String(pl.data.id) == id0,
+		"match2: no after-goal change in play")
+	# A goal by the other team: either team may ask, until the centre pass.
+	m._goal(m.player_at(1, "GS"), 1)
+	_m2(m.phase == "goal" and m.can_goal_change(0) and m.can_goal_change(1), "match2: after a goal, either team may ask for a change")
+	_m2(m.goal_change(pl) and String(pl.data.id) == id0 and pl in (m.goal_changes[0] as Array),
+		"match2: asked for in the goal's stoppage, not made yet")
+	# Taken back and asked again.
+	_m2(not m.goal_change(pl) and not (pl in (m.goal_changes[0] as Array)) and m.goal_change(pl), "match2: tapped again, the change is taken back")
+	var made_in := ""
+	var made_t := -1.0
+	var setup_clock := -1.0
+	var live_clock := -1.0
+	for f in 900:
+		await frames(1)
+		if setup_clock < 0.0 and m.phase == "setup":
+			setup_clock = m.clock
+		if made_in == "" and String(pl.data.id) != id0:
+			made_in = m.phase
+			made_t = m.phase_t
+		if m.phase == "live":
+			live_clock = m.clock
+			break
+	_m2(made_in == "setup" and made_t < 0.1, "match2: the change is made as the teams line up for the centre pass (%s, %.2f s in)" % [made_in, made_t])
+	var bench_has := false
+	for e in m.bench[0]:
+		bench_has = bench_has or String(e.id) == id0
+	_m2(bench_has and (m.goal_changes[0] as Array).is_empty(), "match2: she is on the bench, the new player on court")
+	var wait := live_clock - setup_clock
+	# (The centre pass is whistled once the teams are set, 3.2 s on at the least, and never past 5.7 s once the C has
+	# the ball: _run_setup. A change adds nothing.)
+	_m2(live_clock > 0.0 and wait < 9.0, "match2: the centre pass is not held up for the change (whistled %.1f s after the line-up)" % wait)
+	_m2(not m.can_goal_change(0) and not m.goal_change(_m2_changeable(m, 0)), "match2: once the centre pass is whistled, no after-goal change")
+	# Asked for while the teams line up: made at once.
+	m._goal(m.player_at(0, "GS"), 1)
+	for f in 300:
+		await frames(1)
+		if m.phase == "setup":
+			break
+	var pl2 := _m2_changeable(m, 0)
+	var id2 := String(pl2.data.id) if pl2 else ""
+	_m2(m.phase == "setup" and pl2 != null and m.goal_change(pl2) and String(pl2.data.id) != id2,
+		"match2: asked for at the centre pass's line-up, made at once")
+	# The pause menu offers it after a goal (and not in play).
+	m.set_paused(true)
+	await frames(1)
+	_m2(_button_named(m.hud, "GoalChange") != null, "match2: the pause menu offers the after-goal change")
+	m.set_paused(false)
+	await _wait_live(m)
+	m.set_paused(true)
+	await frames(1)
+	_m2(_button_named(m.hud, "GoalChange") == null, "match2: in play the pause menu has no after-goal change")
+	m.set_paused(false)
+	m.queue_free()
+	await frames(2)
+
+
+func _button_named(n: Node, nm: String) -> Node:
+	if n == null:
+		return null
+	for c in n.find_children(nm, "Button", true, false):
+		return c
+	return null
+
+
+## The AI uses it: a player hurt in a contact who played on comes off at the next centre pass after a goal (one change
+## a quarter).
+func _m2_ai_goal_change() -> void:
+	var m := _study_match(53)
+	await frames(3)
+	await _wait_live(m)
+	var hurt := _m2_changeable(m, 1)
+	var id0 := String(hurt.data.id) if hurt else ""
+	if hurt:
+		m._hurt_on[hurt] = true
+	m._goal(m.player_at(0, "GS"), 1)
+	_m2(hurt != null and hurt in (m.goal_changes[1] as Array), "match2: the AI asks to take off a player who played on hurt")
+	for f in 300:
+		await frames(1)
+		if m.phase == "setup":
+			break
+	_m2(hurt != null and String(hurt.data.id) != id0 and not m._hurt_on.has(hurt), "match2: ... and she is replaced at the centre pass")
+	await _wait_live(m)
+	var other := _m2_changeable(m, 1)
+	if other:
+		m._hurt_on[other] = true
+	m._goal(m.player_at(0, "GS"), 1)
+	_m2((m.goal_changes[1] as Array).is_empty(), "match2: the AI makes one after-goal change a quarter at most")
+	m.queue_free()
+	await frames(2)
+
+
+## Obstruction's signal: both arms out in front, one hand over the other, palms facing; the umpire's arm angles as
+## drawn, on the game's body (Low's) and, with the licensed clips, on the foundation's (Medium).
+func _m2_obstruction() -> void:
+	var p := Poses.umpire_signal("obstruction", 0.5, 1.0)
+	var ul: Vector3 = p.upperarm_l
+	var ur: Vector3 = p.upperarm_r
+	_m2(ul.x <= -70.0 and ul.x >= -110.0 and ur.x <= -70.0 and ur.x >= -110.0 and absf(ul.x - ur.x) >= 15.0,
+		"match2: obstruction's arms both out in front, one higher (%.0f, %.0f)" % [ul.x, ur.x])
+	_m2(ul.z < 0.0 and ur.z > 0.0, "match2: obstruction's arms drawn in toward the middle")
+	_m2(absf(absf((p.forearm_l as Vector3).y) - 90.0) < 1.0 and absf(absf((p.forearm_r as Vector3).y) - 90.0) < 1.0,
+		"match2: obstruction's forearms turned a quarter (palms facing)")
+	_m2(Match._signal_for("obstruction") == "obstruction", "match2: an obstruction call shows obstruction's signal")
+	var was := int(Game.settings.graphics)
+	var paths := [[Game.GFX_LOW, false]]
+	if WsgClips.available():
+		paths.append([Game.GFX_MEDIUM, true])
+	for pth in paths:
+		Game.settings.graphics = int(pth[0])
+		FoundationLink.off = not bool(pth[1])
+		var m := _study_match(54)
+		await frames(3)
+		m.set_process(false)
+		var u: Umpire = m.umpires[0]
+		u.target = u.p
+		u.vel = Vector2.ZERO
+		u.call_signal("obstruction", 1)
+		var rig := {}
+		if u.link and u.link.body:
+			var sk: Skeleton3D = u.link.body.skeleton
+			u.link.body.posed.connect(func():
+				for bn in ["LeftArm", "RightArm", "LeftHand", "RightHand"]:
+					rig[bn] = sk.global_transform * sk.get_bone_global_pose(sk.find_bone(bn)).origin)
+		for f in 24:
+			u.advance(1.0 / 30.0, u.p + Vector2(0.0, -float(u.side) * 4.0))
+			await frames(1)
+		var fwd := u.body.global_transform.basis.z.normalized()
+		var arms := {}
+		if bool(pth[1]):
+			if rig.size() == 4:
+				arms = {"l": [rig.LeftArm, rig.LeftHand], "r": [rig.RightArm, rig.RightHand]}
+		else:
+			arms = {"l": [u.body.bone_world("upperarm_l"), u.body.bone_world("hand_l")], "r": [u.body.bone_world("upperarm_r"), u.body.bone_world("hand_r")]}
+		var what := "Medium (foundation)" if bool(pth[1]) else "Low (the game's body)"
+		_m2(arms.size() == 2, "match2, %s: the umpire's arms read" % what)
+		if arms.size() == 2:
+			var ang := {}
+			for s in ["l", "r"]:
+				var d: Vector3 = (arms[s][1] as Vector3) - (arms[s][0] as Vector3)
+				# The arm's angle up from hanging straight down (0) through out in front (90).
+				ang[s] = rad_to_deg(d.angle_to(Vector3.DOWN))
+				_m2(d.dot(fwd) > 0.3, "match2, %s: the %s hand out in front (%.2f m)" % [what, s, d.dot(fwd)])
+			_m2(float(ang.l) > 65.0 and float(ang.l) < 115.0 and float(ang.r) > 65.0 and float(ang.r) < 115.0,
+				"match2, %s: both arms out in front (%.0f, %.0f degrees from hanging)" % [what, ang.l, ang.r])
+			var hl: Vector3 = arms.l[1]
+			var hr: Vector3 = arms.r[1]
+			var side := fwd.cross(Vector3.UP).normalized()
+			_m2(absf(hl.y - hr.y) > 0.07 and absf(hl.y - hr.y) < 0.35 and absf((hl - hr).dot(side)) < 0.16,
+				"match2, %s: one hand over the other (%.2f m apart up, %.2f across)" % [what, absf(hl.y - hr.y), absf((hl - hr).dot(side))])
+			if not bool(pth[1]):
+				# Palms facing: the upper hand's palm (the left's -x, the right's +x at rest) down, the lower's up.
+				var sk2 := u.body.skeleton
+				var pl_l := (sk2.global_transform * sk2.get_bone_global_pose(u.body.bone("hand_l"))).basis * Vector3(-1, 0, 0)
+				var pl_r := (sk2.global_transform * sk2.get_bone_global_pose(u.body.bone("hand_r"))).basis * Vector3(1, 0, 0)
+				var upper := pl_l if hl.y > hr.y else pl_r
+				var lower := pl_r if hl.y > hr.y else pl_l
+				_m2(upper.normalized().y < -0.7 and lower.normalized().y > 0.7,
+					"match2, %s: the palms face each other (upper %.2f, lower %.2f)" % [what, upper.normalized().y, lower.normalized().y])
+		m.queue_free()
+		await frames(2)
+	FoundationLink.off = true
+	Game.settings.graphics = was
+
+
+## The reserves sit on their benches in every venue: her hips over the seat by SIT_CLEAR and the hip joint's height
+## (within 3 cm), her feet on the floor, no part of her in a prop (Match.reserve_parts; the props' audit checks whole
+## matches), the seat under her; on a goal her team's stand to clap it and sit again. Low has no reserves (as before).
+func _m2_seated() -> void:
+	var was := int(Game.settings.graphics)
+	var paths := [false]
+	if WsgClips.available():
+		paths.append(true)
+	for found in paths:
+		FoundationLink.off = not found
+		Game.settings.graphics = Game.GFX_MEDIUM
+		for venue in ["arena", "hall", "outdoor"]:
+			var what := "%s%s" % [venue, " (foundation)" if found else ""]
+			var m := _study_match(55, {"venue": venue})
+			await frames(3)
+			var rs := m.get_node_or_null("Reserves")
+			var n := 0
+			var hip_err := 0.0
+			var feet_err := 0.0
+			var inside := 0.0
+			var over_seat := true
+			var solid: WsgSolidProps = m.arena.solid
+			var rig_hips := []
+			for b in (rs.get_children() if rs else []):
+				if not (b is ToonBody):
+					continue
+				var tb := b as ToonBody
+				n += 1
+				var st: Dictionary = tb.get_meta("seat", {})
+				if st.is_empty():
+					over_seat = false
+					continue
+				var top := float((st.hips as Vector3).y)
+				var s := tb.scale.y
+				var hips := tb.bone_world("hips")
+				hip_err = maxf(hip_err, absf(hips.y - (top + (Poses.SIT_CLEAR + Poses.LEG_HIP_DROP) * s)))
+				for f in ["foot_l", "foot_r"]:
+					feet_err = maxf(feet_err, absf(tb.bone_world(f).y - Poses.LEG_ANKLE * s))
+				# The seat under her hips: a prop there from the floor to the seat's top, and none higher (WsgSolidProps
+				# counts a prop from STEP over the body's foot).
+				over_seat = over_seat and float(solid.penetration(Vector3(hips.x, 0.0, hips.z), 0.02, top - 0.03)[0]) > 0.0 \
+					and float(solid.penetration(Vector3(hips.x, top + 0.02 - WsgSolidProps.STEP, hips.z), 0.02, 0.5)[0]) <= 0.0
+				for part: Array in Match.reserve_parts(tb):
+					inside = maxf(inside, float(solid.penetration(part[0], part[1], part[2])[0]))
+				# Every joint of her out of the props (her hands on her thighs, her feet in front of the seat).
+				for bn in ["hand_l", "hand_r", "forearm_l", "forearm_r", "shin_l", "shin_r", "foot_l", "foot_r", "chest", "head"]:
+					inside = maxf(inside, float(solid.penetration(tb.bone_world(bn), 0.04, 0.02)[0]))
+				var l: FoundationLink = tb.get_meta("link") if tb.has_meta("link") else null
+				if l and l.body:
+					# (Read as drawn: posed again, its bones kept as the pose leaves them, its modifiers run.)
+					var sk := l.body.skeleton
+					var got := []
+					var keep := func(): got.append((sk.global_transform * sk.get_bone_global_pose(sk.find_bone("Hips")).origin).y)
+					l.body.posed.connect(keep)
+					l.update(1.0 / 30.0, Vector2.ZERO, Vector2.ZERO, tb.rotation.y, "")
+					await frames(1)
+					l.body.posed.disconnect(keep)
+					if not got.is_empty():
+						rig_hips.append(float(got[-1]) - top)
+			_m2(n == m.bench[0].size() + m.bench[1].size() and n > 0 and over_seat, "match2, %s: the %d reserves each sit on a bench seat" % [what, n])
+			_m2(hip_err < 0.03, "match2, %s: their hips at the height over the seat sitting puts them (%.3f m off at most)" % [what, hip_err])
+			_m2(feet_err < 0.03, "match2, %s: their feet on the floor (%.3f m off at most)" % [what, feet_err])
+			_m2(inside <= 0.0, "match2, %s: no part of a reserve in a prop (%.3f m in at most)" % [what, inside])
+			if found:
+				var lo := 9.0
+				var hi := -9.0
+				for h in rig_hips:
+					lo = minf(lo, h)
+					hi = maxf(hi, h)
+				_m2(rig_hips.size() == n and lo > 0.03 and hi < 0.25, "match2, %s: drawn on the foundation, hips over the seat (%.2f-%.2f m)" % [what, lo, hi])
+			# A goal: her team's reserves stand to clap, then sit again.
+			var b0: ToonBody = null
+			for b in (rs.get_children() if rs else []):
+				if b is ToonBody and int(b.get_meta("team", -1)) == 0 and b.has_meta("seat"):
+					b0 = b
+					break
+			var sat_h := b0.bone_world("hips").y if b0 else 0.0
+			m._bench_goal(0)
+			var top_h := -INF
+			for f in 200:
+				await frames(1)
+				if b0 and is_instance_valid(b0):
+					top_h = maxf(top_h, b0.bone_world("hips").y)
+				if m._bench_cheer[0] < 0.0:
+					break
+			_m2(b0 != null and top_h > 0.8 * b0.scale.y and m._bench_cheer[0] < 0.0,
+				"match2, %s: a goal: her team's reserves stand up to clap (hips up to %.2f m)" % [what, top_h])
+			var back_h := b0.bone_world("hips").y if b0 and is_instance_valid(b0) else 0.0
+			_m2(b0 != null and absf(back_h - sat_h) < 0.01, "match2, %s: ... and sit again (hips %.2f m, %.2f before)" % [what, back_h, sat_h])
+			m.queue_free()
+			await frames(2)
+	FoundationLink.off = true
+	Game.settings.graphics = was
+
+
+## A match2 check, its measure printed too (the report's numbers).
+func _m2(ok: bool, what: String) -> void:
+	check(ok, what)
+	print("  %s %s" % ["ok  " if ok else "FAIL", what])

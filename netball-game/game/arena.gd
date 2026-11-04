@@ -45,6 +45,10 @@ var solid := WsgSolidProps.new()
 var floor_rect := Rect2(-Court.HALF_L - Court.RUNOFF, -Court.HALF_W - Court.RUNOFF, Court.LENGTH + Court.RUNOFF * 2.0,
 	Court.WIDTH + Court.RUNOFF * 2.0)
 var _ball_v := Vector3.ZERO      # the ball's speed a frame ago (a shot's last step to the ring is a short one)
+## The reserves' places on the team benches, by team (team 0's bench at x < 0, as TeamAI.bench_spot): each
+## {"hips": where her hips sit (x, the seat's top, z), "yaw": the way she faces (the court), "edge": from her hips to the
+## seat's front edge (m)}. Match._reserves seats them there; empty where a venue has no bench to sit on.
+var bench_seats: Array = [[], []]
 
 const NET_ROWS := 6               # the net's rows of faces (it bends between them)
 const NET_HZ := 1.3               # the net's sway: a rope skirt 42 cm deep swings about 1.3 times a second
@@ -506,11 +510,20 @@ func _bench(table: Color, seat: Color, accent: Color) -> void:
 	_glow.kind = Vector2(VenueLook.LED, 0.2)
 	_glow.wall(Vector3(1.55, 0, z - 0.36), Vector3(-1.55, 0, z - 0.36), 0.42, 0.68, accent)
 	_glow.kind = Vector2.ZERO
+	# The team benches stand in the boards' line, in a gap left for each (_boards: BENCH_GAP), their seats' front
+	# edge just inside it: room in front for the reserves' feet (they were behind the boards, with none).
+	var front := Court.HALF_W + Court.RUNOFF + 0.45 - BENCH_IN
 	for sx: float in [-1.0, 1.0]:
-		_lit.box(Vector3(6.5 * sx, 0.23, z + 0.2), Vector3(4.0, 0.45, 0.45), seat)
-		_lit.box(Vector3(6.5 * sx, 0.6, z + 0.42), Vector3(4.0, 0.7, 0.08), accent.darkened(0.25))
-		_solid_box("team bench seat", Vector3(6.5 * sx, 0.23, z + 0.2), Vector3(4.0, 0.45, 0.45), "plastic")
-		_solid_box("team bench back", Vector3(6.5 * sx, 0.6, z + 0.42), Vector3(4.0, 0.7, 0.08), "plastic")
+		var sc := Vector3(BENCH_X * sx, BENCH_TOP * 0.5, front + BENCH_DEPTH * 0.5)
+		var bc := Vector3(BENCH_X * sx, 0.6, front + BENCH_DEPTH + 0.04)
+		_lit.box(sc, Vector3(BENCH_LEN, BENCH_TOP, BENCH_DEPTH), seat)
+		_lit.box(bc, Vector3(BENCH_LEN, 0.7, 0.08), accent.darkened(0.25))
+		_solid_box("team bench seat", sc, Vector3(BENCH_LEN, BENCH_TOP, BENCH_DEPTH), "plastic")
+		_solid_box("team bench back", bc, Vector3(BENCH_LEN, 0.7, 0.08), "plastic")
+		var xs := []
+		for i in 5:
+			xs.append(sx * (BENCH_X + (i - 2) * 0.72))
+		_seats(0 if sx < 0.0 else 1, xs, BENCH_TOP, front + 0.2, 0.2)
 		if not _low:
 			for i in 3:
 				_lit.box(Vector3(-0.9 + i * 0.9, 0.5, z + 0.6), Vector3(0.45, 1.0, 0.45), seat.darkened(0.2))
@@ -519,6 +532,24 @@ func _bench(table: Color, seat: Color, accent: Color) -> void:
 
 
 # ---------------------------------------------------------------- stands
+
+## The arena's team benches (m): the middle of each this far either side of the officials' table, its length, the
+## seat's top and depth, and how far its front edge comes in from the boards' line.
+const BENCH_X := 6.5
+const BENCH_LEN := 4.0
+const BENCH_TOP := 0.44
+const BENCH_DEPTH := 0.45
+const BENCH_IN := 0.12
+## The boards' gap for each team bench: from the middle this far out to this far (m; the bench is BENCH_X +- 2).
+const BENCH_GAP := Vector2(4.3, 8.7)
+
+
+## The reserves' places on a bench (bench_seats): team t's, at each x, the seat top high, her hips at z (the court at
+## -z), edge m behind the seat's front edge.
+func _seats(t: int, xs: Array, top: float, z: float, edge: float) -> void:
+	for x: float in xs:
+		bench_seats[t].append({"hips": Vector3(x, top, z), "yaw": PI, "edge": edge})
+
 
 ## A ring of four faces round the court at distance o0 (beyond the run-off's corners X0, Z0) and height y0 to
 ## distance o1 and height y1: a slope of seats, a fascia or a walkway, mitred at the corners. k: the kind of face; for
@@ -781,9 +812,25 @@ func _boards() -> void:
 			var x1 := -hl + (hl * 2.0) * (i + 1) / n
 			if z > 0.0 and absf((x0 + x1) * 0.5) < 3.0:
 				continue   # the officials' table
-			var a := Vector3(x0 + 0.03, 0, z)
-			var b := Vector3(x1 - 0.03, 0, z)
-			runs.append([a, b, i] if z < 0.0 else [b, a, i + 1])
+			# On the near side, a gap where each team bench stands (BENCH_GAP): the run cut short either side of it.
+			var parts := [[x0, x1]]
+			if z > 0.0:
+				parts = []
+				var from := x0
+				for c: Vector2 in [Vector2(-BENCH_GAP.y, -BENCH_GAP.x), BENCH_GAP]:
+					if c.y <= from or c.x >= x1:
+						continue
+					if c.x > from:
+						parts.append([from, c.x])
+					from = c.y
+				if from < x1:
+					parts.append([from, x1])
+			for pr: Array in parts:
+				if float(pr[1]) - float(pr[0]) < 0.3:
+					continue
+				var a := Vector3(float(pr[0]) + 0.03, 0, z)
+				var b := Vector3(float(pr[1]) - 0.03, 0, z)
+				runs.append([a, b, i] if z < 0.0 else [b, a, i + 1])
 	runs.append([Vector3(-hl, 0, hw), Vector3(-hl, 0, -hw), 0])
 	runs.append([Vector3(hl, 0, -hw), Vector3(hl, 0, hw), 0])
 	for r: Array in runs:
@@ -986,7 +1033,7 @@ func _hall() -> void:
 		_lit.kind = Vector2(VenueLook.METAL, 0)
 		_lit.cylinder(e + Vector3(0, front, 0), e + Vector3(0, front + 1.0, 0), 0.025, 0.025, Color("9aa0a8"), 6)
 		_lit.kind = Vector2.ZERO
-	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75)
+	_hall_bench(Court.HALF_W + Court.RUNOFF + 0.75, "gym_bench")
 
 
 ## A row of portable LED boards along the far side line, as wheeled out for a league match. Medium and High.
@@ -1382,9 +1429,18 @@ func _ball_cage(p: Vector3) -> void:
 	_glow.kind = Vector2.ZERO
 
 
+## The models' seats (m, measured off assets/venue/*_props.res): the school bench's top and half its depth; the park
+## bench's seat top and its front edge's distance from the model's middle; its back's front face behind the middle.
+const GYM_BENCH_TOP := 0.40
+const GYM_BENCH_HALF_D := 0.437
+const PARK_BENCH_TOP := 0.45
+const PARK_BENCH_FRONT := 0.282
+const PARK_BENCH_BACK := 0.19
+
+
 ## The officials' bench: a plain scorers' table at the middle of the near side line, and each team's benches (model)
-## either side of it, step metres apart from start.
-func _hall_bench(z: float, model := "painted_bench", start := 4.6, step := 1.25) -> void:
+## either side of it, step metres apart from start (the hall's: one school bench each, gym_bench).
+func _hall_bench(z: float, model := "gym_bench", start := 4.6, step := 1.25) -> void:
 	_lit.box(Vector3(0, 0.735, z), Vector3(2.8, 0.05, 0.75), Color("e8e4dc"))
 	_lit.box(Vector3(0, 0.38, z - 0.33), Vector3(2.7, 0.62, 0.03), Color("2c4f8c"))
 	# Solid: the table (its modesty panel to the floor at the front), its three chairs.
@@ -1400,8 +1456,29 @@ func _hall_bench(z: float, model := "painted_bench", start := 4.6, step := 1.25)
 		_lit.box(Vector3(-0.9 + i * 0.9, 0.45, z + 0.62), Vector3(0.45, 0.06, 0.42), Color("27303a"))
 		_lit.box(Vector3(-0.9 + i * 0.9, 0.72, z + 0.82), Vector3(0.45, 0.5, 0.04), Color("27303a"))
 	for sx: float in [-1.0, 1.0]:
+		var t := 0 if sx < 0.0 else 1
+		if model == "gym_bench" and _props.has(model):
+			# The hall's team benches: one long school bench each, along the side line, its front edge where the old
+			# painted benches' was (their seats were 0.66 m up: no reserve's feet reached the floor). The seat 0.40 m
+			# up and 0.87 m deep with no back: the reserves sit near its front edge, five along it.
+			var c := Vector3(sx * (start + step), 0, z - 0.2 + GYM_BENCH_HALF_D)
+			_props.put(model, c, PI * 0.5)
+			var xs := []
+			for i in 5:
+				xs.append(c.x + (i - 2) * 0.55)
+			_seats(t, xs, GYM_BENCH_TOP, z, 0.2)
+			continue
+		var xs2 := []
 		for i in 3:
 			_props.put(model, Vector3(sx * (start + i * step), 0, z + 0.05), PI)
+			if model == "park_bench":
+				# Two places on each park bench, either side of its middle (five of the six used).
+				for k: float in [-1.0, 1.0]:
+					xs2.append(sx * (start + i * step) + k * 0.38)
+		if model == "park_bench" and _props.has(model):
+			xs2.sort_custom(func(a: float, b: float) -> bool: return absf(a) < absf(b))
+			# The seat's front edge (the model's +z, 0.282 m from its middle, turned to face the court).
+			_seats(t, xs2.slice(0, 5), PARK_BENCH_TOP, z + 0.05 - PARK_BENCH_FRONT + 0.2, 0.2)
 
 
 # ---------------------------------------------------------------- the outdoor court
@@ -1675,6 +1752,16 @@ func _solid_models() -> void:
 		if name == "street_lamp_tall":
 			solid.add({"name": name, "kind": "cylinder", "position": xf.origin, "radius": 0.08,
 				"height": ab.size.y * xf.basis.get_scale().y, "material": "metal"})
+			continue
+		if name == "park_bench":
+			# A park bench as its seat (legs and slats, to the seat's top) and its back behind it, not one box to the top
+			# of its back: a reserve sits on the seat, in front of the back (Match._reserves).
+			var top := PARK_BENCH_TOP + 0.01
+			var seat := AABB(Vector3(ab.position.x, 0.0, -PARK_BENCH_BACK), Vector3(ab.size.x, top, ab.end.z + PARK_BENCH_BACK))
+			var back := AABB(Vector3(ab.position.x, 0.0, ab.position.z), Vector3(ab.size.x, ab.size.y, -PARK_BENCH_BACK - ab.position.z))
+			for part: AABB in [seat, back]:
+				solid.add({"name": name, "kind": "box", "xf": Transform3D(xf.basis.orthonormalized(), xf * part.get_center()),
+					"size": part.size * xf.basis.get_scale(), "material": "wood"})
 			continue
 		solid.add({"name": name, "kind": "box", "xf": Transform3D(xf.basis.orthonormalized(), xf * ab.get_center()),
 			"size": ab.size * xf.basis.get_scale(), "material": MATERIAL.get(name, "wood")})

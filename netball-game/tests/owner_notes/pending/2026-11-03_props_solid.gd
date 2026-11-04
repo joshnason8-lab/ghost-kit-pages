@@ -41,8 +41,10 @@ func check() -> void:
 				var res: Node = m.get_node_or_null("Reserves")
 				if res:
 					for r in res.get_children():
-						if r is Node3D:
-							audit.body(String(r.name), (r as Node3D).global_position, 0.25)
+						if r is ToonBody:
+							# (Seated on the bench: her body over the seat, her lower legs in front of it.)
+							for part: Array in Match.reserve_parts(r):
+								audit.body(String(r.name), part[0], part[1], part[2])
 				if m.ball.state in ["loose", "flight", "dead"]:
 					audit.ball(m.ball.global_position, Ball.R)
 				else:

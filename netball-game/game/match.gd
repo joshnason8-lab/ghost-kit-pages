@@ -62,6 +62,13 @@ var double_zone := false
 var rolling := false                # the league option: team changes at any time (the pause menu)
 var timeouts := [0, 0]              # the league option: time-outs left this half, by team
 var _timeout_until := 0.0
+## The after-goal tactical change (World Netball 2024, R3): after a goal, until the next centre pass is whistled, either
+## team may ask for a substitution; it is made as the teams line up for that centre pass (_setup_centre), and the
+## centre pass waits no longer for it than it always does.
+var goal_changes: Array = [[], []]   # by team: the players on court asked to come off, made at the centre pass
+var _after_goal := false            # a goal was scored and the next centre pass not yet whistled
+var _ai_change_q := [0, 0]          # the period of each team's last after-goal change by the AI (one a quarter)
+var _hurt_on := {}                  # Player -> true: hurt in a contact, played on (the AI takes her off after a goal)
 var stats := {}                     # player id -> counters
 var log: Array = []                 # what happened, for the tests and the result
 var calls := {}                     # infringement kind -> count (the tests check the rules are used)
@@ -259,8 +266,11 @@ func _build_last() -> void:
 		add_child(wsg_replay)
 
 
-## The reserves (bench) standing in a row in front of their team's bench, in tracksuits (the code-built figure, one
-## shared mesh a team, no shadow): Medium and High only, so Low draws what it did. Rebuilt after a team change.
+## The reserves (bench) sitting on their team's bench (Arena.bench_seats), in tracksuits (the code-built figure, one
+## shared mesh a team, no shadow): Medium and High only, so Low draws what it did. Rebuilt after a team change. Each
+## stands where her feet are, in front of the bench, her hips SIT_BACK behind her over the seat (Poses.seated); at a
+## goal her team's reserves stand and clap, then sit again (_bench_step). Where a venue has no seats, they stand at
+## ease in front of the bench, as before.
 func _reserves(ld: WsgLoading = null) -> void:
 	var old := get_node_or_null("Reserves")
 	if old:
@@ -283,22 +293,103 @@ func _reserves(ld: WsgLoading = null) -> void:
 				"height": float(e.get("height", 1.75)), "pos": ""})
 			root.add_child(b)
 			b.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			var at := TeamAI.bench_spot(t) + Vector2((float(i) - (n - 1) * 0.5) * 0.75, 1.3)
-			# On the floor in front of the bench, clear of it and the boards (never in a prop: WsgSolidProps.free_spot).
-			b.position = arena.solid.free_spot(Vector3(at.x, 0.0, at.y), Player.BODY_R, Player.BODY_H)
-			b.rotation.y = PI
-			b.apply(Poses.at_ease())
-			# On the player's model in a tracksuit of the team's colours (the foundation, Medium and High): posed once.
+			b.set_meta("team", t)
+			var seats: Array = arena.bench_seats[t]
+			if i < seats.size():
+				# On her seat: where her feet are, SIT_BACK in front of her hips, facing the court.
+				var st: Dictionary = seats[i]
+				var yaw := float(st.yaw)
+				var hips: Vector3 = st.hips
+				b.position = Vector3(hips.x, 0.0, hips.z) + Vector3(sin(yaw), 0.0, cos(yaw)) * SIT_BACK
+				b.rotation.y = yaw
+				b.set_meta("seat", st)
+				b.apply(_seated_pose(b))
+			else:
+				var at := TeamAI.bench_spot(t) + Vector2((float(i) - (n - 1) * 0.5) * 0.75, 1.3)
+				# On the floor in front of the bench, clear of it and the boards (never in a prop: WsgSolidProps.free_spot).
+				b.position = arena.solid.free_spot(Vector3(at.x, 0.0, at.y), Player.BODY_R, Player.BODY_H)
+				b.rotation.y = PI
+				b.apply(Poses.at_ease())
+			# On the player's model in a tracksuit of the team's colours (the foundation, Medium and High): posed once
+			# (and again while she claps a goal).
 			if FoundationLink.enabled():
 				var l := FoundationLink.new(b, b, "reserve")
 				root.add_child(l)
-				l.update(1.0 / 60.0, Vector2.ZERO, Vector2.ZERO, PI, "")
+				b.set_meta("link", l)
+				l.update(1.0 / 60.0, Vector2.ZERO, Vector2.ZERO, b.rotation.y, "")
 				# (On the bench, always the light mesh: the tier's full-detail bodies are the players' and umpires'.)
 				if l.body:
 					l.body.set_detail(false)
 			made += 1
 			if ld:
 				await ld.checkpoint(float(made) / all)    # the loading overlay: a frame between reserves
+
+
+## A seated reserve's hips this far behind where she stands (m): her feet just in front of the seat's edge, and
+## standing up she is clear of the bench (Player.BODY_R and more from it).
+const SIT_BACK := 0.5
+## A goal on the bench: seconds the scorers' reserves are up clapping (standing up, clapping, sitting down).
+const BENCH_CHEER_S := 4.0
+var _bench_cheer := [-1.0, -1.0]    # seconds into each team's reserves' clap of a goal (-1: seated)
+
+
+## A reserve's seated pose on her seat (in her body's own units: ToonBody is scaled to her height).
+func _seated_pose(b: ToonBody) -> Dictionary:
+	var st: Dictionary = b.get_meta("seat")
+	var s := maxf(b.scale.y, 0.01)
+	return Poses.seated(float((st.hips as Vector3).y) / s, SIT_BACK / s)
+
+
+## How far up a seated reserve is standing (0 seated, 1 up), u seconds into her team's clap of a goal.
+static func bench_stand(u: float) -> float:
+	if u < 0.0:
+		return 0.0
+	return smoothstep(0.15, 0.75, u) * (1.0 - smoothstep(BENCH_CHEER_S - 0.8, BENCH_CHEER_S - 0.1, u))
+
+
+## A goal: the scoring team's reserves stand and clap it (Medium and High: there are none on Low).
+func _bench_goal(t: int) -> void:
+	if get_node_or_null("Reserves") != null:
+		_bench_cheer[t] = 0.0
+
+
+## The reserves clapping a goal: up from the bench, clapping, down again; the others sit still (posed once).
+func _bench_step(dt: float) -> void:
+	for t in 2:
+		if _bench_cheer[t] < 0.0:
+			continue
+		_bench_cheer[t] += dt
+		var u: float = _bench_cheer[t]
+		var done := u >= BENCH_CHEER_S
+		var rs := get_node_or_null("Reserves")
+		if rs:
+			for b in rs.get_children():
+				if not (b is ToonBody) or int(b.get_meta("team", -1)) != t or not b.has_meta("seat"):
+					continue
+				var k := 0.0 if done else bench_stand(u)
+				b.apply(Poses.blend(_seated_pose(b), Poses.clap(u), k))
+				var l: FoundationLink = b.get_meta("link") if b.has_meta("link") else null
+				if l and is_instance_valid(l):
+					l.update(dt, Vector2.ZERO, Vector2.ZERO, b.rotation.y, "")
+		if done:
+			_bench_cheer[t] = -1.0
+
+
+## What of a reserve the props must keep out of (the props' audit, tests/prop_runs.gd): [[position, radius, height],
+## ...] in world space. Standing (at ease, or up clapping): her whole body where she stands. Seated: her body above
+## the seat over her hips, and her lower legs in front of the seat to the floor (her thighs lie along the seat's top).
+static func reserve_parts(b: Node3D) -> Array:
+	var u := -1.0
+	var m := b.get_parent().get_parent() if b.get_parent() else null
+	if m is Match:
+		u = float((m as Match)._bench_cheer[int(b.get_meta("team", 0))])
+	if not b.has_meta("seat") or bench_stand(u) > 0.5:
+		return [[b.global_position, Player.BODY_R, Player.BODY_H]]
+	var st: Dictionary = b.get_meta("seat")
+	var hips: Vector3 = st.hips
+	var fwd := Vector3(sin(float(st.yaw)), 0.0, cos(float(st.yaw)))
+	return [[Vector3(hips.x, hips.y + 0.03, hips.z), 0.17, 0.9],
+		[Vector3(hips.x, 0.0, hips.z) + fwd * (float(st.edge) + 0.17), 0.12, hips.y - 0.03]]
 
 
 func _blank_stats(t: int, entry: Dictionary) -> Dictionary:
@@ -345,6 +436,7 @@ func _process(delta: float) -> void:
 	# (Ranked before they are posed: a body made full detail after its pose this frame shows its hands open on the
 	# ball till its next pose.)
 	_rank_detail(delta)
+	_bench_step(delta)
 	if phase == "replay":
 		_replay_step(delta)
 		return
@@ -472,6 +564,7 @@ func _tick_clock(dt: float) -> void:
 func _setup_centre(snap := false) -> void:
 	var t := Rules.centre_pass_team(cp_first, cp_n)
 	restart = {"to": t, "kind": Rules.CENTRE, "at": Vector2.ZERO, "shot": false, "why": "centre"}
+	_apply_goal_changes()
 	restart.taker = player_at(t, "C")
 	_enter("setup")
 	pass_info = {}
@@ -595,6 +688,7 @@ func _choose_taker() -> void:
 
 func _go_live() -> void:
 	_enter("live")
+	_after_goal = false
 	hold_t = 0.0
 	hold_ready = true
 	if String(restart.kind) == Rules.CENTRE:
@@ -1072,6 +1166,11 @@ func _goal(pl: Player, value: int) -> void:
 	if pl.team == user_team and not demo:
 		Game.haptic("goal")
 	pl.set_act("cheer")
+	_bench_goal(pl.team)
+	_after_goal = true
+	for t in 2:
+		if t != user_team:
+			_ai_goal_change(t)
 	log.append({"t": _elapsed(), "q": q, "goal": pl.team, "by": pl.pos, "value": value})
 	# A side four or more behind may call a time-out after the goal (the AI's; yours is in the pause menu).
 	var other := 1 - pl.team
@@ -1365,6 +1464,8 @@ func _end_injury() -> void:
 	var hurt: Player = _stop_award.get("injured")
 	if hurt and hurt.team != user_team and rng.randf() < 0.7:
 		substitute(hurt)
+	elif hurt:
+		_hurt_on[hurt] = true   # (she plays on: the AI may take her off after a goal)
 	_break_skip = false
 	if hud:
 		hud.hide_break()
@@ -1391,6 +1492,7 @@ func _next_period() -> void:
 		time_left = float(config.quarter_s) * 0.5 if q <= 6 else INF
 	q_scores.append([0, 0])
 	_cp_whistled = false
+	_after_goal = false     # (an interval: changes at the break; one asked for after the last goal is still made)
 	if q == 3 and bool(config.get("timeouts", false)):
 		timeouts = [Rules.TIMEOUTS_PER_HALF, Rules.TIMEOUTS_PER_HALF]
 	_set_ends()
@@ -1858,6 +1960,77 @@ func _input(event: InputEvent) -> void:
 		_end_replay()
 
 
+## The after-goal tactical change (R3, since 2024): whether team t may ask for one now. Only after a goal, until the
+## next centre pass is whistled (the goal's stoppage, its replay, the line-up for the centre pass); never in play.
+func can_goal_change(t: int) -> bool:
+	if t < 0 or t > 1 or not _after_goal:
+		return false
+	return phase in ["goal", "replay"] or (phase == "setup" and String(restart.get("kind", "")) == Rules.CENTRE)
+
+
+## Asks for pl to come off in an after-goal change (for the next one on the bench who plays her position, as at an
+## interval). Asked in the goal's stoppage, it is made as the teams line up for the centre pass; asked once they are
+## lining up, at once. Asking again for one already asked for takes it back. Returns whether it is now asked for (or
+## made).
+func goal_change(pl: Player) -> bool:
+	if pl == null or not can_goal_change(pl.team):
+		return false
+	var asked: Array = goal_changes[pl.team]
+	if pl in asked:
+		asked.erase(pl)
+		return false
+	if next_on(pl) < 0:
+		return false
+	if phase == "setup":
+		return _goal_substitute(pl)
+	asked.append(pl)
+	return true
+
+
+## The changes asked for after the goal, made as the teams line up for the centre pass.
+func _apply_goal_changes() -> void:
+	for t in 2:
+		var asked: Array = goal_changes[t]
+		goal_changes[t] = []
+		for pl: Player in asked:
+			if is_instance_valid(pl) and not pl.away():
+				_goal_substitute(pl)
+
+
+func _goal_substitute(pl: Player) -> bool:
+	var off := String(pl.data.name)
+	if not substitute(pl):
+		return false
+	log.append({"t": _elapsed(), "q": q, "goal_change": pl.pos, "team": pl.team})
+	game_event.emit("goal_change", {"team": pl.team, "pos": pl.pos, "off": off, "on": String(pl.data.name)})
+	return true
+
+
+## The AI's after-goal change (one a quarter at most): a player hurt in a contact who played on comes off; else, now
+## and then, a shooter well off her range (five shots and more, under half in) is rested. (The game models no
+## tiredness, so none for that.) Chosen from the score, not the match's random stream, so play is otherwise unchanged.
+func _ai_goal_change(t: int) -> void:
+	if int(_ai_change_q[t]) == q or not (goal_changes[t] as Array).is_empty():
+		return
+	var pick: Player = null
+	for pl: Player in players[t]:
+		if _hurt_on.has(pl) and not pl.away() and next_on(pl) >= 0:
+			pick = pl
+			break
+	if pick == null and (score[0] + score[1] + q) % 2 == 0:
+		for pl: Player in players[t]:
+			if not (pl.pos in ["GS", "GA"]) or pl.away() or next_on(pl) < 0:
+				continue
+			var s: Dictionary = stats.get(String(pl.data.id), {})
+			var att := int(s.get("attempts", 0))
+			if att >= 5 and int(s.get("goals", 0)) * 2 < att:
+				pick = pl
+				break
+	if pick:
+		_ai_change_q[t] = q
+		(goal_changes[t] as Array).append(pick)
+
+
 ## A team change (R3): at an interval, the player in pos comes off for the next one on the bench who plays it (her
 ## position or a neighbouring one). Returns whether anyone came on.
 func substitute(pl: Player) -> bool:
@@ -1874,6 +2047,7 @@ func substitute(pl: Player) -> bool:
 		pl.body.queue_free()
 		pl._ready()
 		pl.place(pl.p, pl.facing)
+		_hurt_on.erase(pl)
 		_reserves()
 		game_event.emit("substitution", {"team": t, "pos": pl.pos})
 		return true

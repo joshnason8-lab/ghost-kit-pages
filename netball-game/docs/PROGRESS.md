@@ -8,7 +8,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 
 - Branch `claude/netball-game`, folder `netball-game/` (self-contained Godot 4.7.2 project), pages folder
   `netball-unleashed/`, workflows `.github/workflows/netball-android.yml` and `netball-play-bundle.yml`.
-- Version 0.7.0-beta. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
+- Version: see project.godot (config/version) and docs/BETA.md. Draft PR #4 (https://github.com/joshnason8-lab/ghost-kit-pages/pull/4); beta release
   https://github.com/joshnason8-lab/ghost-kit-pages/releases/tag/netball-unleashed-beta.
 
 ## Done
@@ -518,18 +518,47 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   replays the same over a save and load in the rounds and in the finals; the bracket with each semi won both ways;
   an old save (and one older, without the generator's state) loads and plays on. `_league` checks the new finals.
   The fit audit adds the home-and-away hub and the preliminary final's three messages (through, out, missed).
+- **The after-goal change, obstruction's signal, the reserves on their benches** (branch netball-match, from
+  0.9.6-beta; no version bump). (1) The 2024 after-goal tactical change on request (RULES.md R3): after a goal and
+  until the next centre pass is whistled the pause menu offers Team changes (`Match.can_goal_change`; never in
+  play); a change asked for in the goal's stoppage is made as the teams line up for the centre pass, one asked for
+  while they line up at once, tapped again it is taken back (`Match.goal_change`, `goal_changes`). The centre pass
+  is whistled as it always is (3.2 s after the line-up in the test): no wait added, since how long play may wait was
+  not found (RULES.md "Still unconfirmed"). The AI uses it, one a quarter: a player hurt in a contact who played on
+  (`_hurt_on`), or, chosen from the score and not the random stream, a shooter five shots and more under half in;
+  the game models no tiredness. A banner names who came off and on. No new strings (Team changes, Done and the
+  note are the interval's). Substitutions only, no positional swaps. (2) Obstruction's signal: both arms out in
+  front, one hand over the other, palms facing (`Poses.umpire_signal`, OBSTRUCTION_*: the upper arm 97 degrees
+  forward, the lower 76, drawn in 16, the forearms turned a quarter); read off the game's body on Low (arms 71 and
+  98 degrees from hanging, hands 0.20 m apart up, 0.09 across, palms -1.00 and 0.96) and the foundation's on Medium
+  (75 and 99, 0.18 and 0.12). (3) The reserves sit on their benches (Medium and High; Low draws none, as before):
+  `Arena.bench_seats` gives each venue's places; `Poses.seated` puts the hip joints 8.5 cm over the seat, the
+  thighs along it sloping just enough that the shins hang straight to feet flat on the floor, hands on the thighs;
+  the node stands where her feet are, her hips `Match.SIT_BACK` (0.5 m) behind over the seat. At a goal the
+  scorers' reserves stand, clap and sit again (`Match._bench_step`, 4 s). The arena's team benches were behind the
+  LED boards with no room for feet: they now stand in the boards' line in a gap left for each (`Arena.BENCH_GAP`
+  4.3-8.7 m out, the seat 0.44 m high and 0.45 deep, its front 12 cm inside the line). The hall's painted benches had
+  0.66 m seats (no feet reached the floor): each team has one long school bench (gym_bench, 0.40 m) instead. The
+  park bench is solid as its seat and its back (one box to the top of its back before). The props' audit checks a
+  seated reserve's body over the seat and her lower legs in front of it (`Match.reserve_parts`), not excused as
+  seated. Tests `-- match2` (69 checks, also in the full run): the change only after a goal and made at the centre
+  pass, the AI's use, the arm angles on both paths, hips over the seat (the game's 0.000 m off; the foundation's hips
+  0.16-0.19 m over the seat), feet on the floor, no part in a prop, standing to clap and sitting again. Contact
+  sheet of the seated reserves and the signal on Low and Medium made for review (not kept in the repo).
 
 ## Next
 
 1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the
-   0.2 strings are listed under "Added in 0.2" in each.
-2. The non-English store listings: add the Club Season and the coach (the English ones have them).
-3. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
+   0.2 strings are listed under "Added in 0.2" in each, and the home-and-away season's under "Added for the
+   home-and-away season (needs native review)", the preliminary final's word first.
+2. The non-English store listings: add the Club Season (single or home and away, the page-playoff finals) and the
+   coach (the English ones have them).
+3. The after-goal change: positional changes between players on court (at an interval too), and the without-ball
+   obstruction signal if the game ever calls that obstruction; settle the signal and how long play may wait for the
+   change against the PDF (item 6).
 4. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-5. The upload key and the closed test (store/PLAY_STORE.md). (The umpires are the players' model now, 0.8.6.)
+5. The upload key and the closed test (store/PLAY_STORE.md).
 6. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
-7. Native review of the home-and-away season's strings (each docs/translation_notes/<code>.md, "Added for the
-   home-and-away season (needs native review)"), the preliminary final's word first.
 
 ## Decisions
 

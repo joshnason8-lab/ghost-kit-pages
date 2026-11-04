@@ -224,13 +224,61 @@ static func huddle() -> Dictionary:
 	return p
 
 
-## A reserve on the bench: standing at ease, hands together in front.
+## A reserve by the bench, where a venue has no seat for her (Match._reserves): standing at ease, hands together.
 static func at_ease() -> Dictionary:
 	var p := ready(0.2)
 	p.upperarm_l = Vector3(-14, 0, 6)
 	p.forearm_l = Vector3(-40, -30, 0)
 	p.upperarm_r = Vector3(-14, 0, -6)
 	p.forearm_r = Vector3(-40, 30, 0)
+	return p
+
+
+## How far the hip joints sit above the seat (m, the body's own units): the seat of her trousers on it, not in it.
+const SIT_CLEAR := 0.085
+## ToonBody's legs at rest: the hips bone's height, the hip joint below it, thigh and shin, the ankle's height.
+const LEG_HIPS := 0.93
+const LEG_HIP_DROP := 0.05
+const LEG_THIGH := 0.43
+const LEG_SHIN := 0.41
+const LEG_ANKLE := 0.04
+
+
+## A reserve sitting on her team's bench: seat (m, the seat's top over the floor) and back (m, how far behind where she
+## stands her hips are: the node stands in front of the bench, her hips go back over the seat), both in the body's own
+## units. Her hip joints SIT_CLEAR over the seat, her thighs forward along it and sloping down just enough that her
+## shins hang straight to her feet flat on the floor where she would stand, her back a little forward, her hands on
+## her thighs (the foundation crowd's seated fans: the soles on the floor, the seat of the trousers on the seat).
+static func seated(seat: float, back: float) -> Dictionary:
+	var hip_joint := seat + SIT_CLEAR
+	# The knee's drop below the hip joint so the shin, hanging straight, puts the ankle at its standing height.
+	var drop := hip_joint - LEG_SHIN - LEG_ANKLE
+	var a := rad_to_deg(asin(clampf(drop / LEG_THIGH, -0.3, 0.95)))
+	var p := {
+		"hips_y": hip_joint + LEG_HIP_DROP - LEG_HIPS,
+		"hips_fwd": -back,
+		"hips": Vector3.ZERO,
+		"spine": Vector3(6, 0, 0), "chest": Vector3(3, 0, 0), "neck": Vector3.ZERO, "head": Vector3(-7, 0, 0),
+		"thigh_l": Vector3(-(90.0 - a), 0, 3), "shin_l": Vector3(90.0 - a, 0, 0), "foot_l": Vector3.ZERO,
+		"thigh_r": Vector3(-(90.0 - a), 0, -3), "shin_r": Vector3(90.0 - a, 0, 0), "foot_r": Vector3.ZERO,
+		# The hands resting on her thighs, a little in from the knees.
+		"upperarm_l": Vector3(-8, 0, 7), "forearm_l": Vector3(-62, -14, 0), "hand_l": Vector3(12, 0, 0),
+		"upperarm_r": Vector3(-8, 0, -7), "forearm_r": Vector3(-62, 14, 0), "hand_r": Vector3(12, 0, 0),
+	}
+	return p
+
+
+## Standing up from the bench to clap a goal (t: seconds into it): upright, the hands meeting in front of her chest
+## and parting again, a few claps a second.
+static func clap(t: float) -> Dictionary:
+	var p := ready(0.15)
+	p.hips_y = 0.0
+	var open := 0.5 + 0.5 * sin(t * 15.0)
+	p.upperarm_l = Vector3(-48, 0, lerpf(-14.0, -2.0, open))
+	p.upperarm_r = Vector3(-48, 0, lerpf(14.0, 2.0, open))
+	p.forearm_l = Vector3(-62, -30, 0)
+	p.forearm_r = Vector3(-62, 30, 0)
+	p.head = Vector3(-6, 0, 0)
 	return p
 
 
@@ -263,6 +311,13 @@ static func cheer(t: float) -> Dictionary:
 
 # ---------------------------------------------------------------- the umpires' signals
 
+## The obstruction signal's arms (degrees, ToonBody's convention): the upper hand's arm raised forward a little above
+## level, the lower's a little below, each drawn in toward the middle, the forearms turned so the palms face.
+const OBSTRUCTION_UPPER := -97.0
+const OBSTRUCTION_LOWER := -76.0
+const OBSTRUCTION_IN := 16.0
+const OBSTRUCTION_TURN := 90.0
+
 ## An umpire's signal (World Netball's official signals, docs/RULES.md "Officials"), t seconds into it. side: +1 when
 ## the award goes to her left (the arm that points the direction of the pass), -1 to her right.
 static func umpire_signal(kind: String, t: float, side := 1.0) -> Dictionary:
@@ -291,11 +346,16 @@ static func umpire_signal(kind: String, t: float, side := 1.0) -> Dictionary:
 			p.forearm_l = Vector3(-20, 0, 0)
 			p.forearm_r = Vector3(-20, -25.0 * maxf(0.0, wave), 0)
 		"obstruction":
-			# Both hands in front, palms facing, a short way apart.
-			p.upperarm_l = Vector3(-80, 0, 6)
-			p.upperarm_r = Vector3(-80, 0, -6)
-			p.forearm_l = Vector3(-15, 0, 0)
-			p.forearm_r = Vector3(-15, 0, 0)
+			# Obstruction: both arms out in front, one hand over the other, palms facing: the arms straight, drawn
+			# in toward the middle so the hands are in line; the upper hand (the award's side) palm down, the lower
+			# palm up, the forearms turned a quarter about themselves (OBSTRUCTION_*: the test reads these).
+			p["upperarm_" + hand] = Vector3(OBSTRUCTION_UPPER, 0, -OBSTRUCTION_IN * sx)
+			p["upperarm_" + other] = Vector3(OBSTRUCTION_LOWER, 0, OBSTRUCTION_IN * sx)
+			# (The same turn on both forearms: the upper hand's palm comes round to face down, the lower's up.)
+			p["forearm_" + hand] = Vector3(0, -OBSTRUCTION_TURN * sx, 0)
+			p["forearm_" + other] = Vector3(0, -OBSTRUCTION_TURN * sx, 0)
+			p["hand_" + hand] = Vector3.ZERO
+			p["hand_" + other] = Vector3.ZERO
 		"contact":
 			# One hand tapping the other forearm, held across the body.
 			p["upperarm_" + other] = Vector3(-60, 0, -30.0 * sx)

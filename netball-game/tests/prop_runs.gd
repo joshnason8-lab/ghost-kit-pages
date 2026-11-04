@@ -30,12 +30,6 @@ func run(venue: String, seed: int, seconds: float, audit: WsgPropAudit, tree: Sc
 		m.wsg_replay.queue_free()
 		m.wsg_replay = null
 	audit.solid = m.arena.solid
-	var reserves: Array = []
-	var rs := m.get_node_or_null("Reserves")
-	if rs:
-		for c in rs.get_children():
-			if c is Node3D and not (c is FoundationLink):
-				reserves.append(c)
 	var was_state := ""
 	for f in int(seconds / DT):
 		m._process(DT)
@@ -44,9 +38,21 @@ func run(venue: String, seed: int, seconds: float, audit: WsgPropAudit, tree: Sc
 				audit.body("%s %s" % ["home" if t == 0 else "away", pl.pos], Vector3(pl.p.x, 0, pl.p.y), Player.BODY_R, Player.BODY_H)
 		for u: Umpire in m.umpires:
 			audit.body("umpire %d" % u.half, Vector3(u.p.x, 0, u.p.y), Player.BODY_R, Player.BODY_H)
+		# (Gathered each step: a team change rebuilds them.)
+		var reserves: Array = []
+		var rs := m.get_node_or_null("Reserves")
+		if rs:
+			for c in rs.get_children():
+				if c is Node3D and not (c is FoundationLink):
+					reserves.append(c)
 		for k in reserves.size():
+			# A reserve on her bench: her body over the seat and her lower legs in front of it (Match.reserve_parts),
+			# checked, not excused as seated; up clapping a goal, her whole body where she stands.
 			var r: Node3D = reserves[k]
-			audit.body("reserve %d" % k, r.global_position, Player.BODY_R, Player.BODY_H)
+			if not is_instance_valid(r):
+				continue
+			for part: Array in Match.reserve_parts(r):
+				audit.body("reserve %d" % k, part[0], part[1], part[2])
 		# The ball put somewhere (a restart's spot, the taker's hands): no step from where it was.
 		var st: String = m.ball.state
 		if st != was_state and (was_state == "dead" or st == "dead"):

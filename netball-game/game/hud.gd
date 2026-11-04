@@ -349,6 +349,9 @@ func _on_event(kind: String, info: Dictionary) -> void:
 			banner(tr("CALL_ORDERED_OFF"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.6)
 		"suspension":
 			banner(tr("CALL_SUSPENSION"), tr("SANCTION_LINE").format({"pos": info.by, "team": DB.team_name(m.team_id(int(info.team)))}), 2.4)
+		"goal_change":
+			# The after-goal change made (either team's): the position, who came off and who came on.
+			banner(tr("TEAM_CHANGES"), "%s  %s  ›  %s" % [info.pos, info.off, info.on], 2.0)
 		"gain":
 			if m.user_team >= 0:
 				banner(tr("CALL_INTERCEPT") if String(info.how) == "intercept" else tr("CALL_GAIN"), "", 1.2)
@@ -572,8 +575,9 @@ static func _pname(q: int) -> String:
 
 
 ## Team changes at an interval: each position with the player in it; tap to bring on the next one from the bench who
-## plays that position.
-func _changes() -> VBoxContainer:
+## plays that position. after_goal: the after-goal change, asked for (the button stays down; tap again to take it
+## back) and made at the centre pass (Match.goal_change).
+func _changes(after_goal := false) -> VBoxContainer:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	v.add_child(UI.label(tr("TEAM_CHANGES"), "SubLabel", 22))
@@ -594,11 +598,21 @@ func _changes() -> VBoxContainer:
 		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var who: Player = pl
-		b.pressed.connect(func():
-			Sfx.click()
-			if m.substitute(who):
+		if after_goal:
+			b.toggle_mode = true
+			b.set_pressed_no_signal(who in (m.goal_changes[t] as Array))
+			b.pressed.connect(func():
+				Sfx.click()
+				var asked: bool = m.goal_change(who)
+				b.set_pressed_no_signal(asked and who in (m.goal_changes[t] as Array))
 				b.text = _change_text(who)
-				b.disabled = m.next_on(who) < 0)
+				b.disabled = m.next_on(who) < 0 and not b.button_pressed)
+		else:
+			b.pressed.connect(func():
+				Sfx.click()
+				if m.substitute(who):
+					b.text = _change_text(who)
+					b.disabled = m.next_on(who) < 0)
 		grid.add_child(b)
 	return v
 
@@ -655,6 +669,14 @@ func show_pause(on: bool) -> void:
 			show_pause(false)
 			_pause_btn.visible = false
 			_rolling_changes()))
+	elif m.can_goal_change(m.user_team):
+		# The after-goal tactical change (2024): after a goal, until the centre pass is whistled.
+		var gc := UI.button(tr("TEAM_CHANGES"), false, func():
+			show_pause(false)
+			_pause_btn.visible = false
+			_rolling_changes(true))
+		gc.name = "GoalChange"
+		v.add_child(gc)
 	if m.watch:
 		# Watch AI: the speed (the chip's own choice), nothing to move.
 		var sp := UI.field(tr("SPEED"), UI.chips_row(["1×", "2×"], int(m.speed) - 1, func(i): m.set_speed(i + 1)))
@@ -673,8 +695,9 @@ func show_pause(on: bool) -> void:
 	keep_pause_card(card)
 
 
-## Rolling substitutions (the league option): team changes from the pause menu, at any time.
-func _rolling_changes() -> void:
+## Rolling substitutions (the league option): team changes from the pause menu, at any time. after_goal: the
+## after-goal tactical change instead (Match.goal_change: made as the teams line up for the centre pass).
+func _rolling_changes(after_goal := false) -> void:
 	var layer := Control.new()
 	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -693,7 +716,7 @@ func _rolling_changes() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	card.add_child(v)
-	v.add_child(_changes())
+	v.add_child(_changes(after_goal))
 	v.add_child(UI.button(tr("DONE"), true, _close_changes))
 	UI.keep_on_screen(card)
 
