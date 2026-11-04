@@ -224,6 +224,14 @@
    "date": "2026-11-03",
    "version": "0.15.15",
    "words": "Mixed quadrant: a mixed line-up plays a full match (the lead's request for the owner)."
+  },
+  {
+   "id": "2026-11-04-sepak-raga",
+   "file": "2026-11-04_sepak_raga.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-04",
+   "version": "0.15.22",
+   "words": "Sepak raga bulatan: a full ring run plays on Low and High with props, feet and pose rules passing, no new assets (the lead's request for the owner)."
   }
  ]
 }

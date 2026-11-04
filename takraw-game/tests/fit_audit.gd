@@ -473,9 +473,25 @@ func _menus() -> void:
 	Game.show_screen("res://ui/quick_setup.gd", {"watch": true})
 	await frames(10)
 	await audit("watch_setup")
+	var had_raga: Variant = Game.records.get("best_raga")
+	Game.records["best_raga"] = 128   # (a long run: the record book's line, three figures)
 	Game.show_screen("res://ui/records_screen.gd")
 	await frames(8)
 	await audit("records")
+	# Sepak raga (the circle from the home screen): its screen in play, and when the ball is down after a new best.
+	var raga: Node = Game.show_screen("res://game/raga.gd", {"auto": true, "seed": 3})
+	await frames(30)
+	await audit("raga")
+	raga.set("touches", 128)
+	raga.set("best", 0)
+	raga.call("_drop")
+	await frames(45)
+	await audit("raga_down")
+	if had_raga == null:
+		Game.records.erase("best_raga")
+	else:
+		Game.records["best_raga"] = had_raga
+	Game.save_records()   # (the run's "best" was saved: put back as it was)
 	var r := Sim.play("PHI", "LAO")
 	r.config = {"mode": "quick", "stage": tr("SEMI_FINAL"), "home": "PHI", "away": "LAO"}
 	r.user_team = 0

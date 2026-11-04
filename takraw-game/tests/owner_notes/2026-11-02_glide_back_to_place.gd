@@ -25,8 +25,9 @@ func check() -> void:
 					if pl.vel.length() <= 0.8 or absf(pl.body.position.y) > 0.02:
 						runs.erase(pl)
 						continue
-					var fl: Vector3 = pl.body.bone_world("foot_l")
-					var fr: Vector3 = pl.body.bone_world("foot_r")
+					var ft: Array = pl.body.feet()   # (as drawn)
+					var fl: Vector3 = ft[0]
+					var fr: Vector3 = ft[2]
 					var run: Array = runs.get(pl, [])
 					run.append([Vector2(fl.x - fr.x, fl.z - fr.z).length(), pl.move])
 					runs[pl] = run

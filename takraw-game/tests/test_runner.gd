@@ -44,6 +44,7 @@ func _ready() -> void:
 	await _play_as_and_officials()
 	await _matches()
 	await _three_serves()
+	await _raga()
 	await _sim_to_end()
 	FoundationLink.off = false
 	await _foundation(WsgClips.available())
@@ -819,8 +820,9 @@ func _no_glide_between_points() -> void:
 					if pl.vel.length() <= 0.8 or absf(pl.body.position.y) > 0.02:
 						runs.erase(pl)
 						continue
-					var fl: Vector3 = pl.body.bone_world("foot_l")
-					var fr: Vector3 = pl.body.bone_world("foot_r")
+					var ft: Array = pl.body.feet()   # (as drawn)
+					var fl: Vector3 = ft[0]
+					var fr: Vector3 = ft[2]
 					var run: Array = runs.get(pl, [])
 					run.append([Vector2(fl.x - fr.x, fl.z - fr.z).length(), pl.move])
 					runs[pl] = run
@@ -841,9 +843,10 @@ func _no_glide_between_points() -> void:
 ## too ... prepping to block he is in a folded position and glides around." In an AI match (tests/glide_probe.gd), of
 ## the way the players go with a foot on the floor, the share that foot slid along with them (moving over half their
 ## speed; 0.15.2: running 87%, walking 63%, the block 99%, the dig and the chest 96-98%): now under a third, the
-## receiving touches and the block under 35%.
+## receiving touches and the block under 35%. Two AI matches (0.15.25: on the shared planter a blocker shuffling along
+## the net steps, his feet off the floor, so one match left under the 3 m a share is judged on).
 func _no_glide_in_play() -> void:
-	var stats: Dictionary = GlideProbe.measure(self, 150.0, [7])
+	var stats: Dictionary = GlideProbe.measure(self, 150.0, [7, 3])
 	var steps: Dictionary = stats.get("_steps", {})
 	stats.erase("_steps")
 	for kind in ["run", "walk (between points)"]:
@@ -1308,6 +1311,67 @@ func _continue_mixed() -> void:
 	card.free()
 	menu.free()
 	Game.delete_season()
+
+
+## Sepak raga bulatan (the circle, from the home screen; the ROADMAP's idea for fans): the ball kept up round the ring
+## by kicks met where the ball is - each player where his move reaches it when it does (no reaching from afar, no
+## gliding up to it); your touches on your presses (on the moment it goes on, half a second early it falls); the run's
+## touches counted and the best kept in the record book.
+func _raga() -> void:
+	var keep: Variant = Game.records.get("best_raga")
+	Game.records.erase("best_raga")
+	var r := Raga.new()
+	r.config = {"auto": true, "seed": 5}
+	add_child(r)
+	var guard := 0
+	while r.state != "down" and r.touches < 14 and guard < 3000:
+		guard += 1
+		await frames(1)
+	check(r.touches >= 8, "sepak raga: the circle keeps the ball up (%d touches, %s)" % [r.touches, r.state])
+	var far := []
+	var moves := {}
+	for e in r.touch_log:
+		var c: Vector3 = e[2]
+		var at: Vector3 = e[3]
+		moves[e[1]] = true
+		var d := Vector2(c.x - at.x, c.z - at.z).length()
+		if d > 0.65 or c.y < 0.3:
+			far.append("%s %.2f m" % [e[1], d])
+	check(far.is_empty(), "sepak raga: every touch played where the move reaches the ball (off: %s)" % [far])
+	check(moves.has("sila"), "sepak raga: the inside of the foot among the touches (%s)" % [moves.keys()])
+	r.queue_free()
+	await frames(2)
+	# You: a press on the moment, then one half a second early.
+	Game.records.erase("best_raga")
+	var u := Raga.new()
+	u.config = {"auto": false, "seed": 9}
+	add_child(u)
+	guard = 0
+	var stage := 0
+	var perfect_ok := false
+	while u.state == "play" and guard < 6000:
+		guard += 1
+		if u._to == u.me and u._press < 0.0:
+			var left: float = u._t - u.now
+			if stage == 0 and left <= 1.0 / 30.0:
+				u.press()
+				stage = 1
+			elif stage == 2 and left <= 0.52 and left >= 0.45:
+				u.press()
+				stage = 3
+		if stage == 1 and u._to != u.me:
+			perfect_ok = u.state == "play" and u._result == "PERFECT"
+			stage = 2
+		await frames(1)
+	check(perfect_ok, "sepak raga: your press on the moment is PERFECT and the ball goes on")
+	check(u.state == "down" and stage == 3 and u._result == "EARLY", "sepak raga: half a second early it falls (%s, %s)" % [u.state, u._result])
+	check(int(Game.records.get("best_raga", -1)) == u.touches and u.touches > 0 and u.new_best, "sepak raga: the run's %d touches kept as your best (%s)" % [u.touches, Game.records.get("best_raga")])
+	u.queue_free()
+	await frames(2)
+	if keep == null:
+		Game.records.erase("best_raga")
+	else:
+		Game.records["best_raga"] = keep
 
 
 ## The 3-serve rule of 2013-2024, a quick match's option (the ROADMAP's, for the lead): each side serves three in a row

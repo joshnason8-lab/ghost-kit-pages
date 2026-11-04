@@ -15,6 +15,17 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.25: **Sepak raga, the circle game.** On the home screen, next to Watch AI: six players in a ring at the
+park keep the ball up with their feet, knees and heads, never letting it touch the ground. When it comes to you
+(nearest the camera, your ring at your feet), tap as the ring closes on the ball, as in a match: on time it goes
+on, too early or too late it falls. Your best run is kept in Records. Try it on every difficulty: the harder, the
+tighter the timing.
+
+Also new in 0.15.25: **feet that stay put on Low.** On Low, the players' feet are now planted by the shared
+foundation's planter: a foot on the floor stays where it is as they run, turn, get to the ball and shuffle along the
+net to block (gliding in our measure: 14% of the way to 4%; getting to a block: 35% to 1%). Medium and High are
+unchanged. Watch the feet on Low as they run in to spike or block and as they come down from a kick.
+
 New in 0.15.24: **a mixed season says so on the home screen.** The Continue card of a mixed quadrant season now
 starts with "Mixed quadrant", as a mixed cup's already did. Nothing else changes.
 

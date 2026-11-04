@@ -101,7 +101,7 @@ func walker(parent: Node) -> Array:
 	return [body, loco]
 
 
-## Low (the Galaxy A16's): the game's own body - a Player's RealBody, its feet planted by RealBody._planted - driven a
+## Low (the Galaxy A16's): the game's own body - a Player's RealBody, its feet planted by the shared planter - driven a
 ## frame at a time as play poses it (Player.step_for_check: his stride for how he goes, his turn), its feet as drawn.
 func walker_low(parent: Node) -> Variant:
 	var keep: int = Game.settings.graphics

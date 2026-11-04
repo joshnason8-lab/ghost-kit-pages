@@ -670,6 +670,61 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Low: the players' feet on the shared planter (0.15.25)
+
+The owner: "players still gliding a lot ... when getting the ball too ... prepping to block he is in a folded position
+and glides around". The lead: put Low's players on the shared foundation's planter (WsgFootPlanter, as the standing
+officials are since 0.15.15) once its scale fix (706e3a6: its tolerances in metres by the body's size, not the
+skeleton's world scale - our RealBody's rig is in centimetres) is in, and switch if, against our own planter
+(RealBody._planted), it passes the world check's feet_low walker, is no worse in the Low feet probe, and passes the two
+block notes and sepak raga's ring note with feet strict.
+- **Foundation 31f60da -> 28e82f9** (706e3a6 and b91fadc, fd879f9: the planter only).
+- **Player.shared_planter** (on): a Player's RealBody plants its feet with the shared planter on Low (no link), our
+  contact rule deciding when a foot is down. Medium and High are unchanged (the foundation's bodies).
+- **The contact rule** (RealBody._foundation_plant, the officials' too): the ankle within 3 cm of where the planter stands
+  a foot (the skeleton's rest), twice that to lift. From the poses' standing height (0.7 cm lower) the ring's sila foot,
+  coming down 1.9 cm a frame, was held a frame late: two landing frames slid (the ring note 3.8-6.3 cm a step -> 1.2).
+  The Foundation's landing speed gate (0.6 + 0.8 x the body's speed) for the line judge's 41 cm jump is not used: it
+  skidded the officials' feet on 7 of 8 Low seeds (to 12.6 cm a frame); the new reference took the jump to 19.6 cm.
+- **Measured** (Low, the foundation 28e82f9; own planter -> the shared one):
+  - feet_low walker: worst planted slip 1.8 -> 0.4 cm a step, skid 0.8 -> 0.0, jump 9.7 -> 12.6 (25 at most).
+  - The Low feet probe (seeds 7 and 11, 2 x 150 s, every player's feet as drawn): the share of their way glided 14 -> 4%,
+    feet jumping over 25 cm 9 -> 0 (worst 37.5 -> 24.4 cm), flat feet skidding over 2 cm 11 -> 0 (worst 25.7 -> 1.1),
+    the planted step's slip 2.3 -> 0.3 cm (90th percentile). Officials: no jump over 25 cm (41.1 before), no skid.
+  - Block notes: getting to a block 35% -> 1% of the way slid; running 22% -> 12%, the planted step's median 1.8 -> 0.3
+    cm. Sepak raga's ring note (Low and High): slip 1.2 cm a step at most, skid 0.1, jump 12.9 - feet pass, strict.
+- **Reading the feet as drawn**: the shared planter plants them as the skeleton is drawn, so a check stepping the match
+  many steps a frame read the pose under it. RealBody.feet() now draws a body posed since its last draw first (as the
+  frame would); GlideProbe draws every body each step and reads feet(); the between-points glide checks read feet().
+
+## Sepak raga bulatan, the circle game (0.15.25)
+
+The ROADMAP's idea for fans (the lead: keep building while the Foundation takes Takraw Low): keeping the ball up in a
+circle with team-mates for as long as you can - Malaysia's sepak raga bulatan, Thailand's takraw wong, Myanmar's
+chinlone, the Philippines' sipa.
+- **game/raga.gd** (Raga): six players in a ring of 2.4 m on one half of the park's court, you in front nearest the
+  camera (your ring at your feet), the camera over your shoulder. The ball is passed round by kicks - the inside of
+  the foot (sila) mostly, the knee (thigh) and the head now and then - lobbed 3.2-4.4 m high; each player walks to
+  where his move meets it (a step off his place: passes are not perfect) and the move is timed to meet it (the
+  match's moves and their contacts, Moves.CONTACT, scaled to his height). It goes to anyone but the last two to touch
+  it, you a little more often.
+- **Your touch**: the match's ring opens 1.1 s before (the gold circle where it will be met, a ring closing on it)
+  and your tap counts on the match's timing windows for your difficulty: perfect or good, a clean touch; the last
+  window, a scrappy one (lower, and less sure where it goes); too early, too late or none, it falls. Team-mates miss
+  now and then (1.5% of their touches). A tap anywhere on the screen (or Space/Enter); the phone's Back goes home.
+- **Down**: it falls from where it was; "Down after N touches", a new best kept in the record book (Records: "Sepak
+  raga: N touches in a row"), Again or Home.
+- **From the home screen**: a link beside Watch AI, built behind the loading overlay as a match is (Raga.open).
+- **No new assets**: the park as in a match, the game's own bodies on every graphics level (the shared foundation's
+  are a match's: FoundationLink stays off here), six players and no officials or crowd change - lighter than a match
+  at the park, so Low's budget is unchanged.
+- Eight strings in 13 languages (the game's local name where there is one: ตะกร้อวง, ກະຕໍ້ວົງ, ခြင်းလုံးဝိုင်း, Sipa
+  sa bilog, Sepak raga bulatan); the CJK fonts cut again for 己, 짐 and 别围纪页.
+- test_runner (_raga): a run played for you keeps it up (14 touches), every touch made where the move reaches the
+  ball (0.42 m at most from the contact, no reaching from afar or gliding up); your press on the moment is PERFECT
+  and it goes on, half a second early it falls (EARLY), and the run's touches are kept as your best. fit_audit has its
+  screen in play and after a new best, and the record book's line, in every language.
+
 ## A mixed season on the home screen (0.15.24)
 
 - **The home screen's Continue card** (main_menu.gd) for a season under way starts with "Mixed quadrant" when the

@@ -53,6 +53,7 @@ static func measure(host: Node, secs: float, seeds: Array) -> Dictionary:
 		var dt := 1.0 / 30.0
 		for i in int(secs * 30.0):
 			m._process(dt)
+			draw(m)
 			m.set("_start_replay_after", -1.0)
 			if int(m.state) == int(m.S.REPLAY) or int(m.state) == int(m.S.OVER):
 				last.clear()
@@ -60,8 +61,9 @@ static func measure(host: Node, secs: float, seeds: Array) -> Dictionary:
 			for side in 2:
 				for pp in m.players_on(side):
 					var pl: Player = pp
-					var fl: Vector3 = pl.body.bone_world("foot_l")
-					var fr: Vector3 = pl.body.bone_world("foot_r")
+					var ft: Array = pl.body.feet()   # (as drawn)
+					var fl: Vector3 = ft[0]
+					var fr: Vector3 = ft[2]
 					var was: Array = last.get(pl, [])
 					last[pl] = [fl, fr, pl.global_position, float(pl.get("_yaw"))]
 					if was.is_empty() or absf(pl.body.position.y) > 0.02:
@@ -115,3 +117,13 @@ static func measure(host: Node, secs: float, seeds: Array) -> Dictionary:
 		host.remove_child(m)
 	stats["_steps"] = steps
 	return stats
+
+
+## The bodies drawn, as a frame would draw them: the shared foundation's planter (a SkeletonModifier3D, on Low when a
+## body's foundation_planter is on) plants the feet only as the skeleton is drawn, and a probe stepping the match
+## itself, many steps to a frame, would otherwise read the pose under it (RealBody.feet: the feet as drawn).
+static func draw(m: Node) -> void:
+	for b in m._all_bodies():
+		var rb := b as RealBody
+		if rb != null and rb._wp != null and rb._wp.active and rb.skeleton != null and rb.skeleton.is_inside_tree():
+			rb.skeleton.notification(Skeleton3D.NOTIFICATION_UPDATE_SKELETON)

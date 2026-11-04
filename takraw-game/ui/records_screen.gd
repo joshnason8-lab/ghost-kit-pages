@@ -17,6 +17,8 @@ func _ready() -> void:
 	cols.add_child(left[0])
 	left[1].add_child(UI.label(tr("RECORDS_PLAYED").format({"n": int(r.get("played", 0))}), "SubLabel", 22))
 	left[1].add_child(UI.label(tr("RECORDS_WON").format({"n": int(r.get("won", 0))}), "SubLabel", 22))
+	if int(r.get("best_raga", 0)) > 0:
+		left[1].add_child(UI.wrap(tr("RECORDS_BEST_RAGA").format({"n": int(r.best_raga)}), "", 18))
 	for k in ["kills", "blocks", "aces"]:
 		var b: Dictionary = r.get("best_" + k, {})
 		if not b.is_empty():

@@ -16,6 +16,5 @@
 
 - **Hoop takraw** (*takraw lod huang*): a timed mode kicking through the three-ring basket for style points, as at
   the SEA Games.
-- **Sepak raga bulatan**: keep the ball up in a circle with team-mates, as long as you can.
 - **Create a player** and a career from a provincial club to the national team.
 - **Commentary** in Thai and Malay, and crowd chants ("Malaysia boleh!").

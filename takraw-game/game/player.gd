@@ -59,6 +59,10 @@ var _ring: MeshInstance3D
 var _mine: MeshInstance3D  # the thin ring under the one you play as (Settings: Play as one player)
 var _shadow: MeshInstance3D
 
+## Low (no link): the players' feet planted by the shared foundation's WsgFootPlanter, as the standing officials'
+## are (RealBody.foundation_planter), not by RealBody._planted (0.15.25: measured against it, RealBody).
+static var shared_planter := true
+
 static var _ring_mat: StandardMaterial3D
 static var _mine_mat: StandardMaterial3D
 
@@ -68,7 +72,8 @@ func _init(p_data := {}, p_side := 0, p_role := 0, look := {}) -> void:
 	side = p_side
 	role = p_role
 	body = RealBody.new(look)
-	body.plant_feet = true   # (a foot on the floor stays put as he goes: RealBody._planted)
+	body.plant_feet = true   # (a foot on the floor stays put as he goes: the shared planter, or RealBody._planted)
+	body.foundation_planter = shared_planter
 
 
 func _ready() -> void:
@@ -287,7 +292,7 @@ func tick(dt: float, now: float) -> void:
 		want_yaw = travel - g * PI * 0.5
 	else:
 		_gait = 0
-	# Turned as quickly as a man pivots (the planted foot stays where it is as he turns on it: RealBody._planted), more
+	# Turned as quickly as a man pivots (the planted foot stays where it is as he turns on it: RealBody's planter), more
 	# quickly to square up for a move.
 	# (and a turn builds up, as a body's does, rather than starting at full speed: the planted foot strained)
 	_turn_to(want_yaw, dt)
