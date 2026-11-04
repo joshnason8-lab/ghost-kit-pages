@@ -21,6 +21,7 @@ var beat_k := 0.0       # 0 right after a beat .. 1 just before the next one
 var chain_on := false
 var read_hint := ""     # escape button to light up for the tackle coming in (easier levels)
 var held := false       # the user's raider is held: Dodge becomes a big Break free, the touches he cannot make dim
+var recharge := 0.0     # held, how much of the last try's cooldown is left (0..1): Break free fills as it comes back
 var _flash := ""        # last cant tap result, for colour feedback
 var _flash_t := 0.0
 var _t := 0.0
@@ -505,12 +506,17 @@ func _draw() -> void:
 			if _flash_t > 0.0:
 				var fc: Color = {"perfect": Game.C_GOLD, "good": Game.C_INK, "off": Game.C_DANGER, "fast": Game.C_DANGER}.get(_flash, Game.C_INK)
 				fill = fc
-		if b.get("glow", false):
+		var charging: bool = b.id == "dodge" and held and recharge > 0.0
+		if b.get("glow", false) and not charging:
 			var g := 0.5 + 0.5 * sin(_t * 7.0)
 			draw_arc(pos, r * (1.1 + 0.12 * g), 0, TAU, 48, Color(Game.C_GOLD, 0.3 + 0.5 * g), 5.0, true)
 		if b.id in ["pause", "camera"]:
 			fill = Color(0.03, 0.07, 0.12, 0.55 if not lit else 0.85)
 		draw_circle(pos, r, fill)
+		if charging:
+			# Recharging: dimmed, a gold ring filling round it clockwise from the top as the next try comes back.
+			draw_circle(pos, r, Color(0, 0, 0, 0.45))
+			draw_arc(pos, r - 5.0, -PI / 2.0, -PI / 2.0 + TAU * (1.0 - recharge), 48, Game.C_GOLD, 7.0, true)
 		draw_arc(pos, r, 0, TAU, 48, Color(1, 1, 1, 0.35 if not lit else 0.9), 2.0, true)
 		if picked:
 			draw_arc(pos, r + 7.0, 0, TAU, 48, Color(Game.C_INK, 0.8), 3.0, true)

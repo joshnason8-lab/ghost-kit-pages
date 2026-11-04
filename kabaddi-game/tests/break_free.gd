@@ -11,6 +11,7 @@ var slips := 0
 func _ready() -> void:
 	Game.main = self
 	Game.settings.sound = false
+	Game.loading_overlay = false   # (the match built at once, as the suite does: under the overlay it starts later)
 	var n := int(OS.get_cmdline_user_args()[0]) if OS.get_cmdline_user_args().size() > 0 else 4
 	for i in n:
 		await _one(i)
@@ -22,6 +23,8 @@ func _one(i: int) -> void:
 	Game.start_match({"home": "MUM", "away": "PAT", "arena": "dome", "mode": "quick", "autoplay": true, "length": 0,
 		"difficulty": 2, "seed": 100 + i})
 	var m: Node = Game.current
+	if OS.get_environment("BF_ODDS") != "":
+		m.escape_odds = float(OS.get_environment("BF_ODDS"))
 	var held := [false]
 	m.game_event.connect(func(kind, info):
 		if kind == "hold" and not held[0]:

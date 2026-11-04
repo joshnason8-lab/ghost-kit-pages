@@ -64,6 +64,14 @@
    "date": "2026-11-03",
    "version": "0.14.1-beta",
    "words": "Some runners are still running bow legged, it looks unnatural."
+  },
+  {
+   "id": "2026-11-04-break-free-presses",
+   "file": "2026-11-04_break_free_presses.gd",
+   "game": "kabaddi",
+   "date": "2026-11-04",
+   "version": "0.14.19-beta",
+   "words": "a held player's presses always do something visible (the lead's record: after one failed lion jump, Break free did nothing until he was down)"
   }
  ]
 }

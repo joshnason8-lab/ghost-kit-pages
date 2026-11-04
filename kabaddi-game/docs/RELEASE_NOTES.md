@@ -1,4 +1,13 @@
-**New in 0.14.19: steadier feet in the other World Stage games' corner cases.** The shared foot planting is
+**New in 0.14.20: Break free always answers.**
+- **No dead presses**: held, after a lion jump out of the hold failed, Break free did nothing for 1.4 s - as long as three
+  defenders take to bring you down, so every press after the first was lost. Now a failed try has you back trying a
+  quarter of a second later, a press made while a try is still going is kept and made the moment it is over, and the
+  Break free button dims and fills with a gold ring while the next try comes back. Breaking free is as hard as before:
+  mashing it still gets you out of about 1 hold in 3 (measured over about 150 holds before and after).
+- **Braced, not standing up**: caught out of the raid's low stance or a touch's lunge, the raider sinks into his brace
+  instead of standing up into it (his middle rose 9 cm as he was grabbed; now it is 5 cm below his raiding stance).
+
+**In 0.14.19: steadier feet in the other World Stage games' corner cases.** The shared foot planting is
 corrected for bodies with their own contact rule (other games' officials); in Kabaddi Raid nothing you would notice
 changes. (On Low a planted foot can drift up to 0.9 cm in a step, as in 0.14.16.)
 

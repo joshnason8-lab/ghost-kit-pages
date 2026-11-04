@@ -50,6 +50,13 @@ const CELE_POINT := 4
 const CELE_THUMP := 5
 const TOUCH_TIME := 0.34
 const KICK_TIME := 0.5
+## s before a held raider can try again once a failed try has him back in their hands (_tick_raid).
+const HELD_RETRY := 0.25
+## Each escape try's chance, all told: retuned with HELD_RETRY so mashing Break free still frees about 1 hold in 3.
+const ESCAPE_ODDS := 0.9
+var escape_odds := ESCAPE_ODDS   # (tests/break_free measures other odds through it)
+## A held raider's tries at Break free, under way: one pressed meanwhile waits for it (_break_free).
+const ESCAPING := ["dodge", "dubki", "jump"]
 const DODGE_TIME := 0.26
 const BACKKICK_TIME := 0.46
 const DUBKI_TIME := 0.42
@@ -708,6 +715,18 @@ func _begin_raid() -> void:
 # ---------------------------------------------------------------- the raid
 
 func _tick_raid(dt: float) -> void:
+	if raider and raider.state == "held" and raider.cooldown > HELD_RETRY and not raid.holders.is_empty():
+		# Back in their hands after a try that failed, he tries again HELD_RETRY later, not after the move's whole
+		# cooldown: out of a failed lion jump that was 1.4 s, as long as three holders take to bring him down, and
+		# every press in it did nothing. (The chance of each try is tuned to keep about 1 in 3 holds escaped:
+		# ESCAPE_ODDS, tests/break_free.)
+		raider.cooldown = HELD_RETRY
+	if raid.get("break_queued", false):
+		# A Break free pressed during the last try, made as soon as it is over and he is still held (gone if he is not).
+		if raider == null or raider.state not in ["held"] + ESCAPING or raid.holders.is_empty():
+			raid.erase("break_queued")
+		elif raider.state == "held" and raider.cooldown <= 0.0:
+			_break_free()
 	raid.t -= dt
 	if not raid.holders.is_empty():
 		raid["hold_age"] = float(raid.get("hold_age", 0.0)) + dt
@@ -1517,7 +1536,7 @@ func _raider_escape(kind: String, dir := Vector3.ZERO) -> void:
 		var h: Athlete = pick[0]
 		var fit: float = pick[1]
 		var chance := 0.26 * fit * (0.4 + raider.move_skill(kind)) * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6)) \
-			* _break_tired()
+			* _break_tired() * escape_odds
 		var slips := fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance))
 		# Decided now, done with the body (_tick_escape). A lion jump: halfway from the end of the gather to the
 		# jump clip's own takeoff, so the foot is out of the holder's hands (Grapple.TORN_FREE) as he leaves the
@@ -1658,6 +1677,13 @@ func _break_tired() -> float:
 
 func _break_free() -> void:
 	var holders: Array = raid.holders
+	if not holders.is_empty() and grapple != null and (raider.cooldown > 0.0 or raider.state in ESCAPING):
+		# Pressed while the last try is still going (a lion jump out of a hold leaves 1.4 s before the next): kept, and
+		# made the moment it is done (_tick_raid). Dropped on the floor, every press after a failed jump did nothing
+		# until he was down - the player's Break free looked dead (tests/tackle_check breakfree).
+		raid["break_queued"] = true
+		return
+	raid.erase("break_queued")
 	if holders.is_empty() or grapple == null:
 		_raider_dodge(Vector3.ZERO)
 		return
@@ -1704,7 +1730,7 @@ func _raider_dodge(dir: Vector3) -> void:
 		var h: Athlete = pick[0]
 		var fit: float = pick[1]
 		var chance := 0.22 * fit * raider.agility * raider.strength / (holders.size() * (0.6 + h.tackle * 0.6)) \
-			* _break_tired()
+			* _break_tired() * escape_odds
 		if fit > 0.0 and bool(lab_force.get("escape", rng.randf() < chance)):
 			var free := holders.size() == 1
 			_event("escape", {"how": "dodge", "from": h.pid(), "kind": h.kind(), "hold": grapple.style_of_hold(h),

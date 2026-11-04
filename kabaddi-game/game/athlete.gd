@@ -181,7 +181,19 @@ func ground_pos() -> Vector3:
 	return Vector3(position.x, 0, position.z)
 
 
+## How far a held raider crouches into his struggle: BRACE (and BRACE_LOSS more as his balance goes), and never less
+## than he was caught at plus BRACE - caught out of the raid's deep stance or a touch's lunge he sinks into the brace,
+## not up into it (since the raider's stance came from the training footage, he stood up 9 cm as he was grabbed).
+var _caught_crouch := 0.0
+
+
+func _brace() -> float:
+	return maxf(BRACE + BRACE_LOSS * balance, minf(_caught_crouch + 0.3, 0.9))
+
+
 func set_state(s: String, length := 0.0, wait_first := 0.0) -> void:
+	if s == "held" and state not in ["held", "dodge"] and model:
+		_caught_crouch = model.crouch   # as low as he was caught (a lunge, a touch, the raid's crouch): see _brace()
 	if state == "sit" and s != "sit":
 		_off_seat = true   # getting up from the bench: he comes forward off it first (_step)
 	if s != "holding":
@@ -473,7 +485,7 @@ func _pose(delta: float) -> void:
 				# Break free, held: a wrench against the holds (HumanModel.wrench) out of his braced stance, not a sidestep
 				# in the air (the sidestep's clip and stance stood him up out of the struggle at every try).
 				want_struggle = 1.0
-				want_crouch = BRACE + BRACE_LOSS * balance
+				want_crouch = _brace()
 				want_wrench = sin(p * PI)
 		"evade":
 			# Pulling back from a touch: hips back, stomach in.
@@ -533,7 +545,7 @@ func _pose(delta: float) -> void:
 			want_struggle = 1.0
 			# Braced from the moment he is caught (knees bent, hips back and down, leaning into his drive for the line),
 			# lower as his balance goes: not stood upright until the takedown.
-			want_crouch = BRACE + BRACE_LOSS * balance
+			want_crouch = _brace()
 		"holding":
 			# Each hold drawn its own way (Grapple), the arms reaching the rest of the way (RiggedBody): an ankle
 			# hold lying on the floor, arms out; a thigh hold down low, bent over the leg; round the waist bent

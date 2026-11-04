@@ -272,7 +272,7 @@ func _update(delta: float) -> void:
 		loco.drive(dt, Vector3(who.move_vel.x, 0.0, who.move_vel.z), yaw)
 	else:
 		loco.yaw = yaw
-	_place()
+	_place(dt)
 	body.advance(dt)
 
 
@@ -316,10 +316,13 @@ func _legs(pose: Dictionary) -> void:
 
 ## Where the body stands: under the capture at his place, turned as the capture turns him; under the game's pose
 ## exactly over the game's body (the same mesh: each joint on the game's); between the two as one fades to the other.
-func _place() -> void:
+## Posed this frame (dt > 0), at the weight the game's pose will have once its layer runs after this, with this
+## frame's step of its fade: placed at the weight before it, the frame a fade ends stood the body a frame behind -
+## the hips 2.3 cm off the game's as a defender's move faded to his ready (the suite, 2026-11-04).
+func _place(dt := 0.0) -> void:
 	var s := gb.global_transform.basis.get_scale().x / _k
 	var free := Transform3D(Basis(Vector3.UP, loco.yaw).scaled(Vector3.ONE * s), who.global_position)
-	var w := smoothstep(0.0, 1.0, legacy.weight)
+	var w := smoothstep(0.0, 1.0, legacy.weight_after(dt))
 	if w <= 0.0:
 		body.global_transform = free
 		return
@@ -370,6 +373,10 @@ func knee_bend(side: String) -> float:
 class Layer extends WsgPoseLayer:
 	var ran := -1
 	var t0 := 0
+
+	## The weight once the next run's step of the fade is taken (WsgPoseLayer's own step).
+	func weight_after(dt: float) -> float:
+		return move_toward(weight, _target, _rate * dt) if _rate > 0.0 else weight
 
 	func _process_modification_with_delta(delta: float) -> void:
 		ran = Engine.get_process_frames()

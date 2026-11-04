@@ -191,6 +191,8 @@ class PlayerTags extends Control:
 				Vector2(x, r.end.y + float(e.point))]), tip)
 
 
+var _cd_peak := 0.0   # the Break free cooldown at its highest since it last rose (controls.recharge)
+
 func setup(p_match) -> void:
 	m = p_match
 	layer = 5
@@ -777,6 +779,15 @@ func refresh() -> void:
 			and not (m.raid.get("holders", []) as Array).is_empty()
 	if held != controls.held:
 		controls.held = held
+		controls.queue_redraw()
+	# Break free recharging (the last try's cooldown): the button fills as it comes back, so a press while it does is
+	# never silently dead (it is kept and made when ready: Match._break_free).
+	var cd: float = m.raider.cooldown if held and m.raider else 0.0
+	if cd > _cd_peak or cd <= 0.0:
+		_cd_peak = cd
+	var rc := cd / _cd_peak if _cd_peak > 0.0 else 0.0
+	if absf(rc - controls.recharge) > 0.01 or (rc == 0.0) != (controls.recharge == 0.0):
+		controls.recharge = rc
 		controls.queue_redraw()
 	if chant_l.visible:
 		chant_l.modulate.a = 0.55 + 0.45 * absf(sin(_t * 3.3))

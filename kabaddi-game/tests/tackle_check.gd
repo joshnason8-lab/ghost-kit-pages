@@ -113,7 +113,7 @@ func _ready() -> void:
 		var f := FileAccess.open(_json, FileAccess.WRITE)
 		f.store_string(JSON.stringify(_results, "  "))
 	print("tackle_check: %d of %d scenarios as expected" % [_chosen.size() - failed, _chosen.size()])
-	get_tree().quit()
+	get_tree().quit(1 if failed > 0 else 0)   # (CI runs it: any scenario not as expected fails the build)
 
 
 func _run(sc: String) -> Dictionary:
@@ -632,19 +632,25 @@ func _brace(out: Dictionary, mo: Array, grip_t: float) -> void:
 	var held := mo.filter(func(x): return float(x[0]) >= grip_t + 0.4 and String(x[1]) in ["held", "dodge"])
 	if before.is_empty() or held.size() < 3:
 		return
+	# His middle's height before he was caught: his raiding stance (the last 0.4 s of "raid" before the grip), not the
+	# 0.4 s before the grip itself - since the raider's stance came from the footage (0fe9d2a) that window is the
+	# bottom of his touch's lunge, and a brace below his own lunge is no brace a raider makes (the lead, 2026-11-04).
+	var stance := mo.filter(func(x): return String(x[1]) == "raid" and float(x[0]) < grip_t)
+	var base: Array = stance.slice(maxi(0, stance.size() - 12)) if not stance.is_empty() else before
 	var w0 := 0.0
-	for x in before:
+	for x in base:
 		w0 += float(x[3])
-	w0 /= before.size()
+	w0 /= base.size()
 	var at: Array = held[0]
 	var least := INF
 	var straightened := 0.0
+	# Straightened: the most he is ever more upright than his brace (his lean 0.4 s into the hold), held or wrenching -
+	# not how far a wrench brings him back from a failed lion jump's own forward lean (47 degrees in its gather), which
+	# is no try standing him up (the lead, 2026-11-04; with HELD_RETRY a wrench can follow a failed jump).
+	var braced := float(at[2])
 	for i in held.size():
 		least = minf(least, float(held[i][2]))
-		for j in range(i + 1, held.size()):
-			if float(held[j][0]) - float(held[i][0]) > 0.3:
-				break
-			straightened = maxf(straightened, float(held[i][2]) - float(held[j][2]))
+		straightened = maxf(straightened, braced - float(held[i][2]))
 	var tries := []
 	for i in range(1, mo.size()):
 		if String(mo[i][1]) == "dodge" and String(mo[i - 1][1]) == "held":

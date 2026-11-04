@@ -666,3 +666,26 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   turned 0.1 / 11.9, run 1.2 / 8.0, stop 0.1 / 8.3 - 0.14.17's standing 0.0 and walk 0.5 given back (asked of the
   foundation). Suite, owner notes, feet, props, officials, pose and extreme#42 pass.
 
+
+## 0.14.20: Break free always answers (the lead's option iii)
+
+- The cause of tackle_check's breakfree failure (since 0fe9d2a): a failed lion jump out of a hold set the raider's
+  cooldown to 1.4 s (jump 0.62 + gather 0.18 + 0.6), about as long as three holders take to bring him down, so every
+  press after the first was dropped. Now, held, the cooldown is capped at `Match.HELD_RETRY` 0.25 s; a press made while
+  a try is still going or recharging is kept (`raid.break_queued`) and made the moment it can be; and both escape
+  chances are scaled by `Match.ESCAPE_ODDS` 0.9 so mashing still frees about 1 hold in 3 (tests/break_free.gd, 16
+  matches: BF_ODDS 0.6 0.25, 0.75 0.31, 0.9 0.33, 1.0 0.35; 0.14.19 0.33 over 140 holds, 311 tries; now 577 tries over 159 holds).
+- The Break free button dims and fills with a gold ring while the next try recharges (HUD `_cd_peak`,
+  TouchControls.recharge).
+- Braced, not standing up: caught out of a low stance, the raider's crouch holds at least his crouch when caught + 0.3
+  (`Athlete._brace`): his middle had risen 9 cm into the hold.
+- tackle_check: the hips' drop is measured against the last 12 raiding samples before the grip (≥ 0.04 m), and
+  `straightened` against the braced lean (a wrench never more than 10° straighter: 8.8°); it exits 1 on a failure and
+  runs in kabaddi-android.yml (19 scenarios).
+- Owner note 2026-11-04-break-free-presses: a held player's presses always do something visible (at least 2 tries in
+  2.6 s, the second within 1.2 s of the first), in a Quick Match at each of the four difficulties: 5 tries in
+  2.3 s at every one.
+- FoundationLink placement lag: the body was placed at the game pose's weight before this frame's fade step (the layer
+  steps it after, as the skeleton is posed), so on the frame a fade ended it stood one step behind - the suite's
+  "every joint lies on the game body's" caught the hips 2.3 cm off as a defender's move faded to his ready. `_place(dt)`
+  now uses the weight after the step (`Layer.weight_after`). The 2.0 cm bound is unchanged.
