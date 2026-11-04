@@ -21,7 +21,9 @@ const RULE_FROM := {"feet": "2026-11-04T12:00Z", "feet_low": "2026-11-08T12:00Z"
 ## Why a rule is put off for every game until its RULE_FROM (the default: a foundation fault being fixed).
 const RULE_WHY := {"knee_strays": "planter step swing flick, #82 (the lead, 2026-11-04)"}
 
-const RULES := ["props", "crowd", "feet", "feet_low", "pose", "knees", "knee_strays", "officials", "sounds", "loading", "joystick", "web", "tiers"]
+## (In this order whatever --only gives: knees and tiers start every mode again, which frees the last mode's match - a
+## game's cameras inside it were gone before joystick read them: Kho Kho, 2026-11-04.)
+const RULES := ["props", "crowd", "feet", "feet_low", "pose", "officials", "sounds", "loading", "joystick", "web", "knees", "knee_strays", "tiers"]
 
 
 func _initialize() -> void:
@@ -64,7 +66,8 @@ func _initialize() -> void:
 	var game: WsgWorldGame = (load(game_path) as GDScript).new()
 	if bad != "" and "bad" in game:
 		game.set("bad", bad)
-	var rules := RULES if only == "" else Array(only.split(",", false))
+	var asked := Array(only.split(",", false))
+	var rules := RULES if only == "" else RULES.filter(func(r: String) -> bool: return r in asked) + asked.filter(func(r: String) -> bool: return not r in RULES)
 	var excused := game.exceptions()
 	var deferred := game.deferred()
 	var now := OS.get_environment("WSG_NOW") if OS.has_environment("WSG_NOW") else Time.get_datetime_string_from_system(true).substr(0, 16) + "Z"

@@ -670,6 +670,22 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Foundation e58d005: the swing-leg knee flicks (0.15.32)
+
+- **Foundation f080f27 -> e58d005**: WsgFootPlanter never puts a knee it carries through the air (its own step, a hold
+  easing off, a catch-up) more than 3 cm behind its hip-ankle line as the body faces - it bends to the body's front
+  instead (#82, the "planter step swing flick"). The world check runs knees and tiers last (they start every mode
+  again), and a lone backward frame is never a body's share.
+- **knees and knee_strays** (every mode at Low, Medium and High, with the library): both PASS, 0 backward knee-frames
+  anywhere (0.15.31: 5 single strays - the foundation body's frame 128, 7.3-7.7 cm, and two of Low's own bodies in
+  Watch AI, 4.6 and 8.5 cm).
+- **The knee note** (a minute of Watch AI, sagittal, past 15 degrees backward): Low players 6 -> 2 of 20,986 bent
+  frames (worst 29, unchanged); officials, the bench and High in play 0; High's walk between points 8 -> 5 of 8,147
+  (worst 40, unchanged). Those 5 (f85, f100, f342-343, f1150): the swinging shin flung 40-45 degrees out to the side
+  of the front-to-back plane (a 60-69 degree bend in 3D), its knee 1.4-10.9 cm behind its hip-ankle line - real, and
+  outside the world check's 8-second windows. Sent to the Foundation frame by frame; the note's cap for it stays at
+  45 until it is gone.
+
 ## Foundation f080f27: the knees rule on (0.15.31)
 
 - **Foundation e04af65 -> f080f27**: the world rules "knees" (fails from 2026-11-06 12:00 UTC) and "knee_strays"

@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.32: **fewer knee flicks.** The shared foot planter no longer flicks a stepping leg's knee backwards
+for a frame. On Low the players' few backward-knee frames went from 6 to 2 a minute, and on High the walk between
+points from 8 to 5. Watch the players' legs as they walk back to their places.
+
 New in 0.15.31: **the knees check is on.** Behind the scenes only: the shared world check now fails any build with a
 knee drawn bent backwards, in every mode at every graphics level. The game passes it. Nothing changes in play.
 
