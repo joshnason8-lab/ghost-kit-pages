@@ -307,5 +307,6 @@
   "RULES_MARKERS_TEXT": "The older Maya courts, of the Classic period (as at Copán), had no rings: three round stone markers were set in the alley floor down its middle. How they were used in play is not known, so in the game they mark the court and nothing more, and there is no ring shot. Classic rules, points to eight.",
   "MARKERS": "Markers",
   "TIP_RULES_CLASSIC": "Classic court: points to eight. The ball plays off the sloped walls, and through a ring it wins outright.",
-  "TIP_RULES_MAYA": "Pelota maya: each side strikes once, then the ball must cross. Over their end line: 4 points."
+  "TIP_RULES_MAYA": "Pelota maya: each side strikes once, then the ball must cross. Over their end line: 4 points.",
+  "BOX_POINTS": "Points won"
 }

@@ -307,5 +307,6 @@
   "RULES_MARKERS_TEXT": "Les terrains mayas plus anciens, de la période classique (comme à Copán), n'avaient pas d'anneaux : trois marqueurs ronds en pierre étaient scellés dans le sol de l'allée, le long de son milieu. On ne sait pas comment ils servaient au jeu : ici, ils marquent le terrain, sans plus, et il n'y a pas de tir à l'anneau. Règles classiques, points jusqu'à huit.",
   "MARKERS": "Marqueurs",
   "TIP_RULES_CLASSIC": "Terrain classique : points jusqu'à huit. La balle rebondit sur les murs en pente, et dans l'anneau elle gagne le match.",
-  "TIP_RULES_MAYA": "Pelota maya : chaque camp frappe une fois, puis la balle doit passer. Au-delà de leur ligne de fond : 4 points."
+  "TIP_RULES_MAYA": "Pelota maya : chaque camp frappe une fois, puis la balle doit passer. Au-delà de leur ligne de fond : 4 points.",
+  "BOX_POINTS": "Points gagnés"
 }

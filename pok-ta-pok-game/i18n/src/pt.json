@@ -307,5 +307,6 @@
   "RULES_MARKERS_TEXT": "As quadras maias mais antigas, do período Clássico (como em Copán), não tinham aros: três marcadores redondos de pedra ficavam embutidos no piso do corredor, ao longo do centro. Não se sabe como eram usados no jogo, então aqui só marcam a quadra e não há arremesso ao aro. Regras clássicas, pontos até oito.",
   "MARKERS": "Marcadores",
   "TIP_RULES_CLASSIC": "Quadra clássica: pontos até oito. A bola quica nos muros inclinados e, pelo aro, vence a partida.",
-  "TIP_RULES_MAYA": "Pelota maya: cada lado golpeia uma vez e a bola deve cruzar. Além da linha de fundo deles: 4 pontos."
+  "TIP_RULES_MAYA": "Pelota maya: cada lado golpeia uma vez e a bola deve cruzar. Além da linha de fundo deles: 4 pontos.",
+  "BOX_POINTS": "Pontos ganhos"
 }

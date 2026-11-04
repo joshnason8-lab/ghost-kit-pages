@@ -106,7 +106,9 @@ func _team_box() -> Control:
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UI.fit(h, 2)
 		g.add_child(h)
-	for row in [["BOX_RAYAS", "rayas"], ["BOX_DEAD", "dead"], ["BOX_END", "end"], ["BOX_WON_OUT", "won_out"], ["BOX_WON_TOUCH", "won_touch"],
+	# Counted in points (the classic court, the revival): the points won first (the revival's end line is worth 4).
+	var first: Array = ["BOX_POINTS", "points"] if Rules.by_points(String(r.get("count", {}).get("rules", "ulama"))) else ["BOX_RAYAS", "rayas"]
+	for row in [first, ["BOX_DEAD", "dead"], ["BOX_END", "end"], ["BOX_WON_OUT", "won_out"], ["BOX_WON_TOUCH", "won_touch"],
 			["BOX_RING", "ring"], ["BOX_STRIKES", "strikes"], ["BOX_DIVES", "dives"], ["BOX_SERVES", "serves"],
 			["BOX_FAULT_TOUCH", "faults_touch"], ["BOX_FAULT_OUT", "faults_out"]]:
 		_cell(g, tr(row[0]), "MutedLabel")

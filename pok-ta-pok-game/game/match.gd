@@ -81,7 +81,7 @@ func _ready() -> void:
 		# M6: the revival has no target; it always plays to the clock (two halves of 13 minutes by default).
 		limit_s = Rules.MAYA_HALF_MIN * 2.0 * 60.0
 	for k in 2:
-		tstats[k] = {"rayas": 0, "dead": 0, "end": 0, "won_out": 0, "won_touch": 0, "ring": 0, "faults_touch": 0, "faults_out": 0,
+		tstats[k] = {"rayas": 0, "points": 0, "dead": 0, "end": 0, "won_out": 0, "won_touch": 0, "ring": 0, "faults_touch": 0, "faults_out": 0,
 			"strikes": 0, "dives": 0, "serves": 0}
 	if bool(config.get("deferred", false)):
 		# Started from a menu: built in steps under the loading overlay (Game.start_match calls build), the match
@@ -1302,6 +1302,7 @@ func _award(team: int, reason: String, fault: bool, who) -> void:
 		res = Rules.award_ring(count, team)
 	else:
 		res = Rules.award(count, team, Rules.points_for(count, reason))
+		tstats[team].points += Rules.points_for(count, reason)
 	if sudden and count.winner < 0:
 		count.winner = team
 	tstats[team].rayas += 1

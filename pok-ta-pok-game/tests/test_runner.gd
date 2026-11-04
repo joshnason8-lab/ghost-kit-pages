@@ -1192,7 +1192,9 @@ func _maya_match() -> void:
 		await get_tree().process_frame
 		g += 1
 	var before := int(m.count.points[0])
+	var box_before := int(m.tstats[0].points)
 	m._award(0, "end", false, null)
+	check(int(m.tstats[0].points) == box_before + 4, "M2: the box score counts the end line as 4 points won (%d -> %d)" % [box_before, int(m.tstats[0].points)])
 	check(int(m.count.points[0]) == before + 4 and m.count.winner < 0, "M2: over the end line in a match: 4 points, and play goes on (%d -> %d)" % [before, int(m.count.points[0])])
 	# A second strike in a row by the side that just struck, the ball still in its half: the point to the other side.
 	g = 0
