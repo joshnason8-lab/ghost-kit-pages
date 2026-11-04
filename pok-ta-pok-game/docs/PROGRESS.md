@@ -464,14 +464,14 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   waits on the owner (a new tag). Medium and High feet PASS; Low feet still DEFERRED until 11-08 (the foundation's
   WsgToonDriver fix is next).
 
-- **0.6.31-beta: the markers court (Classic period); shared foundation a40a95e0; owner notes on a fresh install.** A
+- **0.6.31-beta: the markers court (Classic period); shared foundation 3b700012; owner notes on a fresh install.** A
   fifth court, "Classic court with markers": the stone court at dusk with no rings and three round stone markers set
   in the alley floor down its middle, as the Classic Maya courts had them (Copán). Their use in play is not known, so
   they mark the court and score nothing; there is no ring shot (yours or the computer's), and the revival, whose ring
   wins outright, is not offered there (its cup keeps to the ringed courts). Classic rules, points to eight; the copal
   offering, the crowd on the terraces and the forest sounds as on the other stone courts. How to Play has a card for
   it; docs/RULES.md R12 says what is known. Also: the foundation's planter fixes since 0.6.30 (2846235d, 5c2304e4,
-  a40a95e0) and the owner notes run in CI on a fresh install's defaults (WSG_NOTES_FRESH).
+  a40a95e0, 3b700012; the sim's 25.1 cm jump on LLA_1 is unchanged and stays deferred until 11-06) and the owner notes run in CI on a fresh install's defaults (WSG_NOTES_FRESH).
 
 ## Next
 
