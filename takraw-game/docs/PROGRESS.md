@@ -670,6 +670,27 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Knees the right way round; the ball spinning (0.15.28)
+
+The owner (0.15.27, a screenshot of Low players in their ready stance): "the players stances regressed to look like
+the have broken backwards knees ... Refs knees also bent wrong ... Make the ball spin or rotate more in the air it
+looks lame not moving on replays ... Massive issues walking to go get the ball."
+- **The knees** (Low): the shared planter (WsgFootPlanter._leg_ik, since 83bcf14) took the thigh bone's z for
+  forward; on our players' and officials' Mixamo skeleton it points back, so every knee it turned was bent backwards -
+  the officials since 0.15.15 (on Low), the players since 0.15.25. The fix (the Foundation's e04af650, the same change,
+  carried in our copy until the next sync, marked there): the thigh's forward worked out on each rig from its rest pose
+  (ankle to toe). Measured (Low, a seeded regu, a minute, every knee as drawn, its bend about the body's left-right
+  axis, past 15 degrees backward): players 16,297 of 20,986 bent-knee frames -> 6 (the worst 29 degrees), officials
+  1,105 of 7,200 -> 0. The fetch walk, which ran on those knees, steps on bent-forward knees again (contact sheets).
+- **The owner note** 2026-11-04-knees: on Low and High, players, officials and substitutes, outside the roll spike and
+  the sunback and the replays: backward past 15 degrees in at most 0.5% of bent-knee frames, never past 30. High's own
+  walk between points (the foundation's bodies) flicks a swinging knee back for a frame or three, up to 40 degrees, 8
+  frames a minute: reported to the Foundation, read on its own and held to 45 until their fix.
+- **The ball**: kicked, it spins 8-20 rad/s (5-16), a drawn frame's turn kept to 30 degrees so its weave never seems
+  to stop or run back at 30 fps; each replay frame keeps the way it was turned and the replay turns it so, slowed with
+  the rest (it was turned by its spin at the replay's start, none once at rest). test_runner: 8 rad/s at least, the
+  frame's cap, and the ball turning in a replay.
+
 ## Menus drawn only when they change (0.15.27)
 
 The lead (from the Low polish pass: the menus drew every frame, the busiest 120-225 draw calls): low-processor mode

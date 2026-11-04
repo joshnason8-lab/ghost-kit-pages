@@ -360,10 +360,11 @@ func _ball_spins() -> void:
 	var b := Ball.new()
 	add_child(b)
 	b.launch(Vector3(0, 1, 0), Vector3(4, 6, 1), 0.0)
-	check(absf(b.spin_rate) >= 5.0, "the ball spins once kicked (%.1f rad/s)" % b.spin_rate)
-	var before: Basis = b._mesh.global_transform.basis
+	check(absf(b.spin_rate) >= 8.0, "the ball spins once kicked (%.1f rad/s, 8 at least: the owner, \"spin more\")" % b.spin_rate)
+	var q0 := b.look()
 	b.turn(0.1)
-	check(not before.is_equal_approx(b._mesh.global_transform.basis), "the ball turns as it flies")
+	var step := q0.angle_to(b.look())
+	check(step > 0.1 and step <= Ball.MAX_TURN + 0.001, "the ball turns as it flies, %.0f degrees a frame at most (%.0f)" % [rad_to_deg(Ball.MAX_TURN), rad_to_deg(step)])
 	b.queue_free()
 
 
@@ -1742,7 +1743,10 @@ func _foundation(available: bool) -> void:
 	var playing: bool = m.state == m.S.REPLAY and m.wsg_replay.playing and FoundationLink.frozen
 	check(playing and m.replays.size() > 0, "replays: the point's moment (%s), the foundation's bodies as they were drawn" % [m.replays.back() if m.replays.size() > 0 else "none"])
 	if playing:
+		var q0: Quaternion = m.ball.look()
 		await frames(20)
+		var turned := rad_to_deg(q0.angle_to(m.ball.look()))
+		check(turned > 5.0, "replays: the ball turns as it did in the point, slowed (%.0f degrees over 20 frames)" % turned)
 		m.hud._replay_tag.pressed.emit()   # (a tap anywhere: the replay's tag covers the screen)
 		await frames(3)
 		check(m.state != m.S.REPLAY and not m.wsg_replay.playing and not FoundationLink.frozen, "replays: a tap skips it, back to the match (state %d)" % m.state)

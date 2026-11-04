@@ -15,6 +15,12 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.28: **knees that bend the right way, and a ball that spins.** On Low, the players' and the referees' knees
+had been bent backwards ("broken backwards knees") by the shared foot planter, which read the wrong way as forward on
+our players' skeleton: in a ready stance, walking to fetch the ball, running. They bend forward again. The ball spins
+faster in the air, and in the replays it now turns as it did in the point (it stood still before). Watch the ready
+stance before a serve, the walk to fetch the ball, the line judges, and a replay.
+
 New in 0.15.27: **menus that rest.** The menus (Quick Match, Settings, Records, How to Play, the season and cup
 screens, the result, and the home screen on Low) are now drawn only when something on them changes, so a phone
 sitting on a menu does far less work and its battery lasts longer. Taps, scrolling, the tiles fading in and the loading

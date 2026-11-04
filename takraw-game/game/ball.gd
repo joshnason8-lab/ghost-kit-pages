@@ -126,7 +126,9 @@ func launch(p0: Vector3, v: Vector3, t0: float, trail := false) -> void:
 	var axis := flat.cross(Vector3.UP).normalized() if flat.length() > 0.2 else Vector3.RIGHT
 	axis = axis.rotated(Vector3.UP, randf_range(-0.5, 0.5)) + Vector3(0, randf_range(-0.35, 0.35), 0)   # wsg-rng-ok: the spin is drawn only (its flight: Ball.pos_at)
 	spin_axis = axis.normalized()
-	spin_rate = clampf(v.length() * 0.8, 5.0, 16.0) * (1.0 if randf() < 0.75 else -1.0)   # wsg-rng-ok: drawn only
+	# (0.15.28, the owner: "make the ball spin or rotate more in the air": 5-16 rad/s -> 8-20; turn() keeps a frame's
+	# turn under MAX_TURN so the weave never seems to stand still or run backwards at 30 fps)
+	spin_rate = clampf(v.length() * 1.2, 8.0, 20.0) * (1.0 if randf() < 0.75 else -1.0)   # wsg-rng-ok: drawn only
 	_trail_on = 0.5 if trail else 0.0
 
 
@@ -290,10 +292,25 @@ func settled() -> bool:
 	return not flying and (not loose or (global_position.y <= RADIUS + 0.01 and vel.length() < 0.05))
 
 
-## Turns the ball by its spin over dt (s): in flight, and in a replay.
+## Turns the ball by its spin over dt (s), in flight: at most MAX_TURN a drawn frame (the weave of holes repeats
+## every fifth of a turn: past about half of that a frame it seems to slow, stop or turn back).
 func turn(dt: float) -> void:
 	if spin_rate != 0.0:
-		_mesh.global_rotate(spin_axis, spin_rate * dt)
+		_mesh.global_rotate(spin_axis, clampf(spin_rate * dt, -MAX_TURN, MAX_TURN))
+
+
+const MAX_TURN := 0.52   # rad a frame (30 degrees)
+
+
+## The way the ball is turned now (world): kept with each frame of a replay, and put back as it plays (Match).
+func look() -> Quaternion:
+	return _mesh.global_transform.basis.get_rotation_quaternion()
+
+
+func set_look(q: Quaternion) -> void:
+	var t := _mesh.global_transform
+	t.basis = Basis(q.normalized()).scaled(t.basis.get_scale())
+	_mesh.global_transform = t
 
 
 func _process(delta: float) -> void:

@@ -2070,7 +2070,7 @@ func _end_review() -> void:
 func _record() -> void:
 	if state != S.RALLY and state != S.DEAD and state != S.TOSS:
 		return
-	var f := {"ball": ball.global_position, "p": [], "t": rclock}
+	var f := {"ball": ball.global_position, "q": ball.look(), "p": [], "t": rclock}
 	for side in 2:
 		for pp in players_on(side):
 			var pl: Player = pp
@@ -2137,8 +2137,11 @@ func _replay_step(delta: float) -> void:
 		end_replay()
 		return
 	var f: Dictionary = _replay_frames[i]
-	if (f.ball as Vector3).distance_to(ball.global_position) > 0.002:
-		ball.turn(delta * 0.4)   # (the replay runs at 0.4 of real time)
+	# The ball turned as it was, frame by frame, slowed with the replay (0.4 of real time; the owner: "it looks lame not
+	# moving on replays" - it was turned by its spin as the point ended, none once it had come to rest).
+	var nx: Dictionary = _replay_frames[mini(i + 1, _replay_frames.size() - 1)]
+	if f.has("q") and nx.has("q"):
+		ball.set_look((f.q as Quaternion).slerp(nx.q, _replay_i - float(i)))
 	ball.global_position = f.ball
 	_officials.tick(delta * 0.4, ball.global_position, true)
 	_bench.tick(delta * 0.4, ball.global_position, true)

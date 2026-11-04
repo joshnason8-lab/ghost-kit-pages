@@ -232,6 +232,14 @@
    "date": "2026-11-04",
    "version": "0.15.22",
    "words": "Sepak raga bulatan: a full ring run plays on Low and High with props, feet and pose rules passing, no new assets (the lead's request for the owner)."
+  },
+  {
+   "id": "2026-11-04-knees",
+   "file": "2026-11-04_knees.gd",
+   "game": "sepak-takraw",
+   "date": "2026-11-04",
+   "version": "0.15.27",
+   "words": "All that work and the players stances regressed to look like the have broken backwards knees. How does that happen its unacceptable. Refs knees also bent wrong"
   }
  ]
 }
