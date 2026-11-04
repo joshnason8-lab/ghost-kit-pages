@@ -112,6 +112,14 @@
    "version": "Kho Kho Rush 0.12.3",
    "words": "These games live in a world of reality. There will NEVER be a time when a player or referee should walk through a table or bench etc.",
    "file": "2026-11-03_walk_through_props.gd"
+  },
+  {
+   "id": "2026-11-04-knees-backward",
+   "game": "kho-kho",
+   "date": "2026-11-04",
+   "version": "Kho Kho Rush 0.12.15",
+   "words": "The lead's ruling on the owner's Takraw 0.15.27 report, as relayed: \"players' stances look like broken backwards knees; refs' knees are bent wrong too\" - no knee bends backward on any tier, for players or officials, outside named acrobatics.",
+   "file": "2026-11-04_knees_backward.gd"
   }
  ]
 }

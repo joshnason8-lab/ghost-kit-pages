@@ -47,8 +47,14 @@ static func frames(tree: SceneTree, n: int) -> void:
 		await tree.process_frame
 
 
-## Every drawn player's knees for n frames: [legs seen, problems] - a problem is a leg whose knee, bent (hip-knee-ankle
-## under 165 degrees), stood more than 3 cm behind the line from his hip to his ankle (behind: against the way he
+## The foundation's knees rule (WsgNoteChecks.KNEE_BENT / KNEE_BACK, enforced 2026-11-06 12:00): a leg is bent when its
+## knee is over 1.5 cm off the hip-ankle line, and a bent knee over 4 cm behind it is backwards.
+const KNEE_BENT := 0.015
+const KNEE_BACK := 0.04
+
+
+## Every drawn player's knees for n frames: [legs seen, problems, stats] - a problem is a leg whose knee, bent (over
+## KNEE_BENT off the line from his hip to his ankle), stood more than KNEE_BACK behind that line (behind: against the way he
 ## faces - the game's body's +Z, not the way his toe points: a swinging leg's foot, folded up behind, points back), with
 ## how often and how far. Read as drawn: in the skeleton's skeleton_updated, after its modifiers (the foot planter's
 ## legs) - outside it Godot reports the bones without them. Low: ModelBody's skeleton; Medium and High: the
@@ -78,7 +84,7 @@ static func knees(tree: SceneTree, m: Node, n: int) -> Array:
 		var s: Dictionary = stats[who]
 		if int(s.back) > 0:
 			problems.append("%s: knee behind the hip-ankle line on %d of %d bent frames, %.0f cm at worst (act '%s')" % [who, s.back, s.bent, float(s.worst) * 100.0, s.act])
-	return [stats.size(), problems]
+	return [stats.size(), problems, stats]
 
 
 static func _knee_read(a: Node, sk: Skeleton3D, stats: Dictionary) -> void:
@@ -100,15 +106,15 @@ static func _knee_read(a: Node, sk: Skeleton3D, stats: Dictionary) -> void:
 		var H: Vector3 = X * sk.get_bone_global_pose(ix[0]).origin
 		var K: Vector3 = X * sk.get_bone_global_pose(ix[1]).origin
 		var A: Vector3 = X * sk.get_bone_global_pose(ix[2]).origin
-		if rad_to_deg((H - K).angle_to(A - K)) > 165.0:
-			continue
 		var axis := (A - H).normalized()
 		var off := (K - H) - axis * (K - H).dot(axis)
+		if off.length() <= KNEE_BENT:
+			continue
 		var d := off.dot(fwd)
 		var who := "%s %s" % [String(a.data.get("name", a.name)), side.to_lower()]
 		var s: Dictionary = stats.get(who, {"bent": 0, "back": 0, "worst": 0.0, "act": ""})
 		s.bent += 1
-		if d < -0.03:
+		if d < -KNEE_BACK:
 			s.back += 1
 			if -d > float(s.worst):
 				s.worst = -d
