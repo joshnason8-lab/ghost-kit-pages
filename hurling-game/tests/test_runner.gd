@@ -35,6 +35,7 @@ func _ready() -> void:
 	_sim_scores()
 	_clock_lengths()
 	_coach()
+	await _keeper_jerseys()
 	await _subs()
 	await _sent_off_walks_off()
 	await _tactics()
@@ -526,6 +527,48 @@ func _coach() -> void:
 
 ## A man sent off walks off the field and is gone, at every ground (WsgSim seed 8: at the stadium he made for a spot
 ## behind the pitch wall, stood at the wall, and played on).
+
+## Roadmap 11: each goalkeeper in a jersey unlike every colour on the pitch (a fixed green put Limerick's keeper in
+## his own outfielders' green: 49 apart on Match.colour_gap's 0-765), and the two keepers unlike each other.
+func _keeper_jerseys() -> void:
+	var Match: GDScript = load("res://game/match.gd")
+	var worst := INF
+	var worst_pair := ""
+	var apart := INF
+	for a: String in DB.COUNTIES:
+		for b: String in DB.COUNTIES:
+			if a == b:
+				continue
+			var ta: Dictionary = DB.team(a)
+			var tb: Dictionary = DB.team(b)
+			var cols := [ta.c1, ta.c2, tb.c1, tb.c2]
+			var gk: Array = Match.keeper_jerseys(cols)
+			apart = minf(apart, Match.colour_gap(gk[0], gk[1]))
+			for g: Color in gk:
+				for c: Color in cols:
+					if Match.colour_gap(g, c) < worst:
+						worst = Match.colour_gap(g, c)
+						worst_pair = "%s v %s" % [a, b]
+	check(worst >= 120.0, "keepers' jerseys unlike both sides' colours in every pairing (closest %.0f, %s; 120 at least)" % [worst, worst_pair])
+	check(apart >= 200.0, "the two keepers' jerseys unlike each other (closest %.0f; 200 at least)" % apart)
+	var lim: Array = Match.keeper_jerseys([DB.team("LIM").c1, DB.team("LIM").c2, DB.team("COR").c1, DB.team("COR").c2])
+	check(Match.colour_gap(lim[0], DB.team("LIM").c1) > 120.0, "Limerick's keeper not in Limerick green")
+	# In a match: both keepers in their chosen jerseys (the home keeper's was once chosen before the away side existed,
+	# and came out with no looks at all).
+	var m: Node = Match.new()
+	m.config = {"home": "LIM", "away": "COR", "venue": "county", "user_team": -1, "seed": 3, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	for k in 2:
+		var gk: Player = m.player_by_num(k, 1)
+		check(gk.is_keeper() and gk.body.look.get("jersey") == m._keeper_cols[k],
+			"the %s keeper in his chosen jersey (%s, want %s)" % [["home", "away"][k], gk.body.look.get("jersey"), m._keeper_cols[k]])
+	check(Match.colour_gap(m.player_by_num(0, 1).body.look.get("jersey", Color.BLACK), DB.team("LIM").c1) > 120.0,
+		"Limerick's keeper, in a match, not in Limerick green")
+	m.queue_free()
+	await frames(2)
+
 func _sent_off_walks_off() -> void:
 	for venue in ["stadium", "county", "parish"]:
 		var m: Node = load("res://game/match.gd").new()

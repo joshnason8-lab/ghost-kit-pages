@@ -11,6 +11,8 @@ extends Node3D
 
 enum P {INTRO, THROW_IN, LIVE, DEAD, SETUP, SET, HALF_TIME, SHOOTOUT, OVER}
 
+const KEEPER_KIT := [Color("2a9d5c"), Color("d9772b"), Color("e8d62a"), Color("4fc3e8"), Color("e0559a"), Color("8a8f96"),
+	Color("7b4bb3"), Color("a8d43a")]   # green, orange, yellow, sky, pink, grey, purple, lime
 const DEAD_T := 1.6          # s from the whistle to the players going to their places
 const SETUP_MAX := 7.0       # s to get to them at most
 const REACH := 1.25          # m from a player to a ball he can play with the hurley
@@ -32,6 +34,7 @@ var rng := RandomNumberGenerator.new()
 
 # The teams: [home, away]: {id, name, short, c1, c2, players (on the field), bench (data), subs}.
 var teams: Array = []
+var _keeper_cols: Array = []   # the two keepers' jerseys (keeper_jerseys), once the sides are known
 var ai: Array = []
 var user_team := -1
 var active: Player = null    # your player
@@ -414,6 +417,9 @@ func _make_teams() -> void:
 		var team := {"id": ids[k], "c1": c1, "c2": c2, "design": int(t.design), "players": [], "bench": DB.squad(ids[k]).slice(15),
 			"subs": 0, "temp": 0}
 		teams.append(team)
+	# (The players once both sides' colours are known: a keeper's jersey is chosen against all four, keeper_jerseys.)
+	for k in 2:
+		var team: Dictionary = teams[k]
 		for pd in DB.starters(ids[k]):
 			var pl := Player.new(pd, k, _look(k, pd, int(pd.line) == DB.POS_GK))
 			pl.tire_k = clock_k
@@ -436,10 +442,50 @@ func _look(k: int, pd: Dictionary, keeper: bool) -> Dictionary:
 		"jersey": c1, "trim": c2, "shorts": Color("f6f6f2") if c1.get_luminance() < 0.6 else Color("1a1a1a"),
 		"socks": c1, "helmet": helmet, "design": int(team.design), "height": float(pd.height), "kind": "player"}
 	if keeper:
-		look.jersey = Color("2a9d5c") if k == 0 else Color("d9772b")
+		if _keeper_cols.is_empty():
+			_keeper_cols = keeper_jerseys([teams[0].c1, teams[0].c2, teams[1].c1, teams[1].c2])
+		look.jersey = _keeper_cols[k]
 		look.socks = look.jersey
 		look.design = 0
 	return look
+
+
+## The goalkeepers' jerseys: each the colour of KEEPER_KIT furthest from every colour on the pitch (both sides' colours,
+## the referee's black, the umpires' white), the away keeper's also unlike the home keeper's. (A fixed green and orange
+## put Limerick's keeper in his own outfielders' green.)
+static func keeper_jerseys(cols: Array) -> Array:
+	var on := cols.duplicate()
+	on.append_array([Color("1a1a1a"), Color("f4f4f0")])
+	var home := _most_unlike(on, [])
+	return [home, _most_unlike(on, [home])]
+
+
+static func _most_unlike(cols: Array, apart: Array) -> Color:
+	var best := KEEPER_KIT[0]
+	var best_d := -1.0
+	for c: Color in KEEPER_KIT:
+		var ok := true
+		for a: Color in apart:
+			if colour_gap(c, a) < 200.0:
+				ok = false
+		if not ok:
+			continue
+		var near := INF
+		for o: Color in cols:
+			near = minf(near, colour_gap(c, o))
+		if near > best_d + 0.001:
+			best_d = near
+			best = c
+	return best
+
+
+## How unlike two colours look (the "redmean" weighting of RGB, 0-765).
+static func colour_gap(a: Color, b: Color) -> float:
+	var r := (a.r + b.r) * 0.5 * 255.0
+	var dr := (a.r - b.r) * 255.0
+	var dg := (a.g - b.g) * 255.0
+	var db := (a.b - b.b) * 255.0
+	return sqrt((2.0 + r / 256.0) * dr * dr + 4.0 * dg * dg + (2.0 + (255.0 - r) / 256.0) * db * db)
 
 
 static func _skin(i: int) -> Color:

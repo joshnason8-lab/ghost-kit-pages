@@ -692,7 +692,8 @@ anything else "x_hd.<ext>"), VRAM-compressed (ETC2/ASTC on phones) with mipmaps:
 9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
 10. A stand model for the stadium and the county ground (a section with its seat rows at a known rise and depth, so
     the crowd can be seated on it), if the owner wants one: the only gap the graphics update left.
-11. Goalkeepers in their own jerseys, and a number per man on the back (the owner's model, without the 11 in its
+11. ~~Goalkeepers in their own jerseys~~ (done: each keeper in the colour furthest from both sides', the referee's
+    and the umpires', 0.24.12), and a number per man on the back (the owner's model, without the 11 in its
     texture, or a texture of numbers).
 12. A hurler model with the hurley in hand, if a later Meshy model gets it right (two tries did not).
 
