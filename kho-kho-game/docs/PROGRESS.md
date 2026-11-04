@@ -325,6 +325,9 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
 - 0.12.14: foundation 8c87df4 (b91fadce + fd879f98: 9ad1c8ab's touch band let a standing official's idle foot
   hover 3.8 cm unplanted and shrank on the 0.95-scaled defenders; the foundation's local smoke on 9406eac: slides >2.5
   21 -> 13). Low unchanged (feet_low stop 1.7, walk 1.5 cm).
+- 0.12.15: foundation 28e82f9 (706e3a6d: the planter's tolerances by body size, not the skeleton's world scale -
+  player.glb's Low body): feet_low standing 0.0, walk 0.4 (1.5), jog 0.8, jog turned 1.1, run 1.3 (9 planted steps, was
+  1), stop 0.7 (1.7) cm; jumps at most 12.5 cm.
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

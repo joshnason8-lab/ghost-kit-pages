@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.15
+
+- **Steadier feet on Low**, the setting phones like the A16 play on: a planted foot slides less when a player walks
+  (1.5 cm at most before, 0.4 now) and stops (1.7 before, 0.7 now), and stands dead still when he stands; running
+  plants every stride. (The shared foundation now sizes its foot checks by the player's body, not by how the model
+  was scaled.)
+
 ## What's new in 0.12.14
 
 - **Feet** on Medium and High: a standing umpire's or referee's resting foot is held on the ground (it hovered just
