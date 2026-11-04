@@ -93,6 +93,14 @@ func walker_low(_parent: Node):
 	return "foundation"
 
 
+## knees: the game's own body (game/body.gd: it poses each player for the shared foundation's, and draws him where
+## that is off) names its legs thigh_, shin_, foot_; it faces +Z and has no toe bone.
+func leg_bones(skeleton: Skeleton3D) -> Array:
+	if skeleton.find_bone("thigh_l") < 0 or skeleton.find_bone("shin_l") < 0:
+		return []
+	return [["thigh_l", "shin_l", "foot_l", Vector3(0, 0, 1)], ["thigh_r", "shin_r", "foot_r", Vector3(0, 0, 1)]]
+
+
 func key_sounds() -> Array:
 	return ["shot", "post", "net", "whistle"]
 

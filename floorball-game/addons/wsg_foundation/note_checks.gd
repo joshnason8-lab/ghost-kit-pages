@@ -261,6 +261,73 @@ static func foot_slip(frames: Array, _ankle_rest := 0.0, _toe_rest := 0.0, groun
 		"jump_cm": jump * 100.0, "max_at": slip_at, "skid_at": skid_at, "jump_at": jump_at}
 
 
+## The legs of skeleton SK, as bone indices [[hip, knee, ankle, toe], [...]] (left, right), or [] if it has none we know:
+## the names its WsgFootPlanter maps (a game's own rig on the planter), then the rig's own names, bare or with a Mixamo
+## prefix; NAMES (a game's own, [[hip, knee, ankle, toe] x2] by name - or with the toe a Vector3, the body's forward at
+## rest in the skeleton's space, for a rig with no toe bone) first if given.
+static func leg_bones(sk: Skeleton3D, names: Array = []) -> Array:
+	var tries := []
+	if names.size() == 2:
+		tries.append(names)
+	for c in sk.get_children():
+		if c is WsgFootPlanter:
+			var pl := c as WsgFootPlanter
+			tries.append(WsgFootPlanter.LEGS.map(func(leg: Array) -> Array:
+				return leg.map(func(n: String) -> String: return pl.bone_prefix + String(pl.bone_map.get(n, n)))))
+	for pre in ["", "mixamorig_", "mixamorig:", "mixamorig1:"]:
+		tries.append(WsgFootPlanter.LEGS.map(func(leg: Array) -> Array: return leg.map(func(n: String) -> String: return pre + n)))
+	for t: Array in tries:
+		# (A leg's fourth may be its forward at rest, in the skeleton's space, for a rig with no toe: kept as it is.)
+		var ix := (t as Array).map(func(leg: Array) -> Array: return leg.map(func(n: Variant) -> Variant:
+			return n if n is Vector3 else sk.find_bone(String(n))))
+		if ix.all(func(leg: Array) -> bool: return leg.size() == 4 and leg.all(func(b: Variant) -> bool: return b is Vector3 or int(b) >= 0)):
+			return ix
+	return []
+
+
+## A knee bent backwards (KNEE_BACK m behind the line from its hip to its ankle, against the body's forward, with the
+## leg bent at least KNEE_BENT off straight), as drawn: the owner's "broken backwards knees" (Sepak Takraw's Low
+## RealBody, 2026-11-04: the foot planter bent them 10-25 cm behind on a rig whose thigh +Z points back). 4 cm, about 5
+## degrees on a grown leg: a locked knee in a standing or striding clip goes 1.5-2.6 cm past straight (Hurling's
+## players, a frame now and then), which no one sees as broken.
+const KNEE_BACK := 0.04
+const KNEE_BENT := 0.015
+
+
+## Each leg of SK (LEGS from leg_bones) now, read as drawn (call it inside skeleton_updated): [[how far the knee is in
+## front of its hip-ankle line along the body's forward (m; negative behind), how far off that line it is (m)], ...].
+## The body's forward is the rest pose's (its feet's way, heel to toe, standing) carried as its hips (the thighs'
+## parent) now turn: whichever way the rig's bones face, and not the foot's own way now (a running stride's heel kicked
+## up behind points its toe back).
+static func knees(sk: Skeleton3D, legs: Array) -> Array:
+	var out := []
+	var xf := sk.global_transform
+	var hips := sk.get_bone_parent(int(legs[0][0]))
+	var rest_way := Vector3.ZERO
+	for leg: Array in legs:
+		rest_way += (leg[3] as Vector3) if leg[3] is Vector3 else sk.get_bone_global_rest(leg[3]).origin - sk.get_bone_global_rest(leg[2]).origin
+	rest_way.y = 0.0
+	var fwd := rest_way
+	if hips >= 0:
+		var rb := sk.get_bone_global_rest(hips).basis
+		var nb := sk.get_bone_global_pose(hips).basis
+		fwd = nb * (rb.inverse() * rest_way)
+	fwd = xf.basis * fwd
+	fwd.y = 0.0
+	for leg: Array in legs:
+		var hip := xf * sk.get_bone_global_pose(leg[0]).origin
+		var knee := xf * sk.get_bone_global_pose(leg[1]).origin
+		var ank := xf * sk.get_bone_global_pose(leg[2]).origin
+		var line := ank - hip
+		if line.length() < 0.0001 or fwd.length() < 0.0001:
+			out.append([0.0, 0.0])
+			continue
+		line = line.normalized()
+		var off := (knee - hip) - line * (knee - hip).dot(line)
+		out.append([off.dot(fwd.normalized()), off.length()])
+	return out
+
+
 ## A body's arms now: {"Left": [how far the upper arm is out from hanging down (degrees), the elbow's bend (degrees,
 ## 0 straight)], "Right": [...]}.
 static func arms(body: WsgBody) -> Dictionary:
