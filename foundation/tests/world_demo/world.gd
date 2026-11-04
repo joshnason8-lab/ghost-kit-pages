@@ -181,8 +181,43 @@ class DemoMatch:
 				b.reset_pose()
 				continue
 			loco.drive(delta, vel, atan2(vel.x, vel.z), vel)
-			if i == 0 and _bad == "knees" and loco.planter:
-				# (The foot planter's knee pole taken the wrong way round: the fault Sepak Takraw's Mixamo rig had.)
-				loco.planter._thigh_z_fwd = -1.0
+			if i == 0 and _bad in ["knees", "knee_stray"] and b.skeleton.get_node_or_null("BackKnee") == null:
+				# (A knee bent backwards as drawn - every frame, or one frame a little (a stray): the owner's "broken
+				# backwards knees". A modifier after the planter, so nothing undoes it.)
+				var bk := BackKnee.new()
+				bk.name = "BackKnee"
+				bk.lone = _bad == "knee_stray"
+				b.skeleton.add_child(bk)
 		official.position = Vector3(0, 0, -8)
 		official.follow(delta, Vector3.ZERO, (players[0][0] as WsgBody).position)
+
+
+## The knees faults: the left leg's thigh swung back and its shin forward about the body's left-right, so the knee
+## points behind - ANGLE every frame, or (LONE) on one frame only, a little.
+class BackKnee:
+	extends SkeletonModifier3D
+	var lone := false
+	var _frames := 0
+
+	func _process_modification_with_delta(_delta: float) -> void:
+		var sk := get_skeleton()
+		_frames += 1
+		if lone and _frames != 120:
+			return
+		var th := sk.find_bone("LeftUpLeg")
+		var sh := sk.find_bone("LeftLeg")
+		var fwd := sk.get_bone_global_rest(sk.find_bone("LeftToeBase")).origin - sk.get_bone_global_rest(sk.find_bone("LeftFoot")).origin
+		fwd.y = 0.0
+		var right := fwd.normalized().cross(Vector3.UP)
+		var a := deg_to_rad(15.0 if lone else 35.0)
+		if lone:
+			# (From a straight leg, so one frame is surely a little backward: about 11 cm, under KNEE_GROSS_CM.)
+			for bone in [th, sh]:
+				sk.set_bone_pose_rotation(bone, sk.get_bone_rest(bone).basis.get_rotation_quaternion())
+		for pair in [[th, -a], [sh, 2.0 * a]]:
+			var bone: int = pair[0]
+			var g := sk.get_bone_global_pose(bone)
+			var pg := sk.get_bone_global_pose(sk.get_bone_parent(bone))
+			var ng := Basis(right, float(pair[1])) * g.basis
+			sk.set_bone_pose_rotation(bone, (pg.basis.inverse() * ng).get_rotation_quaternion())
+

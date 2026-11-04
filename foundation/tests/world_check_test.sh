@@ -28,6 +28,13 @@ for bad in loading pose knees officials feet feet_low sounds joystick tiers; do
 		echo "world_check_test: --bad $bad caught: $(grep -E "^$bad " "$OUT/$bad.log" | cut -c21- | cut -c1-150)"
 	fi
 done
+# One knee a little backward on one frame: a stray ("knee_strays"), not "knees".
+run knee_stray --only knees,knee_strays --bad knee_stray
+if ! grep -qE "^knee_strays +FAIL" "$OUT/knee_stray.log" || ! grep -qE "^knees +PASS" "$OUT/knee_stray.log"; then
+	echo "world_check_test: a lone small backward knee was not a stray only:"; grep -E "^knee" "$OUT/knee_stray.log"; FAIL=1
+else
+	echo "world_check_test: a lone small backward knee: knee_strays, not knees"
+fi
 # A walker the game advances itself (set_manual) is walked, not waited on for ever (Hurling's hung the feet rule).
 # A mode freeing the last one's match (as a tap does): the later rules go on, and the check finishes (Hurling's and
 # Floorball's stopped on a freed body and never printed WORLD CHECK).
