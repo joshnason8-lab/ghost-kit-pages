@@ -92,7 +92,8 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           sh tools/wsg/owner_notes_guard.sh
-          WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
+          # (On a fresh install's defaults: an empty user dir - the foundation, 2846235d.)
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
 
       # The owner: nobody ever walks through a table, a bench, a chair or a board. A Watch-AI match at every ground,
       # every body on its feet checked against the ground's solid props each frame (WsgSolidProps, ADOPTING 5.15).

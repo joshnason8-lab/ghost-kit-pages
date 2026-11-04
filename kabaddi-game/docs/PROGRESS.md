@@ -613,3 +613,17 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   reads str() now.) Its cost: 37 us a body a frame on the CI-class machine, 0.8 ms for all 21 bodies.
 - The walker_low hook reads the feet as drawn (in skeleton_updated).
 
+## 0.14.15: foundation 5c2304e, a planter reset on a placement, the sim's deferral
+
+- Foundation 5c2304e: the planter restarts cleanly after being off (reset() forgets what it drew; idle over 3 frames,
+  it starts afresh), a planter step keeps its toe 3.5 cm up until it lands, and WsgSim's feet failures name the foot
+  and the frames of the worst reading (the failure's frame is that frame, so a replay stops there).
+- FoundationLink resets its planter when the body is more than 1 m (TELEPORT_M) from where it was last posed - put
+  somewhere new, not walked: a cut for WsgSim, not a slide or a jump (the foundation's advice for officials snapped to
+  their spots). In the 7.6 cm official case (targeted:knockout#103) it never fired: that slide is the foundation's.
+- game/sim.gd deferred(): Medium and High's planted-step slides up to 8 cm are put off until 2026-11-13 12:00 UTC (the
+  lead, 2026-11-03: the foundation's planted-slide fix; 328d7dd's smoke: Low 0 failures in 39 matches, Medium 13 in
+  29, all such slides). Skids and jumps still fail. (Asked before start(); it covers Low too, which had none.)
+- kabaddi-sim.yml runs on game code only: docs, store text and Markdown under kabaddi-game/ play no matches.
+- Owner notes run on a fresh install's defaults in CI (an empty user dir, WSG_NOTES_FRESH=1; foundation 2846235d).
+

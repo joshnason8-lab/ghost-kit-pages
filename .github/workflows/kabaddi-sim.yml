@@ -11,8 +11,13 @@ name: Kabaddi Raid · match simulation
 
 on:
   push:
+    # Game code only: a commit that changes just docs, store text or notes plays no matches (the owner, 2026-11-03:
+    # cut failed runs, each emails them; docs-only commits also carry [skip ci]).
     paths:
       - "kabaddi-game/**"
+      - "!kabaddi-game/docs/**"
+      - "!kabaddi-game/store/**"
+      - "!kabaddi-game/**/*.md"
       - ".github/workflows/kabaddi-sim.yml"
   workflow_dispatch:
 

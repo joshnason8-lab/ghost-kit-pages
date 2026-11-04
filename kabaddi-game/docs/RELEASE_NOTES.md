@@ -1,4 +1,9 @@
-**New in 0.14.14: feet that stay put on Low (the A16's setting).** On Low graphics the players' feet no longer slide
+**New in 0.14.15: cleaner steps.** On every graphics level, a player's foot taking a step keeps its toe off the floor until
+it lands, instead of scraping the mat on the way, and a foot let go after one of the game's own moves (a dive, a hold,
+a kick) starts stepping again cleanly. A player or official put in a new place between raids takes his feet with him
+rather than leaving them on the old spot (Medium and High).
+
+**In 0.14.14: feet that stay put on Low (the A16's setting).** On Low graphics the players' feet no longer slide
 along the floor as they walk, jog, turn and stop: a foot that comes down stays where it lands until it lifts, as on
 Medium and High. (Measured on the test walk: a planted foot moved 2-7 cm a step and a flat foot up to 6 cm in a frame;
 now 1 cm at most.)

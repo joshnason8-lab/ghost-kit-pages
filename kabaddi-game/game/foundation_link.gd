@@ -40,6 +40,9 @@ var _skip := 0
 var _dt := 0.0
 var _k := 1.0                 # the rig's units per the game body's (model space)
 var _shift := Vector3.ZERO    # the game body's model space (turned half round) at the rig's origin
+var _posed_at := Vector3.INF  # where he stood when last posed
+## Moved further than this between two poses: put there, not walked (m; a sprint covers 0.8 m in 3 frames).
+const TELEPORT_M := 1.0
 var _number: Label3D
 var _hidden_labels: Array = []
 
@@ -225,6 +228,13 @@ func _update(delta: float) -> void:
 	_skip = 0
 	var dt := minf(_dt, 0.1)
 	_dt = 0.0
+	# Put somewhere new since the last pose (an official snapped to his spot, a player sent to the bench, the next
+	# raid's places): the planter lets go of the old footholds - a cut, not a slide or a jump (the foundation,
+	# 2026-11-03: a placement over a metre resets, as RiggedBody's own planter does at Low).
+	var at := who.global_position if who else global_position
+	if _posed_at.is_finite() and at.distance_to(_posed_at) > TELEPORT_M:
+		loco.planter.reset()
+	_posed_at = at
 	var pose := {}
 	if want != "move" and want != "clip":
 		pose = reader.read()

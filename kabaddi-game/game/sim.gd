@@ -34,6 +34,15 @@ func game_name() -> String:
 	return "Kabaddi Raid"
 
 
+## The lead, 2026-11-03: Medium and High's planted-step slides (2.0-7.6 cm in the 328d7dd smoke, officials and players
+## alike, on the foundation's WsgBody and planter) are the foundation's planted-slide fix, due 11-13, the same as Sepak
+## Takraw's. Only a planted slide up to 8 cm is put off; a skid or a jump still fails. Low (our own RiggedBody, the
+## foundation's planter on it) had none in 39 matches - if one shows there it is put off too: deferred() is asked
+## before start() and is not told the match's graphics level.
+func deferred() -> Dictionary:
+	return {"planted slip": ["2026-11-13T12:00Z", "Foundation planted-slide fix (the lead, 2026-11-03)", 8.0]}
+
+
 ## random and extreme, and the targeted cases: the 30-second raid clock instead of the cant; a drawn knockout
 ## (tie-breaker raids, then the golden raid); short-handed sides (all outs and revivals); the local grounds' props
 ## (chairs, stools, the scorers' table, the benches); and the human's own side (the stick and the buttons).
