@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.18
+
+- **Knees** (the shared animation foundation): a running player's trailing leg no longer bends its knee backwards for
+  a frame.
+
 ## New in 0.24.17
 
 - **The throw-in as the rules have it** (Rule 2.1): the two midfielders from each side one behind the other on their

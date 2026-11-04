@@ -860,6 +860,21 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.18, 4 November 2026)
+
+- **Foundation 4a2df496** (040a5df5: WsgFootPlanter keeps the knee on its front side for every leg of a body moving
+  1 m/s or faster; e04af650 and e58d0051 before it; the world rules "knees" and "knee_strays", enforced from
+  2026-11-06 12:00 and 2026-11-13). On 2f814608 the watch AI drew four lone backward knee-frames while sprinting
+  (6.7, 11.6 and 5.0 cm at Low, 16.6 cm at High: a planted trailing foot held while the body ran on); on 4a2df496 every
+  mode at every tier reads 0. Shipped now rather than at a later build (the lead: the 16.6 cm frame fails "knees"
+  from 11-06 12:00).
+- **Goals and sideline cuts** (the lead asked whether 0.24.17 moved them): it did not. The Foundation's sync changes no
+  play (0.24.17 with the old throw-in plays 0.24.16's eight matches to the scoreline); the Rule 2.1 throw-in reshuffles
+  every match from the first ball but moves neither figure: 0.24.17 at 7.5 sideline cuts and 0.040 goals a live minute
+  over four full matches, against 0.24.16's 8.7 and 0.040. Both have been short of real hurling (10+; 0.103) since
+  before this round; a balance pass for them waits on the owner. Two clearance variants were tried and not kept
+  (pressed within 6 m: no change at all; and nine in ten: 8.0 cuts but 1.35 points a live minute).
+
 ## Done (0.24.17, 4 November 2026)
 
 - **Throw-in** (Rule 2.1, the lead's go-ahead): the two midfielders one behind the other on their own side (number 8

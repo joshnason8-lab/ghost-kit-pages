@@ -83,6 +83,11 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 ## the body is going), and is planted there: the clip, its stride too short for the body (a sharp turn, a start or
 ## stop harder than its clips), kept it on the ground behind, and it slid there 3 to 13 cm (WsgSim's demo).
 const STEP_TIME := 0.2
+## A knee the IK would put more than this behind its hip-ankle line as the body faces (m, on a grown leg) bends forward
+## instead (WsgNoteChecks.KNEE_BACK reads 0.04 as backward).
+const KNEE_BACK_MAX := 0.03
+## ... on a leg the planter carries through the air, and on any leg of a body moving at least this fast (m/s).
+const KNEE_FRONT_SPEED := 1.0
 ## How far a step's toe stays over the floor until it lands (m, the body's scale 1): over the feet rule's 3 cm touch.
 const STEP_CLEAR := 0.035
 ## How far off where a let-go foot is held the clip may stand it down before it steps there instead (m, scale 1): the
@@ -165,6 +170,14 @@ func _cache(sk: Skeleton3D) -> void:
 				push_error("WsgFootPlanter: a leg bone is missing on %s (bone_map: %s, bone_prefix: '%s')" % [sk.name, bone_map, bone_prefix])
 	_ankle_rest = sk.get_bone_global_rest(_ix[0][2]).origin.y
 	_toe_rest = sk.get_bone_global_rest(_ix[0][3]).origin.y
+	# (Which way the thigh's +Z faces on this rig at rest, against the foot's way (heel to toe): forward on ours, backward
+	# on a Mixamo RealBody - Sepak Takraw's, whose every bent knee was flipped behind, the owner's "broken backwards knees".)
+	var rest_fwd: Vector3 = sk.get_bone_global_rest(_ix[0][3]).origin - sk.get_bone_global_rest(_ix[0][2]).origin
+	var rest_z: Vector3 = sk.get_bone_global_rest(_ix[0][0]).basis * Vector3(0, 0, 1)
+	_thigh_z_fwd = 1.0 if Vector2(rest_z.x, rest_z.z).dot(Vector2(rest_fwd.x, rest_fwd.z)) >= 0.0 else -1.0
+	var way := Vector3(rest_fwd.x, 0.0, rest_fwd.z)
+	var hip_bone := sk.get_bone_parent(_ix[0][0])
+	_fwd_hips = (sk.get_bone_global_rest(hip_bone).basis.inverse() * way) if hip_bone >= 0 else way
 	_unit = unit_scale
 	if _unit <= 0.0:
 		var leg_len: float = sk.get_bone_global_rest(_ix[0][0]).origin.distance_to(sk.get_bone_global_rest(_ix[0][1]).origin) \
@@ -227,6 +240,8 @@ func reset() -> void:
 ## more than its GAP_CUT frames).
 const STALE_FRAMES := 3
 var _ran_at := -1
+var _thigh_z_fwd := 1.0                     # the thigh's +Z forward (1) or backward (-1) on this rig (_cache)
+var _fwd_hips := Vector3.ZERO                # the body's forward at rest (the feet's heel to toe), in the hips' own space
 
 
 ## One step of the game's time (the locomotor calls it from drive()): the feet's contacts and holds are worked out
@@ -626,7 +641,12 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		# Never through the ground.
 		target.y = maxf(target.y, floor_ankle)
 		if not target.is_equal_approx(ank):
-			_leg_ik(sk, leg, inv * target)
+			# (Its own step, a hold easing off, or a catch-up: the planter carrying a foot in the air, not the clip.)
+			# (Or any leg of a body on the move: a held foot trailing a body running on bent its knee 16.6 cm behind -
+			# Hurling's watch AI at High, 2.7 m/s. Standing, a leg under hips turned hard is the body's own twist.)
+			var carried: bool = (not down and (stepping != Vector3.INF or float(_w[i]) > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i]))) \
+				or body_speed >= KNEE_FRONT_SPEED
+			_leg_ik(sk, leg, inv * target, carried)
 		# A foot down with its ball on the ground keeps its ball where it touched: the foot turned about the ankle until its
 		# toe is there (the body turning, or the clip's foot creeping, swung it 1-2 cm about a held ankle).
 		if down and _toe_lock[i] != Vector3.INF:
@@ -672,7 +692,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			if need > 0.001:
 				var toe_rel := tw - xf * sk.get_bone_global_pose(leg[2]).origin
 				target.y += need
-				_leg_ik(sk, leg, inv * target)
+				_leg_ik(sk, leg, inv * target, true)
 				_aim_foot(sk, leg, xf, target + toe_rel)
 		elif on_heel:
 			var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[2])).basis
@@ -764,7 +784,7 @@ func _aim_foot(sk: Skeleton3D, leg: Array, xf: Transform3D, at: Vector3) -> void
 
 ## The leg (thigh, shin) turned so its ankle is at target (skeleton space), the knee bending the way it was; the foot
 ## keeps its turn in the world. (As Hurling's player.gd _leg_ik, on the rig's bones.)
-func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
+func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3, swing := false) -> void:
 	var th := sk.get_bone_global_pose(leg[0])
 	var sh := sk.get_bone_global_pose(leg[1])
 	var ft := sk.get_bone_global_pose(leg[2])
@@ -780,11 +800,30 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	var pole := (knee - hip) - dir * (knee - hip).dot(dir)
 	# Forward of the thigh, the way a knee bends: a knee that was a hair past straight (a standing clip's locked
 	# knees) was bent on the wrong side, backwards, as the foot was held nearer (the officials stood so, 29 degrees).
-	var fwd := th.basis * Vector3(0, 0, 1)
+	var fwd := th.basis * Vector3(0, 0, _thigh_z_fwd)
 	fwd -= dir * fwd.dot(dir)
 	if pole.length() < 0.0001 or pole.dot(fwd) <= 0.0:
 		pole = fwd
 	var new_knee := hip + dir * x + pole.normalized() * h
+	# Never clearly behind the body: a knee put KNEE_BACK_MAX behind the hip-ankle line as the body faces (its forward at
+	# rest, carried by the hips - not the thigh's own, which a step's swung-up thigh turns over the hip: 8-20 cm behind,
+	# held 4 frames, on Kabaddi's raider and the test hurler at 4.5 m/s) bends to the body's front instead. (Only then:
+	# taken always, a leg turned out bent 14 degrees the wrong way about its own hinge - the owner's arm-wrong-way note.)
+	# Only on a leg the planter itself carries through the air (SWING: its own step, a hold easing off, a catch-up), where
+	# every such knee was: the clip's own leg under hips turned hard about it is the body's own twist, only lifted off
+	# the floor (Hurling's free-taking follow-through: the back knee, read against the turned hips, flipped 70 degrees).
+	var hip_bone := sk.get_bone_parent(leg[0])
+	if swing and hip_bone >= 0 and _fwd_hips != Vector3.ZERO and h > 0.0:
+		var level := sk.get_bone_global_pose(hip_bone).basis * _fwd_hips
+		level.y = 0.0
+		if level.length() > 0.0001:
+			level = level.normalized()
+			var off := new_knee - hip - dir * (new_knee - hip).dot(dir)
+			var sc_k := (a + b) / 0.9          # (the leg's length against a grown one's, in the rig's units)
+			if off.dot(level) < -KNEE_BACK_MAX * sc_k:
+				var p2 := level - dir * level.dot(dir)
+				if p2.length() > 0.0001:
+					new_knee = hip + dir * x + p2.normalized() * h
 	var ankle := hip + dir * d
 	var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis
 	var th_b := Basis(Quaternion((knee - hip).normalized(), (new_knee - hip).normalized())) * th.basis

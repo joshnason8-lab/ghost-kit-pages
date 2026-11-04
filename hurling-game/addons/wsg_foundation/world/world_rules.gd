@@ -533,6 +533,145 @@ static func _mesh_tris(m: Mesh) -> int:
 	return n
 
 
+## How long each mode is watched at each tier for the knees rule (frames at 30 fps; a knee read every frame).
+static var KNEE_FRAMES := 240
+## A body's backward knees fail "knees" (what the owner saw) when they hold more than KNEE_RUN frames running, or come on
+## more than KNEE_SHARE of its bent knee-frames (2 or more of them), or any one goes more than KNEE_GROSS_CM behind. Fewer and smaller -
+## single strays - fail "knee_strays" (the lead, 2026-11-04: deferred to 11-13 12:00, "planter step swing flick, #82").
+const KNEE_RUN := 2
+const KNEE_SHARE := 0.005
+const KNEE_GROSS_CM := 15.0
+## knee_strays' lines and fails from the last knees() run (one pass reads both).
+static var knee_strays_last := {}
+
+
+## A body's backward knees (BACK knee-frames of BENT bent ones, LONGEST running at most, WORST cm behind at most): which
+## rule they fail - "knees" (held more than KNEE_RUN frames, over KNEE_GROSS_CM, or 2 or more on more than KNEE_SHARE of
+## its bent frames), "knee_strays" (fewer, smaller), or "" (none). (A lone frame is never the share's: on a body bent
+## only briefly, 1 in 30 is 3% - Hurling's sprinters; the lead, 2026-11-04.)
+static func knee_verdict(back: int, bent: int, longest: int, worst: float) -> String:
+	if back <= 0:
+		return ""
+	if longest > KNEE_RUN or worst > KNEE_GROSS_CM or (back >= 2 and float(back) > KNEE_SHARE * float(maxi(bent, 1))):
+		return "knees"
+	return "knee_strays"
+
+
+## knees: in every mode at every tier the player can choose, no knee drawn bends backwards - every skeleton under the
+## mode (the foundation's bodies, and a game's own: a RiggedBody, a ModelBody, a toon, a RealBody), read as drawn inside
+## skeleton_updated, its knee no more than WsgNoteChecks.KNEE_BACK behind its hip-ankle line against the body's forward.
+## A named acrobatic move the game declares (knee_excuse) is counted with its reason, not failed. (The owner, 2026-11-04,
+## Sepak Takraw on the A16: "broken backwards knees" - its own Low bodies, never measured by the pose rule's WsgBody.)
+## A body's knees backward more than KNEE_RUN frames running, on more than KNEE_SHARE of its bent knee-frames, or any
+## over KNEE_GROSS_CM fail this rule; fewer, smaller strays go to "knee_strays" (knee_strays_last).
+static func knees(game: WsgWorldGame, parent: Node) -> Dictionary:
+	var r := result("knees")
+	var rs := result("knee_strays")
+	knee_strays_last = rs
+	if game.modes().is_empty():
+		_not_wired(rs, "modes")
+		return _not_wired(r, "modes")
+	var tree := parent.get_tree()
+	var was := WsgFoundation.tier
+	var warm_was := WsgLoading.skip_warm
+	WsgLoading.skip_warm = true
+	for mode: String in game.modes():
+		for t in [WsgFoundation.LOW, WsgFoundation.MEDIUM, WsgFoundation.HIGH]:
+			game.set_tier(t)
+			var holder := Node.new()
+			holder.name = "Knees%d_%s" % [t, mode.validate_node_name()]
+			parent.add_child(holder)
+			await tree.process_frame
+			game.start_mode(mode, holder)
+			var waited := 0
+			while waited < 30 * 120:
+				await tree.process_frame
+				waited += 1
+				if waited > 2 and not WsgLoading.busy():
+					break
+			var tag := "%s at %s" % [mode, ["Low", "Medium", "High"][t]]
+			# Per skeleton: {name, bent (knee-frames a knee was bent), back, worst (cm behind), at (frame), run (each leg's
+			# backward frames running now), longest (the most running), excused}
+			var seen := {}
+			var unknown := {}
+			var frame := [0]
+			for f in KNEE_FRAMES:
+				if f % 15 == 0:
+					for n: Node in holder.find_children("*", "Skeleton3D", true, false):
+						var sk := n as Skeleton3D
+						var id := sk.get_instance_id()
+						if seen.has(id) or unknown.has(id):
+							continue
+						var legs := WsgNoteChecks.leg_bones(sk, game.leg_bones(sk))
+						var nm := String(holder.get_path_to(sk.get_parent() if sk.get_parent() else sk))
+						if legs.is_empty():
+							if sk.get_bone_count() > 0 and sk.is_visible_in_tree():
+								unknown[id] = nm
+							continue
+						var rec := {"name": nm, "bent": 0, "back": 0, "worst": 0.0, "at": -1, "run": [0, 0], "longest": 0, "excused": {}}
+						seen[id] = rec
+						sk.skeleton_updated.connect(func():
+							if not is_instance_valid(sk) or not sk.is_visible_in_tree():
+								return
+							var ks := WsgNoteChecks.knees(sk, legs)
+							for li in ks.size():
+								var k: Array = ks[li]
+								var behind := float(k[1]) >= WsgNoteChecks.KNEE_BENT and float(k[0]) < -WsgNoteChecks.KNEE_BACK
+								if float(k[1]) >= WsgNoteChecks.KNEE_BENT:
+									rec.bent += 1
+								if behind:
+									var why := game.knee_excuse(sk)
+									if why != "":
+										rec.excused[why] = int(rec.excused.get(why, 0)) + 1
+										behind = false
+								if not behind:
+									rec.run[li] = 0
+									continue
+								rec.back += 1
+								rec.run[li] = int(rec.run[li]) + 1
+								rec.longest = maxi(int(rec.longest), int(rec.run[li]))
+								if -float(k[0]) * 100.0 > float(rec.worst):
+									rec.worst = -float(k[0]) * 100.0
+									rec.at = frame[0])
+				frame[0] = f
+				await tree.process_frame
+			var bent := 0
+			var back := 0
+			for id in seen:
+				var rec: Dictionary = seen[id]
+				bent += int(rec.bent)
+				back += int(rec.back)
+				for why in rec.excused:
+					r.lines.append("%s: %s excused by the game (%s): %d knee-frames" % [tag, rec.name, why, rec.excused[why]])
+				if int(rec.back) == 0:
+					continue
+				var what := "%s: %s bent a knee backwards on %d of %d bent knee-frames, %d running at most (worst %.1f cm behind its hip-ankle line, frame %d)" % [
+					tag, rec.name, rec.back, rec.bent, rec.longest, rec.worst, rec.at]
+				if knee_verdict(int(rec.back), int(rec.bent), int(rec.longest), float(rec.worst)) == "knees":
+					r.fails.append(what)
+				else:
+					rs.fails.append(what)
+			r.lines.append("%s: %d skeletons with legs watched %d frames, %d bent knee-frames, %d backwards%s" % [tag, seen.size(),
+				KNEE_FRAMES, bent, back, ("; %d skeletons with no legs it knows (leg_bones): %s" % [unknown.size(), ", ".join(unknown.values().slice(0, 4))]) if not unknown.is_empty() else ""])
+			# (No skeleton drawn at all is no knee to bend - a tier whose bodies are cards or rigid figures; a skeleton drawn
+			# whose legs it cannot find is one it cannot vouch for.)
+			if seen.is_empty() and not unknown.is_empty():
+				r.fails.append("%s: %d skeletons drawn and none with legs it knows (find a body's legs: WsgWorldGame.leg_bones)" % [tag, unknown.size()])
+			holder.queue_free()
+			await tree.process_frame
+			# (A start that failed in the game's own loading - Kabaddi's _swap on a freed node - left it busy for ever.)
+			var left := 30 * 60
+			while WsgLoading.busy() and left > 0:
+				await tree.process_frame
+				left -= 1
+	game.set_tier(was)
+	WsgLoading.skip_warm = warm_was
+	rs.lines.append("single strays: a body's backward knees %d frames running at most, on %.1f%% of its bent knee-frames at most, %.0f cm at most (more fails \"knees\")" % [KNEE_RUN, KNEE_SHARE * 100.0, KNEE_GROSS_CM])
+	_close(rs)
+	return _close(r)
+
+
+
 ## sounds: every key moment's sound kind stays crisp at a distance (WsgAudio.bright_kinds: brought within
 ## bright_distance of the listener, its highs kept).
 static func sounds(game: WsgWorldGame, parent: Node) -> Dictionary:
