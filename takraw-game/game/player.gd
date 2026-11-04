@@ -63,6 +63,10 @@ var _shadow: MeshInstance3D
 ## are (RealBody.foundation_planter), not by RealBody._planted (0.15.25: measured against it, RealBody).
 static var shared_planter := true
 
+## The move the game's own replay shows him playing, as it plays (Match._replay_step); "" otherwise. The world check's
+## knee_excuse names a replayed acrobatic by it (game/world.gd).
+var replay_move := ""
+
 static var _ring_mat: StandardMaterial3D
 static var _mine_mat: StandardMaterial3D
 

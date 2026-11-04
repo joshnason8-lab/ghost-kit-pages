@@ -670,6 +670,21 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The knees rule's excuse (0.15.30)
+
+The foundation's "knees" world rule (failing from 2026-11-06 12:00 UTC: a bent knee more than 4 cm behind its
+hip-ankle line against the body's forward, for more than 2 frames running, in more than 0.5% of a body's bent
+knee-frames, or by over 15 cm) reads every drawn skeleton in every mode, the game's own replays included. On Low Watch
+AI (a minute, this head) its readings are the two named acrobatics - the roll spike (the scissor kick, up to 16.8 cm,
+about 17 frames) and the sunback (14.4 cm) - live and as the Low replay shows them again; a few strays (a feeder's
+single 12 cm frame, 3 head-spike frames) fall under its knee_strays, deferred to 11-13.
+- **game/world.gd knee_excuse(skeleton)**: "roll" or "sunback" while the skeleton's player plays it, or while the
+  game's replay shows him playing it; "" for anything else. The only excuses.
+- **Replays keep the move**: each replay frame keeps each player's move (Match._record), shown as Player.replay_move
+  while it plays and cleared at its end.
+- test_runner (_knee_excuse): roll and sunback named, live and replayed; a block, no move, an official: nothing; a
+  replay frame keeps every player's move.
+
 ## Foundation e04af65: the knee fix from the foundation (0.15.29)
 
 - **Foundation 28e82f9 -> e04af65**: its e04af65 is the knee-pole fix 0.15.28 carried in our copy (the same logic;

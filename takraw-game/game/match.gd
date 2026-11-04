@@ -2074,7 +2074,7 @@ func _record() -> void:
 	for side in 2:
 		for pp in players_on(side):
 			var pl: Player = pp
-			f.p.append([pl.position, pl.body.rotation.y, pl.body.position.y, pl.body.pose])
+			f.p.append([pl.position, pl.body.rotation.y, pl.body.position.y, pl.body.pose, pl.move])
 	if _rec_frozen:
 		return
 	_rec.append(f)
@@ -2155,6 +2155,7 @@ func _replay_step(delta: float) -> void:
 				pl.body.rotation.y = r[1]
 				pl.body.position.y = r[2]
 				pl.body.apply(r[3])
+				pl.replay_move = String(r[4]) if r.size() > 4 else ""
 			k += 1
 	if wsg_replay and wsg_replay.playing:
 		var j := mini(i + 1, _replay_frames.size() - 1)
@@ -2173,6 +2174,9 @@ func _replay_step(delta: float) -> void:
 func end_replay() -> void:
 	if state != S.REPLAY:
 		return
+	for side in 2:
+		for pp in players_on(side):
+			(pp as Player).replay_move = ""
 	hud.replay(false)
 	cam.replay_end()
 	if wsg_replay and wsg_replay.playing:

@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.30: **ready for the knees check.** Behind the scenes only: the shared world check's new knee rule may
+excuse only the roll spike and the sunback (the body over in the air), live or in a replay, and the game now says so.
+Nothing changes in play.
+
 New in 0.15.29: **the knee fix from its source.** The shared foundation now carries the knee fix 0.15.28 shipped (its
 e04af65), so the game takes it from there. Nothing changes in play.
 

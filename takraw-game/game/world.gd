@@ -114,6 +114,32 @@ func walker_low(parent: Node) -> Variant:
 	return [p, drive, feet]
 
 
+## The knees rule's excuse (the foundation's "knees", 2026-11-06): a knee read backward while SKELETON's player plays
+## one of the named acrobatics - the roll spike (our scissor kick) or the sunback, the body turned over in the air -
+## live, or as the game's own replay shows it again (Player.replay_move); "" for anything else. SKELETON is the one
+## drawn: a player's own body (Low) or the foundation's under its link (Medium, High), in the mode now or one before.
+const KNEE_ACROBATICS := ["roll", "sunback"]
+
+
+func knee_excuse(skeleton: Skeleton3D) -> String:
+	for m in [Game.current] + _kept:
+		if m == null or not is_instance_valid(m) or not (m as Node).has_method("players_on"):
+			continue
+		for side in 2:
+			for pp in m.players_on(side):
+				var pl: Player = pp
+				var rb: RealBody = pl.body
+				var drawn: Skeleton3D = rb.link.body.skeleton if rb.link != null and is_instance_valid(rb.link.body) else null
+				if rb.skeleton != skeleton and drawn != skeleton:
+					continue
+				if pl.move in KNEE_ACROBATICS:
+					return pl.move
+				if pl.replay_move in KNEE_ACROBATICS:
+					return pl.replay_move
+				return ""
+	return ""
+
+
 ## The graphics level as the Settings screen sets it (ui/settings_screen.gd): a level chosen, not Auto, and handed to
 ## the shared foundation (WsgFoundation.tier: its bodies, crowd and budgets). Game's levels are the foundation's tiers.
 func set_tier(t: int) -> void:

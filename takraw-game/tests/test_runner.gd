@@ -42,6 +42,7 @@ func _ready() -> void:
 	await _watch_ai()
 	await _loading_overlay()
 	await _quiet_menus()
+	await _knee_excuse()
 	await _play_as_and_officials()
 	await _matches()
 	await _three_serves()
@@ -1167,6 +1168,48 @@ func _quiet_menus() -> void:
 	check(live and in_match and in_raga, "drawn every frame: the home screen with its match behind (Medium) %s, a match %s, sepak raga %s" % [live, in_match, in_raga])
 	Game.settings.graphics = keep
 	OS.low_processor_usage_mode = false
+
+
+## The world check's knees rule (the foundation's, 2026-11-06) excuses only the named acrobatics: game/world.gd's
+## knee_excuse names the roll spike or the sunback while the player's skeleton plays it, live or as the game's own
+## replay shows it again (each replay frame keeps the move), and nothing else - not another move, not an official.
+func _knee_excuse() -> void:
+	var keep: int = Game.settings.graphics
+	Game.settings.graphics = Game.GFX_LOW
+	Game.start_match({"home": "THA", "away": "MAS", "venue": "national", "sets": 1, "points": 15, "user_team": -1,
+		"demo": true, "seed": 7})
+	await frames(3)
+	var m: Node = Game.current
+	var w: WsgWorldGame = (load("res://game/world.gd") as Script).new()
+	var pl: Player = m.players_on(0)[2]
+	var sk: Skeleton3D = pl.body.skeleton
+	var said := {}
+	for mv in ["roll", "sunback", "block", ""]:
+		pl.move = mv
+		said[mv if mv != "" else "none"] = w.knee_excuse(sk)
+	pl.move = ""
+	pl.replay_move = "roll"
+	said["replayed roll"] = w.knee_excuse(sk)
+	pl.replay_move = "block"
+	said["replayed block"] = w.knee_excuse(sk)
+	pl.replay_move = ""
+	var off: RealBody = null
+	for b in m._all_bodies():
+		if not ((b as Node).get_parent() is Player):
+			off = b
+			break
+	said["an official"] = w.knee_excuse(off.skeleton) if off else "?"
+	check(said == {"roll": "roll", "sunback": "sunback", "block": "", "none": "", "replayed roll": "roll", "replayed block": "", "an official": ""},
+		"the knees rule's excuse: the roll spike and the sunback only, live or replayed (%s)" % [said])
+	var guard := 0
+	while not int(m.state) in [int(m.S.TOSS), int(m.S.RALLY)] and guard < 900:
+		await frames(1)
+		guard += 1
+	m.call("_record")
+	var rec: Array = m.get("_rec")
+	check(not rec.is_empty() and (rec[-1].p as Array).all(func(r): return (r as Array).size() == 5 and r[4] is String),
+		"a replay frame keeps each player's move (for the knees rule's excuse; %d frames recorded)" % rec.size())
+	Game.settings.graphics = keep
 
 
 func _loading_overlay() -> void:
