@@ -54,6 +54,9 @@ var through_ring := false    # a shot that is in (the rules' call) drops through
 var f_struck := false
 signal struck(hit: Dictionary)
 var _hits: Array = []
+var _ease_rel := Vector3.ZERO  # held: where she met it, from her feet; brought in to her hands over _ease_s (hold)
+var _ease_s := 0.0
+var _ease_left := 0.0
 
 static var _tex: ImageTexture
 
@@ -101,11 +104,28 @@ func _ready() -> void:
 	add_child(_mesh)
 
 
-func hold(p: Player) -> void:
+## In her hands. ease > 0: she met it where it is, within her reach, and brings it in to her hands over that many
+## seconds (a loose ball, a rebound) rather than it being put there.
+func hold(p: Player, ease := 0.0) -> void:
 	carrier = null
 	holder = p
 	state = "held"
 	vel = Vector3.ZERO
+	_ease_s = ease
+	_ease_left = ease
+	_ease_rel = pos - p.position
+
+
+## Held, and still on its way in to her hands from where she met it (hold).
+func easing() -> bool:
+	return state == "held" and _ease_left > 0.0 and holder != null
+
+
+## Held, on its way in from where she met it: where it is, from where her hands' pose would hold it (`hands`, world).
+func eased(hands: Vector3) -> Vector3:
+	if state != "held" or _ease_left <= 0.0 or holder == null:
+		return hands
+	return hands.lerp(holder.position + _ease_rel, smoothstep(0.0, _ease_s, _ease_left))
 
 
 ## The flight of a throw of `kind` (chest, shoulder, bounce, lob, shot) from `from` to `to`: {dur, legs, bounce}, as
@@ -280,7 +300,9 @@ func step(dt: float) -> void:
 	match state:
 		"held":
 			if holder:
+				# (Her hands' point has the ball still on its way in to them: Player._hands_on_ball reaches for it.)
 				pos = holder.hand_point()
+				_ease_left = maxf(0.0, _ease_left - dt)
 				if solid:
 					# Her hands can't take it into a prop (the post's pad): she gives way (Player.advance, held_off: back by
 					# as far as it went in, and a little), and a touch rests it against the prop, still in her palms.

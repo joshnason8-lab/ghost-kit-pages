@@ -81,6 +81,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "rules2" in OS.get_cmdline_user_args():
+		# (Only the simulated matches' rules findings, docs/SIM.md: tests/test_runner.tscn -- rules2)
+		await _rules2()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -123,6 +129,7 @@ func _ready() -> void:
 	await _huddle()
 	await _reserves()
 	await _solid_props()
+	await _rules2()
 	_tags()
 	await _coach()
 	await _navigation()
@@ -897,7 +904,7 @@ func _restart_spacing() -> void:
 		elif kind == "held_ball":
 			m._infringe("held_ball", h, h.p)   # (a free pass to the other side, where she stands)
 		else:
-			dm.p = h.landing + (Court.goal_post(-dm.dir) - h.landing).normalized() * 1.0
+			dm.p = Rules.onside_point(dm.pos, h.landing + (Court.goal_post(-dm.dir) - h.landing).normalized() * 1.0, dm.dir, 0.05)
 			m._infringe(kind, dm, dm.p)
 		m.ai._decide.clear()   # (the taker passes when she would)
 		guard = 0
@@ -939,8 +946,8 @@ func _restart_spacing() -> void:
 		if h == null or m.phase != "live":
 			continue
 		for o: Player in m.players[1 - h.team]:
-			if o.away() or o.suspended > 0.0 or m.ai._give_way.has(o):
-				continue
+			if o.away() or o.suspended > 0.0 or m.ai._give_way.has(o) or m.ai._slip.has(o):
+				continue   # (an obstruction slip is the AI's mistake made on purpose, then called: TeamAI._slips)
 			aimed = minf(aimed, o.target.distance_to(h.landing))
 			if m.hold_t > 1.0:
 				held_n += 1
@@ -1607,7 +1614,9 @@ func _controls() -> void:
 				passes[0] += 1
 			if k == "call" and info.kind == "held_ball" and int(info.to) == 1:
 				held[0] += 1)
-		for f in 2700:
+		# (Two minutes of play for the thumb that plays, a minute and a half idle: a goal in that time is not left to
+		# the luck of one minute's rebounds.)
+		for f in 2700 if mode != "play" else 3600:
 			await get_tree().process_frame
 			if mode != "play" or m.phase != "live":
 				continue
@@ -3005,7 +3014,9 @@ func _shots_and_hands() -> void:
 				if h == null or not h.has_ball() or m.ball.state != "held":
 					continue
 				var c: Vector3 = m.ball.position
-				if g == Game.GFX_LOW:
+				if g == Game.GFX_LOW and not m.ball.easing():
+					# (Not while a loose ball she met is brought in to her hands, Ball.hold: from below her reach her
+					# hands go as far down to it as they reach.)
 					held += 1
 					for s in ["l", "r"]:
 						var ht := h.body.skeleton.global_transform * h.body.skeleton.get_bone_global_pose(h.body.bone("hand_" + s))
@@ -3019,9 +3030,11 @@ func _shots_and_hands() -> void:
 						var e := h.body.bone_world("forearm_" + s)
 						var w := h.body.bone_world("hand_" + s)
 						arm_near = minf(arm_near, c.distance_to(Geometry3D.get_closest_point_to_segment(c, e, w)))
-				elif h.link:
+				elif h.link and g != Game.GFX_LOW:
 					h.link.measure = true
-					if h.link.holding and not h.link.last_hands.is_empty():
+					# (A loose ball she met is drawn in the foundation's palms, ball_at, as they follow the game's hands
+					# bringing it in from where she met it, a frame behind: Ball.hold's first 0.2 s are not measured.)
+					if h.link.holding and not h.link.last_hands.is_empty() and not m.ball.easing():
 						held += 1
 						var pw := maxf(float(h.link.last_hands.get("Left", 0.0)), float(h.link.last_hands.get("Right", 0.0)))
 						if pw > HAND_GAP:
@@ -3745,3 +3758,398 @@ func _setup_route() -> void:
 						stuck.append("%s dir %d end %d at %s" % [pos, dir, end, p])
 	check(tried > 8 and stuck.is_empty(), "a restart taker goes round a circle she may not enter to the spot (%d ways, stuck: %s)" % [tried, stuck])
 
+
+
+# ---------------------------------------------------------------- rules2: the simulated matches' findings (docs/SIM.md)
+
+## The second round of rules fixes, each from a simulated match: your player kept on the floor, a centre pass nobody
+## reached, advantage played once, only what happened called, nobody stuck at a circle's edge, a rebound met in the
+## hands. (Only these: tests/test_runner.tscn -- rules2)
+func _rules2() -> void:
+	await _r2_floor()
+	await _r2_own_pass()
+	await _r2_advantage_once()
+	await _r2_slips_happen()
+	await _r2_round_circle()
+	await _r2_rebound_met()
+	await _r2_watch()
+
+
+## A match with you playing one bib (Keep me onside off, so nothing but the floor holds her).
+func _r2_user_match(venue: String, bib: String, seed: int) -> Match:
+	Game.settings.control = Game.CONTROL_BIB
+	Game.settings.bib = bib
+	Game.settings.onside = false
+	var m: Match = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "ENG", "away": "WAL", "venue": venue, "user_team": 0, "seed": seed, "quarter": 15, "mode": "quick",
+		"difficulty": 1, "bib": bib, "no_injuries": true}
+	add_child(m)
+	return m
+
+
+## The stick that runs your player toward `want` (court frame), as near as the camera lets one of 32 directions.
+func _r2_stick(m: Match, want: Vector2) -> Vector2:
+	var best := Vector2.ZERO
+	var bc := -2.0
+	for i in 32:
+		var j := Vector2.from_angle(TAU * i / 32.0)
+		var d := m.cam.court_dir(j, Vector3(m.me.p.x, 0.0, m.me.p.y))
+		if d.length() > 0.01 and d.normalized().dot(want.normalized()) > bc:
+			bc = d.normalized().dot(want.normalized())
+			best = j
+	return best
+
+
+## 1. Your player with Keep me onside off, the stick held toward each goal line, each side line and the corners for
+## six seconds each: she stays on the venue's floor (Arena.floor_rect: inside its boards, walls or fences) and in the
+## run-off round the court, in all three venues (WsgSim's human matches had her 5 m past the run-off).
+func _r2_floor() -> void:
+	var keep: Dictionary = Game.settings.duplicate(true)
+	for venue in ["arena", "hall", "outdoor"]:
+		var m := _r2_user_match(venue, "C", 6)
+		await _wait_live(m)
+		var me: Player = m.me
+		var on_floor := true
+		var past := -INF      # the furthest past the run-off's edge (m)
+		var fr: Rect2 = m.arena.floor_rect
+		for want: Vector2 in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1), Vector2(1, 1), Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1)]:
+			for f in 180:
+				if m.me != me:
+					break
+				m.controls.joystick = _r2_stick(m, want)
+				await frames(1)
+				on_floor = on_floor and fr.grow(0.02).has_point(me.p)
+				past = maxf(past, maxf(absf(me.p.x) - Court.HALF_L - Court.RUNOFF, absf(me.p.y) - Court.HALF_W - Court.RUNOFF))
+		m.controls.joystick = Vector2.ZERO
+		print("  floor: %s, your C (onside off) %.2f m past the run-off at most, the floor %s" % [venue, past, fr])
+		check(not me.fenced and on_floor and past < 0.05, "%s: your player with Keep me onside off stays on the floor, in the run-off (%.2f m past it at most)" % [venue, past])
+		m.queue_free()
+		await frames(2)
+	Game.settings = keep
+
+
+## 2. A centre pass nobody reaches: its thrower may not be the first to touch it (R11 replayed ball): your C who runs
+## on to her own pass is called, a free pass to the other team; an AI C leaves it.
+func _r2_own_pass() -> void:
+	var keep: Dictionary = Game.settings.duplicate(true)
+	for who in ["you", "ai"]:
+		var m: Match = _r2_user_match("arena", "C", 8) if who == "you" else _study_match(8)
+		await frames(3)
+		m.cp_first = 0
+		m._setup_centre(true)
+		await _wait_live(m)
+		var c: Player = m.player_at(0, "C")
+		var ga: Player = m.player_at(0, "GA")
+		var guard := 0
+		while not (m.phase == "live" and m.holder == c) and guard < 300:
+			await frames(1)
+			guard += 1
+		m.ai._decide[c] = 99.0
+		ga.p = c.p + Vector2(-2.6 * c.dir, 2.0)
+		ga.vel = Vector2.ZERO
+		m.throw_pass(ga, "lob")
+		# Everyone else off to the bench (suspended, as the test has it) so nobody else gets to it first: the GA is
+		# not there for it.
+		for t in 2:
+			for pl: Player in m.players[t]:
+				if pl != c:
+					pl.suspended = 99.0
+		ga.place(ga.p + Vector2(0.0, -4.0 * signf(ga.p.y + 0.01)))
+		var calls := []
+		var held_by_c := false
+		m.game_event.connect(func(k, info):
+			if k == "call":
+				calls.append(info))
+		for f in 150:
+			if who == "you" and m.me == c and m.ball.state in ["loose", "flight"]:
+				var at := m.ball.court_pos() if m.ball.state == "loose" else Vector2(m.ball.f_to.x, m.ball.f_to.z)
+				m.controls.joystick = _r2_stick(m, at - c.p) if at.distance_to(c.p) > 0.3 else Vector2.ZERO
+			await frames(1)
+			held_by_c = held_by_c or m.holder == c
+			if not calls.is_empty():
+				break
+		m.set_process(false)   # (nobody left to take the restart: the test ends here)
+		var kinds := calls.map(func(i): return String(i.kind))
+		print("  own pass (%s): calls %s, the C held it %s" % [who, kinds, held_by_c])
+		if who == "you":
+			check(not held_by_c and kinds.size() == 1 and kinds[0] == "replayed_ball" and int(calls[0].to) == 1,
+				"your C running on to her own centre pass nobody reached: replayed ball, a free pass to the other team (%s)" % [kinds])
+		else:
+			check(not held_by_c and not ("replayed_ball" in kinds), "an AI C leaves her own centre pass nobody reached (%s)" % [kinds])
+		m.queue_free()
+		await frames(2)
+	Game.settings = keep
+
+
+## 3. Your GK holding INTERCEPT on the shooter in her circle: advantage once, then the same contact again is called
+## (it was waved on three times and then called: WsgSim human#3).
+func _r2_advantage_once() -> void:
+	var keep: Dictionary = Game.settings.duplicate(true)
+	var m := _r2_user_match("arena", "GK", 11)
+	await _wait_live(m)
+	var gk: Player = m.me
+	var gs: Player = m.player_at(1, "GS")
+	var events := []
+	m.game_event.connect(func(k, info):
+		if k in ["advantage", "call"]:
+			events.append(k + ":" + String(info.get("kind", ""))))
+	var tries := 0
+	var rounds := []      # each challenge the umpire waved on first: what followed
+	while tries < 24 and rounds.size() < 4:
+		tries += 1
+		await _wait_live(m)
+		events.clear()
+		var post := Court.goal_post(gs.dir)
+		m.pass_info = {}
+		m.shot_info = {}
+		m._release_holder()
+		gs.p = post + Vector2(-gs.dir * 2.6, 1.0)
+		gs.vel = Vector2.ZERO
+		gs.target = gs.p
+		m._give(gs)
+		m.ai._decide[gs] = 99.0
+		gk.out_until = 0.0
+		gk.pens = 0
+		gk.warned = false
+		gk.p = gs.p + (post - gs.p).normalized() * 0.75
+		gk.vel = Vector2.ZERO
+		gk.target = gk.p
+		for f in 60:
+			m.hold_t = 0.0
+			m._on_action("INTERCEPT")
+			await frames(1)
+			if not events.is_empty() and String(events[-1]).begins_with("call"):
+				break
+		if not events.is_empty() and String(events[0]).begins_with("advantage"):
+			rounds.append(events.duplicate())
+	var ok := rounds.size() >= 3
+	for r: Array in rounds:
+		ok = ok and r == ["advantage:contact", "call:contact"]
+	print("  advantage once: %d tries, the challenges waved on first: %s" % [tries, rounds])
+	check(ok, "your GK's INTERCEPT on the shooter: advantage once, the same contact again called at once (%s)" % [rounds])
+	m.queue_free()
+	await frames(2)
+	Game.settings = keep
+
+
+## Draws the match's generator on until its next two draws are (< first) and (>= second): the next _slips decides as
+## the test needs (its draws are the same, a step later).
+func _r2_rng_until(m: Match, first: float, second: float) -> void:
+	for i in 400:
+		var probe := RandomNumberGenerator.new()
+		probe.seed = m.rng.seed
+		probe.state = m.rng.state
+		if probe.randf() < first and probe.randf() >= second:
+			return
+		m.rng.randf()
+
+
+## 4. The AI's mistakes are called only once made: an obstruction slip has the marker step in inside 0.9 m of the
+## landing foot, arms up, and then it is called (it was called from 1.0-1.35 m); an offside slip has a player step over
+## the line of her area, and then it is called (it was called on a player in her own area).
+func _r2_slips_happen() -> void:
+	var m := _study_match(21)
+	await _wait_live(m)
+	var guard := 0
+	while (m.holder == null or m.phase != "live") and guard < 600:
+		await frames(1)
+		guard += 1
+	var calls := []
+	m.game_event.connect(func(k, info):
+		if k == "call":
+			calls.append(info))
+	for kind in ["obstruction", "offside"]:
+		await _wait_live(m)
+		var t := m.holder.team if m.holder else 0
+		var c: Player = m.player_at(t, "C")
+		m.pass_info = {}
+		m.shot_info = {}
+		m._release_holder()
+		c.p = Vector2(-c.dir * 1.0, 0.5)
+		c.vel = Vector2.ZERO
+		c.target = c.p
+		m._give(c)
+		m.ai._decide[c] = 99.0
+		var dm: Player = m.ai.marker_of(c)
+		var u := Vector2(c.dir, 0.3).normalized()
+		dm.p = c.landing + u * (1.2 if kind == "obstruction" else 3.0)
+		dm.vel = Vector2.ZERO
+		dm.target = dm.p
+		calls.clear()
+		if kind == "obstruction":
+			_r2_rng_until(m, 0.5, 0.55)      # (a slip, and not contact)
+			m.ai._slips(1000.0)
+		else:
+			m.ai.me = c                      # (no footwork slip by the holder: straight to the offside one)
+			m.ai._slips(1000.0)
+			m.ai.me = null
+		var landing := c.landing
+		var at_call := INF
+		var off_at_call := false
+		var by: Player = null
+		for f in 75:
+			m.hold_t = 0.0
+			await frames(1)
+			if not calls.is_empty():
+				var info: Dictionary = calls[0]
+				by = m.player_at(1 - int(info.to), String(info.by))
+				if by:
+					at_call = by.p.distance_to(landing)
+					off_at_call = Rules.offside(by.pos, by.p, by.dir)
+				break
+		var kinds := calls.map(func(i): return String(i.kind))
+		if kind == "obstruction":
+			print("  slip: obstruction called %s, the marker %.2f m from the landing foot" % [kinds, at_call])
+			check(kinds == ["obstruction"] and by == dm and at_call < Court.DEFEND_DIST,
+				"an obstruction slip: the marker steps in, and it is called from inside 0.9 m (%s, %.2f m)" % [kinds, at_call])
+		else:
+			print("  slip: offside called %s on %s, in an area she may not enter %s" % [kinds, by.pos if by else "-", off_at_call])
+			check(kinds == ["offside"] and off_at_call, "an offside slip: she steps over the line, and it is called there (%s, offside %s)" % [kinds, off_at_call])
+		m.ai._decide.clear()
+	m.queue_free()
+	await frames(2)
+
+
+## 5. A wing defence whose target is across her defending circle goes round its edge to it (she stood at the circle's
+## line six seconds and more: WsgSim "stuck"), and every other position fenced out of a circle the same.
+func _r2_round_circle() -> void:
+	var m := _study_match(5)
+	await frames(3)
+	m.set_process(false)
+	var stuck := []
+	var tried := 0
+	for pos: String in ["WD", "WA", "C", "GD", "GA"]:
+		for t in 2:
+			var pl: Player = m.player_at(t, pos)
+			for end: int in [pl.dir, -pl.dir]:
+				var circle := Court.A_ATT_CIRCLE if end == pl.dir else Court.A_DEF_CIRCLE
+				if circle in Rules.AREAS[pos]:
+					continue
+				var post := Court.goal_post(end)
+				var from := Rules.onside_point(pos, post + Vector2(-end * cos(1.25), sin(1.25)) * (Court.CIRCLE_R + 0.3), pl.dir, 0.05)
+				var to := Rules.onside_point(pos, post + Vector2(-end * cos(-1.25), sin(-1.25)) * (Court.CIRCLE_R + 0.6), pl.dir, 0.05)
+				pl.place(from)
+				pl.fenced = true
+				pl.stopped = false
+				pl.keep_out = Vector3.ZERO
+				var off := false
+				var took := -1.0
+				for f in 240:
+					pl.target = to
+					pl.want_speed = 5.0
+					pl.set_act("run")
+					pl.advance(1.0 / 30.0)
+					off = off or Rules.offside(pos, pl.p, pl.dir)
+					if pl.p.distance_to(to) < 0.6:
+						took = f / 30.0
+						break
+				tried += 1
+				if took < 0.0 or off:
+					stuck.append("%s%d at %s (target %s, offside %s)" % [pos, t, pl.p.snappedf(0.1), to.snappedf(0.1), off])
+	print("  round the circle: %d runs across a circle's far side, stuck: %s" % [tried, stuck])
+	check(tried >= 10 and stuck.is_empty(), "fenced out of a goal circle, she goes round its edge to a target across it (%d runs, stuck %s)" % [tried, stuck])
+	m.queue_free()
+	await frames(2)
+
+
+## 6. A missed shot's rebound: whoever takes it meets it within her reach (standing, or at her leap) and it comes in
+## to her hands; it never drops a metre into them in a frame (it popped 1.0-1.6 m into a GS's or GK's hands).
+func _r2_rebound_met() -> void:
+	var worst := 0.0
+	var high_ok := true
+	var takes := []
+	for seed in [34, 35, 36, 37, 38, 39]:
+		var m := _study_match(seed)
+		await _wait_live(m)
+		var guard := 0
+		while (m.holder == null or m.phase != "live") and guard < 300:
+			await frames(1)
+			guard += 1
+		var a := m.holder.team if m.holder else 0
+		var gs: Player = m.player_at(a, "GS" if seed % 2 == 0 else "GA")
+		var post := Court.goal_post(gs.dir)
+		m.pass_info = {}
+		m._release_holder()
+		gs.vel = Vector2.ZERO
+		gs.p = post + Vector2(-gs.dir * (1.6 + 0.3 * (seed % 3)), 0.6 - 0.4 * (seed % 3))
+		m._give(gs, false)
+		m.ai._decide[gs] = 99.0
+		m.shoot()
+		m.shot_info.goal = false
+		var prev := m.ball.pos
+		var was := ""
+		var since := 99
+		for f in 240:
+			await frames(1)
+			if m.phase == "replay":
+				m._end_replay()
+			var jump := m.ball.pos.distance_to(prev)
+			if was == "loose" and m.ball.state == "held" and m.holder:
+				since = 0
+				var h: Player = m.holder
+				takes.append("%s%d at %.2f m (her reach %.2f, %s)" % [h.pos, h.team, prev.y, h.reach(true), h.act])
+				high_ok = high_ok and prev.y <= h.reach(true) + 0.05
+			if since < 12:
+				worst = maxf(worst, jump)
+				since += 1
+			was = m.ball.state
+			prev = m.ball.pos
+			if since >= 12 and since < 99:
+				break
+		m.queue_free()
+		await frames(2)
+	print("  rebounds: %s; the ball's biggest step into the hands %.2f m" % [takes, worst])
+	check(takes.size() >= 4 and worst < 0.5 and high_ok, "a rebound is met in her hands' reach and brought in, not popped into them (%d takes, %.2f m a frame at most)" % [takes.size(), worst])
+
+
+## Two minutes of AI v AI at the real whistle rate, the netball checks after every step: no obstruction called from
+## 0.9 m or more, no offside called on a player in her own area, nobody standing still six seconds with her target
+## metres away, no loose ball taken with a jump into the hands.
+func _r2_watch() -> void:
+	var checks_script: GDScript = load("res://tests/sim/netball_checks.gd")
+	var m := _study_match(17, {"whistles": 2, "quarter_s": 120.0, "venue": "hall"})
+	var nc = checks_script.new()
+	await frames(1)
+	m.set_process(false)
+	nc.begin(m)
+	m.game_event.connect(func(k, info): nc.check_event(m, k, info))
+	var still := {}
+	var longest := 0.0
+	var who := ""
+	var calls := {}
+	m.game_event.connect(func(k, info):
+		if k == "call":
+			calls[info.kind] = int(calls.get(info.kind, 0)) + 1)
+	var prev_state := ""
+	var prev := m.ball.pos
+	var snap := 0.0
+	for f in 30 * 150:
+		if m.phase == "replay":
+			m._end_replay()
+		m._process(1.0 / 30.0)
+		nc.check_frame(m, 1.0 / 30.0)
+		if prev_state == "loose" and m.ball.state == "held":
+			snap = maxf(snap, m.ball.pos.distance_to(prev))
+		prev_state = m.ball.state
+		prev = m.ball.pos
+		for t in 2:
+			for pl: Player in m.players[t]:
+				var idle: bool = m.phase == "live" and pl != m.holder and not pl.away() and pl.vel.length() < 0.15 and pl.p.distance_to(pl.target) > 3.0
+				still[pl] = float(still.get(pl, 0.0)) + 1.0 / 30.0 if idle else 0.0
+				if float(still[pl]) > longest:
+					longest = still[pl]
+					who = "%s%d at %s, target %s" % [pl.pos, pl.team, pl.p.snappedf(0.1), pl.target.snappedf(0.1)]
+		if f % 30 == 0:
+			await frames(1)
+		if m.phase == "over" or m.phase == "break":
+			break
+	var counts: Dictionary = nc.counts
+	var ob := int(counts.get("obstruction_phantom", 0))
+	var off := int(counts.get("offside_phantom", 0))
+	print("  watch: %.0f s of play, calls %s, obstruction_phantom %d, offside_phantom %d, offside_uncalled %d, ball_snap_catch %d, loose take step %.2f m, stillest %.1f s (%s)"
+		% [nc.t, calls, ob, off, int(counts.get("offside_uncalled", 0)), int(counts.get("ball_snap_catch", 0)), snap, longest, who])
+	check(ob == 0 and off == 0, "AI v AI at the real rate: no obstruction or offside called without it (%d, %d)" % [ob, off])
+	check(longest < 6.0, "AI v AI: nobody stands still six seconds with her target metres away (%.1f s, %s)" % [longest, who])
+	check(snap < 0.6, "AI v AI: a loose ball taken is not popped into her hands (%.2f m)" % snap)
+	m.queue_free()
+	await frames(2)

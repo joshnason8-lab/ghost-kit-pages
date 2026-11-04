@@ -22,6 +22,7 @@ var _reset := false         # after a goal: the walk back to the next centre pas
 var _cp_taker: Player = null
 var _user_target: Player = null
 var _give_way := {}         # player -> [whom she infringed, seconds left]: stepping clear after advantage (give_way)
+var _slip := {}             # player -> [kind, spot, seconds left, the holder]: an AI mistake being made (_slips)
 
 const JOG := 2.8            # m/s: back to the spots after a goal (nobody sprints; the taking C hurries, Match)
 const HUDDLE_R := 1.05      # m: the ring of seven at a break
@@ -162,6 +163,8 @@ func think(dt: float) -> void:
 				continue
 			if _give_way.has(pl) and _stepping_clear(pl, dt):
 				continue
+			if _slip.has(pl) and _slipping(pl, dt):
+				continue
 			if centre_setup or walk_back:
 				if _cp_spots.has(pl) and (walk_back or pl != m.restart.get("taker")):
 					pl.target = _cp_spots[pl]
@@ -214,7 +217,7 @@ func keep_clear() -> void:
 	if t < 0:
 		return
 	for pl: Player in m.players[1 - t]:
-		if pl == me or pl.suspended > 0.0 or _give_way.has(pl):
+		if pl == me or pl.suspended > 0.0 or _give_way.has(pl) or _slip.has(pl):
 			continue
 		if pl.away():
 			# (The penalised player, out of play, goes round her wider and behind her, to her place beside her.)
@@ -463,7 +466,8 @@ func _play(pl: Player, dt: float) -> void:
 			var to := Rules.onside_point(pl.pos, b, pl.dir, 0.1)
 			pl.target = to
 			pl.want_speed = pl.speed_cap()
-			pl.set_act("run")
+			if not (pl.act == "leap" and pl.act_t < Player.LEAP_S):
+				pl.set_act("leap" if goes_up(pl) else "run")
 			return
 	var attacking: bool = m.possession == pl.team
 	if m.possession < 0:
@@ -511,8 +515,21 @@ func rebound_spot(pl: Player, shooter: Player) -> Vector2:
 	return Rules.onside_point(pl.pos, at, pl.dir, 0.1)
 
 
-## Is she one of the two nearest her team's players to a loose ball (and allowed where it is)?
+## A loose ball over her head, as high as her leap will be at its top (Poses.leap, 0.35 s from now) and about where
+## she will be: she goes up for it (Match takes it when it is in her hands' reach, Player.hands_top).
+func goes_up(pl: Player) -> bool:
+	var t := Player.LEAP_S * 0.5
+	var v: Vector3 = m.ball.vel
+	var y: float = m.ball.pos.y + v.y * t - 0.5 * Ball.G * t * t
+	var at: Vector2 = m.ball.court_pos() + Vector2(v.x, v.z) * t
+	return y > pl.reach() and y < pl.reach(true) and at.distance_to(pl.p + pl.vel * t) < Player.LOOSE_REACH + 0.3
+
+
+## Is she one of the two nearest her team's players to a loose ball (and allowed where it is)? Never its thrower, when
+## it is her own pass nobody has touched (she may not play it first: Match._run_loose).
 func _chaser(pl: Player) -> bool:
+	if pl == m._loose_from:
+		return false
 	var b: Vector2 = m.ball.court_pos()
 	if Rules.offside(pl.pos, Court.clamp_court(b, 0.05), pl.dir):
 		return false
@@ -958,19 +975,36 @@ func whistle_rate() -> float:
 
 ## Contact and obstruction by the defender on the ball, a footwork slip, a step offside: at rates scaled from real
 ## matches (docs/RULES.md "How the AI plays"). Your own player makes only the mistakes you make.
+##
+## The umpire calls only what happens: an obstruction slip is the marker stepping in inside 0.9 m of the landing foot,
+## arms up, and called when she is there; an offside slip is a player stepping over the line of her area, and called
+## (Match._check_offside) when she has (_slipping).
 func _slips(dt: float) -> void:
+	for pl: Player in _slip.keys():
+		var e: Array = _slip[pl]
+		var h0: Player = e[3]
+		if String(e[0]) == "obstruction" and _slip.has(pl) and h0 == m.holder and Rules.obstruction(h0.landing, pl.p, true):
+			_end_slip(pl)
+			m._infringe("obstruction", pl, pl.p)
+			if m.phase != "live":
+				return
 	if m.holder == null:
 		return
 	var h: Player = m.holder
 	var dm := marker_of(h)
-	if dm and dm != me and not dm.away() and not _give_way.has(dm) and dm.p.distance_to(h.landing) < 1.35:
+	if dm and dm != me and not dm.away() and not _give_way.has(dm) and not _slip.has(dm) and dm.p.distance_to(h.landing) < 1.35:
 		var disc := clampf(float(dm.data.defend) / 99.0, 0.4, 1.0)
 		var lam := 0.075 * (1.45 - disc) * whistle_rate()
 		if rng().randf() < lam * dt:
 			if rng().randf() < 0.55:
 				m._infringe("contact", dm, dm.p)
-			else:
+			elif Rules.obstruction(h.landing, dm.p, true):
 				m._infringe("obstruction", dm, dm.p)
+			else:
+				# In, inside 0.9 m of the landing foot, arms over the ball: called when she is there.
+				var u := dm.p - h.landing
+				u = u / u.length() if u.length() > 0.05 else Vector2(-h.dir, 0)
+				_slip[dm] = ["obstruction", h.landing + u * SLIP_IN, SLIP_S, h]
 			return
 	if h != me and rng().randf() < 0.006 * dt * whistle_rate():
 		h.landing += Vector2(0.05, 0)
@@ -980,9 +1014,79 @@ func _slips(dt: float) -> void:
 		return
 	if rng().randf() < 0.0035 * dt * whistle_rate():
 		var t := rng().randi_range(0, 1)
-		var pl: Player = m.players[t][rng().randi_range(0, 6)]
-		if pl != me and pl != h and not pl.away():
-			m._infringe("offside", pl, pl.p)
+		var i := rng().randi_range(0, 6)
+		# She (or, when she has no line near enough to step over, the next player who has) steps into an area her
+		# position may not enter.
+		for k in 14:
+			var idx := (t * 7 + i + k) % 14
+			var pl: Player = m.players[0 if idx < 7 else 1][idx % 7]
+			if pl == me or pl == h or pl.away() or _give_way.has(pl) or _slip.has(pl):
+				continue
+			var spot := offside_spot(pl)
+			if spot != Vector2.INF:
+				_slip[pl] = ["offside", spot, SLIP_S + 1.0, h]
+				break
+
+
+const SLIP_IN := 0.7        # m from the landing foot: where an obstruction slip takes the marker
+const SLIP_S := 1.2         # s: a slip not made by then is not made (the play moved on)
+const SLIP_FAR := 4.0       # m: the furthest an offside slip goes to a line
+
+
+## The nearest ground pl's position may not stand on, a little over the line (within SLIP_FAR, on the court), or
+## Vector2.INF.
+func offside_spot(pl: Player) -> Vector2:
+	var best := Vector2.INF
+	var bd := SLIP_FAR
+	for a in 24:
+		var u := Vector2.from_angle(TAU * a / 24.0)
+		var r := 0.2
+		while r < bd:
+			var q := pl.p + u * r
+			if Court.on_court(q) and Rules.offside(pl.pos, q, pl.dir):
+				var over := pl.p + u * (r + 0.3)
+				best = over if Court.on_court(over) and Rules.offside(pl.pos, over, pl.dir) else q
+				bd = r
+				break
+			r += 0.2
+	return best
+
+
+## Making her slip: to its spot (over the line, unfenced, or in on the ball, arms up), unless the play has moved on.
+func _slipping(pl: Player, dt: float) -> bool:
+	var e: Array = _slip[pl]
+	e[2] = float(e[2]) - dt
+	var kind := String(e[0])
+	var gone: bool = float(e[2]) <= 0.0 or m.phase != "live" or pl == m.holder or pl.away() \
+		or m.pass_info.get("to") == pl or m.pass_info.get("cut") == pl
+	if kind == "obstruction" and m.holder != e[3]:
+		gone = true
+	if gone:
+		_end_slip(pl)
+		return false
+	pl.target = e[1]
+	pl.look_on = true
+	pl.look_at_p = m.ball.court_pos()
+	if kind == "offside":
+		pl.fenced = false
+		pl.want_speed = minf(pl.speed_cap(), 3.5)
+		pl.set_act("run")
+	else:
+		pl.want_speed = minf(pl.speed_cap(), 3.0)
+		pl.set_act("defend_shot" if (e[3] as Player).pos in ["GS", "GA"] and Court.in_circle((e[3] as Player).landing, (e[3] as Player).dir) else "defend")
+	return true
+
+
+## The whistle has gone (Match._award): any slip under way is over.
+func end_slips() -> void:
+	for pl: Player in _slip.keys():
+		_end_slip(pl)
+
+
+func _end_slip(pl: Player) -> void:
+	_slip.erase(pl)
+	if pl != me and pl.suspended <= 0.0:
+		pl.fenced = true
 
 
 # ---------------------------------------------------------------- you

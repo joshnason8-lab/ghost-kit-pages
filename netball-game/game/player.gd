@@ -15,6 +15,10 @@ const LAND_MIN := 1.5        # m/s: caught slower than this, she simply stops (n
 const BODY_R := 0.25         # m: her body, as the props keep her out of them (WsgSolidProps)
 const BODY_H := 1.8
 const SPOT_R := BODY_R + 0.08  # a spot she heads for keeps this clear of the props (she reaches it without scraping one)
+const LOOSE_REACH := 0.75    # m: a loose ball within her hands' reach, from her middle (Match._run_loose)
+const LEAP_UP := 0.45        # m: how much higher her hands go at the top of a leap (reach, hands_top)
+const EASY_REACH := 0.85     # of her arm's length: a loose ball she meets over her hands, within it (meets)
+const LEAP_S := 0.7          # s: a leap, take-off to landing (Poses.leap: the top 0.35 s in)
 
 var match_ref = null         # the Match
 var team := 0
@@ -79,10 +83,12 @@ var _idle_t := 0.0            # seconds she has been about (her breathing, her w
 var _var := Vector4(0.5, 0.5, 0.5, 0.5)   # her own way of standing (each 0-1: Poses.idle), from her name
 var _ball_c := Vector3.INF    # the ball's centre between her palms this frame (world), while she holds it
 var _solid_memo := {}         # her side round a prop in her way (WsgSolidProps.move)
+var bounds := Rect2()         # the ground she keeps to in play (no area: none): your player, the run-off round the court
 var held_off := Vector2.ZERO  # how far a prop held the ball she holds off her hands (Ball.step): she gives way by it
 var _way := PackedVector3Array()   # an out-of-play walk's waypoints round the props (WsgSolidProps.path)
 var _way_to := Vector2.INF
 var _way_n := 0
+var _rounding := false       # her way to her target goes round a goal circle she may not enter (_goal)
 ## Set to shoot and still turning to the post (pivoting on her landing foot): the shot waits (act_t held at 0, and
 ## Match._run_shot's clock) until her body faces the post within SQUARE_DEG, or SQUARE_MAX seconds have gone.
 var squaring := false
@@ -154,7 +160,7 @@ func advance(dt: float) -> void:
 	# Where she heads: her target (moved out of a prop it is in), or the next corner of an out-of-play walk round them.
 	var goal := _goal(solid)
 	var to := goal - p
-	var dist := to.length() + (goal.distance_to(target) if goal != target and not _way.is_empty() else 0.0)
+	var dist := to.length() + (goal.distance_to(target) if goal != target and (not _way.is_empty() or _rounding) else 0.0)
 	var cap := minf(want_speed, speed_cap())
 	if stopped:
 		cap = 0.0
@@ -163,11 +169,19 @@ func advance(dt: float) -> void:
 	if dist > 0.05 and cap > 0.0 and to.length() > 0.001:
 		var arrive := sqrt(2.0 * DECEL * 0.8 * dist)
 		desired = to / to.length() * minf(cap, arrive)
-	# Pulling up at a line she may not cross: no faster than she can stop before it.
-	if fenced and desired.length() > 0.1:
+	# Pulling up at a line she may not cross: no faster than she can stop before it. (Over one already, after an AI
+	# slip offside (TeamAI._slips) or put there, nothing holds her in: she steps back out.)
+	if fenced and desired.length() > 0.1 and not Rules.offside(pos, p, dir):
 		var room := _room_along(desired.normalized())
 		if room < 3.0:
 			desired = desired.limit_length(sqrt(2.0 * DECEL * 0.85 * maxf(0.0, room - 0.12)))
+	var bounded: bool = bounds.has_area() and not away() and match_ref != null and match_ref.phase != "break"
+	if bounded:
+		# Pulling up at the edge of her ground (the run-off's): no faster toward it than she can stop before it.
+		var lo := p - bounds.position
+		var hi := bounds.end - p
+		desired.x = clampf(desired.x, -_pull_up(lo.x), _pull_up(hi.x))
+		desired.y = clampf(desired.y, -_pull_up(lo.y), _pull_up(hi.y))
 	want_vel = desired
 	var rate := ACCEL if desired.length() > vel.length() else DECEL
 	if stopped and land_clip != "":
@@ -196,6 +210,9 @@ func advance(dt: float) -> void:
 			# (Never a longer step than the one she was taking.)
 			next = p + (kc + (next - kc) / nd * floor_d - p).limit_length((next - p).length())
 			vel = (next - p) / maxf(dt, 0.001)
+	if bounded and not bounds.has_point(next):
+		next = next.clamp(bounds.position, bounds.end)
+		vel = (next - p) / maxf(dt, 0.001)
 	if fenced and Rules.offside(pos, next, dir) and not Rules.offside(pos, p, dir):
 		# At the line: she stops on her side of it.
 		next = Rules.onside_point(pos, next, dir, 0.02)
@@ -238,6 +255,11 @@ func advance(dt: float) -> void:
 		_pose_link(dt)
 
 
+## The fastest she may go toward an edge `room` metres off and still stop before it.
+static func _pull_up(room: float) -> float:
+	return sqrt(2.0 * DECEL * 0.85 * maxf(0.0, room - 0.05))
+
+
 ## The venue's solid props (Arena.solid), or null (a body without a match: the tests' views).
 func _solid() -> WsgSolidProps:
 	if match_ref == null or match_ref.arena == null:
@@ -248,6 +270,7 @@ func _solid() -> WsgSolidProps:
 ## Where she heads this frame: her target, or the nearest spot clear of the props to it; on an out-of-play walk (to
 ## and from the bench, to a break's huddle) the next corner of her way round the props (WsgSolidProps.path).
 func _goal(solid: WsgSolidProps) -> Vector2:
+	_rounding = false
 	if solid == null:
 		return target
 	var g := target
@@ -261,7 +284,10 @@ func _goal(solid: WsgSolidProps) -> Vector2:
 	if not (away() or match_ref.phase == "break" or taker):
 		_way = PackedVector3Array()
 		_way_to = Vector2.INF
-		return g
+		# Round a goal circle she may not enter, not into its line and stopped there (Match.round_circles).
+		var r := Match.round_circles(pos, dir, p, g) if fenced else g
+		_rounding = r != g
+		return r
 	var turned := false
 	if _way_to.distance_to(g) > 0.25:
 		_way = solid.path(Vector3(p.x, 0, p.y), g3, BODY_R, BODY_H)
@@ -611,7 +637,7 @@ func hand_point() -> Vector3:
 ## frame), or, not holding it, between her palms as posed.
 func game_hand_point() -> Vector3:
 	if body == null or body.skeleton == null:
-		return position + Vector3(0, 1.3, 0)
+		return match_ref.ball.eased(position + Vector3(0, 1.3, 0)) if has_ball() else position + Vector3(0, 1.3, 0)
 	if _ball_c != Vector3.INF:
 		return _ball_c
 	return (body.bone_world("hand_l") + body.bone_world("hand_r")) * 0.5 + Vector3(0, -0.06, 0)
@@ -680,6 +706,9 @@ func _hands_on_ball() -> void:
 		if excess <= 0.0:
 			break
 		c += ((sh_l + sh_r) * 0.5 - c).normalized() * (excess + 0.005)
+	# A loose ball she met: the ball, and her hands reaching for it, brought in from where she met it (Ball.hold; one
+	# lower than she reaches, stooping, her hands go as far down to it as they reach).
+	c = sk.global_transform.affine_inverse() * match_ref.ball.eased(sk.global_transform * c)
 	for s in ["l", "r"]:
 		var sx := 1.0 if s == "l" else -1.0
 		var g: Array = grip[s]
@@ -740,7 +769,34 @@ func _arm_to(s: String, wrist: Vector3, hand: Basis, bend: Vector3) -> void:
 ## The height she can reach for a ball, standing (and with a leap).
 func reach(leap := false) -> float:
 	var h := float(data.get("height", 1.75))
-	return h * 1.28 + (0.45 if leap else 0.0)
+	return h * 1.28 + (LEAP_UP if leap else 0.0)
+
+
+## Whether her hands meet a loose ball at pt (world) now: one lower than her hands she stoops to; one higher only
+## within her arms' easy reach of her shoulders, as her body is posed (standing, or up in a leap: TeamAI._play),
+## where both bodies' arms (hers and the foundation's) reach it. Without a body, her hands' model (hands_top).
+func meets(pt: Vector3) -> bool:
+	if pt.y >= hands_top():
+		return false
+	if not over_hands(pt):
+		return true
+	var k := body.skeleton.global_transform.basis.get_scale().x
+	for s in ["l", "r"]:
+		if body.bone_world("upperarm_" + s).distance_to(pt) > _arm_len(s) * k * EASY_REACH:
+			return false
+	return true
+
+
+## A ball at pt is higher than her hands as posed: she reaches up to meet it.
+func over_hands(pt: Vector3) -> bool:
+	return body != null and body.skeleton != null and pt.y > game_hand_point().y
+
+
+## The highest her hands can meet a ball now: her standing reach, and in a leap as high as it has her (Poses.leap).
+func hands_top() -> float:
+	if act == "leap":
+		return reach() + LEAP_UP * sin(clampf(act_t / LEAP_S, 0.0, 1.0) * PI)
+	return reach()
 
 
 ## Not available to play: out of play for a penalty, or suspended.

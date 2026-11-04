@@ -86,6 +86,12 @@ var _step_k := {}                   # player -> how far through her stride (the 
 var _last_vel := {}                 # player -> her velocity last frame (a hard cut squeaks)
 var _step_gap := 0.0
 var _squeak_gap := 0.0
+var _loose_from: Player = null      # a pass nobody reached, running on loose: its thrower may not touch it first (R11)
+var _loose_cp := false              # ... and it was the centre pass: whoever touches it first must be in the centre third (R8)
+var _adv_by: Player = null          # advantage played on her infringement against _adv_on, in this hold (_adv_hold):
+var _adv_on: Player = null          # the same infringement again is called at once (R7)
+var _adv_hold := -1
+var _holds := 0                     # the ball taken (caught, picked up, handed for a restart): a new hold each time
 
 
 ## Built by the loading overlay's steps (Game.start_match_loading: build_steps, each followed by a drawn frame) rather
@@ -600,10 +606,14 @@ func _go_live() -> void:
 	game_event.emit("whistle", {"kind": restart.kind})
 
 
-## The ball to a player: she has caught it (or been handed it for a restart).
-func _give(pl: Player, caught := true) -> void:
+## The ball to a player: she has caught it (or been handed it for a restart). ease: a loose ball she met within her
+## reach, brought in to her hands over that many seconds (Ball.hold), not put there.
+func _give(pl: Player, caught := true, ease := 0.0) -> void:
 	holder = pl
-	ball.hold(pl)
+	_holds += 1
+	_loose_from = null
+	_loose_cp = false
+	ball.hold(pl, ease)
 	possession = pl.team
 	last_possession = pl.team
 	last_touch = pl.team
@@ -736,10 +746,14 @@ func _arrive() -> void:
 	var from: Player = pass_info.from
 	var at := Vector2(ball.f_to.x, ball.f_to.z)
 	if to.p.distance_to(at) > 1.3:
-		# She was not there: the ball goes on as it was going, falls, bounces and rolls (Ball._fall).
+		# She was not there: the ball goes on as it was going, falls, bounces and rolls (Ball._fall). Nobody has touched
+		# it: its thrower may not be the first to (replayed ball), and a centre pass is still to be touched in the
+		# centre third (_run_loose).
 		ball.loose(ball.pos, ball.velocity())
 		stats[String(from.data.id)].turnovers += 1
+		_loose_cp = bool(pass_info.get("centre", false))
 		pass_info = {}
+		_loose_from = from
 		return
 	var p_catch := 0.985 - (0.04 if pass_info.kind == "bounce" else 0.0) - (0.03 if pass_info.kind == "lob" else 0.0)
 	if rng.randf() > p_catch:
@@ -781,6 +795,9 @@ func _arrive() -> void:
 	game_event.emit("catch", {"by": to.pos, "team": to.team})
 
 
+const LOOSE_EASE := 0.22           # s: a loose ball she meets, brought from where she met it into her hands (Ball.hold)
+
+
 ## A loose ball: the nearest players chase it; the first to reach it takes it. Over a line it is out of court.
 func _run_loose() -> void:
 	var b := ball.court_pos()
@@ -790,29 +807,44 @@ func _run_loose() -> void:
 		return
 	if ball.pos.y > 2.6:
 		return
+	# The first within reach takes it: her hands (Player.LOOSE_REACH round her) up to where they are now, standing or
+	# at her leap (Player.meets: her hands go out to it, and up for a high one, TeamAI). Out of reach, she waits for it
+	# to come down to her.
 	var best: Player = null
-	var bd := 0.75
+	var bd := Player.LOOSE_REACH
 	for t in 2:
 		for pl in players[t]:
 			if pl.away():
 				continue
+			if pl == _loose_from and pl != me:
+				continue   # (she leaves her own pass for someone else: the AI knows the rule)
 			var d: float = pl.p.distance_to(b)
-			if d < bd and ball.pos.y < pl.reach(true) and not Rules.offside(pl.pos, b, pl.dir):
+			if d < bd and pl.meets(ball.pos) and not Rules.offside(pl.pos, b, pl.dir):
 				bd = d
 				best = pl
 	if best:
+		if best == _loose_from:
+			# Her own pass, untouched since she threw it (R11): a free pass to the other team where she played it.
+			_infringe("replayed_ball", best, b)
+			return
+		if _loose_cp and not Rules.centre_pass_ok(best.pos, best.p):
+			# A centre pass first touched outside the centre third (or by a GS or GK, R8).
+			_infringe("centre_pass_fault", best, b)
+			return
+		# (Brought in from where she met it to her hands: never a jump into them.)
 		if best.team != possession:
-			_gain(best, "loose")
+			_gain(best, "loose", LOOSE_EASE)
 		else:
-			_give(best)
+			_give(best, true, LOOSE_EASE)
 			best.set_act("catch")
+		best.act_up = clampf((ball.pos.y - 1.3) / 1.0, -1.0, 1.0)
 		if shot_info.get("rebound", false):
 			stats[String(best.data.id)].rebounds += 1
 			shot_info = {}
 
 
 ## A defender takes the ball: an intercept, a loose ball, a rebound.
-func _gain(pl: Player, how: String) -> void:
+func _gain(pl: Player, how: String, ease := 0.0) -> void:
 	var other := 1 - pl.team
 	if possession == other:
 		var lost: Player = pass_info.get("from") if pass_info.has("from") else null
@@ -824,7 +856,7 @@ func _gain(pl: Player, how: String) -> void:
 		stats[String(pl.data.id)].intercepts += 1
 	if how == "intercept" or (how == "loose" and _tipped_by == pl.team and clock - _tipped_at < 2.5):
 		_mark_highlight(pl)
-	_give(pl)
+	_give(pl, true, ease)
 	pl.set_act("catch")
 	pl.act_up = 0.6
 	if pl.team == user_team and not demo:
@@ -886,6 +918,7 @@ func _on_struck(hit: Dictionary) -> void:
 			stats[String(from.data.id)].turnovers += 1
 		pass_info = {}
 	if not outside:
+		_loose_from = null   # (off the goal post: its thrower may play it again, R11)
 		return
 	_award(Rules.throw_in(last_touch, Court.clamp_court(Vector2(at.x, at.z))), null, "throw_in")   # (rolling on from it)
 
@@ -1063,8 +1096,11 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 		return
 	calls[kind] = int(calls.get(kind, 0)) + 1
 	var other := 1 - by.team
+	# Advantage is played once for a player's infringement on the shooter: the same player infringing her again while
+	# she still holds that ball is called at once (the umpire does not wave play on a second time).
+	var again: bool = by == _adv_by and holder == _adv_on and _holds == _adv_hold
 	if Rules.INFRINGEMENTS.get(kind, "") == Rules.PENALTY and holder and holder.team == other and holder.pos in ["GS", "GA"] \
-			and Court.in_circle(holder.landing, holder.dir) and not from_free and rng.randf() < 0.6:
+			and Court.in_circle(holder.landing, holder.dir) and not from_free and not again and rng.randf() < 0.6:
 		_advantage(kind, by)
 		return
 	var taker_pos := "GS"
@@ -1092,6 +1128,9 @@ func _infringe(kind: String, by: Player, at: Vector2) -> void:
 ## offender steps clear of the player she infringed (TeamAI.give_way).
 func _advantage(kind: String, by: Player) -> void:
 	stats[String(by.data.id)].penalties += 1
+	_adv_by = by
+	_adv_on = holder
+	_adv_hold = _holds
 	if holder:
 		ai.give_way(by, holder)
 	game_event.emit("advantage", {"kind": kind, "by": by.pos, "team": by.team})
@@ -1160,6 +1199,9 @@ func order_off(pl: Player) -> void:
 
 ## Stops play for an award: the whistle, the call and the signal, then (in "stop") the restart is set up.
 func _award(a: Dictionary, by: Player, kind: String) -> void:
+	ai.end_slips()
+	_loose_from = null
+	_loose_cp = false
 	_stop_award = a
 	_stop_award.by = by
 	_stop_award.signal = kind
@@ -1402,11 +1444,16 @@ func _set_me(pl: Player) -> void:
 		return
 	if me:
 		me.fenced = true
+		me.bounds = Rect2()
 	me = pl
 	me.fenced = bool(Game.settings.onside)
+	me.bounds = Rect2(-RUN_OFF_MAX, RUN_OFF_MAX * 2.0)
 	ai.me = pl
 	if hud:
 		hud.on_me(pl)
+
+
+const RUN_OFF_MAX := Vector2(Court.HALF_L + Court.RUNOFF - Player.BODY_R, Court.HALF_W + Court.RUNOFF - Player.BODY_R)
 
 
 ## Your player: the stick moves her (or, with the ball, turns her and picks whom to pass to); the buttons do the rest
@@ -1441,6 +1488,10 @@ func _drive_me(dt: float) -> void:
 		var to := me.p + d.normalized() * 3.0
 		if bool(Game.settings.onside):
 			to = Rules.onside_point(me.pos, to, me.dir, 0.12)
+		# No further than the run-off round the court (with Keep me onside off nothing else holds her: the hall's floor
+		# goes on 8 m and more past it to its walls, the park's 1.5 m to its fences). She pulls up at its edge
+		# (Player.bounds).
+		to = to.clamp(-RUN_OFF_MAX, RUN_OFF_MAX)
 		me.target = to
 		me.want_speed = me.speed_cap() * clampf(j.length(), 0.3, 1.0)
 		me.look_on = false

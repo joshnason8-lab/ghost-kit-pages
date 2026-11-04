@@ -157,8 +157,8 @@ static func out_of_play_spot(pos: String, dir: int, spot: Vector2, thrower_dir: 
 	# that fits, else 1.2 m).
 	for near: float in [OUT_OF_PLAY_MIN, 1.2]:
 		var square := INF
-		for i in 48:
-			for r: float in [near + half, OUT_OF_PLAY_GAP + half, 1.5]:
+		for i in 96:
+			for r: float in [near + half, near + half + 0.06, OUT_OF_PLAY_GAP + half, 1.5]:
 				var q := onside_point(pos, c + Vector2.from_angle(TAU * i / 48.0) * r, dir, 0.05)
 				var d := minf(q.distance_to(spot), q.distance_to(body))
 				var fwd := (q - c).dot(u)

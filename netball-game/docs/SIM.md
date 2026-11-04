@@ -241,6 +241,12 @@ in the AI's own play; what failed:
 | 5 | **Feet sliding while planted** (the foundation's check at 7239d54, the followed quarter of the bodies): 8-20 cm in most foundation matches, and 1-1.6 m once in the first stretch of play of several. The check guessed "planted" from a low, slow foot; the foundation's d4e3107 measures feet only while its planter drives them (poses the game sets do not count): rerun on d4e3107 before fixing anything | every Medium/High match so far | seen | the foundation link (game/foundation_link.gd) or the check |
 | 6 | The user's C in a T-pose on the first frame of a match (the frame before her first pose; the loading screen may hide it) | human#15 | seen, unconfirmed | game/foundation_link.gd (visible before posed) |
 
+**Fixed (rules round two, test_runner `-- rules2`)**: WsgSim's 1-4 above and run_batch's 1, 3 and 4: your player
+kept in the run-off (`Player.bounds`), a pass nobody reached not played first by its thrower (replayed ball) and a
+centre pass so still to be touched in the centre third, advantage played once, the AI's obstruction and offside
+slips made before they are called, fenced players routed round a goal circle, a loose ball met in the hands' reach
+and brought in. Each test fails on a1b84be and passes after (docs/PROGRESS.md).
+
 **Determinism**: `sim.gd -- determinism --seeds 2` (short matches): PASS, both seeds the same frame for frame (1,479
 checks each). **The step**: `sim.gd -- fps-probe --seeds 4` (short): 20 fps gave 0 of 4 outcomes the same as 30, so
 WsgSim stays at 30 frames a second. **Speed, WsgSim** (one step a frame): a 5-minute-quarter short match (257 s of
