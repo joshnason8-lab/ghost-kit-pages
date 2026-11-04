@@ -719,3 +719,14 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - Draw calls (world_check tiers, xvfb): at Low match 99, watch AI 91, cup final 101, season 95 draw calls (at most 110),
   136-177k triangles (at most 200k); Medium 104-111 (120); High 104-114 (180). Suite, owner notes (9, fresh), feet,
   feet_low (equal to 0.14.16), props, officials, pose and tackle_check 19/19 pass.
+
+## 0.14.23: foundation e04af65 (Low knees)
+
+- e04af650 (WsgFootPlanter's knee pole by the rig's own thigh direction): the Foundation measured Kabaddi's Low bodies
+  (02fb340) bending a knee backwards on 4,481-6,633 knee-frames a mode, most 20-32 cm; with it all clean but two
+  bodies a mode (~232 of 480 bent knee-frames, ~20 cm, unchanged by the fix - being traced: the two scorers seated
+  all match or the two umpires side-stepping are the candidates). Medium/High 0-1 frame either way.
+- The "knees" world rule (enforced 2026-11-06 12:00 UTC) is not on the foundation branch yet; CI runs every world rule,
+  so it is covered once synced.
+- Gates on e04af65: suite, owner notes (9, fresh), feet, feet_low (equal to 0.14.16 on every line), props, officials,
+  pose and tackle_check 19/19 pass.

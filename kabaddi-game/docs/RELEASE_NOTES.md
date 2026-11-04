@@ -1,4 +1,8 @@
-**New in 0.14.22: the trophies shine on Low.** On Low graphics the Nations Cup and the Underdog Trophy drew almost
+**New in 0.14.23: knees bend the right way on Low.** On Low graphics the shared foot planting could bend a
+player's or official's knee backwards (most bodies, 20-32 cm behind the leg's line). It now works out which way each
+rig's thigh faces, so knees bend forward. Medium and High were not affected.
+
+**In 0.14.22: the trophies shine on Low.** On Low graphics the Nations Cup and the Underdog Trophy drew almost
 black (a mirror finish with no sky to reflect); now they read gold and silver. The winners' name and the Underdog
 Trophy's line are outlined, so they stay readable over the boards behind them.
 

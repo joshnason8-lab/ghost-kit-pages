@@ -165,6 +165,11 @@ func _cache(sk: Skeleton3D) -> void:
 				push_error("WsgFootPlanter: a leg bone is missing on %s (bone_map: %s, bone_prefix: '%s')" % [sk.name, bone_map, bone_prefix])
 	_ankle_rest = sk.get_bone_global_rest(_ix[0][2]).origin.y
 	_toe_rest = sk.get_bone_global_rest(_ix[0][3]).origin.y
+	# (Which way the thigh's +Z faces on this rig at rest, against the foot's way (heel to toe): forward on ours, backward
+	# on a Mixamo RealBody - Sepak Takraw's, whose every bent knee was flipped behind, the owner's "broken backwards knees".)
+	var rest_fwd: Vector3 = sk.get_bone_global_rest(_ix[0][3]).origin - sk.get_bone_global_rest(_ix[0][2]).origin
+	var rest_z: Vector3 = sk.get_bone_global_rest(_ix[0][0]).basis * Vector3(0, 0, 1)
+	_thigh_z_fwd = 1.0 if Vector2(rest_z.x, rest_z.z).dot(Vector2(rest_fwd.x, rest_fwd.z)) >= 0.0 else -1.0
 	_unit = unit_scale
 	if _unit <= 0.0:
 		var leg_len: float = sk.get_bone_global_rest(_ix[0][0]).origin.distance_to(sk.get_bone_global_rest(_ix[0][1]).origin) \
@@ -227,6 +232,7 @@ func reset() -> void:
 ## more than its GAP_CUT frames).
 const STALE_FRAMES := 3
 var _ran_at := -1
+var _thigh_z_fwd := 1.0                     # the thigh's +Z forward (1) or backward (-1) on this rig (_cache)
 
 
 ## One step of the game's time (the locomotor calls it from drive()): the feet's contacts and holds are worked out
@@ -780,7 +786,7 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	var pole := (knee - hip) - dir * (knee - hip).dot(dir)
 	# Forward of the thigh, the way a knee bends: a knee that was a hair past straight (a standing clip's locked
 	# knees) was bent on the wrong side, backwards, as the foot was held nearer (the officials stood so, 29 degrees).
-	var fwd := th.basis * Vector3(0, 0, 1)
+	var fwd := th.basis * Vector3(0, 0, _thigh_z_fwd)
 	fwd -= dir * fwd.dot(dir)
 	if pole.length() < 0.0001 or pole.dot(fwd) <= 0.0:
 		pole = fwd
