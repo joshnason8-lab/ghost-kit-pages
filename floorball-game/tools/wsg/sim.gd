@@ -119,8 +119,10 @@ func _batch() -> int:
 		var count := int(args.get("count", 100))
 		for n in count:
 			var sd := from + n
-			# Every tenth seed a targeted case (in turn), the rest the general kinds (in turn).
-			var k: String = targeted[(sd / 10) % targeted.size()] if not targeted.is_empty() and sd % 10 == 0 else kinds[sd % kinds.size()]
+			# Every tenth seed a targeted case (in turn), the rest the general kinds (in turn) - unless --kinds says which:
+			# then those kinds only, so "--kinds extreme --from 10 --count 1" is the smoke's extreme#10 (it ran a targeted
+			# case, and a smoke failure's seed could not be run again - Kabaddi's extreme#10).
+			var k: String = targeted[(sd / 10) % targeted.size()] if not args.has("kinds") and not targeted.is_empty() and sd % 10 == 0 else kinds[sd % kinds.size()]
 			plan.append([k, sd])
 	if args.has("shard"):
 		var sh := String(args.shard).split("/")
@@ -199,7 +201,7 @@ func _append_done(_key: String, r: Dictionary) -> void:
 		DirAccess.make_dir_recursive_absolute(d)
 		var ff := FileAccess.open(d.path_join("%d.json" % int(r.seed)), FileAccess.WRITE)
 		var rec := {"seed": r.seed, "kind": r.kind, "config": r.config, "failure": fl,
-			"replay": "godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- replay --game %s --failure %s" % [args.get("game", "res://game/sim.gd"), d.path_join("%d.json" % int(r.seed))]}
+			"replay": "godot --headless --fixed-fps 30 --path . -s res://tools/wsg/sim.gd -- replay --game %s --failure %s%s" % [args.get("game", "res://game/sim.gd"), d.path_join("%d.json" % int(r.seed)), " --input" if args.has("input") else ""]}
 		ff.store_string(JSON.stringify(WsgSim._plain(rec), "  "))
 		ff.close()
 

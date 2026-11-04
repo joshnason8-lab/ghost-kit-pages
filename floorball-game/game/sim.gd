@@ -149,9 +149,13 @@ var _ball_last := Vector3.INF
 
 
 ## Checks put off with the lead's word (only for a foundation fault the game cannot fix itself).
+## (The whole "foot slip" until 11-06 12:00; from then only a planted slide up to 2.5 cm, until 11-13 - jumps, skids and
+## bigger slides fail. On foundation a40a95e0 the referees' worst were 2.5 and 2.4 cm: extreme#3 and #6.)
 func deferred() -> Dictionary:
 	return {"foot slip": ["2026-11-06T12:00Z",
-		"referee planter slip under game AI, 2.6-3.4 cm; Foundation planter fix pending (lead approved 11:31Z)"]}
+		"referee planter slip under game AI, 2.6-3.4 cm; Foundation planter fix pending (lead approved 11:31Z)"],
+		"planted slip": ["2026-11-13T12:00Z",
+		"the lead, 2026-11-03: planted slides 2.1-2.5 cm under the AI; foundation toe-creep fix pending", 2.5]}
 
 
 ## WsgSim's fetch-behind-prop case: exempt. In floorball a ball that leaves the rink is not fetched: play restarts with

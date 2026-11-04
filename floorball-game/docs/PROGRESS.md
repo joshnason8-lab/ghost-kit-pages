@@ -227,6 +227,15 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.16-beta: the referees' planter (4 November 2026)
+
+- The shared foundation synced to 3b70001 (the planter: a run's time every tick since its last, a landing foot planted
+  before the feet rule reads it, a let-go foot stepping, a released foot's catch-up rate-limited). WsgSim's extreme
+  seeds 2-6 with nothing deferred: the referees' worst planted slides 2.5 and 2.4 cm (extreme#3, #6; 3.9 and 3.3 on
+  70e571a), no jumps or skids.
+- WsgSim's deferral: "foot slip" until 11-06 12:00 as before; then "planted slip" up to 2.5 cm until 11-13 (the lead's
+  word), so jumps, skids and bigger slides fail. 0.9.16-beta, code 31.
+
 ### 0.9.15-beta: the lower hand on the stick at Steady pace (4 November 2026)
 
 - At Steady pace (80%, the phone's default) a sprinting shooter up close had his lower fist off the shaft in 6% of

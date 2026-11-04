@@ -36,12 +36,22 @@ var _prev := [Vector3.INF, Vector3.INF]
 ## planted later it slid the 3-4 cm it moved into its hold (Floorball's referee stopping: its toe at 1.0 m/s over the
 ## frame, 1.7 in its last 60 Hz tick).
 const LAND_TOE := 1.2
+## How low a foot coming down is touching if it is already nearly still, its toe under LAND_TOE and its ankle as slow as
+## a stance foot (landing, not a swing - a
+## swing planted that high stopped dead in the air, Kabaddi's Low walker's jump 2.8 -> 12.6 cm; else 3 cm as before)
+## (m over its floor; never less on a body scaled down): over the feet rule's
+## 3 cm touch (WsgNoteChecks.TOUCH, unscaled, its ankle's floor where the planted ankle stands - higher than a heel-up
+## stance's rest), so a foot the rule reads down is one the planter has planted - at 3.0 cm the rule read a landing foot
+## down a draw before the planter did, and counted what it moved then (Kabaddi's far players: 4.4-7.6 cm; PUN_9, scaled
+## 0.95, its toe 3.50 cm up against the planter's 3.32: 6.4 cm).
+const TOUCH_H := 0.04
 const LAND_SPAN := 1.0 / 30.0
 var _toe_back := [[], []]                    # each toe's last few ticks: [tick time, toe (world)]
 var _drawn_move := [0.0, 0.0]                # how far across each foot was drawn to move last tick
 var _tick := 0
 var _done := -1
 var _tick_dt := 1.0 / 30.0
+var _tick_acc := 0.0                         # the game time of every tick since the planter last ran
 ## World height of the ground under the body.
 var ground_y := 0.0
 @export var release := 0.12
@@ -66,6 +76,11 @@ var _lifted := [false, false]               # let go at its reach's end: lifting
 ## the body is going), and is planted there: the clip, its stride too short for the body (a sharp turn, a start or
 ## stop harder than its clips), kept it on the ground behind, and it slid there 3 to 13 cm (WsgSim's demo).
 const STEP_TIME := 0.2
+## How far a step's toe stays over the floor until it lands (m, the body's scale 1): over the feet rule's 3 cm touch.
+const STEP_CLEAR := 0.035
+## How far off where a let-go foot is held the clip may stand it down before it steps there instead (m, scale 1): the
+## feet rule reads 2 cm a step as a slide.
+const STEP_OFF := 0.02
 var _low_ticks := [0, 0]                     # ticks a foot let go has stayed on the ground (it steps at 2)
 var _waited := [0, 0]                        # ticks since it was let go, neither stepping nor lifted (at 3: to the clip)
 var _aired := [true, true]                   # off the ground since it last landed (a footstep needs it)
@@ -84,7 +99,13 @@ var _across := [0.0, 0.0]                    # easing across from where a let-go
 ## slowed. (35 cm flat let a stop from 8 m/s still jump 24 cm; the clip's move plus 15, 29.)
 const CHASE_MAX := 0.25
 const CHASE_OVER := 0.10
+## A released foot's catch-up is held to CHASE_OVER of change a frame only once it moves more than this a frame (m,
+## scale 1).
+const RELEASE_RATE_FROM := 0.25
 var _clip_move := [0.0, 0.0]                 # how far the clip moved each ankle this frame
+var _clip_mv := [Vector2.ZERO, Vector2.ZERO] # that move across
+var _clip_turn := [0.0, 0.0]                 # how much that move changed from the frame before
+var _rel_prev := [Vector2.ZERO, Vector2.ZERO] # each foot's drawn move across last tick, while the planter has it
 var _chase_from := [Vector3.ZERO, Vector3.ZERO] # where each foot was drawn the frame before
 var _step_at := [Vector3.ZERO, Vector3.ZERO]   # where a foot taking its own step is across, this frame
 var _step_vel := [Vector2.ZERO, Vector2.ZERO] # that step's move across last tick
@@ -157,18 +178,48 @@ func reset() -> void:
 	_prev = [Vector3.INF, Vector3.INF]
 	_toe_back = [[], []]
 	_drawn_move = [0.0, 0.0]
+	_clip_mv = [Vector2.ZERO, Vector2.ZERO]
+	_clip_turn = [0.0, 0.0]
+	_rel_prev = [Vector2.ZERO, Vector2.ZERO]
+	# (What it last drew goes too: a planter not run for a while - a body the game posed whole, the planter off - kept
+	# its feet down and where they were drawn then, and back on, the foot was planted there, far behind, and let go: it
+	# slid 7 cm with the game's pose fading out under it - Sepak Takraw's players out of a set piece.)
+	contact = [0.0, 0.0]
+	_lifted = [false, false]
+	_aired = [false, false]
+	_hip_vel = [Vector3.ZERO, Vector3.ZERO]
+	ankle_world = [Vector3.ZERO, Vector3.ZERO]
+
+
+## A planter not run for more than this many frames (inactive, or its body not drawn) starts afresh when it runs again:
+## what it last drew is no longer where the body is (WsgSim reads the reset as a cut, as it does a body not posed for
+## more than its GAP_CUT frames).
+const STALE_FRAMES := 3
+var _ran_at := -1
 
 
 ## One step of the game's time (the locomotor calls it from drive()): the feet's contacts and holds are worked out
 ## once a step, on the step's own time, however often the skeleton redraws in between.
 func tick(delta: float) -> void:
 	_tick += 1
-	_tick_dt = delta
+	_tick_acc += delta
 
 
 func _process_modification_with_delta(_frame_delta: float) -> void:
 	var fresh := _tick != _done
 	_done = _tick
+	# (A run's time is every tick's since the last run, not the last tick's: a far body drawn every 3rd frame moved
+	# 3 frames' worth between runs, read as 3 times as fast - a landing foot too fast to plant, so planted a draw
+	# late, 6.4 cm on (Kabaddi's far players). A game ticking twice a draw read its feet twice as fast too.)
+	if fresh:
+		_tick_dt = _tick_acc if _tick_acc > 0.0 else _tick_dt
+		_tick_acc = 0.0
+	var now := Engine.get_process_frames()
+	if _ran_at >= 0 and now - _ran_at > STALE_FRAMES and not keep_pose:
+		reset()
+		# (Back after a while: not the whole while as one tick.)
+		_tick_dt = minf(_tick_dt, 1.0 / 30.0)
+	_ran_at = now
 	var delta := _tick_dt if fresh else 0.0
 	var sk := get_skeleton()
 	if sk == null:
@@ -211,6 +262,9 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			if _prev[i] != Vector3.INF and delta > 0.0:
 				vel = Vector2(ank.x - _prev[i].x, ank.z - _prev[i].z).length() / delta
 			_clip_move[i] = vel * delta
+			var cm := Vector2(ank.x - _prev[i].x, ank.z - _prev[i].z) if _prev[i] != Vector3.INF else Vector2.ZERO
+			_clip_turn[i] = (cm - (_clip_mv[i] as Vector2)).length()
+			_clip_mv[i] = cm
 			_prev[i] = ank
 			var back: Array = _toe_back[i]
 			back.append([delta, toe])
@@ -234,13 +288,25 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# comes through flat, and one let slide there glided on the floor (a hard stop from a run: the clip brought
 			# the foot in flat 23 cm a frame and snapped it back 7 cm, read as swinging - the lead, 2026-11-03).
 			var flat := maxf(ank.y - floor_ankle, toe.y - (ground_y + _toe_rest * sc)) < 0.02 * sc
-			is_down = h < 0.05 * sc if was else (h < 0.03 * sc and (vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE))
+			is_down = h < 0.05 * sc if was else ((h < 0.03 * sc and (vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE)) \
+				or (h < TOUCH_H * maxf(sc, 1.0) and tvel < LAND_TOE and vel < 0.6 + body_speed * 0.8))
 			if contact_fn.is_valid():
 				is_down = bool(contact_fn.call(i, ank, toe, was))
 			# A foot let go at the end of its reach is lifting: not down again until it has left the ground.
 			if _lifted[i] and float(_step[i]) < 0.0:
 				_waited[i] = int(_waited[i]) + 1
-				if h > 0.05 * sc or vel < 0.2:
+				# (Still on the ground, the clip's foot standing still - but a step off where it is held: it steps there,
+				# not planted there at once - it crossed 11 cm along the floor in a frame, Kabaddi's referee handed back
+				# into a sidestep, his foot let go out of reach and the clip's standing 11 cm on.)
+				var off := Vector2(ank.x - (ankle_world[i] as Vector3).x, ank.z - (ankle_world[i] as Vector3).z).length() \
+					if ankle_world[i] != Vector3.ZERO else 0.0
+				if h <= 0.05 * sc and vel < 0.2 and off > STEP_OFF * sc:
+					is_down = false
+					_step[i] = 0.0
+					_step_vel[i] = Vector2.ZERO
+					_step_from[i] = ankle_world[i]
+					_step_at[i] = ankle_world[i]
+				elif h > 0.05 * sc or vel < 0.2:
 					_lifted[i] = false
 				else:
 					is_down = false
@@ -473,18 +539,35 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		# in one frame, in the air).
 		if down or stepping != Vector3.INF:
 			_chasing[i] = false
+			if fresh:
+				_rel_prev[i] = Vector2.ZERO if down else (_step_vel[i] as Vector2)
 		elif (_w[i] > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i])) and _chase_from[i] != Vector3.ZERO:
 			var from: Vector3 = _chase_from[i]
 			var gap := Vector2(target.x - from.x, target.z - from.z)
 			var cap := maxf(CHASE_MAX * sc, CHASE_OVER * sc + float(_clip_move[i]))
+			var capped := false
 			if gap.length() > cap:
 				gap = gap.normalized() * cap
+				capped = true
+			# (Its move across changing from the frame before by no more than CHASE_OVER (30 fps) more than the clip's own
+			# foot's does: easing back to a clip foot running on ahead of a body speeding up, the ease's last frame took the
+			# whole lead at once - 40 cm in a frame, then planted dead - a 33 cm jump (Kho Kho's defenders starting hard).)
+			var grow := CHASE_OVER * sc * pow(maxf(delta, _tick_dt) * 30.0, 2.0) + float(_clip_turn[i])
+			var dv: Vector2 = gap - (_rel_prev[i] as Vector2)
+			# (Only a move big enough to read as a jump: a walk's release, held back, dragged its foot along the floor -
+			# Kabaddi's Low walk 0.9 -> 2.1 cm from 15 cm a frame; from 25, 0.5.)
+			if gap.length() > RELEASE_RATE_FROM * sc and dv.length() > grow:
+				gap = (_rel_prev[i] as Vector2) + dv.normalized() * grow
+				capped = true
+			if capped:
 				target.x = from.x + gap.x
 				target.z = from.z + gap.y
-				if fresh:
-					_chasing[i] = true
-			elif fresh:
-				_chasing[i] = false
+			if fresh:
+				_chasing[i] = capped
+				_rel_prev[i] = gap
+		elif fresh:
+			# (To the clip's: moving as it moves.)
+			_rel_prev[i] = _clip_mv[i]
 		# Never through the ground.
 		target.y = maxf(target.y, floor_ankle)
 		if not target.is_equal_approx(ank):
@@ -525,6 +608,17 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			var tn := xf * sk.get_bone_global_pose(leg[3]).origin
 			var k := smoothstep(0.0, 1.0, clampf(float(_step[i]), 0.0, 1.0))
 			_aim_foot(sk, leg, xf, (an + (_step_toe[i] as Vector3)).lerp(tn, k))
+		if stepping != Vector3.INF:
+			# A step's toe clears the floor by STEP_CLEAR until it lands, the ankle raised as far as it takes: the clip's
+			# foot pitched toe-down under an ankle 20 cm up skimmed its toe over the floor across the step's last frames,
+			# 3-4 cm a frame, read as a planted foot sliding (Sepak Takraw's players). It comes straight down as it lands.
+			var tw := xf * sk.get_bone_global_pose(leg[3]).origin
+			var need := ground_y + _toe_rest * sc + STEP_CLEAR * sc * smoothstep(0.0, 0.25, float(_step[i])) - tw.y
+			if need > 0.001:
+				var toe_rel := tw - xf * sk.get_bone_global_pose(leg[2]).origin
+				target.y += need
+				_leg_ik(sk, leg, inv * target)
+				_aim_foot(sk, leg, xf, target + toe_rel)
 		elif on_heel:
 			var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[2])).basis
 			sk.set_bone_pose_rotation(leg[2], (parent.inverse() * heel_b).get_rotation_quaternion())
