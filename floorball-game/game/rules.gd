@@ -440,7 +440,8 @@ class State:
 		_start_waiting(1)
 
 	## A goal for team t. 604: a minor bench penalty of the other team ends if it scores while that team is
-	## outnumbered on the rink (the one with the least time left); a major never does.
+	## outnumbered on the rink (the one with the least time left); a major never does. 603.6 (2026): nor does any, for
+	## a goal scored during a delayed penalty or from a penalty shot (info "keeps_penalties").
 	func goal(t: int, info := {}) -> void:
 		goals[t] += 1
 		var e := {"kind": "goal", "team": t, "period": period, "t": clock}
@@ -449,7 +450,7 @@ class State:
 		e.pp = strength(o) < strength(t)
 		e.sh = strength(t) < strength(o)
 		log.append(e)
-		if strength(o) < strength(t):
+		if strength(o) < strength(t) and not bool(info.get("keeps_penalties", false)):
 			var best := -1
 			for i in penalties[o].size():
 				var p: Dictionary = penalties[o][i]

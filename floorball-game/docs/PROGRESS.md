@@ -227,6 +227,13 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.23-beta: 603.6 from the 2026 rules (4 November 2026)
+
+- The 2026 Rules of the Game PDF read against docs/RULES.md's "Still to check" list (102.6, 202, 504, 506, 602,
+  603.6, 603.9 confirmed). One difference: 603.6 - a goal scored during a delayed penalty or from a penalty shot ends
+  no bench penalty; the game had ended a minor on such a goal. Fixed in Rules.State.goal ("keeps_penalties") and
+  Match._goal, with a test. 0.9.23-beta, code 38.
+
 ### 0.9.22-beta: the knees rule (4 November 2026)
 
 - The shared foundation synced to f080f27: the world rules "knees" (from 11-06 12:00) and "knee_strays" (11-13).
@@ -578,7 +585,8 @@ The owner's list:
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's
    notes on a real screen.
-2. The 2026 rules PDF read against docs/RULES.md's "Still to check" list.
+2. The rest of docs/RULES.md's "Still to check" list (605, 606/607, 611-614, 508, 510, 702, 703, the signs) against the
+   2026 PDF; the first half was read on 4 November.
 3. Native-speaker review of the translations (docs/LANGUAGES.md), the coach's tips first.
 4. Club season extras: a short 3 v 3 overtime as the Nordic leagues play it, a second season, form and streaks.
 5. The penalty benches and secretariat as real models; Meshy bodies if the owner wants them (docs/MESHY_BRIEF.md).

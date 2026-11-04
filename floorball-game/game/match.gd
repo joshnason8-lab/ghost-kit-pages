@@ -1035,18 +1035,21 @@ func _on_goal_line(end: int, from_front: bool) -> void:
 	_goal(scoring, bool(j.get("own_goal", false)))
 
 
-func _goal(t: int, own: bool) -> void:
+func _goal(t: int, own: bool, from_penalty_shot := false) -> void:
 	var scorer: Player = ball.last_player if not own and ball.last_player != null and ball.last_player.team == t else null
 	var assist: Player = _assist_candidate if scorer and _assist_candidate and _assist_candidate != scorer and _assist_candidate.team == t else null
 	var o := 1 - t
 	var pp := rules.strength(o) < rules.strength(t)
+	# A goal during a delayed penalty or from a penalty shot ends no penalty being measured (603.6).
+	var keeps := from_penalty_shot or (not advantage.is_empty() and int(advantage.team) == t)
 	# A delayed minor against the team that conceded is cancelled by the goal; anything bigger is still given (602).
 	if not advantage.is_empty() and int(advantage.team) == t:
 		var adv := advantage
 		advantage = {}
 		if String(adv.sanction) not in ["free_hit", "pen2"]:
 			_penalise(adv.offender, String(adv.sanction), String(adv.offence))
-	rules.goal(t, {"scorer": String(scorer.data.id) if scorer else "", "assist": String(assist.data.id) if assist else "", "own": own})
+	rules.goal(t, {"scorer": String(scorer.data.id) if scorer else "", "assist": String(assist.data.id) if assist else "", "own": own,
+		"keeps_penalties": keeps})
 	_goal_scorer = scorer
 	_goal_clock = FoundationLink.clock()
 	if scorer:
@@ -1763,7 +1766,7 @@ func _shootout(dt: float) -> void:
 				ball.held_by = null
 				if ball.in_goal != 0:
 					_set_phase("live")
-					_goal(t, false)
+					_goal(t, false, true)
 				else:
 					Sfx.react("groan", -6.0)
 					ball.release()

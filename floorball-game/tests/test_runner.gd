@@ -211,6 +211,11 @@ func _penalties() -> void:
 	sh.add_penalty(0, "a", "pen2")
 	sh.goal(0)
 	check(sh.penalties[0].size() == 1, "604: a short-handed goal ends no penalty of the scorers")
+	# 603.6 (2026): a goal during a delayed penalty or from a penalty shot ends no penalty being measured.
+	var kp := Rules.State.new()
+	kp.add_penalty(0, "a", "pen2")
+	kp.goal(1, {"keeps_penalties": true})
+	check(kp.penalties[0].size() == 1 and kp.strength(0) == 4, "603.6: a power-play goal from a penalty shot or during a delayed penalty ends no penalty")
 	var three := Rules.State.new()
 	three.add_penalty(0, "a", "pen2")
 	three.add_penalty(0, "b", "pen2")

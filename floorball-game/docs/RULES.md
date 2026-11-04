@@ -196,19 +196,29 @@ How to Play > Referees' signs draws each one.
 | National and junior leagues | Running time with the last 3 minutes effective (allowed by 201 since 2026), shorter periods | "Running clock" and the period lengths |
 | 3v3 | A separate ruleset (22 x 11 m, 2 m distances) | Not in the game |
 
-## Still to check against the 2026 PDF (October 2026)
+## Checked against the 2026 PDF (4 November 2026)
 
-- Material Regulations: boards 50 cm high.
-- Material Regulations: the ball's 26 holes (and the 2026 edition's ball and stick figures).
-- 102: face-off dots 1.5 m from the long boards.
-- 103: goal 160 x 115 cm, 65 cm deep.
-- 202: one 30-second time-out a team.
-- 504/506: a goal may be scored directly from a hit-in or free-hit.
-- 505: out over the boards, the team that did not touch it last hits it in.
-- 506: the "imaginary line from the centre of the goal line" clause is still in the 2026 text.
-- Advantage: details (no fixed time; the delayed penalty until the other team touches the ball).
-- 602: a goal cancels a delayed minor.
-- 603/604: a minor ends on a goal while the team is outnumbered (2026 wording; coincidental penalties too).
+Read against the clean final version of the 2026 Rules of the Game (updated 31 May 2026):
+
+- 102.6: face-off dots on the centre line and the goal lines' extensions, 1.5 m from the long sides. Confirmed.
+- 202: one time out a team, 30 seconds. Confirmed (the game has none, as the owner asked).
+- 504.1: out over the boards, a hit-in to the team that did not touch it last. Confirmed.
+- 504.6 / 506.6: a hit-in and a free-hit may go directly into the goal. Confirmed.
+- 506.2: the free-hit moved out 3.5 m from the goalkeeper area "along an imaginary line from the centre of the goal
+  line through the place where the offence was committed". Still in the 2026 text.
+- 602: a delayed penalty runs until the offending team takes control of the ball or plays it in a controlled way, or
+  play stops (no fixed time); a goal by the non-offending team cancels the delayed minor last imposed. Confirmed.
+- 603.6: a bench penalty being measured ends on the opponents' goal unless they are outnumbered or the strengths are
+  equal - and not for a goal scored during a delayed penalty or from a penalty shot. The game ended a minor on a
+  penalty-shot goal or a goal during a delayed penalty; fixed (0.9.23), with a test.
+- 603.9: coincidental bench penalties are not affected by a goal. Confirmed (the game skips them).
+- 103: the rules ask only for IFF-approved goal cages on the post marks (1.6 m apart, 102.5); the 160 x 115 cm, 65 cm
+  deep sizes are the Material Regulations', not in this PDF.
+
+## Still to check (October 2026; the rest)
+
+- Material Regulations: boards 50 cm high; the ball's 26 holes; the goal cage's 160 x 115 x 65 cm (not in the Rules
+  of the Game).
 - 605: the list of minor offences.
 - 606/607: major bench penalty 5 min, served in full.
 - 611-614: the team's 5-minute bench penalty with a match penalty.
@@ -218,6 +228,9 @@ How to Play > Referees' signs draws each one.
 - 703: the rest of the no-goal list (too many players, after time, etc.).
 - Referees' signs: every shape in the appendix.
 - The 2-1-2 defence from IFF coaching material (not a rule).
+
+(On 4 November 2026 the 2026 PDF did download - floorball.at's "clean final version updated 260531" - and the items
+above the "Still to check" list were read against it.)
 
 What was tried: the October 2026 re-check could not download or open any 2026 PDF. curl through the proxy was
 refused (CONNECT 403) by www.floorball.sport, www.floorball.at, floorball.de (the German 2026 translation),
