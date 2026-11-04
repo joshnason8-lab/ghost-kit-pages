@@ -63,8 +63,17 @@ third, 4 the rest of the defending third, 5 the defending circle):
   twelve: seven starters and five on the bench.
 - Substitutions and team changes are unlimited, at an interval, during a stoppage for injury or illness, and (since
   2024) straight after a goal if an on-court player asks. **In the game:** team changes at every interval (the break
-  screen), during an injury stoppage, at a time-out, and at any time with the Rolling changes option. *Simplified:* the
-  2024 after-goal tactical change on request is not offered separately (PROGRESS.md "Next").
+  screen), during an injury stoppage, at a time-out, and at any time with the Rolling changes option. The 2024
+  **after-goal tactical change** on request: after a goal, until the next centre pass is whistled, the pause menu
+  offers Team changes (`Match.can_goal_change`, never in play); a change asked for in the goal's stoppage is made as
+  the teams line up for the centre pass, one asked for while they line up at once (`Match.goal_change`), and the
+  centre pass is whistled exactly as it would be (no wait added). The AI uses it for a player hurt in a contact who
+  played on, or now and then to rest a shooter well off her range, one change a quarter (the game models no
+  tiredness). *Simplified:* substitutions only, not positional changes between players on court (the interval's
+  team changes have none either); how long play may wait for the change is not stated in what could be read (see
+  "Still unconfirmed"), so the game adds no wait at all.
+- Test: `_match2` (the after-goal change allowed only after a goal, made at the centre pass, the centre pass not
+  held up; the AI's use).
 - Test: `_rules` ("GS may enter area 1" ... "GK is offside in area 3"), 35 checks.
 - Source: https://israelnetball.org.il/en/what-s-netball.html (the numbering), the rulebook.
 
@@ -243,8 +252,8 @@ https://nsw.netball.com.au/sites/nsw/files/2022-10/HandSignals.pdf):
 | Held ball | Arm straight up |
 | Footwork | Hands palms down, rolling past each other |
 | Short pass | Hands a short way apart, one moving to the other |
-| Obstruction (of the player with the ball) | Hands palms in, a short way apart, in front |
-| Obstruction (of a player without the ball) | Arms angled out from the body below the waist (secondary source; the game draws the with-ball signal for both) |
+| Obstruction (of the player with the ball) | Both arms out in front, one hand over the other, palms facing (`Poses.umpire_signal` "obstruction"; on Low's body and the foundation's, test `_match2` reads the arm angles) |
+| Obstruction (of a player without the ball) | Arms angled out from the body below the waist (secondary source; the game calls no obstruction of a player without the ball, so it is not drawn) |
 | Contact | One hand tapping the other forearm |
 | Over a third | An arm sweeping up in an arc in the ball's direction |
 | Offside, breaking, throw-in | An arm angled down to the line or area |
@@ -333,8 +342,12 @@ interval before extra time. Still open, for anyone who opens the PDF:
 - **Simultaneous infringement**: the clause number (the rule itself is confirmed by national bodies' 2024 summaries).
 - **Over a third**: R12, but 12.3 or 12.4 (two European umpiring papers disagree).
 - **Signals**: the PDF's signal pages (from about page 70) were not readable. Held ball and goal are confirmed by
-  secondary sources; obstruction of a player without the ball has its own signal (added above, not drawn); whether
-  offside, breaking and a throw-in share the "arm angled down" signal is unverified (a throw-in at the goal line has its
-  own, the arm angled to the post's base).
+  secondary sources; obstruction (with the ball) is drawn as the brief of 4 November 2026 describes it, both arms out in
+  front, one hand over the other, palms facing (the earlier reading, "hands palms in, a short way apart", was replaced:
+  not checked against the PDF either way); obstruction of a player without the ball has its own signal (added above, not
+  drawn: the game never calls it); whether offside, breaking and a throw-in share the "arm angled down" signal is
+  unverified (a throw-in at the goal line has its own, the arm angled to the post's base).
+- **The after-goal tactical change**: the change itself is as R3 above has it; how long play may be held for it (an
+  umpire's discretion or a set time) was not found. The game holds the centre pass no longer than it always does.
 - **In the air above an area is not offside** (landing is what counts): not contradicted, but no quote found.
 
