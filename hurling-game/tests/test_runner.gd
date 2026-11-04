@@ -36,6 +36,7 @@ func _ready() -> void:
 	_clock_lengths()
 	_coach()
 	await _keeper_jerseys()
+	await _hawk_eye()
 	await _subs()
 	await _sent_off_walks_off()
 	await _tactics()
@@ -568,6 +569,37 @@ func _keeper_jerseys() -> void:
 		"Limerick's keeper, in a match, not in Limerick green")
 	m.queue_free()
 	await frames(2)
+
+
+## Roadmap 5: Hawk-Eye at the stadium. A point or a wide over the bar close to a post is shown checked (the card, then
+## TÁ or NÍL); the score is the game's own call either way, and nowhere but the stadium has it.
+func _hawk_eye() -> void:
+	for venue in ["stadium", "county"]:
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "KIL", "away": "COR", "venue": venue, "user_team": -1, "seed": 4, "length": 8.0, "mode": "test"}
+		m.set_meta("test", true)
+		add_child(m)
+		await frames(3)
+		var s := float(m.dir(0))
+		var edge: float = Pitch.POST_GAP * 0.5
+		var x: float = Pitch.HALF_L * s
+		# Inside the post by 0.2 m, over the bar: a close point. Outside by 0.25 m: a close wide. Mid-goal: no check.
+		var cases := [[Vector3(x, Pitch.BAR_H + 2.0, edge - 0.2), 1, true], [Vector3(x, Pitch.BAR_H + 3.0, -edge - 0.25), 0, true],
+			[Vector3(x, Pitch.BAR_H + 1.0, 0.0), 1, false]]
+		for cs in cases:
+			m.phase = m.P.LIVE
+			m.ball.last_team = 0
+			m.ball.last_kind = "strike"
+			var pts: int = m.score[0][1]
+			var checks: int = m.hawk_eye
+			m._over_end_line(cs[0], s)
+			check(m.score[0][1] - pts == cs[1], "%s: %s counts as the game calls it (+%d)" % [venue, cs[0], cs[1]])
+			var want: int = 1 if (cs[2] and venue == "stadium") else 0
+			check(m.hawk_eye - checks == want, "%s: Hawk-Eye %s for %s" % [venue, "checks" if want else "not shown", cs[0]])
+			check(not m._hawk, "%s: no close call left over after %s" % [venue, cs[0]])
+			await frames(2)
+		m.queue_free()
+		await frames(2)
 
 func _sent_off_walks_off() -> void:
 	for venue in ["stadium", "county", "parish"]:

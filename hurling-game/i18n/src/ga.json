@@ -466,5 +466,8 @@
   "LOAD_TIP_1": "Le haghaidh saorphoc, brúigh SHOOT chun an sprioc a stopadh, ansin SHOOT arís leis an marcóir sa ghlas.",
   "LOAD_TIP_2": "Is fiú pointe amháin thar an trasnán; is fiú trí phointe cúl faoi.",
   "LOAD_TIP_3": "Brúigh SOLO chun an sliotar a phreabadh ar do chamán agus tú ag rith.",
-  "LOAD_TIP_4": "Buaileann cor ón gcúl nó bac ón tosach an liathróid ar ais gan calaois."
+  "LOAD_TIP_4": "Buaileann cor ón gcúl nó bac ón tosach an liathróid ar ais gan calaois.",
+  "HAWKEYE": "Hawk-Eye",
+  "HAWKEYE_YES": "TÁ · cúilín",
+  "HAWKEYE_NO": "NÍL · amú"
 }

@@ -460,5 +460,8 @@
   "LOAD_TIP_1": "For a free, tap SHOOT to stop the target, then SHOOT again with the marker in the green.",
   "LOAD_TIP_2": "Points over the bar are worth one; a goal under it is worth three.",
   "LOAD_TIP_3": "Tap SOLO to bounce the sliotar on your hurley as you run.",
-  "LOAD_TIP_4": "A hook from behind or a block from in front wins the ball back without a foul."
+  "LOAD_TIP_4": "A hook from behind or a block from in front wins the ball back without a foul.",
+  "HAWKEYE": "Hawk-Eye",
+  "HAWKEYE_YES": "TÁ · point",
+  "HAWKEYE_NO": "NÍL · wide"
 }

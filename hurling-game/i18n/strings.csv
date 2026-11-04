@@ -461,3 +461,6 @@ LOAD_TIP_1,"For a free, tap SHOOT to stop the target, then SHOOT again with the 
 LOAD_TIP_2,Points over the bar are worth one; a goal under it is worth three.,Is fiú pointe amháin thar an trasnán; is fiú trí phointe cúl faoi.
 LOAD_TIP_3,Tap SOLO to bounce the sliotar on your hurley as you run.,Brúigh SOLO chun an sliotar a phreabadh ar do chamán agus tú ag rith.
 LOAD_TIP_4,A hook from behind or a block from in front wins the ball back without a foul.,Buaileann cor ón gcúl nó bac ón tosach an liathróid ar ais gan calaois.
+HAWKEYE,Hawk-Eye,Hawk-Eye
+HAWKEYE_YES,TÁ · point,TÁ · cúilín
+HAWKEYE_NO,NÍL · wide,NÍL · amú

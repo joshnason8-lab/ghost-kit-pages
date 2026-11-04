@@ -13,6 +13,9 @@ enum P {INTRO, THROW_IN, LIVE, DEAD, SETUP, SET, HALF_TIME, SHOOTOUT, OVER}
 
 const KEEPER_KIT := [Color("2a9d5c"), Color("d9772b"), Color("e8d62a"), Color("4fc3e8"), Color("e0559a"), Color("8a8f96"),
 	Color("7b4bb3"), Color("a8d43a")]   # green, orange, yellow, sky, pink, grey, purple, lime
+const HAWK_NEAR := 0.4       # m: a point or wide that close to a post's inside edge, over the bar, is checked by
+                             # Hawk-Eye at the stadium (shown only: the call is the same)
+const HAWK_S := 1.4          # s the Hawk-Eye card shows before its verdict and the umpire's flag
 const DEAD_T := 1.6          # s from the whistle to the players going to their places
 const SETUP_MAX := 7.0       # s to get to them at most
 const REACH := 1.25          # m from a player to a ball he can play with the hurley
@@ -2066,6 +2069,7 @@ func _over_end_line(c: Vector3, s: float) -> void:
 	var shot: Dictionary = ball.get_meta("shot", {})
 	if not advantage.is_empty():
 		advantage.shot = true
+	_hawk = kind != "goal" and _hawk_eye(c)
 	if kind != "":
 		# A score: whoever played it last, a ball between the posts scores for the side attacking that goal.
 		if Rules.score_counts(kind, ball.last_kind):
@@ -2079,7 +2083,11 @@ func _over_end_line(c: Vector3, s: float) -> void:
 		var by = shot.get("by")
 		if by is Player and is_instance_valid(by):
 			pstats[(by as Player).data.id].wides += 1
-		officials.umpire_signal(s, "sig_wide", c.z)
+		if _hawk:
+			_hawk = false
+			_hawk_card(false, func(): officials.umpire_signal(s, "sig_wide", c.z))
+		else:
+			officials.umpire_signal(s, "sig_wide", c.z)
 		hud.call_line(tr("CALL_WIDE"))
 		_say("wide")
 		_replay_kind = "wide"
@@ -2104,6 +2112,23 @@ func _disallowed(att: int, c: Vector3, s: float) -> void:
 	_award({"kind": "puck_out", "team": 1 - att, "spot": Vector3((Pitch.HALF_L - Pitch.SMALL_D * 0.5) * s, 0, 0)}, 2.4)
 
 
+## Roadmap 5: Hawk-Eye at the stadium (as at Croke Park and Thurles): a point or a wide over the bar within HAWK_NEAR
+## of a post is checked, the card first and then its verdict, "TÁ" (it is a point) or "NÍL" (it is not), as the big
+## screen shows it; the umpire's flag waits for it. The call itself is the game's own, exact: Hawk-Eye only shows it.
+func _hawk_eye(c: Vector3) -> bool:
+	if String(config.get("venue", "")) != "stadium" or phase != P.LIVE:
+		return false
+	return absf(absf(c.z) - Pitch.POST_GAP * 0.5) < HAWK_NEAR and c.y > Pitch.BAR_H
+
+
+func _hawk_card(point: bool, flag: Callable) -> void:
+	hawk_eye += 1
+	hud.banner(tr("HAWKEYE"), Game.C_INK, HAWK_S)
+	_after(HAWK_S, func():
+		hud.banner(tr("HAWKEYE_YES") if point else tr("HAWKEYE_NO"), Game.C_GOLD if point else Game.C_DANGER, 1.6)
+		flag.call())
+
+
 func _over_side_line(c: Vector3) -> void:
 	_whistle_dead()
 	var r := Rules.over_side_line(c, ball.last_team)
@@ -2114,6 +2139,8 @@ func _over_side_line(c: Vector3) -> void:
 
 func _score(team: int, kind: String, shot: Dictionary) -> void:
 	_whistle_dead(false)
+	var hawk := _hawk
+	_hawk = false
 	var s := Pitch.HALF_L * dir(team)
 	var by = shot.get("by")
 	var placed := String(shot.get("placed", ""))
@@ -2125,8 +2152,11 @@ func _score(team: int, kind: String, shot: Dictionary) -> void:
 		Sfx.play("roar", -2.0)
 	else:
 		score[team][1] += 1
-		officials.umpire_signal(signf(s), "sig_point", 0.0)
-		hud.banner(tr("CALL_POINT"), Game.C_INK)
+		if hawk:
+			_hawk_card(true, func(): officials.umpire_signal(signf(s), "sig_point", 0.0))
+		else:
+			officials.umpire_signal(signf(s), "sig_point", 0.0)
+			hud.banner(tr("CALL_POINT"), Game.C_INK)
 		Sfx.react("cheer", -5.0)
 	Crowd.set_excite(1.0 if kind == "goal" else 0.6)
 	_cheer_until = now + 2.5
@@ -3733,6 +3763,8 @@ func _exit_tree() -> void:
 ## The commentators on a score: the call (a goal; a point from a free, from distance, or from play), then a moment
 ## later where it leaves the game (level; one in it; a big lead; a side come back; the end near and close).
 var _worst := [0, 0]   # the most each side has been behind by
+var hawk_eye := 0              # Hawk-Eye checks this match (the stadium's close calls)
+var _hawk := false             # the ball now over the end line is a close call (_hawk_eye)
 var _replay_kind := "point"   # what the next replay shows (Commentary: the co-commentator's word over it)
 
 

@@ -684,7 +684,8 @@ anything else "x_hd.<ext>"), VRAM-compressed (ETC2/ASTC on phones) with mipmaps:
 2. **The full Official Guide**: read the rules against it once the network allows `www.gaa.ie` (docs/RULES.md).
 3. **More frees and shots**: real matches have about 26 frees and 77 shots; the game about 17 and 70.
 4. **Temporary substitutes** (blood, a head injury) and injuries, and the sin-binned player's replacement rules.
-5. **Umpires who now and then get a close one wrong**, and Hawk-Eye at the stadium (as the real one has).
+5. **Umpires who now and then get a close one wrong** (a balance change: the owner's call), ~~and Hawk-Eye at the
+   stadium~~ (done, 0.24.12: a point or wide over the bar within 0.4 m of a post shows the Hawk-Eye card, then TÁ or NÍL).
 6. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!"), and a recorded referee's
    whistle and hurley strike (none to be had from Kenney or OpenGameArt: docs/SOUNDS.md).
 7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
