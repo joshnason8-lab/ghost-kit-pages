@@ -1,11 +1,12 @@
 extends WsgOwnerNote
-## The lead's ruling, 2026-11-04, on the owner's report to Sepak Takraw (Takraw 0.15.27, with a screenshot) as relayed:
-## "players' stances look like broken backwards knees; refs' knees are bent wrong too". No knee bends backward on any
-## tier, for players or officials, outside named acrobatics. (Kho Kho Rush 0.12.15 had it on Low: the foot planter's
-## knee pole was reversed on this rig - foundation e04af650 - and switched off under a kneeling chaser it still bent his
-## knees back 25-28 cm.)
+## The owner, 2026-11-04, on Sepak Takraw 0.15.27 (a screenshot of Low players in their ready stance), verbatim as Takraw
+## holds it: "All that work and the players stances regressed to look like the have broken backwards knees. How does that
+## happen its unacceptable." "Refs knees also bent wrong" - filed for Kho Kho by the lead's ruling (no knee bends backward
+## on any tier, for players or officials, outside named acrobatics): Kho Kho Rush 0.12.15 had it on Low - the foot
+## planter's knee pole was reversed on this rig (foundation e04af650), and switched off under a kneeling chaser it still
+## bent his knees back 25-28 cm.
 
-const NOTE := {"id": "2026-11-04-knees-backward", "game": "kho-kho", "date": "2026-11-04", "version": "Kho Kho Rush 0.12.15", "words": "The lead's ruling on the owner's Takraw 0.15.27 report, as relayed: \"players' stances look like broken backwards knees; refs' knees are bent wrong too\" - no knee bends backward on any tier, for players or officials, outside named acrobatics."}
+const NOTE := {"id": "2026-11-04-knees-backward", "game": "kho-kho", "date": "2026-11-04", "version": "Sepak Takraw 0.15.27", "words": "All that work and the players stances regressed to look like the have broken backwards knees. How does that happen its unacceptable. Refs knees also bent wrong"}
 const KK := preload("res://tests/note_kk.gd")
 ## Interim, named as such (the foundation, 2026-11-04): single swing-leg flicks the foundation is still tracing - a leg
 ## may show at most this many backward frames, no further back than this, until the trace lands. Anything more - a

@@ -328,6 +328,13 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
 - 0.12.15: foundation 28e82f9 (706e3a6d: the planter's tolerances by body size, not the skeleton's world scale -
   player.glb's Low body): feet_low standing 0.0, walk 0.4 (1.5), jog 0.8, jog turned 1.1, run 1.3 (9 planted steps, was
   1), stop 0.7 (1.7) cm; jumps at most 12.5 cm.
+- 0.12.16: backward knees on Low. The foot planter's knee pole took the thigh's +Z as forward; on player.glb's rig it
+  points back (foundation e04af650, carried in the vendored foot_planter.gd until synced). ModelBody now sets keep_pose
+  (not enabled = false) under the game's whole-body poses - off, the planter still clamped the ankles and bent a
+  kneeling chaser's knees 25-28 cm back. Owner note 2026-11-04-knees-backward (the owner's words on Takraw 0.15.27):
+  every player and official, Low and High, quick match and Watch AI, the foundation's knees rule (1.5 cm bent, 4 cm
+  back), interim allowance 8 frames / 12 cm for the swing-leg strays the foundation is tracing. Low before: runners and
+  officials 450-590 of ~550 bent frames back, up to 33 cm; after: 9 legs with 1-6 frames, 4-11 cm; High 0.
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

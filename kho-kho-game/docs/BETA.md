@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.16
+
+- **Knees bend the right way on Low.** Players' and umpires' knees no longer bend backwards: standing and running (the
+  foot planter turned the knee the wrong way on this game's model) and kneeling in the squares (the chasers' legs were
+  bent back 25-28 cm under the planter). Checked on Low and High, in matches and Watch AI, for every player and official.
+
 ## What's new in 0.12.15
 
 - **Steadier feet on Low**, the setting phones like the A16 play on: a planted foot slides less when a player walks
