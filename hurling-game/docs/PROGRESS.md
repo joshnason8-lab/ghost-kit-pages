@@ -860,6 +860,20 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.16, 4 November 2026)
+
+- **Low polish pass** (the lead, as Netball, Pok Ta Pok and Kho Kho did): stills on Low at 1600 x 720 (the A16's shape)
+  of every screen, the championship pages, the result, free-taking practice and a match at every ground (parish,
+  county, night, the national stadium); `tests/screenshots.tscn` now takes practice too. Found and fixed: the menu
+  backdrop's left floodlight's lamps against every title. Nothing else wanted fixing: the crowd seated and facing the
+  play, the officials in kit, the HUD, the coach's card and the scorebug clear of each other, text fitting (fit_audit
+  0 problems). Draw calls on Low: stadium 103, county 103, parish 106 - the same as 0.24.13 (docs/GRAPHICS.md).
+- **Throw-in** (Rule 2.1) still waits: under it the opening play on the gliding note's seed goes to the far side, out of
+  the broadcast camera's 60 m every-frame range, so the note sees no feet; making it pass would mean changing the owner's
+  note (its seed or its watch), not the game.
+- **Foundation 8c87df4e** (fd879f98: a standing body's hovering foot planted again; two thresholds no longer shrink on
+  bodies scaled below 1).
+
 ## Done (0.24.15, 4 November 2026)
 
 - **Sideline cuts** (CI's 35-minute score check on 0.24.14: 1.3 a full match, under its floor of 2; CI's matches are

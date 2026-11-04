@@ -68,10 +68,11 @@ func _draw() -> void:
 	draw_line(Vector2(gx - gap * 0.5, horizon - post_h), Vector2(gx - gap * 0.5, horizon + 6), post, 4.0)
 	draw_line(Vector2(gx + gap * 0.5, horizon - post_h), Vector2(gx + gap * 0.5, horizon + 6), post, 4.0)
 	draw_line(Vector2(gx - gap * 0.5, horizon - post_h * 0.22), Vector2(gx + gap * 0.5, horizon - post_h * 0.22), post, 4.0)
-	# Floodlight masts with their lamps on.
+	# Floodlight masts with their lamps on. (Their heads below the screens' title band: at 0.12 of the height the left
+	# one's lamps sat against every title and read as part of it - "Help." - on a 1600 x 720 phone.)
 	for mx in [0.12, 0.55]:
 		var x: float = s.x * mx
-		var top := horizon - s.y * 0.5
+		var top := horizon - s.y * 0.36
 		draw_line(Vector2(x, top), Vector2(x, horizon + 4), Color("2a2c34"), 3.0)
 		draw_rect(Rect2(x - 18, top - 10, 36, 14), Color("2a2c34"))
 		for k in 4:

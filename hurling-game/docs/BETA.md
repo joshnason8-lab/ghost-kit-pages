@@ -9,6 +9,12 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.16
+
+- **Cleaner screen titles**: the floodlights in the menus' backdrop sat right against every screen's title (Help read
+  "Help."); they stand lower now, clear of the titles.
+- **Feet** (the shared animation foundation): a standing player's hovering foot is planted again.
+
 ## New in 0.24.15
 
 - **More sideline cuts**: a back hemmed in near his own goal, or pinned against the sideline with no pass on, puts it

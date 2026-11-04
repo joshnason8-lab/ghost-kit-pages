@@ -1,6 +1,7 @@
 extends Node
 ## Renders a tour of the screens to PNGs. Needs a display (xvfb works):
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/screenshots.tscn -- /out/dir [lang] [only] [graphics 0-2]
+## (only: a prefix - "menu", "champ", "match_<venue>", "practice", "result"; the Low pass runs at --resolution 1600x720.)
 
 var out := "user://shots"
 var only := ""
@@ -63,6 +64,16 @@ func _ready() -> void:
 		for i in 6:
 			await _wait(2.5)
 			await shot("match_play_%d" % i)
+	if only == "" or only.begins_with("practice"):
+		# Free-taking practice, as its screen starts it.
+		Game.start_match({"home": "TIP", "away": "KIL", "venue": "county", "mode": "practice", "user_team": 0, "seed": 7})
+		await _wait(4.0)
+		await shot("practice_aim")
+		await _wait(3.0)
+		await shot("practice_later")
+		if Game.current and Game.current.has_method("quit_match"):
+			Game.current.quit_match()
+		await _wait(0.5)
 	if only == "" or only.begins_with("result"):
 		var r := ResultSim.play("KIL", "TIP")
 		r.config = {"mode": "quick", "stage": "Semi-final"}
