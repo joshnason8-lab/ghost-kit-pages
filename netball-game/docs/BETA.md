@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.12-beta
+
+- Behind the scenes: every build now checks that no player's knee bends backwards, in every mode and on every
+  graphics level (the shared foundation's knees rules).
+
 ## New in 0.9.11-beta
 
 - **Knees**: no player's knee bends backwards any more. On Low a defender's knee could bend the wrong way as she
