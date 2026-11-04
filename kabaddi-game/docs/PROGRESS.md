@@ -779,3 +779,5 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - e58d0051: the planter no longer flicks a swinging leg's knee backwards as a step lands (High's raider, the 2-frame
   knee_strays body in watch AI at Low), the lone-stray verdict, knees run after joystick. Low gate: feet_low equal to
   0.14.16 on every line; suite, owner notes (10), feet, props, officials, pose and tackle_check 19/19 pass.
+- CI: the world check split into two jobs side by side (--only: the knees rules alone, the rest) - with knees
+  added, one job ran 74 of its 80 minutes (0.14.26's push run) and the pull-request run went past it.

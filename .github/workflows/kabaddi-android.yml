@@ -276,9 +276,15 @@ jobs:
   # officials, key sounds, loading, the joystick on every camera, no Web preset shipping licensed data, the graphics levels - on the game's
   # own code (game/world.gd). Its own job: it draws (xvfb, the crowd's and the props' sheets) and takes a while, so
   # the APK does not wait on it; from 2026-11-03 12:00 UTC a failed rule fails this job, and so the run.
+  # Two jobs side by side (--only): the knees rules alone take over half an hour (every mode at every level, each
+  # skeleton watched), and with the rest one job ran 74 minutes of its 80 (2026-11-04).
   world-check:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        rules: ["props,crowd,feet,feet_low,pose,officials,sounds,loading,joystick,web,tiers", "knees,knee_strays"]
     steps:
       - uses: actions/checkout@v4
 
@@ -326,11 +332,11 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           timeout 4800 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- \
-            --out "$RUNNER_TEMP/world"
+            --out "$RUNNER_TEMP/world" --only "${{ matrix.rules }}"
           cat "$RUNNER_TEMP/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY"
 
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: world-check
+          name: world-check-${{ strategy.job-index }}
           path: ${{ runner.temp }}/world
