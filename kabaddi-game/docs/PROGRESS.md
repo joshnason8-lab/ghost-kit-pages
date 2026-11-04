@@ -627,3 +627,14 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - kabaddi-sim.yml runs on game code only: docs, store text and Markdown under kabaddi-game/ play no matches.
 - Owner notes run on a fresh install's defaults in CI (an empty user dir, WSG_NOTES_FRESH=1; foundation 2846235d).
 
+
+
+## 0.14.16: officials turn and jog instead of sidestepping fast
+
+- Officials._step: an official's speed sideways or back, relative to the way he faces, is held to SIDESTEP_MAX (1 m/s);
+  meaning to go faster (up to MOVE_MAX, 2 m/s), he turns toward where he goes - fully by 1.5 m/s - and back to the play
+  as he slows (the lead, 2026-11-04: real officials turn and jog above a slow sidestep). The 49467db smoke's OFFICIAL_0
+  14.9 cm slide (extreme#10) was a 2 m/s sidestep facing the raider, 74 degrees off his way. Measured over extreme#10's
+  first 4,200 frames: officials' frames sidestepping faster than 1 m/s 921 -> 394 (turning only) -> 106 at exactly the
+  cap; the fastest sidestep 2.0 -> 1.0 m/s.
+

@@ -131,13 +131,41 @@ func _process(delta: float) -> void:
 		s.drive(Vector3.ZERO, delta)
 
 
+## The fastest an official steps sideways or back, facing the play (m/s): faster, he turns and jogs.
+const SIDESTEP_MAX := 1.0
+const MOVE_MAX := 2.0          # his jog along the line (m/s)
+
+
+## Facing the play he steps sideways or back only slowly; hurrying along his line he turns and jogs, as officials do
+## (a 2 m/s sidestep facing the raider slid the planted foot 15 cm - the lead, 2026-11-04). Meaning to go faster than
+## SIDESTEP_MAX he turns toward where he goes (all the way by half a metre a second faster) and back to the play as he
+## slows; whatever of his speed is still sideways or back, the way he faces now, is held to SIDESTEP_MAX.
 func _step(a: Athlete, target: Vector3, look: Vector3, dt: float) -> void:
 	if a.state == "signal" and a.st_t < a.st_len:
 		a.drive(Vector3.ZERO, dt)
 		return
-	a.seek(target, 2.0, dt, 0.4)
+	var to := target - a.position
+	to.y = 0.0
+	var dist := to.length()
+	var go := Vector3.ZERO if dist < 0.05 else to / dist * MOVE_MAX * clampf(dist / 0.4, 0.0, 1.0)
+	var sp := go.length()
 	a.lock_facing = true
-	a.face_toward(look, dt, 5.0)
+	var face := look
+	if sp > SIDESTEP_MAX:
+		var tl := look - a.position
+		tl.y = 0.0
+		var d := (tl.normalized() if tl.length() > 0.05 else a.facing).lerp(go / sp, clampf((sp - SIDESTEP_MAX) / 0.5, 0.0, 1.0))
+		if d.length() > 0.05:
+			face = a.position + d.normalized()
+	a.face_toward(face, dt, 5.0)
+	var f := Vector3(a.facing.x, 0.0, a.facing.z).normalized()
+	var ahead := go.dot(f)
+	var side := go - f * ahead
+	if side.length() > SIDESTEP_MAX:
+		side = side.normalized() * SIDESTEP_MAX
+	a._goal = target if dist >= 0.05 else Vector3.INF
+	a.drive(f * maxf(ahead, -SIDESTEP_MAX) + side, dt)
+	a._goal = Vector3.INF
 	var want := "walk" if a.vel.length() > 0.3 else "idle"
 	if a.state != want:
 		a.set_state(want)

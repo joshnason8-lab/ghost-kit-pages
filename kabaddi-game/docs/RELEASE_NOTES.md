@@ -1,4 +1,8 @@
-**New in 0.14.15: cleaner steps.** On every graphics level, a player's foot taking a step keeps its toe off the floor until
+**New in 0.14.16: officials move like officials.** An umpire hurrying along his line to keep up with a raid turns and
+jogs that way, as real officials do, and turns back to face the play as he arrives; facing the play he only steps
+sideways or back slowly (up to 1 m/s). He used to scuttle sideways at a jogging pace with his feet sliding under him.
+
+**In 0.14.15: cleaner steps.** On every graphics level, a player's foot taking a step keeps its toe off the floor until
 it lands, instead of scraping the mat on the way, and a foot let go after one of the game's own moves (a dive, a hold,
 a kick) starts stepping again cleanly. A player or official put in a new place between raids takes his feet with him
 rather than leaving them on the old spot (Medium and High).
