@@ -9,7 +9,7 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
-## Unreleased
+## New in 0.9.7-beta
 
 - **Home and away**: a Club Season can now be fourteen rounds, every club played at home and away (pick Single or
   Home and away when you start one). Single is still seven rounds.
@@ -17,6 +17,11 @@ about 2019).
   the major semi-final (the winner goes straight to the grand final), third v fourth in the minor semi-final (the
   loser is out), then the preliminary final, then the grand final. A season you started before keeps its old finals.
 - In every language the game has; the new words await native speakers' checks.
+- **A change after a goal**: as the 2024 rules allow, either team may make a substitution after a goal, before the
+  next centre pass (Pause, then Team changes); the AI uses it for a hurt player.
+- **The obstruction signal**: the umpire shows it properly, both arms out in front, one hand over the other.
+- **The bench**: the reserves sit on their benches, and stand to clap their team's goals (Medium and High). The
+  sports hall's benches are now low school benches.
 
 ## New in 0.9.6-beta
 
