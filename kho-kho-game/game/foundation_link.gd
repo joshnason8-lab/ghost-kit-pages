@@ -46,6 +46,7 @@ var _dt := 0.0
 var _frame := -1
 var _last_pos := Vector3.INF
 var _act_was := ""
+var _plant_after := 0.0       # seconds the planter waits after the game's pose (the lead, 2026-11-04: off till its fade-out is done)
 ## (Read by tests/diag_pose.gd only: why this frame's drive ran or not - "ran", "same frame", "held", "skip" - and the
 ## dt it advanced the body by.)
 var trace_why := ""
@@ -364,6 +365,11 @@ func _update(delta: float) -> void:
 			# (Back to the capture: going as he goes now, not as he went before the game's pose.)
 			if mode == "full":
 				loco.resume(Vector3(who.vel.x, 0.0, who.vel.z), who.yaw)
+				# The planter waits out the game's pose fading off (a sitting or rising pose part-drawn for those
+				# frames: feet planted there jumped 25-33 cm when it was gone), then starts afresh.
+				_plant_after = secs
+		if want == "full":
+			_plant_after = 0.0
 		mode = want
 	_act_was = who.act
 	if jumped:
@@ -371,7 +377,11 @@ func _update(delta: float) -> void:
 	body.visible = true
 	# The capture runs under the game's pose only while it shows (a body wholly the game's skips it: the CPU). The
 	# planter holds the feet only under the capture: under the game's pose its feet are where the game puts them.
-	loco.planter.enabled = mode != "full"
+	if _plant_after > 0.0:
+		_plant_after -= dt
+		if _plant_after <= 0.0:
+			loco.planter.reset()
+	loco.planter.enabled = mode != "full" and _plant_after <= 0.0
 	# (Its floor - no ankle lower than a standing one's - is for the capture's feet: under the game's pose a kneeling
 	# chaser's ankles lie lower, and the game's feet are kept exactly.)
 	loco.planter.ground_y = -10.0 if mode == "full" else 0.0
