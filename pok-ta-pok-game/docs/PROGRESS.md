@@ -478,6 +478,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   off after a first match, which may well have been ulama). The match-setup court diagram draws the markers court's
   three floor markers, not rings, and the main menu's background match visits it. Six languages.
 
+- **0.6.33-beta: shared foundation 31f60da3; points in the box score.** The foundation's fix for the four planter
+  regressions in 3b700012 (which 0.6.31 and 0.6.32 carried): the release rate limit no longer applies under a game's
+  contact_fn. On the classic court and in the revival the result screen's box score opens with Points won (the
+  revival's end line is 4), not rayas won.
+
 ## Next
 
 1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
