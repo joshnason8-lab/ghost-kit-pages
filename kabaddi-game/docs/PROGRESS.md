@@ -657,3 +657,12 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - tackle_check's breakfree scenario is not as expected (1 Break-free press, not 2; the raider's middle rises 9 cm at
   0.4 s instead of dropping) - already so on 0.14.17, and with the Low planter off; to be traced.
 
+## 0.14.19: foundation 31f60da (3b70001's regressions corrected)
+
+- Foundation 9ad1c8a + 31f60da (synced as 5600661, a PROGRESS note on top): the let-go step not under a contact rule
+  and only for a moving body a step's way off; the release rate limit only while speeding up and never under a game's
+  contact rule; the touch band needs only a slow ankle. Fixes 3b70001's four regressions in the other games.
+- feet_low equal to 0.14.16 on every line (the lead's gate): standing 0.6, walk 0.9 / jump 2.8, jog 0.2 / 16.3, jog
+  turned 0.1 / 11.9, run 1.2 / 8.0, stop 0.1 / 8.3 - 0.14.17's standing 0.0 and walk 0.5 given back (asked of the
+  foundation). Suite, owner notes, feet, props, officials, pose and extreme#42 pass.
+

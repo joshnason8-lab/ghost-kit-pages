@@ -1,4 +1,8 @@
-**New in 0.14.18: getting up without flinging the arms.** A defender who has held a raider on the floor and lets go
+**New in 0.14.19: steadier feet in the other World Stage games' corner cases.** The shared foot planting is
+corrected for bodies with their own contact rule (other games' officials); in Kabaddi Raid nothing you would notice
+changes. (On Low a planted foot can drift up to 0.9 cm in a step, as in 0.14.16.)
+
+**In 0.14.18: getting up without flinging the arms.** A defender who has held a raider on the floor and lets go
 to get up brings his arms back from the hold over a third of a second, instead of flinging them back in a tenth (his
 hands were moving at 10 m/s; now about 5).
 
