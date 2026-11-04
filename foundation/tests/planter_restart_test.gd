@@ -12,9 +12,15 @@ extends SceneTree
 ##  - a body standing still, its clip's foot hovering 3.5 cm up and drifting at 0.85 m/s (an idle's settle: the ankle
 ##    faster than a stance foot's, the toe slow): planted - not left to drift under the feet rule's 3 cm touch (Kho Kho's
 ##    referee, extreme#28: 9.2 cm); and on a body scaled 0.95 at 2.9 cm (under the rule's unscaled 3 cm: 3.2 cm).
+## Every case twice: on the rig in metres, and on the same rig in centimetres under a 0.01 node (Sepak Takraw's RealBody:
+## its skeleton's world scale 0.0101 shrank every metre tolerance 100 times) - each must pass the same.
 ##   godot --headless --fixed-fps 30 --path . -s tests/planter_restart_test.gd
 
 var fails := []
+
+
+var _cm := false                 # the rig in centimetres under a 0.01 node
+var _tag := ""
 
 
 func _initialize() -> void:
@@ -22,10 +28,23 @@ func _initialize() -> void:
 	var hero := WsgBody.new(WsgBody.load_character("res://tests/character", "hero"))
 	root.add_child(hero)
 	await process_frame
+	for cm in [false, true]:
+		_cm = cm
+		_tag = "[cm rig] " if cm else ""
+		var before := fails.size()
+		await _cases(hero)
+		for k in range(before, fails.size()):
+			fails[k] = _tag + String(fails[k])
+	hero.queue_free()
+	print("PLANTER RESTART TEST: ", "PASS" if fails.is_empty() else "FAIL %s" % [fails])
+	quit(0 if fails.is_empty() else 1)
+
+
+func _cases(hero: WsgBody) -> void:
 	for with_reset in [false, true]:
 		var r: Array = await _restart(hero.skeleton, with_reset)
 		var what := "back on%s" % (" (reset)" if with_reset else "")
-		print("%s: contact %s (a foot up on %d of 6 frames); the left ankle %.1f cm from under the body; moved at most %.1f cm a frame after" % [what, r[0], r[3], r[1] * 100.0, r[2] * 100.0])
+		print(_tag + "%s: contact %s (a foot up on %d of 6 frames); the left ankle %.1f cm from under the body; moved at most %.1f cm a frame after" % [what, r[0], r[3], r[1] * 100.0, r[2] * 100.0])
 		if float(r[0][0]) < 0.5 or float(r[0][1]) < 0.5 or int(r[3]) > 0:
 			fails.append("%s: a standing foot not planted (contact %s at the end; a foot up on %d of 6 frames)" % [what, r[0], r[3]])
 		if float(r[1]) > 0.03:
@@ -33,7 +52,7 @@ func _initialize() -> void:
 		if float(r[2]) > 0.01:
 			fails.append("%s: a planted ankle moved %.1f cm in a frame" % [what, float(r[2]) * 100.0])
 	var s: Array = await _carried(hero.skeleton)
-	print("carried: %d steps; the lowest a stepping toe went over the floor %.1f cm; slid %.1f cm, skid %.1f cm" % [s[0], s[1] * 100.0, s[2].max_cm, s[2].skid_cm])
+	print(_tag + "carried: %d steps; the lowest a stepping toe went over the floor %.1f cm; slid %.1f cm, skid %.1f cm" % [s[0], s[1] * 100.0, s[2].max_cm, s[2].skid_cm])
 	if int(s[0]) == 0:
 		fails.append("carried: no steps taken (the case does not test them)")
 	if float(s[1]) < 0.03:
@@ -43,19 +62,16 @@ func _initialize() -> void:
 	if float(s[2].skid_cm) > 2.0:
 		fails.append("carried: a foot flat on the ground slid %.1f cm in one frame (2.0 at most)" % float(s[2].skid_cm))
 	var far: float = await _landing_far(hero.skeleton)
-	print("landing, drawn every 3rd frame: planted with the ankle %.1f cm over its standing height (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
+	print(_tag + "landing, drawn every 3rd frame: planted with the ankle %.1f cm over its standing height (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
 	if far < 0.02:
 		fails.append("landing, drawn every 3rd frame: planted with the ankle %.1f cm up - a draw late, 6.4 cm on (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
 	for c in [[1.0, 0.035], [0.95, 0.029]]:
 		var hv: Array = await _hover_still(hero.skeleton, float(c[0]), float(c[1]))
-		print("standing, scale %.2f, a foot hovering %.1f cm up and drifting: planted %s, moved %.1f cm once planted" % [c[0], float(c[1]) * 100.0, hv[0], float(hv[1]) * 100.0])
+		print(_tag + "standing, scale %.2f, a foot hovering %.1f cm up and drifting: planted %s, moved %.1f cm once planted" % [c[0], float(c[1]) * 100.0, hv[0], float(hv[1]) * 100.0])
 		if not bool(hv[0]):
 			fails.append("standing, scale %.2f: a foot hovering %.1f cm up, drifting at 0.85 m/s, never planted (it slides under the feet rule's 3 cm touch)" % [c[0], float(c[1]) * 100.0])
 		elif float(hv[1]) > 0.02:
 			fails.append("standing, scale %.2f: the hovering foot moved %.1f cm once planted (2.0 at most)" % [c[0], float(hv[1]) * 100.0])
-	hero.queue_free()
-	print("PLANTER RESTART TEST: ", "PASS" if fails.is_empty() else "FAIL %s" % [fails])
-	quit(0 if fails.is_empty() else 1)
 
 
 ## A copy of SRC's skeleton at rest, a planter under it.
@@ -64,13 +80,22 @@ func _rig(src: Skeleton3D) -> Array:
 	for i in src.get_bone_count():
 		own.add_bone(src.get_bone_name(i))
 	for i in src.get_bone_count():
+		var rest := src.get_bone_rest(i)
+		if _cm:
+			rest.origin *= 100.0
 		own.set_bone_parent(i, src.get_bone_parent(i))
-		own.set_bone_rest(i, src.get_bone_rest(i))
-		own.set_bone_pose_position(i, src.get_bone_rest(i).origin)
-		own.set_bone_pose_rotation(i, src.get_bone_rest(i).basis.get_rotation_quaternion())
+		own.set_bone_rest(i, rest)
+		own.set_bone_pose_position(i, rest.origin)
+		own.set_bone_pose_rotation(i, rest.basis.get_rotation_quaternion())
 	var holder := Node3D.new()
 	root.add_child(holder)
-	holder.add_child(own)
+	if _cm:
+		var unit := Node3D.new()
+		unit.scale = Vector3.ONE * 0.01
+		holder.add_child(unit)
+		unit.add_child(own)
+	else:
+		holder.add_child(own)
 	var pl := WsgFootPlanter.new()
 	own.add_child(pl)
 	pl.ground_y = 0.0     # (the rest pose stands on y 0)
@@ -105,7 +130,7 @@ func _restart(src: Skeleton3D, with_reset: bool) -> Array:
 		await process_frame
 		if float(pl.contact[0]) < 0.5 or float(pl.contact[1]) < 0.5:
 			dropped += 1
-	var under := holder.global_transform * own.get_bone_global_rest(ankle).origin
+	var under := own.global_transform * own.get_bone_global_rest(ankle).origin
 	var last: Vector3 = drawn[-1]
 	var most := 0.0
 	for k in range(from + 2, drawn.size()):
@@ -163,7 +188,7 @@ func _carried(src: Skeleton3D) -> Array:
 ## The clip's pose on tiptoe: the hips up RISE, each foot pitched toe-down until its toe is back where it stood.
 func _tiptoe(own: Skeleton3D, rise: float) -> void:
 	var hips := own.find_bone("Hips")
-	own.set_bone_pose_position(hips, own.get_bone_pose_position(hips) + Vector3(0, rise, 0))
+	own.set_bone_pose_position(hips, own.get_bone_pose_position(hips) + Vector3(0, rise * (100.0 if _cm else 1.0), 0))
 	for side in ["Left", "Right"]:
 		var foot := own.find_bone(side + "Foot")
 		var toe := own.find_bone(side + "ToeBase")
@@ -190,7 +215,7 @@ func _landing_far(src: Skeleton3D) -> float:
 	var own: Skeleton3D = r[1]
 	var pl: WsgFootPlanter = r[2]
 	var ankle := own.find_bone("LeftFoot")
-	var standing := own.get_bone_global_rest(ankle).origin.y   # (the rest pose stands on y 0)
+	var standing := (own.global_transform * own.get_bone_global_rest(ankle).origin).y   # (the rest pose stands on y 0)
 	var planted_at := [INF]
 	own.skeleton_updated.connect(func():
 		if pl.active and float(pl.contact[0]) > 0.5 and planted_at[0] == INF:
