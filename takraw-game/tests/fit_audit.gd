@@ -446,6 +446,16 @@ func _menus() -> void:
 	await audit("language_picker")
 	menu._picker.close()
 	await frames(6)
+	# The home screen with a mixed quadrant season to go back to (its Continue card names the event too).
+	var had_season: bool = Game.get_season() != null
+	if not had_season:
+		var se = Game.new_season("TH", "SPB", false, "mixed")
+		se.sim_round()
+		Game.save_season()
+		Game.show_screen("res://ui/main_menu.gd")
+		await frames(40)
+		await audit("main_menu_continue")
+		Game.delete_season()
 	Game.show_screen("res://ui/settings_screen.gd")
 	await frames(10)
 	await audit("settings")

@@ -21,6 +21,7 @@ func _ready() -> void:
 	_rules_helpers()
 	_season()
 	_cup()
+	_continue_mixed()
 	_team_event_lineups()
 	await _crowd_facing()
 	_mocap_moves()
@@ -1288,6 +1289,25 @@ func _matches() -> void:
 		check(kills > 0, "%s: spikes won points" % c[0])
 		m.queue_free()
 		await frames(2)
+
+
+## The home screen's Continue card for a season under way names a mixed quadrant season's event, as a mixed cup's
+## title does.
+func _continue_mixed() -> void:
+	Game.new_season("TH", "SPB", false, "mixed")
+	var menu: Node = (load("res://ui/main_menu.gd") as Script).new()
+	var card: Control = menu._continue_card()
+	var words := []
+	var stack: Array = [card]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is Label:
+			words.append((n as Label).text)
+		stack.append_array(n.get_children())
+	check(" ".join(words).contains(tr("EVENT_MIXED")), "the home screen's Continue card names a mixed season's event (%s)" % [words])
+	card.free()
+	menu.free()
+	Game.delete_season()
 
 
 ## The 3-serve rule of 2013-2024, a quick match's option (the ROADMAP's, for the lead): each side serves three in a row

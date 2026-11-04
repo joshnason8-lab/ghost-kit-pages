@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.24: **a mixed season says so on the home screen.** The Continue card of a mixed quadrant season now
+starts with "Mixed quadrant", as a mixed cup's already did. Nothing else changes.
+
 New in 0.15.23: **the 3-serve rule on the scoreboard.** Playing the classic serve (Quick Match, The serve: Three
 each), the scoreboard now shows which of the three serves it is under the serving side's ball ("2/3"); from deuce,
 when the serve alternates every point, it goes. How to Play's rules on the serve mention the old rule too. Nothing

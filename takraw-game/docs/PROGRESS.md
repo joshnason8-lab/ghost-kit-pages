@@ -670,6 +670,14 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## A mixed season on the home screen (0.15.24)
+
+- **The home screen's Continue card** (main_menu.gd) for a season under way starts with "Mixed quadrant" when the
+  season is one (Season.match_event), as a mixed cup's card already did through its title (0.15.20 had left the
+  season's card saying only its stage).
+- test_runner (_continue_mixed): the card names a mixed season's event. fit_audit: the home screen with a mixed Thai
+  season to go back to (main_menu_continue), every language.
+
 ## The 3-serve rule on the scoreboard (0.15.23)
 
 UI polish while sepak raga waits (the lead: hold it until the Foundation's RealBody scale fix makes its ring note's

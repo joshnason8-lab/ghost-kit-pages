@@ -149,6 +149,8 @@ func _continue_card() -> Control:
 	var s = Game.get_season()
 	if s != null and String(s.phase) != "done":
 		what = s.short_stage()
+		if String(s.match_event) == "mixed":
+			what = "%s\u00a0· %s" % [tr("EVENT_MIXED"), what]   # (a mixed quadrant season says so, as a mixed cup's title does)
 		path = "res://ui/season_hub.gd"
 		team = s.team
 	else:
