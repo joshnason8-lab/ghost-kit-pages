@@ -17,6 +17,10 @@ const LEGS := [["LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase"], ["RightUpLeg
 @export var bone_map := {}
 ## Put before every bone's name (after bone_map): a rig whose bones are all "mixamorig_LeftUpLeg" and so on.
 @export var bone_prefix := ""
+## Metres per skeleton unit (0: found from the leg's rest length - 1 on a rig in metres, 0.01 on one in centimetres
+## under a 0.01 node, as Sepak Takraw's RealBody: its skeleton's world scale 0.0101 took every metre tolerance here
+## down 100 times, 3 cm to 0.3 mm, and its feet were hardly planted).
+@export var unit_scale := 0.0
 ## The game's own rule for a foot being down, if it has one: (foot: int, ankle: Vector3, toe: Vector3, was_down: bool)
 ## -> bool, world positions as the pose has them before planting; the planter's own gate (heights and speed) otherwise.
 var contact_fn := Callable()
@@ -139,6 +143,9 @@ var _ball := [Vector3.INF, Vector3.INF]     # the ankle rolling over the ball th
 var _toe_rest := 0.02
 var _ix := []
 var _ankle_rest := 0.08                      # ankle height over the soles at rest (model)
+var _unit := 1.0                             # metres per skeleton unit (unit_scale, or found)
+## A leg (hip to ankle) about this long in metres, to tell a rig's unit by (its power of ten).
+const LEG_REF := 0.8
 var _for := -1
 ## What each foot did this frame (world ankle), for measuring slide.
 var ankle_world := [Vector3.ZERO, Vector3.ZERO]
@@ -158,6 +165,16 @@ func _cache(sk: Skeleton3D) -> void:
 				push_error("WsgFootPlanter: a leg bone is missing on %s (bone_map: %s, bone_prefix: '%s')" % [sk.name, bone_map, bone_prefix])
 	_ankle_rest = sk.get_bone_global_rest(_ix[0][2]).origin.y
 	_toe_rest = sk.get_bone_global_rest(_ix[0][3]).origin.y
+	# (Which way the thigh's +Z faces on this rig at rest, against the foot's way (heel to toe): forward on ours, backward
+	# on a Mixamo RealBody - Sepak Takraw's, whose every bent knee was flipped behind, the owner's "broken backwards knees".)
+	var rest_fwd: Vector3 = sk.get_bone_global_rest(_ix[0][3]).origin - sk.get_bone_global_rest(_ix[0][2]).origin
+	var rest_z: Vector3 = sk.get_bone_global_rest(_ix[0][0]).basis * Vector3(0, 0, 1)
+	_thigh_z_fwd = 1.0 if Vector2(rest_z.x, rest_z.z).dot(Vector2(rest_fwd.x, rest_fwd.z)) >= 0.0 else -1.0
+	_unit = unit_scale
+	if _unit <= 0.0:
+		var leg_len: float = sk.get_bone_global_rest(_ix[0][0]).origin.distance_to(sk.get_bone_global_rest(_ix[0][1]).origin) \
+			+ sk.get_bone_global_rest(_ix[0][1]).origin.distance_to(sk.get_bone_global_rest(_ix[0][2]).origin)
+		_unit = pow(10.0, roundf(log(LEG_REF / maxf(leg_len, 0.0001)) / log(10.0))) if leg_len > 0.0 else 1.0
 
 
 ## Lets go of both feet at once (a teleport, a new play).
@@ -215,6 +232,7 @@ func reset() -> void:
 ## more than its GAP_CUT frames).
 const STALE_FRAMES := 3
 var _ran_at := -1
+var _thigh_z_fwd := 1.0                     # the thigh's +Z forward (1) or backward (-1) on this rig (_cache)
 
 
 ## One step of the game's time (the locomotor calls it from drive()): the feet's contacts and holds are worked out
@@ -271,7 +289,10 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			ankle_world[i] = xf * sk.get_bone_global_pose(_ix[i][2]).origin
 		return
 	var inv := xf.affine_inverse()
+	# (sc: the skeleton's world scale - for its own rest lengths and heights, in its units; sz: the body's size - for
+	# tolerances in metres. The same on a rig in metres; on one in centimetres sc is 100 times smaller.)
 	var sc := xf.basis.get_scale().y
+	var sz := sc / _unit
 	var floor_ankle := ground_y + _ankle_rest * sc
 	for i in 2:
 		var leg: Array = _ix[i]
@@ -321,10 +342,10 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# A foot FLAT on the ground (heel and toe both down) is planted however fast the clip moves it: a swing never
 			# comes through flat, and one let slide there glided on the floor (a hard stop from a run: the clip brought
 			# the foot in flat 23 cm a frame and snapped it back 7 cm, read as swinging - the lead, 2026-11-03).
-			var flat := maxf(ank.y - floor_ankle, toe.y - (ground_y + _toe_rest * sc)) < 0.02 * sc
+			var flat := maxf(ank.y - floor_ankle, toe.y - (ground_y + _toe_rest * sc)) < 0.02 * sz
 			var landing := vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE
-			is_down = h < 0.05 * sc if was else ((h < 0.03 * maxf(sc, 1.0) and landing) \
-				or (h < TOUCH_H * maxf(sc, 1.0) and (vel < 0.6 + body_speed * 0.8 or (body_speed < TOUCH_STILL and landing))))
+			is_down = h < 0.05 * sz if was else ((h < 0.03 * maxf(sz, 1.0) and landing) \
+				or (h < TOUCH_H * maxf(sz, 1.0) and (vel < 0.6 + body_speed * 0.8 or (body_speed < TOUCH_STILL and landing))))
 			if contact_fn.is_valid():
 				is_down = bool(contact_fn.call(i, ank, toe, was))
 			# A foot let go at the end of its reach is lifting: not down again until it has left the ground.
@@ -337,14 +358,14 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				# into a sidestep, his foot let go out of reach and the clip's standing 11 cm on.)
 				var off := Vector2(ank.x - (ankle_world[i] as Vector3).x, ank.z - (ankle_world[i] as Vector3).z).length() \
 					if ankle_world[i] != Vector3.ZERO else 0.0
-				if not contact_fn.is_valid() and body_speed > STEP_OFF_MIN_SPEED and body_speed < STEP_OFF_SPEED and h <= 0.05 * sc and vel < 0.2 and off > STEP_OFF * sc and off < STEP_OFF_MAX * sc \
+				if not contact_fn.is_valid() and body_speed > STEP_OFF_MIN_SPEED and body_speed < STEP_OFF_SPEED and h <= 0.05 * sz and vel < 0.2 and off > STEP_OFF * sz and off < STEP_OFF_MAX * sz \
 						and hip.distance_to(Vector3((ankle_world[i] as Vector3).x, floor_ankle, (ankle_world[i] as Vector3).z)) > reach:
 					is_down = false
 					_step[i] = 0.0
 					_step_vel[i] = Vector2.ZERO
 					_step_from[i] = ankle_world[i]
 					_step_at[i] = ankle_world[i]
-				elif h > 0.05 * sc or vel < 0.2:
+				elif h > 0.05 * sz or vel < 0.2:
 					_lifted[i] = false
 				else:
 					is_down = false
@@ -353,7 +374,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					# stride's toe-off is let go at the leg's reach - just goes with the clip (stepping those too
 					# doubled the landings: Kho Kho's runners at 7.6 steps a second). Kept where it was across while
 					# that is told (the release below).
-					_low_ticks[i] = int(_low_ticks[i]) + (1 if h < 0.03 * sc else 0)
+					_low_ticks[i] = int(_low_ticks[i]) + (1 if h < 0.03 * sz else 0)
 					if int(_low_ticks[i]) >= 2:
 						_step[i] = 0.0
 						_step_vel[i] = Vector2.ZERO
@@ -365,7 +386,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# A footstep is a foot that went up and came down: one let go at its reach and planted again without
 			# leaving the ground (the clip's stance foot, still in the world) is the same footfall, not another - it
 			# fired landed twice a stride (Kho Kho's sprinters: 5.3 footsteps a second, 4.8 the most).
-			if h > 0.05 * sc:
+			if h > 0.05 * sz:
 				_aired[i] = true
 			if is_down and not was and bool(_aired[i]):
 				_aired[i] = false
@@ -377,7 +398,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				_step[i] = float(_step[i]) + delta / STEP_TIME
 			var st := minf(float(_step[i]), 1.0)
 			var right := Vector3(xf.basis.x.x, 0.0, xf.basis.x.z).normalized()
-			var side := clampf((ank - hip).dot(right), -0.2 * sc, 0.2 * sc)
+			var side := clampf((ank - hip).dot(right), -0.2 * sz, 0.2 * sz)
 			var to := Vector3(hip.x, floor_ankle, hip.z) + right * side + (_hip_vel[i] as Vector3) * (STEP_TIME * (1.0 - st) + 0.1)
 			if st >= 1.0:
 				# Down where it stepped to (until the clip lifts it, as any foot).
@@ -411,14 +432,14 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					# then stood - a jump (Floorball's referees, Kho Kho's chasers starting); its size alone held, the aim
 					# turning with the body swung it 33 cm a frame round (Kho Kho's defender). Where it cannot keep up, it is
 					# put down where it has got to.)
-					var grow := CHASE_OVER * sc * pow(delta * 30.0, 2.0)
+					var grow := CHASE_OVER * sz * pow(delta * 30.0, 2.0)
 					var dv: Vector2 = mv - (_step_vel[i] as Vector2)
 					if dv.length() > grow:
 						mv = (_step_vel[i] as Vector2) + dv.normalized() * grow
 					_step_vel[i] = mv
 					_step_at[i] = Vector3(at.x + mv.x, 0.0, at.z + mv.y)
 				var at2: Vector3 = _step_at[i]
-				stepping = Vector3(at2.x, lerpf(from.y, to.y, smoothstep(0.0, 1.0, st)), at2.z) + Vector3(0.0, 0.08 * sc * sin(PI * st), 0.0)
+				stepping = Vector3(at2.x, lerpf(from.y, to.y, smoothstep(0.0, 1.0, st)), at2.z) + Vector3(0.0, 0.08 * sz * sin(PI * st), 0.0)
 				is_down = false
 				contact[i] = 0.0
 		var down: bool = enabled and is_down
@@ -439,11 +460,11 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 					# from 18, then it stood dead still - a jump (Floorball's referee, 27 cm). (A landing slowing down, as
 					# landings do, is planted where the clip has it.)
 					var d := Vector2(ank.x - _chase_from[i].x, ank.z - _chase_from[i].z)
-					if d.length() > float(_drawn_move[i]) + 0.005 * sc:
+					if d.length() > float(_drawn_move[i]) + 0.005 * sz:
 						d = d.normalized() * float(_drawn_move[i])
 						_lock[i].x = (_chase_from[i] as Vector3).x + d.x
 						_lock[i].z = (_chase_from[i] as Vector3).z + d.y
-			if hip.distance_to(_lock[i]) > reach * 1.5 and (_hip_vel[i] as Vector3).length() * _tick_dt > 0.5 * sc:
+			if hip.distance_to(_lock[i]) > reach * 1.5 and (_hip_vel[i] as Vector3).length() * _tick_dt > 0.5 * sz:
 				# Far beyond the leg (the body put somewhere else: a restart, the next free): planted afresh under the foot
 				# (drawn after it, the leg pointed at the old place, level with the hips).
 				_lock[i] = Vector3(ank.x, maxf(ank.y - maxf(h, 0.0), floor_ankle - 0.5 * _toe_rest * sc), ank.z)
@@ -458,7 +479,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# about it (the clip's own foot pitch, steeper if the leg must reach further), instead of the whole foot
 			# sliding after the body (the last 1-3 cm a step slid at heel-off).
 			_low[i] = minf(_low[i], ank.y)
-			if _toe_lock[i] != Vector3.INF and (_foot[i] != Vector3.INF or ank.y > float(_low[i]) + 0.015 * sc or hip.distance_to(_lock[i]) > reach):
+			if _toe_lock[i] != Vector3.INF and (_foot[i] != Vector3.INF or ank.y > float(_low[i]) + 0.015 * sz or hip.distance_to(_lock[i]) > reach):
 				var tl: Vector3 = _toe_lock[i]
 				var foot := ank - toe
 				var up := clampf(foot.y / maxf(foot.length(), 0.001), -1.0, 1.0)
@@ -492,7 +513,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				_lock[i].y = maxf(_lock[i].y, floor_ankle)
 				# (Drawn on and on - a clip that keeps a foot down while the body is carried on - each draw lifts it a
 				# little, and it climbed to the hips: past a step's height it is let go to the clip instead.)
-				if (_lock[i] as Vector3).y > floor_ankle + 0.2 * sc:
+				if (_lock[i] as Vector3).y > floor_ankle + 0.2 * sz:
 					_let_go(i)
 					down = false
 		var on_heel := false
@@ -571,7 +592,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 				# - 7.8 cm a frame, flat: Kho Kho's defender turning to run; Sepak Takraw's own bodies at Low, 25 m of flat
 				# glide a match.)
 				var ease := maxf(float(_w[i]), float(_across[i])) if float(_across[i]) < 1.0 else float(_w[i])
-				target.y += minf(0.08 * sc, gap * 0.6) * sin(PI * clampf(1.0 - ease, 0.0, 1.0))
+				target.y += minf(0.08 * sz, gap * 0.6) * sin(PI * clampf(1.0 - ease, 0.0, 1.0))
 		# Easing back to the clip's foot (or still catching up with it): across no faster than CHASE_MAX/CHASE_OVER
 		# allow, until it has caught up (a stop from a sprint: the ease covered 50-90 cm of the gap
 		# in one frame, in the air).
@@ -582,7 +603,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		elif (_w[i] > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i])) and _chase_from[i] != Vector3.ZERO:
 			var from: Vector3 = _chase_from[i]
 			var gap := Vector2(target.x - from.x, target.z - from.z)
-			var cap := maxf(CHASE_MAX * sc, CHASE_OVER * sc + float(_clip_move[i]))
+			var cap := maxf(CHASE_MAX * sz, CHASE_OVER * sz + float(_clip_move[i]))
 			var capped := false
 			if gap.length() > cap:
 				gap = gap.normalized() * cap
@@ -590,13 +611,13 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# (Its move across changing from the frame before by no more than CHASE_OVER (30 fps) more than the clip's own
 			# foot's does: easing back to a clip foot running on ahead of a body speeding up, the ease's last frame took the
 			# whole lead at once - 40 cm in a frame, then planted dead - a 33 cm jump (Kho Kho's defenders starting hard).)
-			var grow := CHASE_OVER * sc * pow(maxf(delta, _tick_dt) * 30.0, 2.0) + float(_clip_turn[i])
+			var grow := CHASE_OVER * sz * pow(maxf(delta, _tick_dt) * 30.0, 2.0) + float(_clip_turn[i])
 			var dv: Vector2 = gap - (_rel_prev[i] as Vector2)
 			# (Not under a game's own contact rule - Sepak Takraw's Low officials' dodges, held back, skidded - and only while
 			# the body speeds up - a stop's release held back slid its foot 7.5 cm, Kho Kho's Low stop - and
 			# only a move big enough to read as a jump: a walk's release, held back, dragged its foot along the floor -
 			# Kabaddi's Low walk 0.9 -> 2.1 cm from 15 cm a frame; from 25, 0.5.)
-			if gap.length() > RELEASE_RATE_FROM * maxf(sc, 1.0) and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
+			if gap.length() > RELEASE_RATE_FROM * maxf(sz, 1.0) and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
 				gap = (_rel_prev[i] as Vector2) + dv.normalized() * grow
 				capped = true
 			if capped:
@@ -639,7 +660,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# the toe, it goes with the clip (held then, it was kept low and dragged).
 			var tn := xf * sk.get_bone_global_pose(leg[3]).origin
 			var th: Vector3 = _toe_hold[i]
-			var on_floor: float = 1.0 - smoothstep(0.02 * sc, 0.035 * sc, tn.y - (ground_y + _toe_rest * sc))
+			var on_floor: float = 1.0 - smoothstep(0.02 * sz, 0.035 * sz, tn.y - (ground_y + _toe_rest * sc))
 			var hw2: float = smoothstep(0.0, 0.6, _w[i]) * on_floor
 			if hw2 > 0.0:
 				_aim_foot(sk, leg, xf, Vector3(lerpf(tn.x, th.x, hw2), tn.y, lerpf(tn.z, th.z, hw2)))
@@ -653,7 +674,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# foot pitched toe-down under an ankle 20 cm up skimmed its toe over the floor across the step's last frames,
 			# 3-4 cm a frame, read as a planted foot sliding (Sepak Takraw's players). It comes straight down as it lands.
 			var tw := xf * sk.get_bone_global_pose(leg[3]).origin
-			var need := ground_y + _toe_rest * sc + STEP_CLEAR * sc * smoothstep(0.0, 0.25, float(_step[i])) - tw.y
+			var need := ground_y + _toe_rest * sc + STEP_CLEAR * sz * smoothstep(0.0, 0.25, float(_step[i])) - tw.y
 			if need > 0.001:
 				var toe_rel := tw - xf * sk.get_bone_global_pose(leg[2]).origin
 				target.y += need
@@ -688,7 +709,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			_step_landed[i] = false
 		if down and _toe_lock[i] == Vector3.INF:
 			var tn := xf * sk.get_bone_global_pose(leg[3]).origin
-			if tn.y < toe_floor + 0.025 * sc:
+			if tn.y < toe_floor + 0.025 * sz:
 				_toe_lock[i] = Vector3(tn.x, maxf(tn.y, toe_floor), tn.z)
 
 
@@ -765,7 +786,7 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	var pole := (knee - hip) - dir * (knee - hip).dot(dir)
 	# Forward of the thigh, the way a knee bends: a knee that was a hair past straight (a standing clip's locked
 	# knees) was bent on the wrong side, backwards, as the foot was held nearer (the officials stood so, 29 degrees).
-	var fwd := th.basis * Vector3(0, 0, 1)
+	var fwd := th.basis * Vector3(0, 0, _thigh_z_fwd)
 	fwd -= dir * fwd.dot(dir)
 	if pole.length() < 0.0001 or pole.dot(fwd) <= 0.0:
 		pole = fwd

@@ -227,6 +227,12 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.21-beta: the planter's knee pole per rig (4 November 2026)
+
+- The shared foundation synced to e04af65 (WsgFootPlanter works out per rig which way the thigh faces for its knee
+  pole; on a Mixamo-style rig the old code bent knees backwards). A "knees" world rule comes from 11-06 12:00 UTC.
+  0.9.21-beta, code 36.
+
 ### 0.9.20-beta: the up-close hand margin; a Low polish pass (4 November 2026)
 
 - The lower fist off the shaft up close came from the stick layer's chest clearance (torso_r 0.1): it moved the top
