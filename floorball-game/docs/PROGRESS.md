@@ -227,6 +227,11 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.19-beta: the planter for scaled bodies (4 November 2026)
+
+- The shared foundation synced to 8c87df4 (fd879f9, the planter: scaled-down bodies, and feet hovering while standing).
+  0.9.19-beta, code 34.
+
 ### 0.9.18-beta: the World Finals' tables in bigger type (4 November 2026)
 
 - The World Finals' four group tables (UI.standings, compact) in 19 px rows with a little air between them, not 17 px
