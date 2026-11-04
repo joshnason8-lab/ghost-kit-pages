@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.22: **the shared bodies' feet, a step further.** On Medium and High, a foot left a step behind as a
+player stops is stepped across, and a foot catching up after a fast move no longer jumps. Low is unchanged. Nothing
+else changes in play.
+
 New in 0.15.21: **the old 3-serve rule, for the old-school.** Quick Match (and Watch AI) has a new choice under the
 serve: alternate every point (today's rule) or three each (the 2013-2024 rule: each side serves three in a row whoever
 wins the points, then one each from deuce). Goes well with 21-point sets, as it was played; in a third set to 21 the

@@ -670,6 +670,21 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Foundation 31f60da: the planter's 3b70001 batch, corrected (0.15.22)
+
+- **Foundation a40a95e -> 31f60da** (3b70001, 9ad1c8a, 31f60da): a let-go foot stood down a step off steps there; a
+  released foot's catch-up is rate-limited while the body speeds up; the 4 cm touch needs only a slow ankle; WsgSim
+  honours --kinds on every seed. None of the first two under a game's contact rule (our Low officials').
+- **Held until it measured clean** (the lead: no foundation sync until the Foundation announces a corrected push
+  clear). The Low feet probe (regu, seeds 7 and 11, 150 s; deterministic), Low officials' skids over 2 cm and step
+  slip p90: a40a95e 3 and 4.7 cm; 3b70001 10 and 11.3 (held); 9ad1c8a 5 and 6.0 (the catch-up limit firing on a
+  line judge's dodge start, 2.4 to 3.0 m/s in a frame: a lifted foot 18 cm off); 31f60da byte-identical to a40a95e.
+  Players (our own planter) the same on all. WsgSim's worst seeds (deferred() -> {} in a scratch copy, --input, every
+  player linked): targeted:completion#103 clean on 31f60da (4.2 cm on 3b70001); extreme#14, random#21, extreme#20
+  clean; extreme#4's official 5.8 cm unchanged (the Foundation's to trace).
+- **The owner, 2026-11-04**: the mixed quadrant stays in the Royal Cup and the Southeast Asian Championship only
+  (Cup.MIXED_KINDS, as 0.15.20 built it).
+
 ## The 3-serve rule of 2013-2024 as an option (0.15.21)
 
 The ROADMAP's idea, for the lead: the serve as it was from 2013 until ISTAF's change of 1 February 2024.
