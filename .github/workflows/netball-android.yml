@@ -124,7 +124,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only "props,feet,feet_low,pose,officials,sounds,loading,joystick,web,tiers" --reuse "props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
+          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only "props,feet,feet_low,pose,knees,knee_strays,officials,sounds,loading,joystick,web,tiers" --reuse "props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
 
       - name: World check report (this job's rules)
         if: always()
