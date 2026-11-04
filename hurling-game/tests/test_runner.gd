@@ -154,8 +154,13 @@ func _rules_restarts() -> void:
 	check(Rules.restart_from_hand("puck_out") and not Rules.restart_from_hand("free"), "Only the puck-out from the hand")
 	# Positions.
 	check(not Rules.position_ok("free", Vector3(0, 0, 0), 0, Vector3(5, 0, 5), 1, 1.0), "Free: an opponent 7 m away is too near")
-	check(Rules.position_ok("free", Vector3(0, 0, 0), 0, Vector3(13.1, 0, 0), 1, 1.0), "Free: 13 m is far enough")
-	check(Rules.position_ok("free", Vector3(0, 0, 0), 0, Vector3(1, 0, 0), 0, 1.0), "Free: teammates may stand near")
+	check(not Rules.position_ok("free", Vector3(0, 0, 0), 0, Vector3(13.1, 0, 0), 1, 1.0), "Free: 13 m is too near (20 m, 2.4(a))")
+	check(Rules.position_ok("free", Vector3(0, 0, 0), 0, Vector3(20.1, 0, 0), 1, 1.0), "Free: 20 m is far enough")
+	check(not Rules.position_ok("free", Vector3(0, 0, 0), 0, Vector3(5, 0, 0), 0, 1.0), "Free: the taker's teammates 20 m off too (4.11(a))")
+	check(not Rules.position_ok("65", Vector3(0, 0, 0), 0, Vector3(15, 0, 0), 1, 1.0), "A 65 is a free puck: 20 m")
+	check(Rules.position_ok("sideline", Vector3(0, 0, 42.5), 0, Vector3(13.1, 0, 42.5), 1, 1.0), "Sideline: 13 m is far enough (2.8)")
+	check(not Rules.position_ok("sideline", Vector3(0, 0, 42.5), 0, Vector3(6, 0, 40), 0, 1.0), "Sideline: the taker's teammates 13 m off too (4.11(b))")
+	check(not Rules.position_ok("free", Pitch.penalty_spot(1.0), 0, Vector3(56, 0, 0), 1, 1.0), "A free from the centre of the 20 m line: laid out as a penalty (2.4(c))")
 	check(not Rules.position_ok("puck_out", Vector3(-68, 0, 0), 0, Vector3(-55, 0, 0), 1, 1.0), "Puck-out: inside the 20 m line is not allowed")
 	check(Rules.position_ok("puck_out", Vector3(-68, 0, 0), 0, Vector3(-49, 0, 0), 1, 1.0), "Puck-out: outside the 20 m line")
 	check(Rules.position_ok("puck_out", Vector3(-68, 0, 0), 0, Vector3(-69, 0, 0), 0, 1.0, true), "Puck-out: the goalkeeper in his area")
@@ -184,6 +189,10 @@ func _rules_fouls() -> void:
 	check(String(da.kind) == "penalty", "... or inside the arc")
 	var dout := Rules.free_for("FOUL_TRIP", Vector3(20, 0, 0), 0, 1.0, true)
 	check(String(dout.kind) == "free", "... but not out the field")
+	var dwing := Rules.free_for("FOUL_TRIP", Vector3(54, 0, 25), 0, 1.0, true)
+	check(String(dwing.kind) == "free", "... nor inside the 20 m line within 25 m of a sideline (Definitions 9)")
+	var dclub := Rules.free_for("FOUL_TRIP", Vector3(54, 0, 8), 0, 1.0, true, Rules.GRADE_CLUB)
+	check(String(dclub.kind) == "free" and is_equal_approx(Pitch.from_goal_line(dclub.spot, 1.0), 20.0), "Club: a denial outside the large rectangle is a free on the 20 m line, not a penalty (5.45 senior only)")
 	check(Rules.aggressive("FOUL_TRIP") and not Rules.aggressive("FOUL_STEPS"), "Aggressive and technical fouls apart")
 	var ds := Rules.dissent_spot(Vector3(0, 0, 4), 1.0)
 	check(is_equal_approx(ds.x, 30.0), "Dissent: the free moves on 30 m")
@@ -192,7 +201,7 @@ func _rules_fouls() -> void:
 	check(not Rules.may_play_advantage("FOUL_PULL_DOWN", false, false), "Advantage: not for an aggressive foul on a man held up")
 	check(Rules.may_play_advantage("FOUL_PULL_DOWN", true, false), "Advantage: for an aggressive foul with a goal chance")
 	check(Rules.ADVANTAGE_S == 5.0, "Advantage: up to five seconds")
-	check(Rules.FREE_DISTANCE == 13.0, "Opponents 13 m from a free")
+	check(Rules.FREE_DISTANCE == 20.0 and Rules.SIDELINE_DISTANCE == 13.0, "20 m from a free or a 65, 13 m from a sideline")
 
 
 func _rules_cards() -> void:
@@ -201,6 +210,7 @@ func _rules_cards() -> void:
 	check(Rules.card_for("FOUL_PULL_DOWN", true, false, 0, 1, 0) == "red", "A second yellow is a red")
 	check(Rules.card_for("FOUL_TRIP", true, true, Rules.GRADE_SENIOR, 0, 0) == "black", "Denying a goal chance (senior county): black, the sin bin")
 	check(Rules.card_for("FOUL_TRIP", true, true, Rules.GRADE_SENIOR, 1, 0) == "red", "A black after a yellow: red")
+	check(Rules.card_for("FOUL_PULL_DOWN", true, false, 0, 0, 1) == "red", "A yellow after a black: red (1.2(ix)(e))")
 	check(Rules.card_for("FOUL_TRIP", true, true, Rules.GRADE_CLUB, 0, 0) == "yellow", "Club hurling has no black card")
 	check(Rules.card_for("FOUL_STEPS", false, false, 0, 0, 0) == "", "A technical foul: no card")
 	check(Rules.SIN_BIN_MIN == 10, "The sin bin: ten minutes")

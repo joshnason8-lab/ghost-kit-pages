@@ -2382,8 +2382,7 @@ func _dispossess(d: Player, c: Player, kind: String) -> void:
 func _goal_chance(c: Player) -> bool:
 	var d := dir(c.team)
 	var p := c.global_position
-	var inside := Pitch.from_goal_line(p, d) <= 20.0 or Pitch.penalty_spot(d).distance_to(Vector3(p.x, 0, p.z)) <= Pitch.ARC_R
-	if not inside or absf(p.z) > 14.0:
+	if not Rules.in_denial_zone(p, d) or absf(p.z) > 14.0:
 		return false
 	# No other defender (the goalkeeper aside) between him and the goal.
 	var gx := Pitch.HALF_L * d
@@ -2401,7 +2400,7 @@ func _goal_chance(c: Player) -> bool:
 func _aggressive_foul(by: Player, on: Player, foul: String, denial: bool) -> void:
 	var fouled := on.team
 	var spot := on.global_position
-	var award := Rules.free_for(foul, spot, fouled, dir(fouled), denial)
+	var award := Rules.free_for(foul, spot, fouled, dir(fouled), denial, grade)
 	var card := Rules.card_for(foul, denial or rng.randf() < 0.18, denial, grade, by.yellows, by.blacks)
 	if foul in ["FOUL_PULL_DOWN", "FOUL_TRIP", "FOUL_CHARGE"] and rng.randf() < 0.6:
 		on.play("fall")
@@ -2421,7 +2420,7 @@ func _aggressive_foul(by: Player, on: Player, foul: String, denial: bool) -> voi
 
 func _technical_foul(by: Player, foul: String) -> void:
 	var fouled := 1 - by.team
-	var award := Rules.free_for(foul, by.global_position, fouled, dir(fouled), false)
+	var award := Rules.free_for(foul, by.global_position, fouled, dir(fouled), false, grade)
 	_blow_free(by, foul, award, "", false)
 
 
@@ -2599,8 +2598,9 @@ func _pick_taker(r: Dictionary) -> Player:
 
 
 ## Where everyone goes for the set piece: the taker to the ball; the rest to their places, kept where the rules want
-## them (Rules.position_ok): 13 m from a free, outside the 20 m line at a puck-out, one defender on the line for a
-## penalty, the rest outside the 20 m line and the arc.
+## them (Rules.position_ok): 20 m from a free or a 65 and 13 m from a sideline (both sides), outside the 20 m line at
+## a puck-out, one defender on the line for a penalty (up to five for a free from the centre of the 20 m line), the
+## rest outside the 20 m line and the arc.
 func _set_spot(pl: Player) -> Vector3:
 	if pl == taker:
 		var behind := -Vector3(dir(pl.team), 0, 0) * 0.9
@@ -2628,6 +2628,12 @@ func legal_spot(spot: Vector3, pl: Player) -> Vector3:
 	var k := int(restart.team)
 	var d := dir(k)
 	var rs: Vector3 = restart.spot
+	if Rules.is_free20(kind, rs, d):
+		# Laid out as a penalty; the defenders' keeper and full-back line (four, of the five allowed) on the goal line.
+		if pl.team != k and (pl.is_keeper() or pl.line() == DB.POS_FB):
+			var z: float = {1: 0.0, 2: -2.3, 3: -1.1, 4: 2.3}.get(int(pl.pos_num), 1.1)
+			return Vector3(Pitch.HALF_L * d - d * 0.3, 0, z)
+		kind = "penalty"
 	match kind:
 		"puck_out":
 			if not pl.is_keeper() and pl != taker:
@@ -2645,10 +2651,12 @@ func legal_spot(spot: Vector3, pl: Player) -> Vector3:
 				if off.length() < Pitch.ARC_R + 1.0:
 					spot = c + (off.normalized() if off.length() > 0.1 else Vector3(-d, 0, 0)) * (Pitch.ARC_R + 1.0)
 		_:
-			if pl.team != k:
+			# Every player but the taker, both sides (_set_spot sends the taker to the ball before asking).
+			if pl != taker:
+				var r := Rules.restart_distance(kind) + 0.5
 				var off := Vector3(spot.x - rs.x, 0, spot.z - rs.z)
-				if off.length() < Rules.FREE_DISTANCE + 0.5:
-					spot = rs + (off.normalized() if off.length() > 0.1 else Vector3(-d, 0, 0)) * (Rules.FREE_DISTANCE + 0.5)
+				if off.length() < r:
+					spot = rs + (off.normalized() if off.length() > 0.1 else Vector3(-d, 0, 0)) * r
 	return Pitch.clamp_in(spot, 0.5)
 
 

@@ -39,7 +39,8 @@ static func shootout_counts(kind: String) -> bool:
 # ---------------------------------------------------------------- time (Rules of Control, Rule 3)
 
 const GRADE_SENIOR := 0        # senior inter-county: 2 x 35 minutes, half-time up to 15, the black card applies
-const GRADE_CLUB := 1          # club (and inter-county minor, U-20 and junior): 2 x 30, half-time up to 10
+const GRADE_CLUB := 1          # club (and inter-county junior): 2 x 30, half-time up to 10, no black card (5.45 applies
+                               # only to inter-county senior, U-20 and minor; the game plays neither of the last two)
 
 static func half_minutes(grade: int) -> int:
 	return 35 if grade == GRADE_SENIOR else 30
@@ -73,9 +74,9 @@ static func shootout_winner(goals: Array, taken: Array) -> int:
 	return -1
 
 
-## Substitutes (Rules of Control, Rule 1): five in normal time, three more in extra time. Temporary substitutes for
-## a blood injury, a suspected head injury or a player in the sin bin do not count. A player sent off cannot be
-## replaced.
+## Substitutes (Rules of Specification 2.3): five in normal time, three more in extra time. Temporary substitutes for
+## a blood or a suspected head injury do not count (Rules of Control 1.5(b)). A player sent off cannot be replaced, nor
+## a senior player in the sin bin (a temporary substitute for the sin bin is for Under-18 and younger, 6.4).
 const SUBS_NORMAL := 5
 const SUBS_EXTRA := 3
 
@@ -158,7 +159,9 @@ static func recatch_ok(played_on_hurley_since: bool) -> bool:
 
 # ---------------------------------------------------------------- restarts (Playing Rules, Set Play)
 
-const FREE_DISTANCE := 13.0    # opponents at least 13 m from a free, a sideline cut or a 65
+const FREE_DISTANCE := 20.0    # every player but the taker, both sides, at least 20 m from a free puck or a 65 (2.4(a), 4.11(a), 4.17(a))
+const SIDELINE_DISTANCE := 13.0  # ... and 13 m from a sideline puck (2.8, 4.11(b))
+const LINE_DEFENDERS_20 := 5   # a free from the centre of the 20 m line: up to five defenders on the goal line (2.4(c))
 const PUCK_OUT_CLEAR := 20.0   # at a puck-out all but the taker and the goalkeeper outside the 20 m line
 const PUCK_OUT_TRAVEL := 13.0  # the puck-out must travel 13 m before another defender plays it
 const PENALTY_RUNUP := 7.0     # a penalty may be placed up to 7 m behind the 20 m line, within the arc
@@ -209,12 +212,13 @@ static func aggressive(foul: String) -> bool:
 ## his large rectangle is a penalty from the centre of the 20 m line, a technical foul by a defender there a free from
 ## the centre of the 20 m line, and a foul by a defender inside his own 20 m line, outside the large rectangle, a free
 ## on the 20 m line opposite. A foul that denies a goal-scoring opportunity inside the 20 m line or the arc is a
-## penalty (and a black card: card_for). Returns {kind ("free" | "penalty"), team, spot}.
-static func free_for(foul: String, pos: Vector3, fouled_team: int, dir: float, denial := false) -> Dictionary:
-	var from_line := Pitch.from_goal_line(pos, dir)   # metres from the end line the fouled team attacks
+## penalty (and a black card: card_for) where Rule 5.45 applies (senior inter-county); elsewhere the ordinary rules.
+## Returns {kind ("free" | "penalty"), team, spot}.
+static func free_for(foul: String, pos: Vector3, fouled_team: int, dir: float, denial := false, grade := GRADE_SENIOR) -> Dictionary:
 	var p := Pitch.clamp_in(pos)
-	if denial and (from_line <= 20.0 or Pitch.penalty_spot(dir).distance_to(Vector3(pos.x, 0, pos.z)) <= Pitch.ARC_R):
+	if denial and black_card_applies(grade) and in_denial_zone(pos, dir):
 		return {"kind": "penalty", "team": fouled_team, "spot": Pitch.penalty_spot(dir)}
+	var from_line := Pitch.from_goal_line(pos, dir)   # metres from the end line the fouled team attacks
 	if Pitch.in_large_rect(pos, dir):
 		if aggressive(foul):
 			return {"kind": "penalty", "team": fouled_team, "spot": Pitch.penalty_spot(dir)}
@@ -222,6 +226,25 @@ static func free_for(foul: String, pos: Vector3, fouled_team: int, dir: float, d
 	if from_line < 20.0:
 		return {"kind": "free", "team": fouled_team, "spot": Vector3((Pitch.HALF_L - 20.0) * dir, 0, p.z)}
 	return {"kind": "free", "team": fouled_team, "spot": p}
+
+
+## Where a foul can deny a goal-scoring opportunity (Definitions 9(ii)): inside the 20 m line but not within 25 m
+## infield of either sideline, or within the arc. (9(i), the fouled man in possession, is the match's to judge.)
+static func in_denial_zone(pos: Vector3, dir: float) -> bool:
+	if Pitch.penalty_spot(dir).distance_to(Vector3(pos.x, 0, pos.z)) <= Pitch.ARC_R:
+		return true
+	return Pitch.from_goal_line(pos, dir) <= 20.0 and absf(pos.z) <= Pitch.HALF_W - 25.0
+
+
+## How far every player but the taker keeps from the ball at a restart taken with the others standing off it.
+static func restart_distance(kind: String) -> float:
+	return SIDELINE_DISTANCE if kind == "sideline" else FREE_DISTANCE
+
+
+## A free from the centre of the 20 m line (a technical foul in the large rectangle, 2.2(a)): laid out as a penalty,
+## but with up to five defenders on the goal line (2.4(c)).
+static func is_free20(kind: String, spot: Vector3, dir: float) -> bool:
+	return kind == "free" and spot.distance_to(Pitch.penalty_spot(dir)) < 0.5
 
 
 ## A free moved on for dissent: 30 m nearer the goal it attacks, but no nearer than the 20 m line (2026, Motion 19).
@@ -247,6 +270,8 @@ static func restart_from_hand(kind: String) -> bool:
 ## behind). kind, the restart; spot, the ball; team_taking; p, the player; his_team; dir, the direction the taking
 ## team attacks.
 static func position_ok(kind: String, spot: Vector3, team_taking: int, p: Vector3, his_team: int, dir: float, is_keeper := false) -> bool:
+	if is_free20(kind, spot, dir):
+		kind = "penalty"   # (its up-to-five on the goal line: the match places them, line_defenders)
 	match kind:
 		"puck_out":
 			# Everyone but the taker and the goalkeeper outside the 20 m line, both sides. The taking team's own end
@@ -262,15 +287,14 @@ static func position_ok(kind: String, spot: Vector3, team_taking: int, p: Vector
 			var outside_arc := Pitch.penalty_spot(dir).distance_to(Vector3(p.x, 0, p.z)) >= Pitch.ARC_R
 			return outside_line and outside_arc
 		_:
-			if his_team == team_taking:
-				return true
-			return Vector3(p.x, 0, p.z).distance_to(Vector3(spot.x, 0, spot.z)) >= FREE_DISTANCE - 0.01
+			# Every player but the taker, both sides (the taker: the caller does not ask for him).
+			return Vector3(p.x, 0, p.z).distance_to(Vector3(spot.x, 0, spot.z)) >= restart_distance(kind) - 0.01
 
 
 ## Up to five defenders may stand on the goal line for a free from the 20 m line (and may not advance until it is
 ## struck); for a penalty only one.
 static func line_defenders(kind: String) -> int:
-	return 1 if kind == "penalty" else (5 if kind == "free20" else 0)
+	return 1 if kind == "penalty" else (LINE_DEFENDERS_20 if kind == "free20" else 0)
 
 
 ## A penalty or a 20 m free must be struck on or outside the 20 m line; struck inside, it is a throw-in on the 20 m line.
@@ -282,8 +306,8 @@ static func penalty_strike_ok(strike_pos: Vector3, dir: float) -> bool:
 
 ## The card for a foul: "" none, "yellow", "red", "black" (sin bin, ten minutes). cynical: committed to stop an
 ## attack rather than in playing the ball; denial: it denied a goal-scoring opportunity inside the 20 m line or the
-## arc, which is a black card where the rule applies (senior inter-county) and a penalty everywhere. A second
-## yellow, or a black after a yellow or a black, is a red.
+## arc, which is a black card and a penalty where Rule 5.45 applies (senior inter-county). Any two of a yellow and a
+## black is a red (Rules of Control 1.2(ix)(e)).
 static func card_for(foul: String, cynical: bool, denial: bool, grade: int, yellows: int, blacks: int) -> String:
 	var card := ""
 	if foul == "FOUL_STRIKE":
@@ -292,7 +316,7 @@ static func card_for(foul: String, cynical: bool, denial: bool, grade: int, yell
 		card = "black"
 	elif aggressive(foul) and (cynical or denial or foul in ["FOUL_HURLEY", "FOUL_KEEPER"]):
 		card = "yellow"
-	if card == "yellow" and yellows >= 1:
+	if card == "yellow" and (yellows >= 1 or blacks >= 1):
 		return "red"
 	if card == "black" and (yellows >= 1 or blacks >= 1):
 		return "red"

@@ -24,16 +24,14 @@ Rules of Control, Playing Rules of Hurling), with the number used in the 2024-20
 - 2021 playing rule changes FAQ: https://camogie.ie/wp-content/uploads/2021/06/Playing-Rule-changes-2021-FAQ.pdf
 - GAA referee guidance on advantage (2021): https://gaa.ie/api/images/image/upload/t_q-best/oxdbyhv1zhtgqfsue5zj.pdf
 
-A caveat the owner should know: the research could read the Guide only through quoted excerpts. **Re-checked
-21 October 2026 (round two): still blocked.** This build's sandbox reaches the web only through a proxy whose policy
-refuses every host that serves the Guide: `usgaa.org`, `www.gaa.ie`, `learning.gaa.ie`, `www.galwaygaa.ie`,
-`www.kilkennygaa.ie` and `gaelicgameseurope.com` all answer `403` to the proxy's `CONNECT` (and do not resolve for the
-fetch tool), so none of the seven PDFs above could be opened. Nothing below was changed by the re-check. Every rule
-still rests on the excerpts and explainers listed, and the figures are the ones every edition and source agreed on;
-where sources differed, the newest is used and the difference is noted. To finish the check, open the network
-policy to `www.gaa.ie` (the cloud environment's settings > Network access > Allowed domains; https://code.claude.com/docs/en/cloud-environments#network-access) or put the 2026 Part 2 PDF in the repository,
-and the rules below can be read against the full text: the ones resting most on a single excerpt are the
-puck-out's 13 m travel, the dissent advance's 20 m limit, the advantage's five seconds and the black card's grades.
+**Checked against the full text, 4 November 2026.** The network now reaches `www.gaa.ie`, and every rule below was
+read against the whole of the Official Guide Part 2 effective 27 March 2026 (the gaa.ie copy above). The four that
+rested on a single excerpt hold: the puck-out's 13 m travel (Rule 2.6), the dissent advance of 30 m up to the 20 m
+line (6.4), advantage for up to five seconds (5.44) and the black card (5.45). The check corrected: the distance at a
+free and a 65 (20 m, not 13, and for the taker's teammates too), the sideline's 13 m (teammates too), the free from
+the centre of the 20 m line (laid out as a penalty), the black card's grades and its zone, a yellow after a black (a
+red), and the temporary substitutes (blood and head injuries only). Three differences are left for the owner (below,
+"Left as they are").
 
 ## The field, goals and equipment (Rules of Specification)
 
@@ -53,7 +51,7 @@ puck-out's 13 m travel, the dissent advance's 20 m limit, the advantage's five s
 | Rule | What it says | In the game |
 |---|---|---|
 | Fifteen a side | A goalkeeper and fourteen outfield players; by convention 1 / 2-3-4 / 5-6-7 / 8-9 / 10-11-12 / 13-14-15 | Each county's 15 starters and 11 substitutes; team sheets laid out this way |
-| Substitutes | Five in normal time, three more in extra time; temporary substitutes for blood, a suspected head injury or the sin bin do not count; a player sent off is not replaced | `Rules.subs_allowed` (tested). **Simplified:** the AI makes no substitutions yet (next steps), so a sin-binned or sent-off player's side plays a man short. |
+| Substitutes (2.3, Rules of Control 1.5(b)) | Five in normal time, three more in extra time; temporary substitutes for a blood or a suspected head injury do not count; a player sent off is not replaced, and a senior player in the sin bin is not replaced either (a temporary substitute for the sin bin is for Under-18 and younger, 6.4) | `Rules.subs_allowed` (tested). A sin-binned or sent-off player's side plays a man short. No injuries yet, so no temporary substitutes (next steps). |
 
 ## Scoring (Playing Rules of Hurling, Scores)
 
@@ -69,7 +67,7 @@ puck-out's 13 m travel, the dissent advance's 20 m limit, the advantage's five s
 | Rule | In the game | Test |
 |---|---|---|
 | Senior inter-county 2 × 35 minutes, half-time up to 15; everything else (club, minor, U-20, junior) 2 × 30, half-time up to 10 | Settings > Grade: Senior county (2 × 35) or Club (2 × 30). The clock runs faster than real time to fit Settings > Match length (8-70 minutes; 70 is real time) | "Time: halves ..." |
-| Time added for stoppages; the referee keeps the time (no clock and hooter in hurling) | Added time shown in whole minutes a minute before the half ends, from the half's stoppages; the referee ends the half at the first break, or when the ball is out of the scoring zones, once it is up | (match) |
+| Time added for stoppages; the referee keeps the time (a public clock and hooter "where available", subject to Central Council regulations, 3.2: not in Part 2 for hurling) | Added time shown in whole minutes a minute before the half ends, from the half's stoppages; the referee ends the half at the first break, or when the ball is out of the scoring zones, once it is up | (match) |
 | The throw-in at the start of each half (and of each period of extra time), between two midfielders from each side, the rest in position | As written | "Throw-in: two from each side" |
 | A drawn game that needs a winner: extra time, 2 × 10 minutes; then a penalty shoot-out: five takers each, goals only, then sudden death with the same takers | Match setup: "A draw: Extra time, then penalties"; championship knock-out games always | "Shoot-out: ..." |
 | Cards carry into extra time (Congress 2024) | Yes: a player's yellow stands | - |
@@ -99,11 +97,11 @@ option if it is adopted.
 |---|---|---|
 | Puck-out after a score or a wide: from inside the small rectangle, struck by the goalkeeper (from the hand); everyone else, both sides, outside the 20 m line until it is struck; it must travel 13 m before another of the taker's side plays it | As written: players walk to legal places (`Rules.position_ok`, `legal_spot`); no teammate may touch it inside 13 m. The keeper chooses short (to a free back) or long (to the middle third): 37% and 55% of puck-outs in the 2026 league | "Puck-out: ..." |
 | A 65 when a defender puts it over his own end line wide: from the 65 m line opposite where it crossed | As written; the free-taker usually goes for the point | "65: ..." |
-| A sideline cut to the other side, where it crossed; struck off the ground; opponents 13 m away | As written | "Sideline: ..." |
-| A free where the foul happened; lifted and struck (or struck on the ground), not from the hand; opponents 13 m away | As written; within range the free-taker goes for a point, else it is struck to a teammate | "Free: where the foul was", "13 m" |
+| A sideline cut to the other side, where it crossed; struck off the ground; every other player, both sides, 13 m away (2.8, 4.11(b)) | As written | "Sideline: ..." |
+| A free where the foul happened; lifted and struck (or struck on the ground), not from the hand; every other player, both sides, 20 m away (2.4(a), 4.11(a), 4.17(a)); a 65 is a free puck, the same | As written; within range the free-taker goes for a point, else it is struck to a teammate | "Free: where the foul was", "20 m is far enough" |
 | A foul by a defender inside his 20 m line, outside the large rectangle: a free on the 20 m line opposite | As written | "Inside the 20 m line ..." |
-| A technical foul by a defender in the large rectangle: a free from the centre of the 20 m line (up to five defenders on the line) | As written | "Technical foul in the large rectangle" |
-| A penalty for an aggressive foul by a defender in the large rectangle, or a foul denying a goal chance inside the 20 m line or the arc: struck on or outside the 20 m line (placed up to 7 m back for a run-up); one defender on the goal line; everyone else outside the 20 m line and the arc | As written (2015 rule) | "Penalty: ..." |
+| A technical foul by a defender in the large rectangle: a free from the centre of the 20 m line, laid out as a penalty but with up to five defenders on the goal line (2.2(a), 2.4(c)) | As written: the keeper and the full-back line on the goal line, everyone else outside the 20 m line and the arc | "Technical foul in the large rectangle", "laid out as a penalty" |
+| A penalty for an aggressive foul by a defender in the large rectangle, or (senior inter-county, 5.45) a foul denying a goal chance inside the 20 m line (but not within 25 m of a sideline) or the arc: struck on or outside the 20 m line (placed up to 7 m back for a run-up); one defender on the goal line; everyone else outside the 20 m line and the arc | As written (2015 rule) | "Penalty: ..." |
 | A throw-in for simultaneous fouls, or a penalty struck inside the 20 m line | The rule is in the module; the game's penalty taker always strikes from the line | - |
 | Dissent: the free moves 30 m on, no nearer goal than the 20 m line (2026) | Now and then a player protests a free and the referee moves it on | "Dissent: ..." |
 
@@ -126,12 +124,9 @@ free. In the game: as written; a shot, a score or the fouled side losing the bal
 
 | Rule | In the game | Test |
 |---|---|---|
-| Yellow card: a caution; a second yellow is a red, sent off, not replaced | Cynical pull-downs, trips and holds, careless hurleys, charging the goalkeeper | "A second yellow is a red" |
+| Yellow card: a caution; any two of a yellow and a black is a red (1.2(ix)(e)), sent off, not replaced | Cynical pull-downs, trips and holds, careless hurleys, charging the goalkeeper | "A second yellow is a red", "A yellow after a black" |
 | Red card: striking an opponent, kicking, stamping, dangerous use of the hurley ... | Striking an opponent | "Striking an opponent: red" |
-| **Black card** (5.45): pulling down, tripping or a careless hurley that denies a goal chance inside the 20 m line or the arc: a penalty, and ten minutes in the sin bin; after a yellow or a black, a red. It applies in senior inter-county hurling; **not in club hurling** | Grade: Senior county has it, Club does not (a penalty and a yellow there) | "Denying a goal chance (senior county): black", "Club hurling has no black card" |
-
-Inter-county minor, U-20 and junior hurling also have the black card since January 2025 according to one source;
-the game's Club grade stands for club hurling, so it leaves it out.
+| **Black card** (5.45): pulling down, tripping or a careless hurley on a player in possession that denies a goal chance inside the 20 m line (not within 25 m of a sideline) or the arc (Definitions 9): a penalty, and ten minutes in the sin bin; after a yellow or a black, a red. It applies "only to Inter-County Senior, Under 20 and Minor (Under 17)" games: **not in club hurling** (nor inter-county junior) | Grade: Senior county has it. Club does not: there the foul is a free by the ordinary rules (a penalty only inside the large rectangle, a free on the 20 m line inside the 20 m line) | "Denying a goal chance (senior county): black", "Club hurling has no black card", "Club: a denial ... not a penalty" |
 
 ## The officials (Rules of Control)
 
@@ -142,14 +137,14 @@ coats). In the game:
   fingers for the sin bin; he throws the ball in.
 - **Linesmen**: along each side line with the play; flag held out the way a sideline cut goes.
 - **Umpires**: beside the posts; the white flag waved for a point, the green flag for a goal, arms crossed over the
-  head for a wide (and for a goal that does not stand), an arm straight up and then pointing in for a 65.
-- Hawk-Eye checks points at the national stadium only in real life; the game's umpires never err (next steps: a
-  close one now and then, with Hawk-Eye at the stadium).
+  head for a wide (a score that does not stand: the flags crossed at the centre of the goal, Rules of Control 2.2(i)(d)), an arm straight up and then pointing in for a 65.
+- Hawk-Eye is used "at Croke Park and at other venues approved by Central Council"; the game shows it at the stadium
+  (a close point or wide over the bar: the card, then TÁ or NÍL). The game's umpires never err.
 
 ## Where competitions differ
 
 - **Senior inter-county** (championship and league): 2 × 35, half-time 15, the black card. The game's default.
-- **Club** (and minor, U-20, junior inter-county): 2 × 30, half-time 10, no black card in club hurling. Settings
+- **Club** (and inter-county junior): 2 × 30, half-time 10, no black card. Settings
   > Grade.
 - **Knock-out games** need a winner on the day (extra time, then penalties); group games and league games can end
   level. Match setup offers both; the championship uses both, as the real one does.
@@ -164,3 +159,15 @@ coats). In the game:
 Camogie is governed by the Camogie Association, with its own rules (60 minutes, a 45 instead of the 65, hand-passed
 goals allowed, a lighter sliotar, different contact rules). The game does not play it yet; it would need those rules
 done properly, not a re-skin.
+
+## Left as they are (for the owner)
+
+Three places where the full text differs from what the game does, left alone because each changes how matches play:
+- **Which fouls are a yellow.** The Guide cautions every pull-down, trip and careless hurley (5.1, 5.2, 5.6), and
+  holding and charging on the second time (5.10, 5.11); the game cautions only the cynical ones.
+- **Scoring with the hand.** "A player on the team attacking a goal and who is in possession of the ball may not
+  score ... with the hand(s)" (3.1, 4.13): no hand-passed point either, only a ball in flight struck with the hand
+  (3.2), and the foul is a free out where it happened. The game lets a legal hand-passed point stand and waves off a
+  hand-passed goal with a puck-out.
+- **Advantage for technical fouls.** Rule 5.44 plays advantage when "an Aggressive Foul is committed"; the game also
+  plays it for technical fouls.
