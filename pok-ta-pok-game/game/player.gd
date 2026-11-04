@@ -349,6 +349,10 @@ var holding := false              # the ball is in his hand (the server's, befor
 ## serve, a celebration and the arms raised to the copal stay the game's, eased over 0.2 s each way. Off without the
 ## licensed clips (a fork's build), in the tests that are not about drawing (FoundationLink.off), and when a phone too
 ## slow for it turns it off (Match: WsgToonDriver.off).
+## The ball of the foot in the foot bone's frame (Body's foot capsule ends there): the point the shared foundation's
+## WsgToonDriver locks to the ground on Low, and the one world.gd's feet read.
+const TOE := Vector3(0, -0.025, 0.14)
+
 var toon: WsgToonDriver = null
 var _toon_moving := false
 
@@ -364,7 +368,7 @@ func _toon_ready() -> bool:
 		if not WsgToonDriver.available() or body.skeleton == null or not body.is_inside_tree():
 			return false
 		# Its own dice (the idle's fidgets), so a seeded match plays the same with it as without.
-		toon = WsgToonDriver.new(body.skeleton, {}, {"rng": RandomNumberGenerator.new(), "offset": num})
+		toon = WsgToonDriver.new(body.skeleton, {}, {"rng": RandomNumberGenerator.new(), "offset": num, "toe": TOE})
 		toon.set_override(1.0, [], 0.0)
 	return true
 

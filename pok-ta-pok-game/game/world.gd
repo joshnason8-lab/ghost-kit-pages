@@ -121,7 +121,7 @@ func walker_low(parent: Node) -> Variant:
 	FoundationLink.in_match = was
 	if b.skeleton == null:
 		return null
-	var toon := WsgToonDriver.new(b.skeleton, {}, {"rng": RandomNumberGenerator.new(), "offset": 1})
+	var toon := WsgToonDriver.new(b.skeleton, {}, {"rng": RandomNumberGenerator.new(), "offset": 1, "toe": Player.TOE})
 	toon.set_override(0.0, [], 0.0)
 	var drive := func(dt: float, vel: Vector3, facing: float) -> void:
 		b.position += vel * dt
@@ -134,7 +134,7 @@ func walker_low(parent: Node) -> Variant:
 		for sd in ["l", "r"]:
 			var g := b.skeleton.global_transform * b.skeleton.get_bone_global_pose(b.bone("foot_" + sd))
 			out.append(g.origin)
-			out.append(g * Vector3(0, -0.025, 0.14))
+			out.append(g * Player.TOE)
 		return out
 	return [b, drive, feet]
 
