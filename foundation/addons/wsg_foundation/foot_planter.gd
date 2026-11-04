@@ -639,7 +639,9 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		# Never through the ground.
 		target.y = maxf(target.y, floor_ankle)
 		if not target.is_equal_approx(ank):
-			_leg_ik(sk, leg, inv * target)
+			# (Its own step, a hold easing off, or a catch-up: the planter carrying a foot in the air, not the clip.)
+			var carried: bool = not down and (stepping != Vector3.INF or float(_w[i]) > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i]))
+			_leg_ik(sk, leg, inv * target, carried)
 		# A foot down with its ball on the ground keeps its ball where it touched: the foot turned about the ankle until its
 		# toe is there (the body turning, or the clip's foot creeping, swung it 1-2 cm about a held ankle).
 		if down and _toe_lock[i] != Vector3.INF:
@@ -685,7 +687,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			if need > 0.001:
 				var toe_rel := tw - xf * sk.get_bone_global_pose(leg[2]).origin
 				target.y += need
-				_leg_ik(sk, leg, inv * target)
+				_leg_ik(sk, leg, inv * target, true)
 				_aim_foot(sk, leg, xf, target + toe_rel)
 		elif on_heel:
 			var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[2])).basis
@@ -777,7 +779,7 @@ func _aim_foot(sk: Skeleton3D, leg: Array, xf: Transform3D, at: Vector3) -> void
 
 ## The leg (thigh, shin) turned so its ankle is at target (skeleton space), the knee bending the way it was; the foot
 ## keeps its turn in the world. (As Hurling's player.gd _leg_ik, on the rig's bones.)
-func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
+func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3, swing := false) -> void:
 	var th := sk.get_bone_global_pose(leg[0])
 	var sh := sk.get_bone_global_pose(leg[1])
 	var ft := sk.get_bone_global_pose(leg[2])
@@ -802,8 +804,11 @@ func _leg_ik(sk: Skeleton3D, leg: Array, target: Vector3) -> void:
 	# rest, carried by the hips - not the thigh's own, which a step's swung-up thigh turns over the hip: 8-20 cm behind,
 	# held 4 frames, on Kabaddi's raider and the test hurler at 4.5 m/s) bends to the body's front instead. (Only then:
 	# taken always, a leg turned out bent 14 degrees the wrong way about its own hinge - the owner's arm-wrong-way note.)
+	# Only on a leg the planter itself carries through the air (SWING: its own step, a hold easing off, a catch-up), where
+	# every such knee was: the clip's own leg under hips turned hard about it is the body's own twist, only lifted off
+	# the floor (Hurling's free-taking follow-through: the back knee, read against the turned hips, flipped 70 degrees).
 	var hip_bone := sk.get_bone_parent(leg[0])
-	if hip_bone >= 0 and _fwd_hips != Vector3.ZERO and h > 0.0:
+	if swing and hip_bone >= 0 and _fwd_hips != Vector3.ZERO and h > 0.0:
 		var level := sk.get_bone_global_pose(hip_bone).basis * _fwd_hips
 		level.y = 0.0
 		if level.length() > 0.0001:
