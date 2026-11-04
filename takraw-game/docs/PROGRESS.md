@@ -670,6 +670,22 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## A Low polish pass (0.15.26)
+
+The lead: a polish pass on Low, as the other games had - stills at 1600x720 in every venue (park, beach, mall,
+provincial, national; the broadcast camera twice in play, the side and end cameras), sepak raga, the menus, the season
+and cup screens and the result, checked against the world rules and the owner's notes.
+- **Found and fixed**: sepak raga said "Down after 1 touches" and the record book "1 touches in a row" - two new strings
+  (RAGA_DOWN_ONE, RECORDS_BEST_RAGA_ONE) for a count of one, in 13 languages (only English changes the word);
+  test_runner (_raga) checks one touch is said as one.
+- **Checked, nothing to fix**: the world check with a renderer passes all 11 rules (props, the crowd's 511 s audit,
+  feet, feet_low, pose, officials, sounds, loading, joystick, web, tiers); fit_audit at 1600x720 in every language and
+  screen: 0 problems; every venue in play on Low within its frame budget (67-76 draw calls of 110, 92,000-155,000
+  primitives of 200,000; sepak raga 44-47 and 91,000-107,000); the stills show the officials in their places and suits,
+  the crowd seated and facing play, no body in a prop.
+- **Noted, not changed**: the menus draw every frame (no low-processor mode) and the busiest 2D screens take 120-225
+  draw calls (the mixed season's hub 225, the cup picker 180) - outside the frame budget, which is the 3D modes'.
+
 ## Low: the players' feet on the shared planter (0.15.25)
 
 The owner: "players still gliding a lot ... when getting the ball too ... prepping to block he is in a folded position

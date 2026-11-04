@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.26: **one touch is one touch.** Sepak raga's end card and the record book say "1 touch", not "1
+touches". A polish pass on Low (every venue, sepak raga, the menus, the season and cup screens and the result, at
+1600x720) found nothing else. Nothing else changes.
+
 New in 0.15.25: **Sepak raga, the circle game.** On the home screen, next to Watch AI: six players in a ring at the
 park keep the ball up with their feet, knees and heads, never letting it touch the ground. When it comes to you
 (nearest the camera, your ring at your feet), tap as the ring closes on the ball, as in a match: on time it goes

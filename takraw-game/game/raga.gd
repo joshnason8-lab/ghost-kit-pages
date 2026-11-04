@@ -364,7 +364,7 @@ func _update_ui() -> void:
 	_best.text = tr("RAGA_BEST").format({"n": best})
 	_hint.visible = state == "play" and touches < 3
 	if state == "down":
-		_end_text.text = tr("RAGA_DOWN").format({"n": touches}) + ("\n" + tr("RAGA_NEW_BEST") if new_best else "")
+		_end_text.text = tr("RAGA_DOWN_ONE" if touches == 1 else "RAGA_DOWN").format({"n": touches}) + ("\n" + tr("RAGA_NEW_BEST") if new_best else "")
 
 
 ## The match's ring on your touches: the gold circle where the ball will be met, a ring closing on it (green once

@@ -1366,6 +1366,17 @@ func _raga() -> void:
 	check(perfect_ok, "sepak raga: your press on the moment is PERFECT and the ball goes on")
 	check(u.state == "down" and stage == 3 and u._result == "EARLY", "sepak raga: half a second early it falls (%s, %s)" % [u.state, u._result])
 	check(int(Game.records.get("best_raga", -1)) == u.touches and u.touches > 0 and u.new_best, "sepak raga: the run's %d touches kept as your best (%s)" % [u.touches, Game.records.get("best_raga")])
+	# (One touch is one touch: "Down after 1 touches" in the Low polish pass, 0.15.26.)
+	var said := []
+	for n in [1, 2]:
+		u.touches = n
+		u.new_best = false
+		u._update_ui()
+		said.append(u._end_text.text)
+	var en: Translation = TranslationServer.get_translation_object("en")
+	check(said[0] == tr("RAGA_DOWN_ONE").format({"n": 1}) and said[1] == tr("RAGA_DOWN").format({"n": 2})
+		and String(en.get_message("RAGA_DOWN_ONE")).ends_with(" touch") and String(en.get_message("RECORDS_BEST_RAGA_ONE")).contains(" touch in"),
+		"sepak raga: one touch said as one (%s; %s)" % said)
 	u.queue_free()
 	await frames(2)
 	if keep == null:
