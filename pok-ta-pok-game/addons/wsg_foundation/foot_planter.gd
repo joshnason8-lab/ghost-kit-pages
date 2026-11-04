@@ -36,15 +36,18 @@ var _prev := [Vector3.INF, Vector3.INF]
 ## planted later it slid the 3-4 cm it moved into its hold (Floorball's referee stopping: its toe at 1.0 m/s over the
 ## frame, 1.7 in its last 60 Hz tick).
 const LAND_TOE := 1.2
-## How low a foot coming down is touching if its ankle is already as slow as a stance foot's (landing, not a swing - its
-## toe slow or the foot flat alone planted a swing that high, stopped dead in the air, a
-## swing planted that high stopped dead in the air, Kabaddi's Low walker's jump 2.8 -> 12.6 cm; else 3 cm as before)
-## (m over its floor; never less on a body scaled down): over the feet rule's
+## How low a foot coming down is touching if its ankle is already as slow as a stance foot's, or the body is nearly still
+## (TOUCH_STILL) (landing, not a swing - on a body moving, its toe slow or the foot flat alone planted a swing that high,
+## stopped dead in the air: Kabaddi's Low walker's jump 2.8 -> 12.6 cm; a body standing, its idle's foot hovering 3.8 cm
+## up, toe slow, was never planted and drifted 9.2 cm under the rule - Kho Kho's referee, extreme#28; else 3 cm as before)
+## (m over its floor; never less on a body scaled down - Kho Kho's defenders at 0.95: 3.2 cm): over the feet rule's
 ## 3 cm touch (WsgNoteChecks.TOUCH, unscaled, its ankle's floor where the planted ankle stands - higher than a heel-up
 ## stance's rest), so a foot the rule reads down is one the planter has planted - at 3.0 cm the rule read a landing foot
 ## down a draw before the planter did, and counted what it moved then (Kabaddi's far players: 4.4-7.6 cm; PUN_9, scaled
 ## 0.95, its toe 3.50 cm up against the planter's 3.32: 6.4 cm).
 const TOUCH_H := 0.04
+## ...nearly still: the body slower than this (m/s).
+const TOUCH_STILL := 0.5
 const LAND_SPAN := 1.0 / 30.0
 var _toe_back := [[], []]                    # each toe's last few ticks: [tick time, toe (world)]
 var _drawn_move := [0.0, 0.0]                # how far across each foot was drawn to move last tick
@@ -109,8 +112,9 @@ var _across := [0.0, 0.0]                    # easing across from where a let-go
 ## slowed. (35 cm flat let a stop from 8 m/s still jump 24 cm; the clip's move plus 15, 29.)
 const CHASE_MAX := 0.25
 const CHASE_OVER := 0.10
-## A released foot's catch-up is held to CHASE_OVER of change a frame only once it moves more than this a frame (m,
-## scale 1).
+## A released foot's catch-up is held to CHASE_OVER of change a frame only once it moves more than this a frame (m;
+## never less on a body scaled down - the feet rule's jump bound is unscaled: a 23.8 cm catch-up on a body at 0.94, held
+## back, snapped the next frame, a 26.6 cm jump - Kabaddi's BAN_5, random#13).
 const RELEASE_RATE_FROM := 0.25
 ## ...and only while the body speeds up faster than this over ACCEL_SPAN (m/s^2): a walk's speed wavers a little every
 ## frame (Kho Kho's Low walk 1.5 -> 3.2 cm held back on every waver, its turned jog 0.2 -> 1.7).
@@ -318,8 +322,9 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# comes through flat, and one let slide there glided on the floor (a hard stop from a run: the clip brought
 			# the foot in flat 23 cm a frame and snapped it back 7 cm, read as swinging - the lead, 2026-11-03).
 			var flat := maxf(ank.y - floor_ankle, toe.y - (ground_y + _toe_rest * sc)) < 0.02 * sc
-			is_down = h < 0.05 * sc if was else ((h < 0.03 * sc and (vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE)) \
-				or (h < TOUCH_H * maxf(sc, 1.0) and vel < 0.6 + body_speed * 0.8))
+			var landing := vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE
+			is_down = h < 0.05 * sc if was else ((h < 0.03 * maxf(sc, 1.0) and landing) \
+				or (h < TOUCH_H * maxf(sc, 1.0) and (vel < 0.6 + body_speed * 0.8 or (body_speed < TOUCH_STILL and landing))))
 			if contact_fn.is_valid():
 				is_down = bool(contact_fn.call(i, ank, toe, was))
 			# A foot let go at the end of its reach is lifting: not down again until it has left the ground.
@@ -591,7 +596,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# the body speeds up - a stop's release held back slid its foot 7.5 cm, Kho Kho's Low stop - and
 			# only a move big enough to read as a jump: a walk's release, held back, dragged its foot along the floor -
 			# Kabaddi's Low walk 0.9 -> 2.1 cm from 15 cm a frame; from 25, 0.5.)
-			if gap.length() > RELEASE_RATE_FROM * sc and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
+			if gap.length() > RELEASE_RATE_FROM * maxf(sc, 1.0) and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
 				gap = (_rel_prev[i] as Vector2) + dv.normalized() * grow
 				capped = true
 			if capped:
