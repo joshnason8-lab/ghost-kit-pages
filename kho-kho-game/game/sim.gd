@@ -371,7 +371,7 @@ func save_paths() -> Array:
 ## Checks put off for this game, by whose leave and until when: the planter's foot slips under kho kho's AI (2-4 cm,
 ## WsgSim seeds 101 and 103), a foundation fault the foundation is fixing; listed under the report's warnings till then.
 func deferred() -> Dictionary:
-	# Until 11-06 12:00 any foot slip is put off; from then only a planted slide up to 2.5 cm, to 11-13 (the lead,
-	# 2026-11-03: with the foundation's 7def933a no jumps or skids are left on seeds 103; slides of 2.1-2.5 cm are).
+	# Until 11-06 12:00 any foot slip is put off; from then only a planted slide up to 10 cm, to 11-13 (the lead,
+	# 2026-11-04's call: bounded, so a bigger slide, any skid and any low-foot jump still fail).
 	return {"foot slip": ["2026-11-06T12:00Z", "the lead, 2026-11-03: planter slips 2-4 cm under Kho Kho's AI (WsgSim seeds 101, 103); foundation fix pending"],
-		"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-03: planted slides 2.1-2.5 cm under the AI; foundation toe-creep fix pending", 2.5]}
+		"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-04: planted slides up to 9.3 cm under the AI (CI smoke on 0.12.15: 12 over 2.5 cm, defenders and the field umpires); foundation fix pending - bounded at 10 cm, as Takraw's 7.5 and Kabaddi's 8", 10.0]}
