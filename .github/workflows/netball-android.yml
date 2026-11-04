@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150   # (the tests, the props audit, the world check and the owner's notes play many matches)
     permissions:
-      contents: write   # to publish the beta release (below)
+      contents: read    # (the beta is published by the publish job, once every check has passed)
     steps:
       - uses: actions/checkout@v4
 
@@ -118,17 +118,19 @@ jobs:
       # sounds crisp at a distance, the loading overlay at the tap, the stick on every camera, no licensed data on the
       # Web, each mode within its graphics tier. A failing rule fails the build from 2026-11-03 12:00 UTC. (No Web export
       # here: the Web preset's exclude filter is checked; the pack is not built.)
-      - name: World check (the foundation's world rules on our modes)
+      # (The crowd rule - 27 of the check's 30 minutes, on the 6,000-seat arena - runs in its own job beside this one,
+      # world-crowd; the two reports are merged into one verdict by world-check-report, ADOPTING 5.18's parallel jobs.)
+      - name: World check (the foundation's world rules on our modes; the crowd in its own job)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --reuse "props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
+          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only "props,feet,feet_low,pose,officials,sounds,loading,joystick,web,tiers" --reuse "props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
 
-      - name: World check report
+      - name: World check report (this job's rules)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: world-check
+          name: world-main
           path: ${{ runner.temp }}/world
 
       # The owner's notes, each a test for good (tests/owner_notes/, ADOPTING §5.16): none may be removed from
@@ -140,7 +142,8 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail
-          WSG_NOTES_STRICT=1 timeout 3000 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log | grep -v "^gait:\|^foundation steps:\|^  "
+          # (On a fresh install's default settings: an empty user dir, and WSG_NOTES_FRESH fails a run on saved ones.)
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 3000 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log | grep -v "^gait:\|^foundation steps:\|^  "
           if grep -q "SCRIPT ERROR" owner_notes.log; then grep -A4 "SCRIPT ERROR" owner_notes.log; exit 1; fi
 
       # The beta key: the owner's shared keystore (repository secret BETA_KEYSTORE_B64, PKCS12, storepass and keypass
@@ -240,6 +243,143 @@ jobs:
           name: netball-unleashed-${{ env.VERSION }}-apk
           path: ${{ env.PROJECT_DIR }}/build/netball-unleashed-${{ env.VERSION }}.apk
           if-no-files-found: error
+
+  # The world check's crowd rule (the crowd audit: every venue's crowd seated, facing the play, at each tier), in a job
+  # of its own beside test-and-build: it alone took about 27 of the check's 30 minutes.
+  world-crowd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: World check, the crowd rule (the crowd audit)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          set -o pipefail
+          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only crowd 2>&1 | tee world_crowd.log | grep -v "^$" | tail -40
+          if grep -q "SCRIPT ERROR" world_crowd.log; then grep -A4 "SCRIPT ERROR" world_crowd.log; exit 1; fi
+
+      - name: World check report (the crowd)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-crowd
+          path: ${{ runner.temp }}/world
+
+  # The two parts' reports as one world check (world_check.gd --merge): a rule neither part ran fails it.
+  world-check-report:
+    needs: [test-and-build, world-crowd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "world-*"
+          path: ${{ runner.temp }}/parts
+
+      - name: World check (merged)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --merge "$RUNNER_TEMP/parts/world-main,$RUNNER_TEMP/parts/world-crowd"
+
+      - name: World check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
+
+  # Publishing waits for every check: the build and its tests and owner's notes (test-and-build), the crowd
+  # (world-crowd) and the merged world check (world-check-report).
+  publish:
+    needs: [test-and-build, world-crowd, world-check-report]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/netball-game' || github.ref == 'refs/heads/claude/netball-foundation-pilot')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to publish the beta release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The version
+        run: echo "VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' ${PROJECT_DIR}/project.godot)" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: netball-unleashed-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build
 
       # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
       # "netball-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
