@@ -1448,7 +1448,10 @@ checks. The feet rule itself is enforced for every game from **2026-11-04 12:00 
 read 2.1-2.2 cm on three games' rigs on 888e222, a foundation fault). In WsgSim the planted slide alone can be put off
 up to a bound, while skids and jumps still fail: `{"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-03: <why>",
 2.5]}` - a planted slide up to 2.5 cm is DEFERRED, one over it fails as "foot slip" (the lead, for Floorball and Kho
-Kho: replace a whole "foot slip" deferral with this one from 2026-11-06 12:00).
+Kho: replace a whole "foot slip" deferral with this one from 2026-11-06 12:00). The low-foot jump alone the same way:
+`{"low jump": ["2026-11-08T12:00Z", "the lead, 2026-11-04: <why>", 32.0]}` - a jump up to 32 cm is DEFERRED, one over
+it fails as "foot slip"; skids and slides keep their own checks (Kho Kho's five defender jumps, the planter's fast low
+feet).
 WsgSim's feet failures name the foot and the frames of the worst reading ("... (2.0 at most; left foot, frames
 7677-7679)"), and the failure's frame is that one, not the match's last: `replay` stops there (the signature is the
 same as before). `batch --kinds K --from N` runs kind K on every seed (before 2026-11-04 every tenth seed ran a

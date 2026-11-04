@@ -181,6 +181,20 @@ func _initialize() -> void:
 		print("snap: %s; with the planter reset: %s, resets %s" % [moved.snap, moved.snap_reset, resets.snap_reset])
 		if not (moved.snap_reset as Array).is_empty() or (resets.snap_reset as Dictionary).is_empty():
 			fails.append("a body snapped 30 cm with the planter reset read as feet moving in a frame (%s, resets %s)" % [moved.snap_reset, resets.snap_reset])
+		# The low-foot jump alone put off up to a bound ("low jump": [until, why, cm]): the snap's 30 cm jump reported, not
+		# failed, under a 32 cm bound; over a 25 cm one it fails as "foot slip" (the lead, 2026-11-04: Kho Kho's jumps).
+		var kept: Dictionary = game.defer
+		game.defer = {"low jump": ["2099-01-01T00:00Z", "a test", 32.0]}
+		var rj: Dictionary = await fs.run(game, "bug:snap", 3, self)
+		game.defer = {"low jump": ["2099-01-01T00:00Z", "a test", 25.0]}
+		var rk: Dictionary = await fs.run(game, "bug:snap", 3, self)
+		game.defer = kept
+		var jf := func(r: Dictionary) -> Array: return (r.failures as Array).filter(func(f: Dictionary) -> bool: return String(f.message).contains("jumped"))
+		var under: bool = (jf.call(rj) as Array).is_empty() and str(rj.get("warnings", [])).contains("deferred low jump")
+		var over: bool = (jf.call(rk) as Array).any(func(f: Dictionary) -> bool: return f.check == "foot slip")
+		print("low jump deferred to 32 cm: %s; to 25 cm: %s" % ["reported, not failed" if under else "WRONG", "failed as foot slip" if over else "WRONG"])
+		if not under or not over:
+			fails.append("\"low jump\" deferral: under its bound %s %s; over it %s" % [rj.failures, rj.get("warnings", []), rk.failures])
 	# The RNG lint.
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SCRATCH))
 	var fx := FileAccess.open(SCRATCH + "/fixture.gd", FileAccess.WRITE)
