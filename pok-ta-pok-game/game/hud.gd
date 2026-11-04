@@ -30,6 +30,7 @@ var _frames := PackedFloat32Array()
 var _quality := -1.0
 var _quality_t := 0.0
 var _tips_shown := 0
+var _rules_tipped := false   # the rules tip looked at for this match (shown only the first time for those rules)
 
 
 func _ready() -> void:
@@ -280,6 +281,17 @@ func refresh() -> void:
 			rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 			rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), int(Game.settings.graphics),
 			Engine.get_frames_per_second()]
+	# The first time you play the classic court or the revival, a tip on its own rules (once each, coach or not: the
+	# coach's tips go off after your first match, which may well have been ulama).
+	if m.phase == m.P.SERVE and int(m.user_team) >= 0 and not bool(m.attract) and _toast_t <= 0.0 and not _rules_tipped:
+		_rules_tipped = true
+		var r := String(m.rules)
+		var seen: Array = Game.settings.get("seen_rules", [])
+		if r != Rules.ULAMA and not (r in seen):
+			toast(tr("TIP_RULES_" + r.to_upper()), 6.0)
+			seen.append(r)
+			Game.settings.seen_rules = seen
+			Game.save_settings()
 	if m.phase == m.P.SERVE and int(m.user_team) >= 0 and bool(Game.settings.get("coach", true)) and _tips_shown < 3 and _toast_t <= 0.0:
 		var keys := ["TIP_SERVE", "TIP_HIP", "TIP_DIVE"]
 		toast(tr(keys[_tips_shown]), 5.0)

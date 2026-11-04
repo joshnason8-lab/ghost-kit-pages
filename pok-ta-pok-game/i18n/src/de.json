@@ -305,5 +305,7 @@
   "VENUE_MARKERS": "Klassischer Platz mit Markern (Abend)",
   "RULES_MARKERS": "Der Platz mit Markern",
   "RULES_MARKERS_TEXT": "Die älteren Maya-Plätze der klassischen Zeit (wie in Copán) hatten keine Ringe: Drei runde Steinmarker waren in der Mitte der Spielgasse in den Boden eingelassen. Wie sie im Spiel genutzt wurden, ist nicht bekannt, darum markieren sie hier nur den Platz, und es gibt keinen Ringwurf. Klassische Regeln, Punkte bis acht.",
-  "MARKERS": "Marker"
+  "MARKERS": "Marker",
+  "TIP_RULES_CLASSIC": "Klassischer Platz: Punkte bis acht. Der Ball springt von den schrägen Mauern, und durch den Ring gewinnt er sofort.",
+  "TIP_RULES_MAYA": "Pelota maya: Jede Seite schlägt einmal, dann muss der Ball hinüber. Über ihre Grundlinie: 4 Punkte."
 }

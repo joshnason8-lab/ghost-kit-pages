@@ -63,6 +63,7 @@ func _ready() -> void:
 	await _ai_plays("stone", "maya")
 	await _maya_match()
 	await _markers_court()
+	await _rules_tip()
 	await _watch_ai()
 	await _stick_in_walkout()
 	await _stick_camera("village", "ulama")
@@ -1103,6 +1104,34 @@ func _foot_slide(b: Body, pose_at: Callable, speed: float, length: float) -> flo
 ## ground, never rolled along it; through two minutes of an AI match the ball is met with the hip standing far more
 ## often than dived for on the ground, and rallies go on.
 const SERVE_TOSS_MIN := 1.6   # the serve goes up at least this high (m; the owner, 0.6.8: "toss the ball up higher")
+
+
+## The first match under the classic rules or the revival shows a tip on its rules, once (the coach's tips go off after
+## a first match, which may have been ulama).
+func _rules_tip() -> void:
+	var keep: Array = Game.settings.get("seen_rules", []).duplicate()
+	Game.settings.seen_rules = []
+	var shown := []
+	for k in 2:
+		var m: Node = load("res://game/match.gd").new()
+		m.config = {"home": "PIS", "away": "VAL", "venue": "stone", "rules": "maya", "user_team": 0, "seed": 4, "length": 0.0,
+			"mode": "quick", "difficulty": 1, "ritual": false}
+		add_child(m)
+		var g := 0
+		while m.phase != m.P.SERVE and g < 30 * 30:
+			await get_tree().process_frame
+			g += 1
+		# (after the court's name has had its moment on screen)
+		var saw := false
+		for f in 30 * 3:
+			await get_tree().process_frame
+			saw = saw or (m.hud != null and String(m.hud._toast.text) == tr("TIP_RULES_MAYA"))
+		shown.append(saw)
+		m.queue_free()
+		await frames(2)
+	check(shown == [true, false] and "maya" in Game.settings.seen_rules,
+		"The revival's rules tip shows at the first serve of a first revival match, and not again (%s)" % str(shown))
+	Game.settings.seen_rules = keep
 
 
 ## The Classic-period court (R12): no rings, three floor markers; the classic rules without the ring shot; not the

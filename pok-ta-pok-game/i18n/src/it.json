@@ -305,5 +305,7 @@
   "VENUE_MARKERS": "Campo classico con marcatori (tramonto)",
   "RULES_MARKERS": "Il campo con i marcatori",
   "RULES_MARKERS_TEXT": "I campi maya più antichi, del periodo classico (come a Copán), non avevano anelli: tre marcatori rotondi di pietra erano incassati nel pavimento del corridoio, lungo il suo centro. Non si sa come fossero usati nel gioco, quindi qui segnano soltanto il campo e non c'è il tiro all'anello. Regole classiche, punti fino a otto.",
-  "MARKERS": "Marcatori"
+  "MARKERS": "Marcatori",
+  "TIP_RULES_CLASSIC": "Campo classico: punti fino a otto. La palla rimbalza sui muri inclinati e, nell'anello, vince la partita.",
+  "TIP_RULES_MAYA": "Pelota maya: ogni parte colpisce una volta, poi la palla deve passare. Oltre la loro linea di fondo: 4 punti."
 }

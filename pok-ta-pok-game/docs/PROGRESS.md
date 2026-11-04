@@ -473,6 +473,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   it; docs/RULES.md R12 says what is known. Also: the foundation's planter fixes since 0.6.30 (2846235d, 5c2304e4,
   a40a95e0, 3b700012; the sim's 25.1 cm jump on LLA_1 is unchanged and stays deferred until 11-06) and the owner notes run in CI on a fresh install's defaults (WSG_NOTES_FRESH).
 
+- **0.6.32-beta: polish for the new rules and court.** The first time you play the classic court or the pelota maya
+  revival, its first serve brings a tip on its rules (once for each, whatever the coach setting: the coach's tips go
+  off after a first match, which may well have been ulama). The match-setup court diagram draws the markers court's
+  three floor markers, not rings, and the main menu's background match visits it. Six languages.
+
 ## Next
 
 1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A

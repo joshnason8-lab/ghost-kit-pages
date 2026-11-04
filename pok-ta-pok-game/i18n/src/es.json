@@ -305,5 +305,7 @@
   "VENUE_MARKERS": "Cancha clásica con marcadores (atardecer)",
   "RULES_MARKERS": "La cancha de marcadores",
   "RULES_MARKERS_TEXT": "Las canchas mayas más antiguas, del periodo Clásico (como en Copán), no tenían aros: tres marcadores redondos de piedra estaban empotrados en el piso del callejón, a lo largo de su centro. No se sabe cómo se usaban en el juego, así que aquí solo marcan la cancha y no hay tiro al aro. Reglas clásicas, puntos hasta ocho.",
-  "MARKERS": "Marcadores"
+  "MARKERS": "Marcadores",
+  "TIP_RULES_CLASSIC": "Cancha clásica: puntos hasta ocho. La pelota rebota en los muros inclinados, y por el aro gana el partido.",
+  "TIP_RULES_MAYA": "Pelota maya: cada lado golpea una vez y la pelota debe cruzar. Por su línea de fondo: 4 puntos."
 }

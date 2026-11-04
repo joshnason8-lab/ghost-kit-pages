@@ -94,6 +94,7 @@ var settings := {
 	"seen_howto": false,
 	"venue": "village",     # the court last picked in match setup
 	"coach": true,          # tips in a first match
+	"seen_rules": [],       # rule sets whose tip has been shown (the classic court, the revival: HUD)
 	"dev": false,
 }
 
@@ -224,6 +225,8 @@ func load_settings() -> void:
 	settings.assist = clampi(int(settings.assist), 0, 1)
 	if not (String(settings.mode) in ["ulama", "classic", "maya"]):
 		settings.mode = "ulama"
+	if not (settings.seen_rules is Array):
+		settings.seen_rules = []
 	if not (String(settings.stone_rules) in ["classic", "maya"]):
 		settings.stone_rules = "classic"
 	if not (int(settings.side_maya) in Rules.SIDE_MAYA):
