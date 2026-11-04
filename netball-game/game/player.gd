@@ -302,7 +302,10 @@ func _goal(solid: WsgSolidProps) -> Vector2:
 		# behind the hall's boards.)
 		_way = solid.path(Vector3(p.x, 0, p.y), g3, BODY_R, BODY_H)
 	if taker and _way.size() <= 1:
-		return g   # (the straight way: her spot itself, as it moves)
+		# (The straight way: her spot itself, as it moves - round a goal circle she may not enter, as in play.)
+		var r := Match.round_circles(pos, dir, p, g) if fenced else g
+		_rounding = r != g
+		return r
 	return Vector2(_way[0].x, _way[0].z) if not _way.is_empty() else g
 
 
