@@ -1,4 +1,8 @@
-**New in 0.14.21: a smaller player's catch-up steps no longer snap.** The shared foot planting no longer holds
+**New in 0.14.22: the trophies shine on Low.** On Low graphics the Nations Cup and the Underdog Trophy drew almost
+black (a mirror finish with no sky to reflect); now they read gold and silver. The winners' name and the Underdog
+Trophy's line are outlined, so they stay readable over the boards behind them.
+
+**In 0.14.21: a smaller player's catch-up steps no longer snap.** The shared foot planting no longer holds
 back a catch-up step on a slightly smaller body (it was read as too small to be a step, then snapped a frame later).
 Nothing else changes; on Low a planted foot drifts at most 0.9 cm in a step, as before.
 

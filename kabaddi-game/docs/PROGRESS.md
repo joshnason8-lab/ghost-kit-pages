@@ -701,3 +701,21 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
 - Open (with the lead): targeted:props#103 fails in the smoke's shard 3 - PAK_9 standing in "ready" (the game's pose
   at full weight, no fade, posed every 2nd frame), a flat foot 2.2 cm in a frame. Only after a random match in the same
   process (alone, or after targeted ones: ok), and any instrumentation flips it to ok.
+
+## 0.14.22: Low polish pass (the lead, 2026-11-04)
+
+- Stills on Low at 1600x720 (tests/screenshots.gd, new SHOT_GFX=0 override; the loading overlay off as the suite has
+  it - the ground tours could not start under it): the five venues from the raider's camera, the dome's broadcast view
+  and reactions, the menus, Quick Match, League Season (hub, breaking news, match day, retentions, war room, auction,
+  grades, hall of fame), Nations Cup (squad, hub, walk-out), the result and box score, the trophies, and the Break free
+  button (new still b5b: held and recharging - dimmed, the gold ring part way).
+- Found and fixed: both trophies drew near black on Low (metallic 1.0 with no sky to reflect) - on Low half metallic
+  with a little of their own colour; the winners' name and the Underdog Trophy's line ran over the 3D "UNDERDOG
+  TROPHY" board unreadably - outlined as the title is (all levels). New tour "trophies".
+- Looked at and left: the stadium's lit skyline reads as scattered flecks behind the upper stand (the same on
+  Medium: the design, not Low); the scorers' sign is partly behind the referee standing at the table (where he
+  stands in a match); the raid's five-second hint fading out reads faint on the beach's bright sky mid-fade (full
+  strength it is outlined dark). Menus, tournament pages and the result fit at 1600x720.
+- Draw calls (world_check tiers, xvfb): at Low match 99, watch AI 91, cup final 101, season 95 draw calls (at most 110),
+  136-177k triangles (at most 200k); Medium 104-111 (120); High 104-114 (180). Suite, owner notes (9, fresh), feet,
+  feet_low (equal to 0.14.16), props, officials, pose and tackle_check 19/19 pass.

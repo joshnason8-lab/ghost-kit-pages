@@ -72,9 +72,16 @@ func _ready() -> void:
 	champ.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	champ.add_theme_constant_override("outline_size", 16)
 	v.add_child(champ)
-	v.add_child(UI.label(DB.team_name(team), "HeaderLabel", 54))
+	# (Outlined as the title is: over the 3D boards behind, "UNDERDOG TROPHY" ran through the line - Low pass, 2026-11-04.)
+	var name_l := UI.label(DB.team_name(team), "HeaderLabel", 54)
+	name_l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
+	name_l.add_theme_constant_override("outline_size", 10)
+	v.add_child(name_l)
 	if underdog:
-		v.add_child(UI.label(tr("UNDERDOG_TROPHY_SUB"), "SubLabel", 24, Game.C_GOLD))
+		var sub := UI.label(tr("UNDERDOG_TROPHY_SUB"), "SubLabel", 24, Game.C_GOLD)
+		sub.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+		sub.add_theme_constant_override("outline_size", 8)
+		v.add_child(sub)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -102,6 +109,14 @@ func _make_trophy() -> Node3D:
 		gold.albedo_color = Color("e4e8ee")
 		gold.metallic = 0.55
 		gold.roughness = 0.3
+	# Low lights the ground without a sky to reflect: a full mirror shows black there (the cup drew black on Low -
+	# Low pass, 2026-11-04). Half a mirror, and a little of its own colour.
+	var low := int(Game.settings.graphics) == Game.GFX_LOW
+	if low:
+		gold.metallic = minf(gold.metallic, 0.35)
+		gold.roughness = 0.35
+		gold.emission_enabled = true
+		gold.emission = gold.albedo_color * 0.25
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color("1b1b1b")
 	dark.roughness = 0.4
@@ -139,8 +154,11 @@ func _make_trophy() -> Node3D:
 		# Its crown: a ring of gold points round the rim.
 		var crown := StandardMaterial3D.new()
 		crown.albedo_color = Color("e6b422")
-		crown.metallic = 1.0
-		crown.roughness = 0.25
+		crown.metallic = 0.35 if low else 1.0
+		crown.roughness = 0.35 if low else 0.25
+		if low:
+			crown.emission_enabled = true
+			crown.emission = crown.albedo_color * 0.25
 		for k in 8:
 			var spike := MeshInstance3D.new()
 			var cone := CylinderMesh.new()

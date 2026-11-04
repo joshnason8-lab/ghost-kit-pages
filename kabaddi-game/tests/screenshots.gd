@@ -15,7 +15,11 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(out)
 	Game.main = self
 	Game.settings.sound = false
+	Game.loading_overlay = false   # (built at once, as the suite does: the overlay can't add itself in _ready)
 	Game.settings.graphics = Game.GFX_HIGH
+	# SHOT_GFX=0/1/2: the tour at that graphics level instead (a Low pass: the lead, 2026-11-04).
+	if OS.get_environment("SHOT_GFX") != "":
+		Game.settings.graphics = int(OS.get_environment("SHOT_GFX"))
 	await _tour()
 	get_tree().quit(0)
 
@@ -253,6 +257,15 @@ func _tour() -> void:
 			tm._demo._t = float(pair[1]) - 0.35
 			await frames(21)
 			await shot("demo_" + String(pair[0]))
+		return
+	if args_only == "trophies":
+		# The Nations Cup's cup and the Underdog Trophy (run with SHOT_GFX=0 for Low: lit without a sky to reflect).
+		Game.show_screen("res://ui/trophy_screen.gd", {"team": "IND", "title": "Nations Cup", "back": "res://ui/main_menu.gd"})
+		await frames(90)
+		await shot("t1_cup")
+		Game.show_screen("res://ui/trophy_screen.gd", {"team": "KEN", "title": tr("UNDERDOG_TROPHY"), "underdog": true, "back": "res://ui/main_menu.gd"})
+		await frames(90)
+		await shot("t2_underdog")
 		return
 	if args_only == "menus":
 		await _menus()
@@ -871,6 +884,12 @@ func _buttons() -> void:
 	c.held = true
 	await frames(3)
 	await shot("b5_held_xl")
+	# Break free recharging after a try (TouchControls.recharge): dimmed, its gold ring part filled.
+	c.recharge = 0.4
+	c.queue_redraw()
+	await frames(3)
+	await shot("b5b_held_recharging")
+	c.recharge = 0.0
 	c.held = false
 	Game.settings.btn_size = 0
 	m.set_paused(true)
