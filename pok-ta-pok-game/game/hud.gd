@@ -215,7 +215,8 @@ func _draw_board() -> void:
 			var x := half - 40.0 if k == 0 else half + 40.0
 			_board.draw_string(font, Vector2(x - 20, s.y * 0.78), txt, HORIZONTAL_ALIGNMENT_CENTER, 40, 30, Game.C_INK)
 			_board.draw_rect(Rect2(x - 14, s.y - 4, 28, 3), col)
-		_board.draw_arc(Vector2(half, s.y * 0.5), 9.0, 0, TAU, 24, Game.C_PAPER, 3.0, true)
+		if not m.court.rings().is_empty():
+			_board.draw_arc(Vector2(half, s.y * 0.5), 9.0, 0, TAU, 24, Game.C_PAPER, 3.0, true)   # the ring (none: markers court)
 		# The target in the middle; the revival has none, so its half (M6).
 		var mid := "/" + str(n) if n > 0 else ("I" if int(m.half) == 1 else "II")
 		_board.draw_string(Game.font_bold, Vector2(half - 20, s.y * 0.95), mid, HORIZONTAL_ALIGNMENT_CENTER, 40, 11, Game.C_MUTED)

@@ -111,6 +111,8 @@ func _team_box() -> Control:
 	for row in [first, ["BOX_DEAD", "dead"], ["BOX_END", "end"], ["BOX_WON_OUT", "won_out"], ["BOX_WON_TOUCH", "won_touch"],
 			["BOX_RING", "ring"], ["BOX_STRIKES", "strikes"], ["BOX_DIVES", "dives"], ["BOX_SERVES", "serves"],
 			["BOX_FAULT_TOUCH", "faults_touch"], ["BOX_FAULT_OUT", "faults_out"]]:
+		if row[1] == "ring" and not bool(DB.venue(String(r.get("config", {}).get("venue", "village"))).get("rings", true)):
+			continue   # the markers court has no ring (R12)
 		_cell(g, tr(row[0]), "MutedLabel")
 		for k in 2:
 			_cell(g, str(int(ts[k].get(row[1], 0))) if ts.size() > k else "0", "")

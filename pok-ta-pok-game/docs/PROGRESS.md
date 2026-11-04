@@ -483,6 +483,13 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   contact_fn. On the classic court and in the revival the result screen's box score opens with Points won (the
   revival's end line is 4), not rayas won.
 
+- **0.6.34-beta: a Low polish pass (the owner's A16).** Stills on Low at a 20:9 phone size of all five courts, the
+  menus, the loading screen and a result. Draw calls on Low are 64-69 a frame and triangles 32-37k on every court
+  (budget about 100 and 90k). Fixed: the main menu's line named two games, not three (now the revival too, six
+  languages); the markers court's scoreboard drew a ring between the points, and its result's box score had a
+  "Through the ring" row: both gone where there are no rings. Nothing else found against the world rules and the
+  owner's notes.
+
 ## Next
 
 1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
