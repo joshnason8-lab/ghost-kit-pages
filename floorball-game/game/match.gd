@@ -668,6 +668,17 @@ func _clear_chance(v: Player, offender: Player) -> bool:
 ## The referee points to the centre spot and crosses his arms: a penalty shot by the fouled player, the game clock
 ## stopped (2026). A 2-minute penalty for the same offence ends if it scores (the goal ends it, as a power-play goal).
 func _award_penalty_shot(v: Player, why: String) -> void:
+	# 701.3: the defending team's goalkeeper replaced by a field player - a goal instead of the penalty shot, for the
+	# fouled team's player who last touched the ball.
+	if pulled[1 - v.team]:
+		calls.append({"kind": "penalty_shot_goal", "team": v.team, "why": why, "period": rules.period, "t": rules.clock})
+		_ref_signal("penalty_shot", Vector2.ZERO)
+		_whistle("short", -2.0)
+		if hud:
+			hud.call_card(tr("SIGN_PENALTY_SHOT"), _offence_line(why), v.team)
+		ball.last_player = v if ball.last_player == null or ball.last_player.team != v.team else ball.last_player
+		_goal(v.team, false, true)
+		return
 	ball.live = false
 	ball.release()
 	_shot_live = {}
@@ -693,7 +704,7 @@ func _penalise(p: Player, kind: String, why: String) -> void:
 	if p.role == "G" and kind in ["pen2", "match"]:
 		server = skaters(p.team)[0] if not skaters(p.team).is_empty() else p
 	rules.add_penalty(p.team, String(p.data.id), kind, why, String(server.data.id))
-	var mins = {"pen2": 2, "pen5": 5, "pen10": 12, "match": 25}.get(kind, 2)
+	var mins = {"pen2": 2, "pen5": 4, "pen10": 12, "match": 24}.get(kind, 2)   # (606, 2026: a major is 2 + 2)
 	stats[p.data.id].pim += int(mins)
 	calls.append({"kind": kind, "team": p.team, "id": p.data.id, "why": why, "period": rules.period, "t": rules.clock})
 	_ref_signal(kind, Vector2.ZERO)
@@ -1029,8 +1040,18 @@ func _on_goal_line(end: int, from_front: bool) -> void:
 	var info := {"last_team": ball.last_team, "defending_team": defending, "how": ball.last_how, "from_front": from_front,
 		"deliberate": ball.last_how in ["kick", "head", "hand"], "too_many": false, "attack_offence": false, "clock_done": rules.remaining() <= 0.0}
 	var j := Rules.judge_goal(info)
+	# 703.5: the offending team scores during a delayed penalty (off a deflection: taking the ball whistles it): no
+	# goal, the penalty given, a face-off. An own goal by the non-offending team still counts (702.1).
+	if bool(j.ok) and not bool(j.get("own_goal", false)) and not advantage.is_empty() and int(advantage.team) == defending \
+			and String(advantage.sanction) != "free_hit":
+		var adv := advantage
+		advantage = {}
+		_penalise(adv.offender, String(adv.sanction), String(adv.offence))
+		_stop("faceoff", {"spot": Rules.nearest_faceoff(Vector2(end * 12.0, 0)), "why": "no_goal", "line": tr("CALL_NO_GOAL") + " (703)"})
+		return
 	if not bool(j.ok):
-		_stop("free_hit" if String(ball.last_how) in ["kick", "head", "hand"] else "faceoff", {"team": defending, "spot": Rules.free_hit_spot(Vector2(end * 12.0, 0)), "why": "no_goal", "line": tr("CALL_NO_GOAL") + " (" + String(j.reason) + ")"})
+		# 703.2: a ball kicked in is no goal but no offence - a face-off; a header or a hand is one (a free-hit).
+		_stop("free_hit" if String(ball.last_how) in ["head", "hand"] else "faceoff", {"team": defending, "spot": Rules.free_hit_spot(Vector2(end * 12.0, 0)), "why": "no_goal", "line": tr("CALL_NO_GOAL") + " (" + String(j.reason) + ")"})
 		return
 	_goal(scoring, bool(j.get("own_goal", false)))
 

@@ -215,17 +215,29 @@ Read against the clean final version of the 2026 Rules of the Game (updated 31 M
 - 103: the rules ask only for IFF-approved goal cages on the post marks (1.6 m apart, 102.5); the 160 x 115 cm, 65 cm
   deep sizes are the Material Regulations', not in this PDF.
 
+- 606 (2026): a major bench penalty is two bench penalties served consecutively - 2 + 2 minutes, no longer 5 - and
+  603.7: it is one penalty of which only one bench penalty may end on a goal. The game had a 5-minute major that no
+  goal ended; now 2 + 2 (a goal in its first two minutes starts its second; once only), the match penalty's team
+  penalty too. Its sign (807: five fingers) is unchanged. Fixed (0.9.24), with tests.
+- 701.3: an offence leading to a penalty shot against a team whose goalkeeper is replaced by a field player gives a
+  goal instead. The game always gave the shot; fixed (0.9.24), with a test.
+- 702.1: an own goal counts, also the non-offending team's during a delayed penalty. Confirmed.
+- 703.2: a ball an attacker kicks or directs into the goal with his body is no goal, and since it is no offence, play
+  resumes with a face-off. The game gave a free-hit for a kick; fixed (0.9.24), with a test (a header or a hand is
+  an offence of its own: a free-hit).
+- 703.5: the offending team scoring during a delayed penalty: no goal, the penalty carried out, a face-off. The
+  game had no such guard (taking the ball whistles the call first; a deflection could beat it); added (0.9.24).
+- 703.1/703.3/703.4: an attacking offence, a goal at or after the signal, a ball in not from the front. Confirmed.
+
 ## Still to check (October 2026; the rest)
 
 - Material Regulations: boards 50 cm high; the ball's 26 holes; the goal cage's 160 x 115 x 65 cm (not in the Rules
   of the Game).
 - 605: the list of minor offences.
-- 606/607: major bench penalty 5 min, served in full.
+- 607: the list of major offences.
 - 611-614: the team's 5-minute bench penalty with a match penalty.
 - 508: the goalkeeper on his line, the ball kept moving toward the goal, no rebound.
 - 510: the list of offences leading to a penalty shot.
-- 702: an own goal counts however it went in.
-- 703: the rest of the no-goal list (too many players, after time, etc.).
 - Referees' signs: every shape in the appendix.
 - The 2-1-2 defence from IFF coaching material (not a rule).
 

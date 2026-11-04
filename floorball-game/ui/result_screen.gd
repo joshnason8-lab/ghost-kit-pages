@@ -193,7 +193,7 @@ func _penalties(ids: Array) -> PanelContainer:
 		if String(e.kind) != "penalty":
 			continue
 		any = true
-		var mins = {"pen2": "2 min", "pen5": "5 min", "pen10": "10 min", "match": tr("MATCH_PEN")}.get(String(e.pen), "2 min")
+		var mins = {"pen2": "2 min", "pen5": "2 + 2 min", "pen10": "10 min", "match": tr("MATCH_PEN")}.get(String(e.pen), "2 min")
 		var why := String(e.get("offence", ""))
 		var bits := [_time(e), ids[int(e.team)], _name(String(e.id)), mins]
 		if why != "":

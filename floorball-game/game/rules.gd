@@ -54,7 +54,7 @@ const OT_LEAGUE_S := 300.0      # the national leagues' regular-season overtime:
 const SHOOTERS := 5             # 204: five different field players a team, then one a team until decided
 const GK_HOLD_S := 3.0          # 507: the goalkeeper may control the ball 3 seconds at most
 const PEN_MINOR_S := 120.0      # 604
-const PEN_MAJOR_S := 300.0      # 606
+const PEN_MAJOR_S := 240.0      # 606 (2026): two bench penalties served consecutively, 2 + 2 minutes
 const PEN_PERSONAL_S := 600.0   # 609
 const MAX_RUNNING := 2          # 601: at most two of a team's bench penalties run at once
 
@@ -415,14 +415,14 @@ class State:
 			"pen2":
 				penalties[t].append({"id": serve, "kind": "pen2", "left": PEN_MINOR_S, "mins": 2, "running": false, "coincidental": false})
 			"pen5":
-				penalties[t].append({"id": serve, "kind": "pen5", "left": PEN_MAJOR_S, "mins": 5, "running": false, "coincidental": false})
+				penalties[t].append({"id": serve, "kind": "pen5", "left": PEN_MAJOR_S, "mins": 4, "running": false, "coincidental": false, "part_ended": false})
 			"pen10":
 				# 609: the offender himself sits 2 + 10: the minor first (his team short), then the personal 10 minutes,
 				# when a team-mate may take his place.
 				penalties[t].append({"id": id, "kind": "pen2", "left": PEN_MINOR_S, "mins": 2, "running": false, "coincidental": false})
 				penalties[t].append({"id": id, "kind": "pen10", "left": PEN_PERSONAL_S, "mins": 10, "running": false, "coincidental": false})
 			"match":
-				penalties[t].append({"id": server, "kind": "match", "left": PEN_MAJOR_S, "mins": 5, "running": false, "coincidental": false})
+				penalties[t].append({"id": server, "kind": "match", "left": PEN_MAJOR_S, "mins": 4, "running": false, "coincidental": false, "part_ended": false})
 		log.append({"kind": "penalty", "team": t, "id": id, "pen": kind, "offence": offence, "period": period, "t": clock})
 		_start_waiting(t)
 
@@ -439,9 +439,11 @@ class State:
 		_start_waiting(0)
 		_start_waiting(1)
 
-	## A goal for team t. 604: a minor bench penalty of the other team ends if it scores while that team is
-	## outnumbered on the rink (the one with the least time left); a major never does. 603.6 (2026): nor does any, for
-	## a goal scored during a delayed penalty or from a penalty shot (info "keeps_penalties").
+	## A goal for team t. 603.6: a bench penalty of the other team being measured ends if it scores while that team is
+	## outnumbered on the rink, the one with the least time left (603.7) - nor any for a goal scored during a delayed
+	## penalty or from a penalty shot (info "keeps_penalties"). A major (606, 2026: two bench penalties, 2 + 2) is one
+	## penalty of which only one bench penalty may end: in its first two minutes the goal starts its second; in its
+	## second, it ends unless its first already ended on a goal.
 	func goal(t: int, info := {}) -> void:
 		goals[t] += 1
 		var e := {"kind": "goal", "team": t, "period": period, "t": clock}
@@ -454,13 +456,22 @@ class State:
 			var best := -1
 			for i in penalties[o].size():
 				var p: Dictionary = penalties[o][i]
-				if String(p.kind) == "pen2" and bool(p.running) and not bool(p.coincidental):
-					if best < 0 or float(p.left) < float(penalties[o][best].left):
-						best = i
+				if not bool(p.running) or bool(p.coincidental):
+					continue
+				var ends := String(p.kind) == "pen2" or (String(p.kind) in ["pen5", "match"] and not bool(p.get("part_ended", false)))
+				if ends and (best < 0 or float(p.left) < float(penalties[o][best].left)):
+					best = i
 			if best >= 0:
-				log.append({"kind": "pen_end", "team": o, "id": penalties[o][best].id, "period": period, "t": clock, "by_goal": true})
-				penalties[o].remove_at(best)
-				_start_waiting(o)
+				var p: Dictionary = penalties[o][best]
+				if String(p.kind) != "pen2" and float(p.left) > PEN_MINOR_S:
+					# A major's first bench penalty ends: its second starts now.
+					p.left = PEN_MINOR_S
+					p.part_ended = true
+					log.append({"kind": "pen_part_end", "team": o, "id": p.id, "period": period, "t": clock, "by_goal": true})
+				else:
+					log.append({"kind": "pen_end", "team": o, "id": p.id, "period": period, "t": clock, "by_goal": true})
+					penalties[o].remove_at(best)
+					_start_waiting(o)
 		if phase == "overtime":
 			phase = "done"
 			winner = t

@@ -55,6 +55,7 @@ func _ready() -> void:
 	FoundationLink.off = not foundation
 	await _foundation()
 	await _goal_replay()
+	await _goal_rules_2026()
 	FoundationLink.off = true
 	await _matches()
 	FoundationLink.off = false
@@ -135,7 +136,7 @@ func _offences() -> void:
 		check(Rules.sanction(id) == "free_hit", "507: %s is a free-hit" % id)
 		check(Rules.offence_rule(id).begins_with("507"), "507: %s has its rule number (%s)" % [id, Rules.offence_rule(id)])
 	check(Rules.sanction("hook", true) == "pen2", "605: dangerous hooking is 2 minutes")
-	check(Rules.sanction("stick_hit", false, true) == "pen5", "607: violent stick play is 5 minutes")
+	check(Rules.sanction("stick_hit", false, true) == "pen5", "607: violent stick play is a major")
 	for id in ["trip", "slash", "hold", "too_many", "block_lying", "charge"]:
 		check(Rules.sanction(id) == "pen2", "605: %s is a minor bench penalty" % id)
 	check(Rules.sanction("rough_board") == "pen5", "607: pushing into the boards violently is a major")
@@ -200,8 +201,16 @@ func _penalties() -> void:
 	s.goal(1)
 	check(s.penalties[0].is_empty(), "604: a power-play goal ends the minor penalty")
 	s.add_penalty(0, "b", "pen5")
+	check(is_equal_approx(float(s.penalties[0][0].left), 240.0), "606 (2026): a major is two bench penalties, 2 + 2 minutes")
+	s.tick(30.0, true)
 	s.goal(1)
-	check(s.penalties[0].size() == 1 and s.strength(0) == 4, "606: a major is served in full, goals or not")
+	check(s.penalties[0].size() == 1 and s.strength(0) == 4 and is_equal_approx(float(s.penalties[0][0].left), 120.0),
+		"603.7: a goal in a major's first two minutes ends that bench penalty; its second starts (%.0f s left)" % float(s.penalties[0][0].left))
+	s.tick(30.0, true)
+	s.goal(1)
+	check(s.penalties[0].size() == 1 and s.strength(0) == 4, "603.7: only one of a major's bench penalties may end on a goal")
+	s.tick(90.0, true)
+	check(s.penalties[0].is_empty() and s.strength(0) == 5, "606: the major served, the player back")
 	var e := Rules.State.new()
 	e.add_penalty(0, "a", "pen2")
 	e.add_penalty(1, "b", "pen2")
@@ -1402,6 +1411,35 @@ func _goal_replay() -> void:
 	check(in_replay and FoundationLink.replay_at == INF, "replay: a match freed in its replay leaves no replay behind (%s)" % FoundationLink.replay_at)
 	FoundationLink.replay_at = INF
 	Game.settings.graphics = gfx
+
+
+## The 2026 goal rules in a match: 703.2, a ball kicked into the goal is no goal and a face-off (no offence); 701.3, a
+## penalty-shot offence against an empty net is a goal instead of the shot.
+func _goal_rules_2026() -> void:
+	var m: Node = (load("res://game/match.gd") as Script).new()
+	m.config = {"home": "SUI", "away": "CZE", "venue": "hall", "user_team": -1, "watch": true, "mode": "watch", "seed": 4, "period": 4.0}
+	add_child(m)
+	var guard := 0
+	while m.phase != "live" and guard < 900:
+		await get_tree().physics_frame
+		guard += 1
+	var end: int = int(m.attack_dir(0))
+	m.ball.last_team = 0
+	m.ball.last_how = "kick"
+	m._on_goal_line(end, true)
+	check(int(m.rules.goals[0]) == 0 and String(m.restart.get("kind", "")) == "faceoff",
+		"703.2: a ball kicked into the goal is no goal, play resumed with a face-off (%s)" % m.restart.get("kind", "none"))
+	guard = 0
+	while m.phase != "live" and guard < 900:
+		await get_tree().physics_frame
+		guard += 1
+	m.pulled[1] = true
+	var v: Player = m.skaters(0)[0]
+	m._award_penalty_shot(v, "trip")
+	check(int(m.rules.goals[0]) == 1 and String(m.phase) != "shootout",
+		"701.3: a penalty-shot offence against an empty net is a goal instead of the shot (goals %s, phase %s)" % [m.rules.goals, m.phase])
+	m.queue_free()
+	await frames(2)
 
 
 # ---------------------------------------------------------------- matches

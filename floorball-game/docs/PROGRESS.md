@@ -227,6 +227,18 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.24-beta: the 2026 major penalty; 701.3, 703.2, 703.5; the knees clean (5 November 2026)
+
+- 606 (2026): a major bench penalty is 2 + 2 minutes, not 5, and one of its two bench penalties may end on a
+  power-play goal (603.7). Rules.State: PEN_MAJOR_S 240, part_ended; the match penalty's team penalty too; the
+  results' "2 + 2 min"; the signs', calls' and rules pages' text in all 15 languages (SIGN_PEN5, CALL_PEN5,
+  RULE_PENALTIES_BODY, RULE_PP_BODY). Its sign is unchanged (five fingers).
+- 701.3: a penalty-shot offence against an empty net gives the goal. 703.2: a ball kicked in is no goal and a
+  face-off, not a free-hit. 703.5: the offending team scoring during a delayed penalty - no goal, the penalty
+  given, a face-off. Tests for each.
+- The shared foundation synced to 4a2df49 (040a5df: the planter's knee front side for every leg moving 1 m/s or
+  faster): knees and knee_strays clean, 0 backwards in every mode and tier. 0.9.24-beta, code 39.
+
 ### 0.9.23-beta: 603.6 from the 2026 rules (4 November 2026)
 
 - The 2026 Rules of the Game PDF read against docs/RULES.md's "Still to check" list (102.6, 202, 504, 506, 602,
@@ -585,8 +597,7 @@ The owner's list:
 
 1. Phone testing on a low-end device (Galaxy A0x/A1x class): frame rate on Low, touch feel, button reach, the coach's
    notes on a real screen.
-2. The rest of docs/RULES.md's "Still to check" list (605, 606/607, 611-614, 508, 510, 702, 703, the signs) against the
-   2026 PDF; the first half was read on 4 November.
+2. The rest of docs/RULES.md's "Still to check" list (605, 607, 611-614, 508, 510, the signs) against the 2026 PDF.
 3. Native-speaker review of the translations (docs/LANGUAGES.md), the coach's tips first.
 4. Club season extras: a short 3 v 3 overtime as the Nordic leagues play it, a second season, form and streaks.
 5. The penalty benches and secretariat as real models; Meshy bodies if the owner wants them (docs/MESHY_BRIEF.md).
