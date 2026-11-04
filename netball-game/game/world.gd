@@ -96,6 +96,32 @@ func walker(parent: Node) -> Array:
 	return [body, loco]
 
 
+## Our player as she is drawn on Low (ADOPTING §5.21; the owner plays at Low): the game's own body (HeroBody) and its
+## feet (Gait), made as a match makes her on Low, standing at the origin. Each frame of the drive moves her by the
+## velocity and steps her feet (Gait.update), her body posed from them as Player._animate does on the run; her feet read
+## as drawn (Gait.drawn_feet: the ankles' bones, the balls of the feet - no modifier, the pose set is the one drawn).
+func walker_low(parent: Node) -> Variant:
+	var was := int(Game.settings.graphics)
+	Game.settings.graphics = Game.GFX_LOW      # (her own body: no FoundationLink on Low)
+	var pl := Player.new(0, DB.squad("NZL")[2], "WA")
+	parent.add_child(pl)
+	Game.settings.graphics = was
+	pl.place(Vector2.ZERO, 0.0)
+	var drive := func(dt: float, vel: Vector3, facing: float) -> void:
+		pl.position += Vector3(vel.x, 0.0, vel.z) * dt
+		pl.p = Vector2(pl.position.x, pl.position.z)
+		pl.vel = Vector2(vel.x, vel.z)
+		pl.facing = facing
+		pl.rotation.y = facing
+		pl.body.rotation.y = 0.0
+		pl.gait.update(dt, pl.p, pl.vel, facing)
+		var out := Gait.lay(pl.gait.loco_pose(), pl._pose, 0.0, 1.0 - pl.gait.move)
+		pl.body.apply(pl.gait.solve(out))
+	var feet := func() -> Array:
+		return pl.gait.drawn_feet()
+	return [pl, drive, feet]
+
+
 ## The key moments' sounds (Sfx's names): the ball off the ring and post, the net, the umpire's whistle.
 func key_sounds() -> Array:
 	return ["rim", "swish", "whistle_short", "whistle_long"]

@@ -24,6 +24,8 @@ const OFF := 0.45            # slower than this she stops striding (and settles 
 const SETTLE_T := 0.26       # s: a step of her own (standing, edging, turning)
 const SETTLE_AT := 0.13      # m (of the figure) a foot may be from its place under her before she steps
 const SETTLE_TURN := 0.6     # rad a foot may point away from her before she steps round
+const MIN_SWING := 0.25      # of a stride pair: the shortest swing a foot takes
+const LAND_OVER := 0.85      # of a swing or a step: the foot is over its spot, and comes straight down on it
 
 var body: ToonBody
 var phase := 0.0             # through a stride pair (0-1): the left foot comes down at 0, the right at 0.5
@@ -190,7 +192,14 @@ func update(dt: float, pos: Vector2, vel: Vector2, p_yaw: float) -> void:
 		striding = false
 		for f: Foot in feet:
 			if not f.down:
+				# (The foot in the air finishes as a step of her own, from where it is now: carried on from where it
+				# lifted, it went back there in a frame and dragged along the floor to its place.)
 				f.settle = true
+				f.from = f.ankle
+				f.from_yaw = f.fyaw
+				f.from_pitch = f.pitch
+				f.s = 0.0
+				f.h = maxf(f.h, 0.08 * _sc)
 	if striding:
 		var was := phase
 		phase = fposmod(phase + dist / l, 1.0)
@@ -206,11 +215,16 @@ func update(dt: float, pos: Vector2, vel: Vector2, p_yaw: float) -> void:
 				else:
 					f.u = clampf(psi / duty, 0.0, 1.0) if prev <= psi else 0.0
 			else:
-				if psi < prev:          # past the end of its swing: it comes down
+				# Through its swing by the stride's phase, coming down at the swing's end - and never a swing shorter than
+				# MIN_SWING of the stride: a foot lifted as the stride started, late in its own phase, went the whole way
+				# in two frames (87 cm in one: WsgSim's Low matches, a jump).
+				var span := maxf(1.0 - f.lift_psi, MIN_SWING)
+				f.s = minf(1.0, f.s + fposmod(psi - prev, 1.0) / span)
+				if f.s >= 1.0:
 					_land(f)
-				else:
-					f.s = clampf((psi - f.lift_psi) / maxf(1.0 - f.lift_psi, 0.01), 0.0, 1.0)
-					var rest := (1.0 - psi) * l
+				elif f.s < LAND_OVER:
+					# (Its spot kept from there: following her pace on, it slid in its last few cm - _place.)
+					var rest := (1.0 - f.s) * span * l
 					f.to = pos + dir * (rest + st.y * _sc) + _left() * f.side * _width_run() * _sc
 					f.to_yaw = yaw
 	else:
@@ -253,7 +267,8 @@ func _lift(f: Foot, psi: float) -> void:
 	f.to_yaw = f.yaw
 	var j := smoothstep(1.4, 3.0, speed)
 	var k := clampf(speed / 7.0, 0.0, 1.0)
-	f.h = lerpf(0.05, lerpf(0.17, 0.48, k), j) * lerpf(1.0, 0.45, side_on) * _sc
+	# (Never skimming the floor: a side-step's low swing came in flat and still going - a skid as it touched.)
+	f.h = maxf(lerpf(0.05, lerpf(0.17, 0.48, k), j) * lerpf(1.0, 0.45, side_on), 0.045) * _sc
 
 
 func _land(f: Foot) -> void:
@@ -278,8 +293,11 @@ func _settle(dt: float, pos: Vector2, vel: Vector2) -> void:
 		if not f.settle:
 			rate = maxf(rate, 1.0 / 0.18)
 		f.s = minf(1.0, f.s + dt * rate)
-		f.to = _home(f, pos + vel * (1.0 - f.s) * SETTLE_T)
-		f.to_yaw = yaw
+		if f.s < LAND_OVER:
+			# (Over its spot from 85% of the step, it comes straight down there: still following her then, it landed
+			# 2-3.5 cm on from where it was coming down, a slide as it touched.)
+			f.to = _home(f, pos + vel * (1.0 - f.s) * SETTLE_T)
+			f.to_yaw = yaw
 		if f.s >= 1.0:
 			_land(f)
 			f.u = 0.4
@@ -306,7 +324,7 @@ func _settle(dt: float, pos: Vector2, vel: Vector2) -> void:
 		worst.from = _planted_ankle(worst)
 		worst.from_yaw = worst.yaw
 		worst.from_pitch = _roll(worst.u)
-		worst.h = 0.07 * _sc
+		worst.h = 0.08 * _sc
 		worst.to = _home(worst, pos)
 		worst.to_yaw = yaw
 
@@ -360,10 +378,18 @@ func _place(f: Foot, st: Vector2, _duty: float) -> void:
 	var to := f.to + _fwd(f.to_yaw) * a1.x
 	# Running, the heel comes up behind first and the foot reaches forward late (the knee drives through, the shin
 	# swings out under it); a walk's or a settling step's foot goes evenly.
-	var lag := lerpf(1.0, lerpf(1.35, 1.6, k), j) if not f.settle else 1.0
-	var e := smoothstep(0.0, 1.0, pow(f.s, lag))
+	# The toe clears the floor before the foot goes anywhere, and it comes down where it lands: a foot dragged along
+	# the floor its first or last frames off it - lifting at a walk or a side-step, a step of her own standing, the
+	# step that brings her feet together as she stops - is a planted foot sliding (the world check's feet_low read
+	# 2.7 cm walking; WsgSim's Low matches 3-10 cm). Walking, the foot rises in place for the swing's first tenth, and
+	# at any pace it is over its spot by LAND_OVER of the swing and comes straight down on it (low and flat, still
+	# going, it read as skidding: 2-7 cm in a frame); a step of her own goes over between 15% and 85% of it.
+	var lag := lerpf(1.3, lerpf(1.35, 1.6, k), j) if not f.settle else 1.0
+	var s0 := 0.1 * (1.0 - j)
+	var e := smoothstep(0.15, LAND_OVER, f.s) if f.settle else \
+		smoothstep(0.0, 1.0, pow(clampf((f.s - s0) / (LAND_OVER - s0), 0.0, 1.0), lag))
 	var g := Vector2(f.from.x, f.from.z).lerp(to, e)
-	var peak := lerpf(0.9, lerpf(0.72, 0.6, k), j) if not f.settle else 1.0
+	var peak := lerpf(0.6, lerpf(0.72, 0.6, k), j) if not f.settle else 1.0
 	var y := lerpf(f.from.y, a1.y, f.s) + f.h * sin(PI * pow(f.s, peak))
 	f.ankle = Vector3(g.x, y, g.y)
 	var hang := 0.45 * k * j if not f.settle else 0.0
@@ -431,7 +457,9 @@ func solve(p: Dictionary, w := 1.0) -> Dictionary:
 	for i in 2:
 		var f: Foot = feet[i]
 		var s := "l" if i == 0 else "r"
-		var wt := 1.0 if f.down else smoothstep(0.75, 1.0, f.s)
+		# (And a foot just lifted, still behind her: hips risen at once left it out of the leg's reach, the drawn foot
+		# dragged after the ball of the foot as it left the floor - 1.8 cm a frame at a run.)
+		var wt := 1.0 if f.down else maxf(smoothstep(0.75, 1.0, f.s), 1.0 - smoothstep(0.0, 0.3, f.s))
 		if wt <= 0.0:
 			continue
 		var a: Vector3 = inv * f.ankle
@@ -519,6 +547,18 @@ func contact(side: String, ball_only := false) -> Vector3:
 	if ball_only:
 		return ball
 	return ball - flat * TOE if ball.y <= heel.y else heel + flat * HEEL
+
+
+## Both feet as drawn, as the foundation's checks read a body (WsgNoteChecks.feet; the world check's feet_low, WsgSim's
+## "feet" for a body the game draws itself at Low): [left ankle, left ball of the foot, right ankle, right ball of the
+## foot] (world). The game's body has no modifiers: its bones as posed are as drawn.
+func drawn_feet() -> Array:
+	var sk := body.skeleton
+	var out := []
+	for s in ["l", "r"]:
+		out.append((sk.global_transform * sk.get_bone_global_pose(body.bone("foot_" + s))).origin)
+		out.append(contact(s, true))
+	return out
 
 const _UPPER := ["hips", "spine", "chest", "neck", "head"]
 const _ARMS := ["upperarm_l", "forearm_l", "hand_l", "upperarm_r", "forearm_r", "hand_r"]

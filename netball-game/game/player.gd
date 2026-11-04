@@ -82,6 +82,7 @@ var _solid_memo := {}         # her side round a prop in her way (WsgSolidProps.
 var held_off := Vector2.ZERO  # how far a prop held the ball she holds off her hands (Ball.step): she gives way by it
 var _way := PackedVector3Array()   # an out-of-play walk's waypoints round the props (WsgSolidProps.path)
 var _way_to := Vector2.INF
+var _way_n := 0
 ## Set to shoot and still turning to the post (pivoting on her landing foot): the shot waits (act_t held at 0, and
 ## Match._run_shot's clock) until her body faces the post within SQUARE_DEG, or SQUARE_MAX seconds have gone.
 var squaring := false
@@ -142,6 +143,8 @@ func place(at: Vector2, face_dir := 0.0) -> void:
 		body.rotation.y = 0.0
 	if gait:
 		gait.reset(at, face_dir)
+	if link and is_instance_valid(link):
+		link.placed()   # (the foundation's planter too: a cut, not a slide)
 
 
 ## The one place her position changes, once a frame.
@@ -252,15 +255,28 @@ func _goal(solid: WsgSolidProps) -> Vector2:
 	if float(solid.penetration(g3, SPOT_R, BODY_H)[0]) > 0.0:
 		g3 = solid.free_spot(g3, SPOT_R, BODY_H)
 		g = Vector2(g3.x, g3.z)
-	if not (away() or match_ref.phase == "break"):
+	# (The restart's taker on her way to the ball too: a ball gone out behind a bench is fetched round it - WsgSim's
+	# fetch behind a prop.)
+	var taker: bool = match_ref.phase == "setup" and match_ref.restart.get("taker") == self
+	if not (away() or match_ref.phase == "break" or taker):
 		_way = PackedVector3Array()
 		_way_to = Vector2.INF
 		return g
+	var turned := false
 	if _way_to.distance_to(g) > 0.25:
 		_way = solid.path(Vector3(p.x, 0, p.y), g3, BODY_R, BODY_H)
 		_way_to = g
 	while _way.size() > 1 and Vector2(_way[0].x, _way[0].z).distance_to(p) < 0.4:
 		_way.remove_at(0)
+		turned = true
+	_way_n += 1
+	if taker and (turned or _way_n % 10 == 0):
+		# (The rest of her way from where she is, at each corner and every third of a second: carried past a corner at
+		# speed, the leg on from it ran into the prop's end, and she was steered round its other side - the fetch
+		# behind the hall's boards.)
+		_way = solid.path(Vector3(p.x, 0, p.y), g3, BODY_R, BODY_H)
+	if taker and _way.size() <= 1:
+		return g   # (the straight way: her spot itself, as it moves)
 	return Vector2(_way[0].x, _way[0].z) if not _way.is_empty() else g
 
 

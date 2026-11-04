@@ -227,6 +227,14 @@ func follow(frame_dt := 0.0) -> void:
 var _ball_rel := Vector3.INF  # the ball as last held, in the body's frame (for the frames between poses)
 
 
+## Put somewhere at once (Player.place: a quarter's start, a change; a replay's end): the planter lets go of the feet
+## it held, so they are put down afresh where she now stands and WsgSim reads a cut there, not a slide.
+func placed() -> void:
+	if loco and loco.planter:
+		loco.planter.reset()
+	_at = who.global_position if who and who.is_inside_tree() else Vector3.INF
+
+
 ## After the game has posed its body and placed her this frame (game seconds since the last): drive this one.
 ## vel, want_vel: her velocity and the one she is steering to (court x, z); yaw: where her body faces as the game draws
 ## it (0 faces +z; the game's legs are made for it); act: what her body does (Player.act; "signal" for an umpire's

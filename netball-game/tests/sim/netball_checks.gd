@@ -450,8 +450,18 @@ func _check_feet(m) -> void:
 				continue
 			var ys := []
 			if pl.link and pl.link.body and pl.link.body.visible:
-				for b in ["LeftFoot", "RightFoot"]:
-					ys.append((pl.link.body.bone_world(b) as Transform3D).origin.y)
+				# (The foundation's feet as drawn: read inside skeleton_updated, WsgNoteChecks.feet - after the frame its
+				# bones are back to the clip's, without the planter.)
+				var fb: WsgBody = pl.link.body
+				if not fb.has_meta("nb_feet_hook"):
+					fb.set_meta("nb_feet_hook", true)
+					fb.skeleton.skeleton_updated.connect(func():
+						if is_instance_valid(fb):
+							fb.set_meta("nb_feet", WsgNoteChecks.feet(fb)))
+				var drawn: Array = fb.get_meta("nb_feet", [])
+				if not drawn.is_empty():
+					ys.append((drawn[0] as Vector3).y)
+					ys.append((drawn[2] as Vector3).y)
 			elif pl.body:
 				for b in ["foot_l", "foot_r"]:
 					ys.append((pl.body.bone_world(b) as Vector3).y)

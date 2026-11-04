@@ -454,6 +454,21 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   sheets: courtside, lower tier, upper tier), prop_audit passes. The shared cards have no look or clap poses, so the
   cut-outs do not turn to the ball or clap in time (Crowd calls the cards' watch_ball and clap, ready for art
   that has them).
+- **Foundation d70ac7d -> 5c2304e** (branch netball-fnd): the owner's notes run in CI on a fresh install's defaults
+  (`XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1`). WsgSim's fetch behind a prop is wired (game/wsg_sim.gd `fetch`,
+  `solid`, `fetch_reach`): the ball is put dead behind the prop as a throw-in to the team due the restart, the
+  nearest player who may take it is sent for it round the props (Player._goal: the restart's taker follows
+  WsgSolidProps.path, again at each corner and every third of a second) and the whistle waits; 15 of 15 targeted
+  seeds reach it (1.2-6.1 s). Low is measured (§5.21): world.gd `walker_low` (HeroBody + Gait, the feet as drawn,
+  Gait.drawn_feet) and a `feet` Callable for each Low body in WsgSim. Both found the game's own feet sliding, fixed
+  in Gait: the toe clears the floor before the foot goes forward and the foot is over its spot by 85% of the swing
+  (then straight down), a step of her own goes over between 15% and 85% of it, a foot caught in the air as she
+  stops finishes from where it is, the hips stay down for a foot just lifted, no swing shorter than a quarter of the
+  stride (an 87 cm jump as a stride started), no swing under 4.5 cm. feet_low: walk 0.6 cm, the rest under 1 cm.
+  The sim's below-floor check reads the foundation's feet inside skeleton_updated (WsgNoteChecks.feet). Teleports
+  (Player.place: quarter starts and changes; a replay's end) reset the foundation's planter (FoundationLink.placed).
+  CI: the world check's crowd rule runs in its own job (world-crowd) beside test-and-build, the two reports merged
+  by world-check-report (--merge); the beta is published by its own job once all three have passed.
 
 ## Next
 

@@ -1780,6 +1780,10 @@ func _end_replay() -> void:
 	_replay = {}
 	if wsg_replay:
 		wsg_replay.stop()
+		# (Everyone shown back where play stopped at once: each foundation planter lets go of its feet - a cut.)
+		for who in players[0] + players[1] + umpires:
+			if who.link and is_instance_valid(who.link):
+				who.link.placed()
 	ball.position = r.ball_at
 	(r.cam as Camera3D).queue_free()
 	cam.close_dir = 0

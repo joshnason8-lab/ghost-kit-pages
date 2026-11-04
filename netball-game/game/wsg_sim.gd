@@ -258,16 +258,81 @@ func bodies() -> Array:
 			var active: bool = m.phase == "live" and not m.paused and not pl.away() and pl != m.holder and not pl.stopped
 			# Named for the stretch of play she is in: a new quarter places everyone at once, a replay shows the play again
 			# and a change brings on another player, so the feet are measured afresh (a jump there is a cut, not a slide).
-			out.append({"name": "%s%d.%d" % [pl.pos, t, _epoch], "pos": Vector3(pl.p.x, 0.0, pl.p.y), "radius": 0.25,
+			var e := {"name": "%s%d.%d" % [pl.pos, t, _epoch], "pos": Vector3(pl.p.x, 0.0, pl.p.y), "radius": 0.25,
 				"height": float(pl.data.get("height", 1.75)), "body": body, "active": active,
-				"target": Vector3(pl.target.x, 0.0, pl.target.y)})
+				"target": Vector3(pl.target.x, 0.0, pl.target.y)}
+			if pl.link == null and pl.body and pl.gait:
+				# Low: the game draws her own body (ADOPTING §5.21) - its feet, read as drawn, every frame.
+				e["feet"] = _low_feet.bind(pl)
+			out.append(e)
 	return out
+
+
+## A Low player's feet as drawn (Gait.drawn_feet) while they are her gait's; [] while her legs are a move's own (a
+## leap, the landing's motion capture: Gait.follow_body) or she is not shown - the run of feet ends there.
+static func _low_feet(pl: Player) -> Array:
+	if not is_instance_valid(pl) or not pl.is_visible_in_tree() or pl.legs_w < 0.99 or pl.land_w > 0.0:
+		return []
+	return pl.gait.drawn_feet()
 
 
 func ball() -> Dictionary:
 	if not _alive():
 		return {}
 	return {"pos": m.ball.pos, "radius": Ball.R, "live": m.phase == "live" and m.ball.state in ["flight", "loose"]}
+
+
+## The venue's props (Arena.solid): what the players and the ball are kept out of.
+func solid() -> WsgSolidProps:
+	return m.arena.solid if _alive() and m.arena else null
+
+
+## The fetch behind a prop (ADOPTING §5.17): the ball put dead at SPOT, as a ball gone out is (a throw-in to the team
+## due the restart), and the player the match sends for it: the nearest of that team who may take a throw-in there
+## (Match._choose_taker's rule), walked round the props by her own path (Player._goal: the restart's taker follows
+## WsgSolidProps.path). The match's whistle waits meanwhile (Match.held, as under the loading overlay), so she is not
+## sent off to take the throw-in from behind the prop once she has it.
+func fetch(spot: Vector3) -> Dictionary:
+	if not _alive():
+		return {}
+	var t: int = int(m.restart.get("to", 0)) if m.phase == "setup" and m.restart.has("to") \
+		else (1 - int(m.last_touch) if int(m.last_touch) >= 0 else 0)
+	var at := Court.clamp_court(Vector2(spot.x, spot.z))
+	var ok := Rules.takers(at, m.team_dir(t))
+	var who: Player = null
+	var best := INF
+	for pl: Player in m.players[t]:
+		if not (pl.pos in ok) or pl.away():
+			continue
+		var d := pl.p.distance_to(Vector2(spot.x, spot.z))
+		if d < best:
+			best = d
+			who = pl
+	if who == null:
+		return {}
+	m.pass_info = {}
+	m.shot_info = {}
+	m._release_holder()
+	m.ball.dead(Vector3(spot.x, Ball.R, spot.z))
+	m.ball.position = m.ball.pos   # (drawn there at once, as a restart's ball is put on its spot)
+	m.restart = {"to": t, "kind": Rules.THROW_IN, "at": at, "shot": false, "why": "fetch", "taker": who,
+		"spot": Vector2(spot.x, spot.z)}
+	m._enter("setup")
+	m.held = true
+	_events.append({"type": "fetch", "who": who.pos + str(t), "spot": spot})
+	# (About 4.5 m/s round the props: the default 20 s is ample.)
+	return {"who": "%s%d.%d" % [who.pos, t, _epoch], "seconds": 20.0, "arrive": 1.0}
+
+
+## Where a player may go for the ball: the venue's floor (Arena.floor_rect, inside its boards, walls or fences), where
+## Player keeps her, and no further from the court than a ball ever goes (tests/sim/netball_checks.gd: 3 m past the
+## run-off is a ball lost - the hall's wall bars and benches, 15 m out, are beyond it).
+func fetch_reach(p: Vector3) -> bool:
+	if not _alive() or m.arena == null:
+		return true
+	var r: Rect2 = m.arena.floor_rect.grow(-(Player.BODY_R + 0.05))
+	var far := Vector2(Court.HALF_L + Court.RUNOFF + 3.0, Court.HALF_W + Court.RUNOFF + 3.0) - Vector2.ONE * (Player.BODY_R + 0.3)
+	return r.has_point(Vector2(p.x, p.z)) and absf(p.x) <= far.x and absf(p.z) <= far.y
 
 
 func bounds() -> AABB:
