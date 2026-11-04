@@ -762,3 +762,14 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   toes point back against it - the feet, not the knees - while the raid stance's stills look right: being traced
   (Kabaddi's). The rest is with the foundation. The note says High until the foundation's "knees" rule is enforced
   (2026-11-06 12:00 UTC), then fails it. Low: 0 of 11,479.
+
+## 0.14.26: foundation f080f27 ("knees" rules), the knees note on the shared measure
+
+- f080f277: the world rules "knees" (fails from 2026-11-06 12:00 UTC) and "knee_strays" (from 11-13), and
+  WsgNoteChecks.knees / leg_bones. The lead ruled (2026-11-04) that a knee is judged against the body's forward from
+  its hips, not each foot's own heel-to-toe: a planted foot left turned while the body turns over it (the planter's
+  twist hold) is a knee not over its toe - the foundation's follow-up, due 11-13 - not a backward knee.
+- Owner note 2026-11-04-knees-forward now reads each drawn skeleton inside skeleton_updated with WsgNoteChecks.knees:
+  Low 2 of 14,283 bent knee-frames backward (worst 7.1 cm, a defender in ready), High 1 of 7,656 (7.1 cm, an umpire
+  walking); every official measured on both (scorers 0/720 Low, 0/204 High). 0.14.25's High 519/12,679 was heel-to-toe
+  forward: the twist hold and raid-stance toes, not knees. tests/knee_probe.tscn keeps heel-to-toe (a twist finder).

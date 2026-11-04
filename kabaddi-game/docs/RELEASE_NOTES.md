@@ -1,4 +1,8 @@
-**New in 0.14.25: the scorers' legs are their own.** On Low the scorers seated at the table keep their sitting
+**New in 0.14.26: knees checked the shared way.** The knee check now measures exactly as the World Stage games'
+shared check does (each body's own forward, as drawn): on Low and on High every knee bends forward (2 and 1 stray
+frames in a match, under 8 cm). Nothing you would see changes.
+
+**In 0.14.25: the scorers' legs are their own.** On Low the scorers seated at the table keep their sitting
 pose's legs; the foot planting no longer tries to plant a seated scorer's feet.
 
 **In 0.14.24: a guard on knees.** A new automatic check plays a match on Low and on High and fails the build if
