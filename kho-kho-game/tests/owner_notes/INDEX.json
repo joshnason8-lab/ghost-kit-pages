@@ -1,0 +1,125 @@
+{
+ "about": "The owner's notes on Kho Kho Rush, each a test for good (tools/wsg/owner_notes.gd). Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-11-02-pole-view-joystick",
+   "game": "kho-kho",
+   "date": "2026-11-02",
+   "version": "Kho Kho Rush 0.11.1",
+   "words": "When changing to the pole view the joystick movement is wrong.",
+   "file": "2026-11-02_pole_view_joystick.gd"
+  },
+  {
+   "id": "2026-11-03-arm-stuck-out-running",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "For some reason while a player is running his arm is stuck sticking straight out.",
+   "file": "2026-11-03_arm_stuck_out_running.gd"
+  },
+  {
+   "id": "2026-11-03-arm-forward-standing",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "Some sort of regression. While standing still the chasers arm is just pointing forward.",
+   "file": "2026-11-03_arm_forward_standing.gd"
+  },
+  {
+   "id": "2026-11-03-tag-over-kho",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "The tag button is overlapping the kho button",
+   "file": "2026-11-03_tag_over_kho.gd"
+  },
+  {
+   "id": "2026-11-03-foul-whistles",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "When crossing the foul line the whistles go nuts until you go back, is that supposed to be like that?",
+   "file": "2026-11-03_foul_whistles.gd"
+  },
+  {
+   "id": "2026-11-03-no-tag-replays",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "Get rid of the replays on tags. On low quality I feel like they will never look good.",
+   "file": "2026-11-03_no_tag_replays.gd"
+  },
+  {
+   "id": "2026-11-03-birds-barely",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "Quiet the birds way more they are annoying, it should be barely noticable.",
+   "file": "2026-11-03_birds_barely.gd"
+  },
+  {
+   "id": "2026-11-02-plays-himself",
+   "game": "kho-kho",
+   "date": "2026-11-02",
+   "version": "Kho Kho Rush 0.11.1",
+   "words": "The player is moving himself and dodging by himself when I'm supposed to be playing.",
+   "file": "2026-11-02_plays_himself.gd"
+  },
+  {
+   "id": "2026-11-01-dive-one-arm",
+   "game": "kho-kho",
+   "date": "2026-11-01",
+   "version": "Kho Kho Rush 0.11.0",
+   "words": "The dive needs better standing up from the dive... they are trying to tag the person. Typically with one arm extended",
+   "file": "2026-11-01_dive_one_arm.gd"
+  },
+  {
+   "id": "2026-11-03-tags-run-by",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "Sometimes the players are so close it's obvious there would be a tag but they just run right by. We need to fix that.",
+   "file": "2026-11-03_tags_run_by.gd"
+  },
+  {
+   "id": "2026-11-02-kneeling-ghosts",
+   "game": "kho-kho",
+   "date": "2026-11-02",
+   "version": "Kho Kho Rush 0.11.1",
+   "words": "The runner can run through the kneeling players like they are ghosts.",
+   "file": "2026-11-02_kneeling_ghosts.gd"
+  },
+  {
+   "id": "2026-11-03-start-looks-frozen",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.1",
+   "words": "On a lot of the games when you click start game there is a loading delay ... long enough on the slow phone that users might think the game has frozen. We either need a little load screen or load bar by the start buttons.",
+   "file": "2026-11-03_start_looks_frozen.gd"
+  },
+  {
+   "id": "2026-11-03-crowd-in-seats",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.11.1",
+   "words": "Crowd still looks like they are 'in' the seats.",
+   "file": "2026-11-03_crowd_in_seats.gd"
+  },
+  {
+   "id": "2026-11-03-walk-through-props",
+   "game": "kho-kho",
+   "date": "2026-11-03",
+   "version": "Kho Kho Rush 0.12.3",
+   "words": "These games live in a world of reality. There will NEVER be a time when a player or referee should walk through a table or bench etc.",
+   "file": "2026-11-03_walk_through_props.gd"
+  },
+  {
+   "id": "2026-11-04-knees-backward",
+   "game": "kho-kho",
+   "date": "2026-11-04",
+   "version": "Sepak Takraw 0.15.27",
+   "words": "All that work and the players stances regressed to look like the have broken backwards knees. How does that happen its unacceptable. Refs knees also bent wrong",
+   "file": "2026-11-04_knees_backward.gd"
+  }
+ ]
+}

@@ -1,0 +1,297 @@
+name: Kho Kho Rush · Android build
+
+# Builds the Godot project in kho-kho-game/ into the beta APK you can sideload,
+# after running the headless test suite.
+
+on:
+  push:
+    paths:
+      - "kho-kho-game/**"
+      - ".github/workflows/kho-kho-android.yml"
+  # No pull_request trigger: push already reports its checks on the PR's head commit, and a second run per push
+  # meant two "run failed" emails for one failure.
+  workflow_dispatch:
+
+concurrency:
+  group: kho-kho-android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: kho-kho-game
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write   # to publish the beta release (below)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shared foundation has every required commit (fails without one; only behind is a warning)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
+      # The owner's notes are kept as tests for good (ADOPTING 5.16): no note ever leaves tests/owner_notes/INDEX.json.
+      - name: Owner's notes all still kept (none ever deleted)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: The game's animation clips (the private assets, for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/fetch_anims.sh
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: The laws, every screen in every language, championships, AI matches and their motion
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
+
+      - name: Text fits (every screen, every language, four screen shapes)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 1800 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- fit_audit.jsonl 2>&1 | tail -40
+          if [ -s fit_audit.jsonl ]; then head -40 fit_audit.jsonl; fi
+
+      - name: Touch input (scrolling from anywhere on a page, on its words too; taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      - name: Draw calls and triangles at each graphics level
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 res://tests/perf_probe.tscn 2>&1 | grep -E "graphics|venue"
+
+      # The world rules (ADOPTING 5.18, docs/WORLD_RULES.md: game/world.gd): props solid (the prop audit, every ground,
+      # every body every frame), the crowd in its seats (the crowd audit), planted feet, no T- or A-pose, officials on
+      # the rig in their own kit, key sounds crisp, the loading overlay in the tap's frame, the stick the camera's way on
+      # every camera, the graphics tiers kept, nothing licensed in a Web build.
+      - name: World check (every rule, every mode)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" 2>&1 | grep -vE "^\s+at: |ALSA lib"
+      - name: World check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kho-kho-world-check
+          path: ${{ runner.temp }}/world
+
+      # Every note the owner ever gave, as a test of its own (tests/owner_notes: their words, and what must hold so they
+      # never see it again). Strict: nothing may be skipped here. Fresh: a fresh install's default settings (an empty
+      # user:// - no saved settings from an earlier step), as a new player meets them.
+      - name: The owner's notes (every one, in their own words)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | grep -E "^\[|PASS|FAIL|SKIPPED|OWNER NOTES|notes:"
+
+      # The beta's signing key: the owner's (repository secret BETA_KEYSTORE_B64, a PKCS12 keystore, alias
+      # androiddebugkey, passwords "android"), the same on every build, so each beta installs over the last. Without
+      # the secret (a fork) a throwaway key is made, and updates will not install over earlier builds.
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          KEYSTORE=$HOME/debug.keystore
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+            echo "Signing with the beta keystore from the repository secret."
+          else
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+            echo "::warning::BETA_KEYSTORE_B64 is not set: this APK is signed with a throwaway key, and updates will not install over earlier builds."
+          fi
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          mkdir -p build
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          ls -la build
+
+      # Signed with the beta keystore (above): the same key every build, so each installs over the last and keeps the
+      # player's saves. Its certificate's SHA-256 is logged, and must be the owner's when the secret is set.
+      - name: Sign APK
+        env:
+          BETA_CERT_SHA256: "6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+        run: |
+          curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed \
+            --ks "$KEYSTORE" --ksAlias androiddebugkey --ksPass android --ksKeyPass android
+          mv ${PROJECT_DIR}/build/signed/unsigned-aligned-signed.apk ${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk
+          ls -la ${PROJECT_DIR}/build
+          FP=$(keytool -printcert -jarfile ${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk | sed -n 's/^[[:space:]]*SHA256: //p' | head -1)
+          echo "APK signing certificate SHA-256: $FP"
+          if [ "$BETA_KEY" = "1" ] && [ "$FP" != "$BETA_CERT_SHA256" ]; then
+            echo "::error::The APK's signing certificate is not the beta key's (expected $BETA_CERT_SHA256)."
+            exit 1
+          fi
+
+      # The release gate (ADOPTING 5.19): the owner's key, the version, the licensed clips in, nothing that is not the
+      # game's, textures GPU-compressed; and the size against the last beta.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          # (Its "newer" - above the release on the tag - is about what is published: a build that publishes nothing
+          # - [no-beta], another branch, a manual run - is not held to it, and is gated against no published APK.)
+          PUBLISHES: ${{ github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-game' && !contains(github.event.head_commit.message, '[no-beta]') }}
+        run: |
+          PREV=""
+          if [ "$PUBLISHES" = "true" ]; then
+            gh release download khamba-dash-beta -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+            PREV="--previous $RUNNER_TEMP/previous.apk"
+          fi
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk --version "$VERSION" \
+            $PREV --out "$RUNNER_TEMP/gate"
+      - name: Release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kho-kho-release-gate
+          path: ${{ runner.temp }}/gate
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kho-kho-rush-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/kho-kho-rush-${{ env.VERSION }}.apk
+          if-no-files-found: error
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "khamba-dash-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
+      - name: Publish the beta release
+        # Only this branch's builds: a branch cut from it (a pilot) must not replace the beta.
+        # ([no-beta] in the push's message: built and checked, not published - the lead holding betas.)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-game' && !contains(github.event.head_commit.message, '[no-beta]')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=khamba-dash-beta
+          APK=${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk
+          cat > notes.md <<EOF
+          The latest beta of **Kho Kho Rush** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android** (64-bit phones): tap \`kho-kho-rush-${VERSION}.apk\` under Assets below. When it has
+          downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
+          any earlier Kho Kho Rush beta and keeps your saves.
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          # Published in place (the lead, 2026-11-03: a new tag for a release - safe publishing's $TAG-next - drew HTTP 403s
+          # from 17:00; Pok Ta Pok's way, c5d73d86): the new APK added to the release on its tag and checked there, then the
+          # old APKs taken off and the notes and title set. No tag is made or moved; the old APK stays until the new one is up.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md
+          else
+            gh release upload "$TAG" "$APK" --clobber
+            NEW="$(basename "$APK")"
+            gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$NEW"
+            for old in $(gh release view "$TAG" --json assets -q '.assets[].name' | grep '\.apk$' | grep -vx "$NEW"); do
+              gh release delete-asset "$TAG" "$old" --yes
+            done
+            gh release edit "$TAG" --title "Kho Kho Rush ${VERSION} (latest beta)" --notes-file notes.md --prerelease
+          fi
+          gh release view "$TAG" >/dev/null
+
+      # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kho-kho-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=kho-kho-foundation-pilot
+          APK=${PROJECT_DIR}/build/kho-kho-rush-${VERSION}.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Kho Kho Rush (${VERSION}), built from \`${GITHUB_SHA::7}\`: the chasers, runners and
+          officials on the World Stage Games shared rig with motion-capture running. Installs over the beta and keeps your
+          saves (the same game); to go back to the beta, uninstall and reinstall it (its version code is lower).
+          EOF
+          NEXT="$TAG-next-$GITHUB_RUN_ID"   # (published safely, as the beta: ADOPTING 5.19)
+          gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Kho Kho Rush ${VERSION}" --notes-file notes.md
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG" >/dev/null
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true

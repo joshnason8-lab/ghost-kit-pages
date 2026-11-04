@@ -1,0 +1,42 @@
+# As 0.12.4 played (ddebb38): none of the three.
+# Applied by .github/workflows/kho-kho-balance.yml (git apply) to a copy of the game for one balance run: never to the game itself.
+diff --git a/kho-kho-game/game/athlete.gd b/kho-kho-game/game/athlete.gd
+index 3bd6e71..6a9d3fc 100644
+--- a/kho-kho-game/game/athlete.gd
++++ b/kho-kho-game/game/athlete.gd
+@@ -134,13 +134,7 @@ func integrate(dt: float) -> void:
+ 		var f := clampf(act_t / maxf(act_len, 0.1), 0.0, 1.0)
+ 		var sp := vel.length()
+ 		if sp > 0.01:
+-			var to_v := lerpf(_dive_v0, DIVE_LAND, f * f)
+-			if _reach_lock != Vector3.INF:
+-				# His hand has the runner's leg: the dive stops on it, not carrying him past it (the owner, 0.11: a
+-				# diving tag, one arm out to the leg) - no faster than stops him LOCK_AHEAD short of it.
+-				var along := (_reach_lock - position).dot(vel / sp)
+-				to_v = minf(to_v, sqrt(2.0 * LOCK_STOP * maxf(along - LOCK_AHEAD, 0.0)))
+-			vel = vel.normalized() * move_toward(sp, to_v, maxf(30.0, LOCK_STOP * 2.0) * dt)
++			vel = vel.normalized() * move_toward(sp, lerpf(_dive_v0, DIVE_LAND, f * f), 30.0 * dt)
+ 		dv = Vector3.ZERO
+ 	elif act == "lie":
+ 		dv = -vel
+diff --git a/kho-kho-game/game/match.gd b/kho-kho-game/game/match.gd
+index 4285f89..d85b927 100644
+--- a/kho-kho-game/game/match.gd
++++ b/kho-kho-game/game/match.gd
+@@ -1726,7 +1726,6 @@ func _next_batch() -> void:
+ 	for a in batch:
+ 		d_state[a] = "enter"
+ 		a.do("")
+-		a.goal = Vector3.INF   # (on the field again: his walk to the bench, from an out earlier in the turn, is over)
+ 		stats[a.data.id].run = 0.0
+ 		var ai: Dictionary = _ai[a]
+ 		ai.cool = rng.randf_range(0.0, 0.25)
+@@ -2138,7 +2137,7 @@ func _separate(dt := 1.0 / 30.0) -> void:
+ 			# A kneeling chaser does not move: a runner who ran into him this frame is put back out all the way (at
+ 			# most his own frame's run - he slides round him, no jump), or at full speed he went half through (the
+ 			# owner: "like they are ghosts").
+-			_push_apart(d, sq, BODY_SEATED, 1.0, PUSH_MAX + d.vel.length() * dt)
++			_push_apart(d, sq, BODY_SEATED, 1.0)
+ 	for i in movers.size():
+ 		for k in range(i + 1, movers.size()):
+ 			_push_apart(movers[i], movers[k], BODY_STANDING, 0.5)

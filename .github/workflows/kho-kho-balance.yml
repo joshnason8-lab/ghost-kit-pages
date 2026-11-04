@@ -1,0 +1,74 @@
+# Kho Kho Rush's balance runs, for the owner's balance decisions (the lead: on hundreds of seeds, with confidence
+# intervals): tests/match_sim, 200 AI matches a cell, the game as it is ("current") and variants that each take one
+# change back out (tools/balance/<variant>.patch, applied to the job's own checkout only). Runs on a push whose message
+# carries [sim-balance], or by hand. tools/balance/report.py puts it in one table (BALANCE.md, an artifact).
+name: Kho Kho Rush · balance
+on:
+  push:
+    branches: [claude/kho-kho-game]
+    paths: ['kho-kho-game/**', '.github/workflows/kho-kho-balance.yml']
+  workflow_dispatch:
+concurrency:
+  group: kho-kho-balance-${{ github.ref }}
+  cancel-in-progress: false   # (a later push, which runs nothing here, must not cancel a balance run in flight)
+env:
+  GODOT_VERSION: "4.7.2"
+  GAME_DIR: kho-kho-game
+jobs:
+  run:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[sim-balance]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # The owner's fast-format tune (2026-11-03, about 1.6 outs a minute from 1.74): the game as it is in both
+        # formats (classic must be unchanged) and the fast game with the tune taken back out. (The 0.12.6 variants -
+        # before, no_dive_stop, no_kneel_push, no_goal_clear - answered the classic drop; their patches stay.)
+        variant: [current, fast_untuned]
+        fmt: [classic, fast]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        exclude:
+          - {fmt: classic, variant: fast_untuned}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Godot ${{ env.GODOT_VERSION }}
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Translations and the private animation (as the build has them)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: |
+          python3 $GAME_DIR/tools/build_i18n.py
+          sh $GAME_DIR/tools/fetch_anims.sh
+          sh $GAME_DIR/tools/wsg/fetch_assets.sh
+      - name: The variant (this job's checkout only)
+        if: matrix.variant != 'current'
+        run: git apply $GAME_DIR/tools/balance/${{ matrix.variant }}.patch && git diff --stat
+      - name: Import
+        run: godot --headless --path $GAME_DIR --import || true
+      - name: 25 matches (shard ${{ matrix.shard }} of 8)
+        run: |
+          mkdir -p "$RUNNER_TEMP/out/${{ matrix.variant }}-${{ matrix.fmt }}-${{ matrix.shard }}"
+          cd $GAME_DIR
+          KK_SEED0=$((100 + ${{ matrix.shard }} * 25)) KK_CHECK=1 timeout 5000 godot --headless --path . --fixed-fps 30 res://tests/match_sim.tscn -- 25 ${{ matrix.fmt }} \
+            > "$RUNNER_TEMP/out/${{ matrix.variant }}-${{ matrix.fmt }}-${{ matrix.shard }}/sim.log" 2>&1
+          grep -E "^ALL|^RULES" "$RUNNER_TEMP/out/${{ matrix.variant }}-${{ matrix.fmt }}-${{ matrix.shard }}/sim.log"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: 'kk-balance-${{ matrix.variant }}-${{ matrix.fmt }}-${{ matrix.shard }}', path: '${{ runner.temp }}/out'}
+
+  report:
+    needs: run
+    if: always() && needs.run.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {path: '${{ runner.temp }}/logs', pattern: 'kk-balance-*', merge-multiple: true}
+      - run: python3 $GAME_DIR/tools/balance/report.py "$RUNNER_TEMP/logs" | tee "$RUNNER_TEMP/BALANCE.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with: {name: kho-kho-balance, path: '${{ runner.temp }}/BALANCE.md'}

@@ -1,0 +1,29 @@
+{
+ "about": "Matches WsgSim once found a bug in: every smoke batch runs them for good (tools/wsg/sim.gd adopt).",
+ "cases": [
+  {
+   "found": "2026-11-03",
+   "kind": "extreme",
+   "seed": 6.0,
+   "signature": "stuck: away defender # hardly moved for # s with its target # m away"
+  },
+  {
+   "found": "2026-11-03",
+   "kind": "extreme",
+   "seed": 16.0,
+   "signature": "stuck: away defender # hardly moved for # s with its target # m away"
+  },
+  {
+   "found": "2026-11-03",
+   "kind": "extreme",
+   "seed": 20.0,
+   "signature": "stuck: away defender # hardly moved for # s with its target # m away"
+  },
+  {
+   "found": "2026-11-03",
+   "kind": "extreme",
+   "seed": 22.0,
+   "signature": "stuck: away defender # hardly moved for # s with its target # m away"
+  }
+ ]
+}
