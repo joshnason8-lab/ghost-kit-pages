@@ -860,6 +860,17 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.14, 4 November 2026)
+
+- **The owner's calls** (4 November, through the lead): the Guide's cautions per foul, no scoring with the hand
+  (a free out), advantage for aggressive fouls only; temporary substitutes for blood and head injuries (rare: 3 in
+  100 hard falls); each player's own number on his back (the kit shader, over the texture's printed 11); umpires'
+  errors no; club hurling later. Owner notes for each (26 in all).
+- **Sin bin** timed on the referee's watch over the whole match (Rules of Control 1.2(ix)(d)).
+- Score check (four full matches): 1.54 points a live minute (real 1.58), 56% of shots scoring (real 60%), 5.0
+  yellow and 0.5 red cards a match; about 21 hard falls, so some 0.6 injuries, a match.
+- **Foundation 5600661c** (31f60da3: the corrections to 3b700012's four regressions, all clear).
+
 ## Done (0.24.13, 4 November 2026)
 
 - **Rules read against the full Official Guide Part 2, 27.03.2026** (roadmap 2; gaa.ie now reachable): free and 65

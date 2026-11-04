@@ -9,6 +9,18 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.14
+
+- **The Official Guide's cards, scores and advantage** (the owner's call): every pull-down, trip and careless hurley is
+  a yellow card; holding or charging is a yellow the second time, pushing or striking a hurley when it keeps on. A
+  ball hand-passed over the bar no longer scores: a free out where the hand-pass was made. Advantage only after an
+  aggressive foul.
+- **Blood and head injuries**: now and then a man who goes down hard is hurt; at the next break he goes off for
+  treatment and a temporary substitute comes on (not one of your five), and he comes back once treated.
+- **Numbers on the backs**: every player wears his own number (the substitutes theirs), on every graphics level.
+- **The sin bin** runs its ten minutes through added time, as the rules say.
+- **Feet** (the shared animation foundation): its corrections to the last planter update.
+
 ## New in 0.24.13
 
 - **The rules, checked against the full Official Guide** (2026): at a free or a 65 everyone but the taker, on both
