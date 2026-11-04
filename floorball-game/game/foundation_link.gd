@@ -611,6 +611,7 @@ func _place_stick() -> void:
 	# And about the top fist (at most 10 degrees, never lowering the blade into the floor) toward the lower fist, should
 	# that arm not have reached it (a pass's follow-through across the chest).
 	var lo: Vector3 = body.bone_world(low + "Hand") * ((_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3))
+	var xf_arms := xf    # (the hips and lean below follow the stick as the arms were asked to hold it, not as turned)
 	var d := (xf.basis * Vector3.DOWN).normalized()
 	var pivot := xf.origin + d * d.dot(fist - xf.origin)
 	# (Should that take the blade into the floor, the stick slides up along its own line - the shaft's line, and so both
@@ -646,7 +647,7 @@ func _place_stick() -> void:
 	var spacing := maxf(0.12, float(gb.stick_hands().get("l" if t_s == "r" else "r", 0.23)) - float(gb.stick_hands().get(t_s, 0.03)))
 	for k in (2 if _low_w > 0.5 else 1):
 		var side := top if k == 0 else low
-		var grip := inv * (xf * Vector3(0, -(TOP_AT + spacing * k), 0))
+		var grip := inv * (xf_arms * Vector3(0, -(TOP_AT + spacing * k), 0))
 		var sh := inv * body.bone_world(side + "Arm").origin
 		var from := game_sh if k == 0 else sh
 		var arm: float = _arm_len[side]

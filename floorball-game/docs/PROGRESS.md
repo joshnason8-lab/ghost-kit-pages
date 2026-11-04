@@ -227,6 +227,15 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.17-beta: the planter's corrective; the stick's turn kept out of the hips (4 November 2026)
+
+- The shared foundation synced to 31f60da (the planter's corrective for 3b70001's regressions, among them a
+  26.6 cm referee foot jump on WsgSim extreme#3).
+- FoundationLink._place_stick: the hips and lean follow the stick as the arms were asked to hold it, not as turned
+  toward the lower fist (that turn is for the drawn stick only; fed back, it moved the shoulders the next frame). From
+  fresh defaults: up close 495 of 517 (492 needed), lower thumb up 8012 of 8779 (7902), the tests' lower fist off in
+  39 of 1731 (57). 0.9.17-beta, code 32.
+
 ### 0.9.16-beta: the referees' planter (4 November 2026)
 
 - The shared foundation synced to 3b70001 (the planter: a run's time every tick since its last, a landing foot planted
