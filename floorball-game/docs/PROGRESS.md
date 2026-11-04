@@ -227,6 +227,14 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.18-beta: the World Finals' tables in bigger type (4 November 2026)
+
+- The World Finals' four group tables (UI.standings, compact) in 19 px rows with a little air between them, not 17 px
+  with none: Next list item 6. Fit audit: 0 problems, every screen, every language, four screen shapes.
+- The owner's note watch-ai-match gives the unseeded watched match up to 15 s to get going (one began with a stoppage).
+- Club season's 3 v 3 overtime (Next item 4) waits on the Swedish league's current rule: a 2017 proposal had it in the
+  regular season and play-offs, the federation's 2022/23 exemption filing reads regular season only. 0.9.18-beta, code 33.
+
 ### 0.9.17-beta: the planter's corrective; the stick's turn kept out of the hips (4 November 2026)
 
 - The shared foundation synced to 31f60da (the planter's corrective for 3b70001's regressions, among them a
@@ -544,7 +552,6 @@ The owner's list:
 3. Native-speaker review of the translations (docs/LANGUAGES.md), the coach's tips first.
 4. Club season extras: a short 3 v 3 overtime as the Nordic leagues play it, a second season, form and streaks.
 5. The penalty benches and secretariat as real models; Meshy bodies if the owner wants them (docs/MESHY_BRIEF.md).
-6. The World Finals' tables in bigger type on phones.
 
 ## Decisions and why
 
