@@ -6,7 +6,7 @@ extends Control
 ## globe at the top changes the language; seven taps on the version, the developer's overlay.
 
 const ATTRACT := [["ESC", "LLA", "village"], ["PIS", "VAL", "stone"], ["SAV", "QUE", "festival"], ["FLO", "COP", "night"],
-	["VUN", "ROS", "village"], ["ORW", "PAL", "stone"]]
+	["VUN", "ROS", "village"], ["ORW", "PAL", "stone"], ["COP", "FLO", "markers"]]
 
 var _sv: SubViewport
 var _match: Node = null

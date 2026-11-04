@@ -453,7 +453,7 @@ func _menus() -> void:
 		_scroll_to_end()
 		await frames(4)
 		await audit("howto_%d_end" % tab)
-	for venue in ["village", "stone", "stone_maya"]:
+	for venue in ["village", "stone", "stone_maya", "markers"]:
 		for watch in [false, true]:
 			# (stone_maya: the stone court with the revival chosen)
 			Game.settings.stone_rules = "maya" if venue == "stone_maya" else "classic"

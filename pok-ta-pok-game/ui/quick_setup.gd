@@ -74,7 +74,7 @@ func _build() -> void:
 	diagram.custom_minimum_size = Vector2(360, 200)
 	diagram.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	diagram.size_flags_stretch_ratio = 1.2
-	diagram.set_court(_rules(), DB.team(_home).c1, DB.team(_away).c1)
+	diagram.set_court(_rules(), DB.team(_home).c1, DB.team(_away).c1, bool(DB.venue(_venue).get("rings", true)))
 	mid.add_child(diagram)
 	mid.add_child(_team_card(1))
 	# The options.

@@ -8,6 +8,7 @@ var rules := Rules.ULAMA
 var home := Color("b8352b")
 var away := Color("2f5d8a")
 var labels := true
+var ringed := true   # false: the markers court (R12) - three floor markers down the alley, no rings
 
 
 func _ready() -> void:
@@ -15,8 +16,9 @@ func _ready() -> void:
 	resized.connect(queue_redraw)
 
 
-func set_court(p_rules: String, h: Color, a: Color) -> void:
+func set_court(p_rules: String, h: Color, a: Color, p_ringed := true) -> void:
 	rules = p_rules
+	ringed = p_ringed
 	home = h
 	away = a
 	queue_redraw()
@@ -64,11 +66,17 @@ func _draw() -> void:
 		draw_rect(Rect2(P.call(x0, -ew), Vector2(hl - al, ew * 2.0) * k), Color(home if sx < 0 else away, 0.18))
 		draw_rect(Rect2(P.call(x0, -ew), Vector2(hl - al, ew * 2.0) * k), ink, false, 2.0)
 	draw_line(P.call(0, -aw), P.call(0, aw), Game.C_GOLD, 2.0)
-	for rc in [-1.0, 1.0]:
-		draw_circle(P.call(0, rc * (tz - 0.4)), maxf(4.0, Court.RING_OUT * k * 1.6), Color("6a5a44"))
-		draw_circle(P.call(0, rc * (tz - 0.4)), maxf(2.0, Court.RING_IN * k * 1.6), Color("e6dcc6"))
+	if ringed:
+		for rc in [-1.0, 1.0]:
+			draw_circle(P.call(0, rc * (tz - 0.4)), maxf(4.0, Court.RING_OUT * k * 1.6), Color("6a5a44"))
+			draw_circle(P.call(0, rc * (tz - 0.4)), maxf(2.0, Court.RING_IN * k * 1.6), Color("e6dcc6"))
+	else:
+		# The markers court: three round markers set in the floor down the alley's middle (Venue._floor_markers).
+		for mx in [-al * 0.55, 0.0, al * 0.55]:
+			draw_circle(P.call(mx, 0), maxf(4.0, Venue.MARKER_R * k * 1.4), Color("6a5a44"))
+			draw_circle(P.call(mx, 0), maxf(2.0, Venue.MARKER_R * k * 0.9), Color("cdbd9c"))
 	if labels:
-		_label(tr("RING"), P.call(0, -tz - 3.6), font, fs, Game.C_GOLD)
+		_label(tr("RING") if ringed else tr("MARKERS"), P.call(0, -tz - 3.6), font, fs, Game.C_GOLD)
 		_label(tr("END_COURT"), P.call(-(al + hl) * 0.5, ew + 2.4), font, fs, ink)
 		_label(tr("END_COURT"), P.call((al + hl) * 0.5, ew + 2.4), font, fs, ink)
 		_label(tr("TALUD"), P.call(-al * 0.55, tz + 2.2), font, fs, Color(Game.C_INK, 0.7))
