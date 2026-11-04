@@ -109,6 +109,8 @@ jobs:
       # game/world.gd wires them. Each mode is started by its own Play button and then checked:
       #   - its loading overlay is up in the tap's frame;
       #   - its players and officials are drawn as people;
+      #   - no knee is drawn bent backwards (knees, from 2026-11-06 12:00 UTC; single strays, knee_strays, from 11-13),
+      #     at every tier, outside the roll spike and the sunback (game/world.gd knee_excuse);
       #   - the stick goes the camera's way on every camera;
       #   - at Low, Medium and High it keeps within the tier's budgets.
       # Also checked: a player's planted feet; the key sounds crisp at a distance; no licensed data on the Web; and at
@@ -116,7 +118,7 @@ jobs:
       # the shared prop audit, game/prop_runs.gd) and the crowd seated (crowd_audit).
       # The report (WORLD_CHECK.md, world_check.json, the audits' sheets) goes outside the project and is uploaded. A
       # failing rule fails the build from 2026-11-03 12:00 UTC; the props fail it now, as before.
-      - name: World rules (world_check; props, crowd, feet, pose, officials, sounds, loading, joystick, web, tiers)
+      - name: World rules (world_check; props, crowd, feet, pose, knees, officials, sounds, loading, joystick, web, tiers)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -o pipefail

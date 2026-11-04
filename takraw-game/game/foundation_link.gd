@@ -103,6 +103,9 @@ func _ready() -> void:
 	body.set_manual(true)
 	body.visible = false        # till its first pose
 	proxy = _make_proxy(gb.women)
+	# (Never drawn - no mesh, only read: hidden, so nothing takes it for a body on screen, as the world check's knees
+	# did, "no legs it knows".)
+	proxy.visible = false
 	add_child(proxy)
 	# The game's body and this one: the same mesh; the rig's metres against the game skeleton's units (by the legs,
 	# hip to ankle: the feet meet the ball), and where the rig's origin is in the game skeleton's space.

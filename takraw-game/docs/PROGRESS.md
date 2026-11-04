@@ -670,6 +670,21 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Foundation f080f27: the knees rule on (0.15.31)
+
+- **Foundation e04af65 -> f080f27**: the world rules "knees" (fails from 2026-11-06 12:00 UTC) and "knee_strays"
+  (single strays, from 11-13 12:00), with WsgWorldGame.knee_excuse (ours since 0.15.30) and leg_bones (not needed:
+  our bodies' legs are found by their Mixamo names, Low's and the foundation's alike).
+- **The pose proxy hidden**: on Medium and High each body's GamePose skeleton (FoundationLink.proxy: the game's 17
+  pose bones, read by WsgLegacyPose for the foundation body, never drawn, no mesh) was visible, so "knees" listed 14
+  skeletons a match "with no legs it knows". It is hidden now (it is only read: its local poses, which do not depend
+  on it being shown).
+- The world check, knees and knee_strays (every mode at Low, Medium and High, 240 frames each, with the library):
+  knees PASS - 12 skeletons with legs at Low and 28 at Medium and High (the 14 bodies and their game skeletons), no
+  unknown skeletons, no excuse needed in its 8 seconds. knee_strays (deferred to 11-13): single frames only - the
+  foundation body at frame 128 (7.3-7.7 cm, Medium or High, the same moment in each mode) and two of Low's own bodies
+  in Watch AI (4.6 and 8.5 cm), the planter step swing flick the Foundation is on.
+
 ## The knees rule's excuse (0.15.30)
 
 The foundation's "knees" world rule (failing from 2026-11-06 12:00 UTC: a bent knee more than 4 cm behind its

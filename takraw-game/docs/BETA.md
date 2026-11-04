@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.31: **the knees check is on.** Behind the scenes only: the shared world check now fails any build with a
+knee drawn bent backwards, in every mode at every graphics level. The game passes it. Nothing changes in play.
+
 New in 0.15.30: **ready for the knees check.** Behind the scenes only: the shared world check's new knee rule may
 excuse only the roll spike and the sunback (the body over in the air), live or in a replay, and the game now says so.
 Nothing changes in play.
