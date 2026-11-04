@@ -87,6 +87,14 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "season" in OS.get_cmdline_user_args():
+		# (Only the Club Season: single and home and away, the finals, seeds and saves: tests/test_runner.tscn -- season)
+		_league()
+		_season()
+		Game.delete_league()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -103,6 +111,7 @@ func _ready() -> void:
 	_sim()
 	_cup()
 	_league()
+	_season()
 	await _matches()
 	await _rules_in_play()
 	await _ball_in_play()
@@ -2212,13 +2221,15 @@ func _league() -> void:
 		pts += int(r.pts)
 		check(int(r.p) == 7, "each club plays seven")
 	check(pts == 56, "two points a match shared out (%d)" % pts)
-	check(l.stage == "semis" and l.finals.size() == 2 and l.finals[0].home == t[0].id and l.finals[0].away == t[3].id
-		and l.finals[1].home == t[1].id and l.finals[1].away == t[2].id, "first plays fourth, second plays third")
+	check(l.stage == "semis" and l.finals.size() == 2 and l.finals[0].stage == "major_semi" and l.finals[0].home == t[0].id
+		and l.finals[0].away == t[1].id and l.finals[1].stage == "minor_semi" and l.finals[1].home == t[2].id
+		and l.finals[1].away == t[3].id, "the major semi first v second, the minor semi third v fourth")
 	var titles := int(Game.records.get("seasons_played", 0))
 	while l.stage != "done" and guard < 40:
 		l.sim_next()
 		guard += 1
-	check(l.stage == "done" and l.finals.size() == 3 and l.champion == l.finals[2].winner, "a grand final, and champions")
+	check(l.stage == "done" and l.finals.size() == 4 and l.finals[3].stage == "grand_final"
+		and l.champion == l.finals[3].winner, "a preliminary final, a grand final, and champions")
 	check(int(Game.records.get("seasons_played", 0)) == titles + 1, "the season goes in the record book")
 	Game.save_league()
 	Game.league = null
@@ -2245,6 +2256,154 @@ func _league() -> void:
 		c.sim_next()
 		cups.append(JSON.stringify(JSON.parse_string(JSON.stringify(c.fixtures))))
 	check(cups[0] == cups[1] and cups[1] == cups[2], "a cup from a seed: the same results, saved and loaded part way too")
+
+
+## The Club Season's two formats and the page playoff (docs/RULES.md "Competitions"): home and away is the single
+## round robin twice with home and away swapped; the major semi's winner goes straight to the grand final, its loser
+## gets the preliminary final, the minor semi's loser is out; a seeded season replays the same over a save and load;
+## a season saved by 0.9.6 or before (one round robin, the single knockout) loads and plays on as it did.
+func _season() -> void:
+	print("-- season")
+	# Home and away: 14 rounds, each club plays each other twice, home and away swapped.
+	var h := League.create("SKF", 41, 2)
+	check(h.legs == 2 and h.rounds() == 14 and h.fixtures.size() == 56, "home and away: 14 rounds, 56 matches (%d)" % h.fixtures.size())
+	var ways := {}
+	var homes := {}
+	for r in h.rounds():
+		var seen := {}
+		for f in h.fixtures:
+			if int(f.round) == r:
+				seen[f.home] = true
+				seen[f.away] = true
+		check(seen.size() == 8, "home and away, round %d: every club plays" % (r + 1))
+	for f in h.fixtures:
+		ways[f.home + ">" + f.away] = int(ways.get(f.home + ">" + f.away, 0)) + 1
+		homes[f.home] = int(homes.get(f.home, 0)) + 1
+	var twice := ways.size() == 56
+	for a in h.teams:
+		for b in h.teams:
+			if a != b and int(ways.get(a + ">" + b, 0)) != 1:
+				twice = false
+	check(twice, "each club plays each other twice, once at home and once away")
+	var mirrored := true
+	for i in 28:
+		var f: Dictionary = h.fixtures[i]
+		var g: Dictionary = h.fixtures[i + 28]
+		mirrored = mirrored and int(g.round) == int(f.round) + 7 and g.home == f.away and g.away == f.home
+	check(mirrored, "round n + 7 is round n with home and away swapped")
+	check(homes.values().min() == 7 and homes.values().max() == 7, "seven home matches each (%s)" % [homes.values()])
+	var single := League.create("SKF", 41)
+	check(single.rounds() == 7 and JSON.stringify(single.fixtures) == JSON.stringify(h.fixtures.slice(0, 28)),
+		"a seed's single season is the home-and-away season's first half")
+	var guard := 0
+	while h.stage == "season" and guard < 30:
+		h.sim_next()
+		guard += 1
+	var played := true
+	for r in h.table():
+		played = played and int(r.p) == 14
+	check(played and h.stage == "semis", "each club plays fourteen, then the finals")
+	# A seeded season replays the same: the draw, every result, the finals and the champions; saved and loaded part way
+	# through the rounds (k 1) and in the finals (k 2) too.
+	var runs := []
+	for k in 3:
+		var s := League.create("BRO", 2026, 2)
+		while s.stage != "done":
+			if (k == 1 and s.stage == "season" and s.round == 9) or (k == 2 and s.stage == "prelim"):
+				s = League.from_dict(JSON.parse_string(JSON.stringify(s.to_dict())))
+				check(s.legs == 2 and s.finals_format == "page", "a season saved part way keeps its own format")
+			s.sim_next()
+		runs.append(JSON.stringify(JSON.parse_string(JSON.stringify([s.teams, s.fixtures, s.finals, s.champion]))))
+	check(runs[0] == runs[1] and runs[1] == runs[2], "a seeded home-and-away season replays the same, saved and loaded part way too")
+	# The page playoff, the results set: each semi's home club winning and then losing.
+	for home_wins in [true, false]:
+		var l := League.create("ADP", 7)
+		while l.stage == "season":
+			l.sim_next()
+		var t := l.table()
+		var major: Dictionary = l.finals[0]
+		var minor: Dictionary = l.finals[1]
+		check(major.home == t[0].id and major.away == t[1].id and minor.home == t[2].id and minor.away == t[3].id,
+			"week 1: first v second, third v fourth")
+		var win := [60, 50] if home_wins else [48, 55]
+		l._record(major.home, major.away, win)
+		l._record(minor.home, minor.away, win)
+		var mw := String(major.winner)
+		var ml := League.loser(major)
+		var nw := String(minor.winner)
+		var nl := League.loser(minor)
+		check(mw == (major.home if home_wins else major.away) and nl == (minor.away if home_wins else minor.home), "the semis' results stand")
+		l.advance()
+		var pf: Dictionary = l.finals[2]
+		check(l.stage == "prelim" and l.finals.size() == 3 and pf.stage == "prelim_final" and pf.home == ml and pf.away == nw,
+			"week 2: the major semi's loser (at home) v the minor semi's winner")
+		var in_later := false
+		for id in [mw, nl]:
+			in_later = in_later or pf.home == id or pf.away == id
+		check(not in_later, "the major semi's winner rests and the minor semi's loser is out")
+		l.user = mw
+		check(l.user_wait() == "through", "the major semi's winner waits, through to the grand final")
+		l.user = nl
+		check(l.user_wait() == "out", "the minor semi's loser is out")
+		l.user = t[5].id
+		check(l.user_wait() == "missed", "fifth missed the finals")
+		l.user = ml
+		check(l.next_user_match().get("stage", "") == "PRELIM_FINAL" and bool(l.next_user_match().need_winner),
+			"the major semi's loser has the preliminary final, to a winner")
+		l._record(pf.home, pf.away, [44, 52])
+		l.advance()
+		var gf: Dictionary = l.finals[3]
+		check(l.stage == "final" and gf.stage == "grand_final" and gf.home == mw and gf.away == nw,
+			"week 3: the major semi's winner (at home) v the preliminary final's winner")
+		l.user = mw
+		check(l.next_user_match().get("stage", "") == "GRAND_FINAL", "the major semi's winner plays the grand final")
+		l.advance()
+		check(l.stage == "done" and l.champion == gf.winner and (l.champion == mw or l.champion == nw), "the grand final's winner are champions")
+	# An old save (0.9.6: one round robin, the single knockout, no format keys) loads and plays on as before.
+	var fresh := League.create("DST", 77)
+	fresh.sim_next()
+	fresh.sim_next()
+	var old: Dictionary = JSON.parse_string(JSON.stringify(fresh.to_dict()))
+	old.erase("legs")
+	old.erase("finals_format")
+	var o := League.from_dict(old)
+	check(o.legs == 1 and o.rounds() == 7 and o.finals_format == "knockout" and o.round == 2 and o.fixtures.size() == 28,
+		"an old save loads: seven rounds, the old finals, at round 3")
+	while o.stage == "season":
+		o.sim_next()
+		fresh.sim_next()
+	# (numbers as a load reads them)
+	var same := JSON.stringify(JSON.parse_string(JSON.stringify(o.fixtures))) == JSON.stringify(JSON.parse_string(JSON.stringify(fresh.fixtures)))
+	check(same, "an old save's season plays on as before (the same results)")
+	var ot := o.table()
+	check(o.stage == "semis" and o.finals.size() == 2 and o.finals[0].stage == "semi" and o.finals[0].home == ot[0].id
+		and o.finals[0].away == ot[3].id and o.finals[1].home == ot[1].id and o.finals[1].away == ot[2].id,
+		"an old save keeps its finals: first v fourth, second v third")
+	var mid: Dictionary = JSON.parse_string(JSON.stringify(o.to_dict()))
+	mid.erase("legs")
+	mid.erase("finals_format")
+	o = League.from_dict(mid)
+	o.sim_next()
+	check(o.stage == "final" and o.finals.size() == 3 and o.finals[2].home == o.finals[0].winner
+		and o.finals[2].away == o.finals[1].winner, "an old save in its semis goes on to the grand final")
+	o.sim_next()
+	check(o.stage == "done" and o.champion == o.finals[2].winner, "and its champions")
+	# Older still (before 0.9.1, no generator state): it loads and plays on.
+	old.erase("rng_state")
+	var older := League.from_dict(old)
+	while older.stage != "done":
+		older.sim_next()
+	check(older.finals.size() == 3 and older.champion != "", "a save without the generator's state plays to its champions")
+	# The game's own save, home and away, through Game.
+	Game.delete_league()
+	Game.new_league("CTG", 5, 2)
+	Game.league.sim_next()
+	Game.save_league()
+	Game.league = null
+	var back = Game.get_league()
+	check(back != null and back.legs == 2 and back.rounds() == 14 and back.round == 1 and back.fixtures.size() == 56,
+		"a home-and-away season saves and loads through the game")
+	Game.delete_league()
 
 
 ## Pausing and going back (playtest: the pause button sat off screen; Esc did nothing in a browser; Back with the

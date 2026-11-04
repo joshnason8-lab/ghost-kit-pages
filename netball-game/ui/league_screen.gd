@@ -1,6 +1,7 @@
 extends Control
-## The Club Season: pick your club; then your next match (play it or let it be played), the table with the top four
-## marked for the finals, the round's results, the semi-finals and the grand final; at the end the champions.
+## The Club Season: pick single (7 rounds) or home and away (14) and your club; then your next match (play it or let
+## it be played), the table with the top four marked for the finals, the round's results, the finals (the page
+## playoff: major and minor semis, the preliminary final, the grand final); at the end the champions.
 
 
 func setup(_args: Dictionary) -> void:
@@ -18,12 +19,19 @@ func _ready() -> void:
 
 func _pick() -> void:
 	var v := UI.page(self, tr("MENU_LEAGUE"), func(): Game.goto_menu(), tr("LEAGUE_PICK"))
-	v.add_child(UI.wrap(tr("LEAGUE_ABOUT"), "MutedLabel", 18))
 	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
 	v.add_child(UI.scroll(box))
+	box.add_child(UI.wrap(tr("LEAGUE_ABOUT_2"), "MutedLabel", 18))
+	# Single or home and away (remembered for the next season).
+	var legs := clampi(int(Game.settings.season_legs), 1, 2)
+	box.add_child(UI.field(tr("SEASON_FORMAT"), UI.chips([tr("SEASON_SINGLE").format({"n": League.ROUNDS}),
+		tr("SEASON_HOME_AWAY").format({"n": League.ROUNDS * 2})], legs - 1, func(i):
+			Game.settings.season_legs = i + 1
+			Game.save_settings())))
 	var ids: Array = DB.club_ids()
 	box.add_child(UI.team_grid(self, ids, 4, func(id):
-		Game.new_league(id)
+		Game.new_league(id, -1, clampi(int(Game.settings.season_legs), 1, 2))
 		Game.show_screen("res://ui/league_screen.gd")))
 
 
@@ -45,7 +53,9 @@ func _hub(league) -> void:
 		h.add_theme_constant_override("separation", 14)
 		card.add_child(h)
 		if nm.is_empty():
-			var out := UI.wrap(tr("LEAGUE_OUT"), "SubLabel", 22)
+			var wait: String = league.user_wait()
+			var msg := tr("LEAGUE_THROUGH") if wait == "through" else tr("LEAGUE_KNOCKED_OUT") if wait == "out" else tr("LEAGUE_OUT")
+			var out := UI.wrap(msg, "SubLabel", 22)
 			out.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			h.add_child(out)
 			h.add_child(UI.button(tr("CUP_PLAY_ON"), true, func():
@@ -95,7 +105,7 @@ func _hub(league) -> void:
 	tv.add_child(UI.wrap(tr("LEAGUE_TOP_FOUR"), "MutedLabel", 15))
 	cols.add_child(tc)
 	# The last round's results.
-	var last := mini(int(league.round), League.ROUNDS) - 1
+	var last := mini(int(league.round), league.rounds()) - 1
 	if last >= 0:
 		var rc := UI.card()
 		rc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -111,9 +121,11 @@ func _hub(league) -> void:
 
 func _stage_title(league) -> String:
 	if league.stage == "season":
-		return tr("ROUND_N_OF").format({"n": int(league.round) + 1, "of": League.ROUNDS})
+		return tr("ROUND_N_OF").format({"n": int(league.round) + 1, "of": league.rounds()})
 	if league.stage == "final":
 		return tr("STAGE_GRAND_FINAL")
+	if league.stage == "prelim":
+		return tr("STAGE_PRELIM_FINAL")
 	return tr("STAGE_" + String(league.stage).to_upper())
 
 
@@ -169,7 +181,8 @@ func _champions(league) -> Control:
 
 
 func _play(league, nm: Dictionary) -> void:
-	# Clubs play in their own halls; the grand final fills the arena.
+	# Clubs play in their own halls (the home club's: home and away swap it in the second half of a 14-round season);
+	# the grand final fills the arena.
 	var venue := "arena" if String(nm.stage) == "GRAND_FINAL" else "hall"
 	Game.start_match_loading({"home": nm.home, "away": nm.away, "venue": venue, "quarter": Game.quarter_minutes(),
 		"difficulty": int(Game.settings.difficulty), "mode": "league", "card": true, "user_team": 0 if nm.home == league.user else 1,

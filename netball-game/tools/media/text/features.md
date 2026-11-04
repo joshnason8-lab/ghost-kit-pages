@@ -9,7 +9,7 @@
 - **Team or one position**: control whoever has the ball (and the nearest defender), or pick a bib and play one
   position for the whole match.
 - **Three modes**: Quick Match with any two of 23 nations, the Nations Cup (pools, semi-finals, bronze and final) and
-  the Club Season (eight clubs, seven rounds, semi-finals and a grand final).
+  the Club Season (eight clubs, seven rounds or fourteen home and away, a top-four finals series and a grand final).
 - **Three venues**: a floodlit arena, a community sports hall and an outdoor park court under an evening sky; indoors
   on Medium and High, LED boards that cry "GOAL!" and a goal light on each post.
 - **AI that plays netball**: attackers drive into the centre third on the whistle, feeders work the circle edge,

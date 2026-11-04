@@ -496,17 +496,37 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   measurement fix: the height at a frame's end missed a bounce bottoming between frames); its limits unchanged.
   `Rules.out_of_play_spot` keeps her within OUT_OF_PLAY_FAR (1.5 m) of the thrower's spot and body in the corner
   search too. Test `_r2_pass_runs_on`: a pass taken away from its receiver went on 6.7 m before, 2.8 m at most now.
+- **Home and away, and the page playoff** (Next item 3; branch netball-season, unreleased). The Club Season starts
+  with a choice, Single (7 rounds) or Home and away (14), remembered in `settings.season_legs`; `League.create(club,
+  seed, legs)`. The second round robin is the first again, fixture for fixture, with home and away swapped (round
+  n + 7 mirrors round n; seven home matches each); it draws nothing from the generator, so a seed's single season is
+  unchanged and is the first half of its home-and-away season. The finals are the page playoff (RULES.md
+  "Competitions"): week 1 the major semi (1st v 2nd) and the minor semi (3rd v 4th), stage `semis`; week 2 the
+  preliminary final (the major semi's loser at home v the minor semi's winner), stage `prelim`; week 3 the grand final
+  (the major semi's winner at home), stage `final`. `League.user_wait()` tells the hub whether your club is through
+  (waiting out the preliminary final), out, or missed the finals. Saves carry `legs` and `finals_format`; a save
+  without them (0.9.6 and before) loads as one round robin with the old knockout (first v fourth, second v third),
+  and plays on with the same results a seed gave before. The game has no club grounds: every club match is in the
+  hall, the home club's, as before. Strings: MENU_LEAGUE_DESC and LEAGUE_ABOUT (which described the old finals)
+  replaced by MENU_LEAGUE_DESC_2 and LEAGUE_ABOUT_2; SEASON_FORMAT, SEASON_SINGLE, SEASON_HOME_AWAY,
+  STAGE_MAJOR_SEMI, STAGE_MINOR_SEMI, STAGE_PRELIM_FINAL, LEAGUE_THROUGH, LEAGUE_KNOCKED_OUT new; English in every
+  language until translated, listed in each translation note under "Added for the home-and-away season". Tests:
+  test_runner `_season` (`-- season`): 14 rounds, each pair twice with home and away swapped; a seeded season
+  replays the same over a save and load in the rounds and in the finals; the bracket with each semi won both ways;
+  an old save (and one older, without the generator's state) loads and plays on. `_league` checks the new finals.
+  The fit audit adds the home-and-away hub and the preliminary final's three messages (through, out, missed).
 
 ## Next
 
 1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the
    0.2 strings are listed under "Added in 0.2" in each.
 2. The non-English store listings: add the Club Season and the coach (the English ones have them).
-3. A home-and-away Club Season (14 rounds) as an option, and a finals series with a second chance for the top two.
-4. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
-5. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
-6. The upload key and the closed test (store/PLAY_STORE.md). (The umpires are the players' model now, 0.8.6.)
-7. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
+3. The after-goal tactical change (2024) on request; the without-ball obstruction signal drawn.
+4. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
+5. The upload key and the closed test (store/PLAY_STORE.md). (The umpires are the players' model now, 0.8.6.)
+6. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
+7. Translate the home-and-away season's strings (each docs/translation_notes/<code>.md, "Added for the home-and-away
+   season"); the English store listings' Club Season line ("seven rounds, then semi-finals") when the version is set.
 
 ## Decisions
 

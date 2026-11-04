@@ -101,7 +101,7 @@ func _build_ui() -> void:
 		cup_desc = tr("MENU_CUP_CONTINUE")
 	# The left goal third holds the two competitions, one above the other.
 	var lg = Game.get_league()
-	var league_desc := tr("MENU_LEAGUE_CONTINUE") if lg and lg.stage != "done" else tr("MENU_LEAGUE_DESC")
+	var league_desc := tr("MENU_LEAGUE_CONTINUE") if lg and lg.stage != "done" else tr("MENU_LEAGUE_DESC_2")
 	var comps := VBoxContainer.new()
 	comps.add_theme_constant_override("separation", -2)   # the halves overlap: one white line between them
 	comps.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -30,3 +30,12 @@
 
 ## Added for Watch AI
 - Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI is **KI** (kunsmatige intelligensie), as Afrikaans media write it: "Kyk na KI", "KI-spanne". Home/away sides **Tuis / Besoekers**; Watch **Kyk**; speed **Spoed**. Check first: `MENU_WATCH` "Kyk na KI" as a menu title.
+
+## Added for the home-and-away season (to translate)
+- Keys `MENU_LEAGUE_DESC_2`, `LEAGUE_ABOUT_2`, `SEASON_FORMAT`, `SEASON_SINGLE`, `SEASON_HOME_AWAY`, `STAGE_MAJOR_SEMI`, `STAGE_MINOR_SEMI`, `STAGE_PRELIM_FINAL`, `LEAGUE_THROUGH`, `LEAGUE_KNOCKED_OUT`: in English until translated (tools/build_i18n.py lists them as missing). A Club Season of seven rounds
+  (Single) or fourteen (Home and away), and the top-four finals with a second chance for the top two: the **major
+  semi-final** (1st v 2nd), the **minor semi-final** (3rd v 4th), the **preliminary final** (the major semi's loser v
+  the minor semi's winner), then the grand final (`STAGE_GRAND_FINAL`, already translated). Keep "{n}" in
+  `SEASON_SINGLE` and `SEASON_HOME_AWAY` (the number of rounds). `MENU_LEAGUE_DESC_2` and `LEAGUE_ABOUT_2` replace
+  `MENU_LEAGUE_DESC` and `LEAGUE_ABOUT`, which described a single round robin and the old finals (their translations
+  are in git history, a start for the new ones). Use this language's word for finals (`KNOCKOUT`) and grand final.

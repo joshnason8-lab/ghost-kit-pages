@@ -100,6 +100,7 @@ var settings := {
 	"double_zone": false,   # the league variant: two points from the outer circle late in each quarter
 	"rolling": false,       # rolling substitutions
 	"timeouts": false,      # team time-outs
+	"season_legs": 1,       # the Club Season last chosen: 1 single (7 rounds), 2 home and away (14)
 	"tags": 0,              # the bibs' letters over players' heads: 0 on, 2 off
 	"whistles": 1,          # how often the AI infringes: 0 fewer whistles, 1 standard, 2 the real rate
 	"seen_howto": false,
@@ -242,7 +243,7 @@ func load_settings() -> void:
 		for k in data.keys():
 			if settings.has(k):
 				settings[k] = data[k]
-	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "control", "quarter", "tags", "whistles", "watch_quarter"]:
+	for k in ["camera", "graphics", "fps", "btn_size", "difficulty", "control", "quarter", "tags", "whistles", "watch_quarter", "season_legs"]:
 		settings[k] = int(settings[k])
 	if not (settings.btn_places is Dictionary):
 		settings.btn_places = {}
@@ -332,8 +333,9 @@ func get_league():
 	return league
 
 
-func new_league(club_id: String, p_seed := -1):
-	league = League.create(club_id, p_seed)
+## legs: 1, a single round robin (7 rounds); 2, home and away (14).
+func new_league(club_id: String, p_seed := -1, legs := 1):
+	league = League.create(club_id, p_seed, legs)
 	save_league()
 	return league
 

@@ -288,11 +288,23 @@ go to extra time. `game/cup.gd`; test `_cup`. The real world championship has 16
 (https://netball.sport/wp-content/uploads/2025/06/World-Netball-Introduces-Cup-and-Plate-Competitions-to-Netball-World-Cup-2027-Final.pdf).
 
 The **Club Season** is the game's own league: eight invented clubs (a city and a nickname no club in Australia's, New
-Zealand's, England's or South Africa's top league uses; checked October 2026) play each other once, seven rounds,
-two points for a win and one for a draw, split by goal percentage. Then the professional leagues' finals in their
-simplest form: first plays fourth and second plays third (the higher-placed club at home), and the winners meet in the
-grand final, with extra time if level. (The real leagues' finals series differ in detail, some giving the top two a
-second chance; the game keeps a single knockout.) `game/league.gd`; test `_league`.
+Zealand's, England's or South Africa's top league uses; checked October 2026) play each other once (seven rounds)
+or, the player's choice when the season starts, home and away (fourteen rounds: the second round robin is the first
+again with home and away swapped, so each club has seven home matches). Two points for a win and one for a draw,
+split by goal percentage. Then the top four play the finals with a second chance for the top two, the page playoff
+(the McIntyre top-four system) netball leagues use, the higher-placed club at home in each match:
+
+| Week | Match | Then |
+|---|---|---|
+| 1 | Major semi-final: 1st v 2nd | the winner goes straight to the grand final; the loser to the preliminary final |
+| 1 | Minor semi-final: 3rd v 4th | the winner to the preliminary final; the loser is out |
+| 2 | Preliminary final: the major semi's loser v the minor semi's winner | the winner to the grand final |
+| 3 | Grand final: the major semi's winner v the preliminary final's winner | champions |
+
+Finals go to extra time if level. A season saved before this (0.9.6 and earlier) keeps the single knockout it began
+with: first v fourth and second v third, the winners in the grand final. All club matches are in a sports hall, the
+home club's (the game has no club grounds of its own); the grand final is in the arena. `game/league.gd`; tests
+`_league`, `_season` (`test_runner.tscn -- season`).
 
 ## How the AI plays: the numbers
 

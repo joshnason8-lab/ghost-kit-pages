@@ -543,7 +543,8 @@ func _league() -> void:
 	Game.show_screen("res://ui/league_screen.gd")
 	await frames(12)
 	await audit("league_pick")
-	var lg = Game.new_league("WKR")
+	# Home and away (14 rounds), seeded: the same finals each run.
+	var lg = Game.new_league("WKR", 11, 2)
 	lg.sim_next()
 	Game.save_league()
 	Game.show_screen("res://ui/league_screen.gd")
@@ -555,6 +556,21 @@ func _league() -> void:
 	Game.show_screen("res://ui/league_screen.gd")
 	await frames(12)
 	await audit("league_finals")
+	# The preliminary final, with the user's club waiting for it (through), out, or not in the finals: each message.
+	lg.sim_next()
+	Game.save_league()
+	Game.show_screen("res://ui/league_screen.gd")
+	await frames(12)
+	await audit("league_prelim")
+	for who in ["through", "out", "missed"]:
+		for id in lg.teams:
+			lg.user = id
+			if lg.user_wait() == who:
+				break
+		Game.show_screen("res://ui/league_screen.gd")
+		await frames(12)
+		await audit("league_prelim_" + who)
+	lg.user = "WKR"
 	while lg.stage != "done":
 		lg.sim_next()
 	Game.save_league()

@@ -9,6 +9,15 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## Unreleased
+
+- **Home and away**: a Club Season can now be fourteen rounds, every club played at home and away (pick Single or
+  Home and away when you start one). Single is still seven rounds.
+- **A second chance for the top two**: the finals are the top-four series netball leagues play. First v second in
+  the major semi-final (the winner goes straight to the grand final), third v fourth in the minor semi-final (the
+  loser is out), then the preliminary final, then the grand final. A season you started before keeps its old finals.
+- The new words are in English for now in every language; translations to follow.
+
 ## New in 0.9.6-beta
 
 - **Fairer umpiring**: a call is made only when the infringement really happens (an obstruction once she is inside
