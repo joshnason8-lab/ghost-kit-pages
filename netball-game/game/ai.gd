@@ -463,7 +463,7 @@ func _play(pl: Player, dt: float) -> void:
 		return
 	if m.ball.state == "loose":
 		if _chaser(pl):
-			var to := Rules.onside_point(pl.pos, b, pl.dir, 0.1)
+			var to := Rules.onside_point(pl.pos, meet_point(pl), pl.dir, 0.1)
 			pl.target = to
 			pl.want_speed = pl.speed_cap()
 			if not (pl.act == "leap" and pl.act_t < Player.LEAP_S):
@@ -523,6 +523,27 @@ func goes_up(pl: Player) -> bool:
 	var y: float = m.ball.pos.y + v.y * t - 0.5 * Ball.G * t * t
 	var at: Vector2 = m.ball.court_pos() + Vector2(v.x, v.z) * t
 	return y > pl.reach() and y < pl.reach(true) and at.distance_to(pl.p + pl.vel * t) < Player.LOOSE_REACH + 0.3
+
+
+## Where she runs to meet a loose ball: where it will be (going on along the floor, slowing as it rolls,
+## Ball.ROLL_DECEL) when she can be there, flat out, within her reach of it; where it stops if she cannot catch it up
+## sooner. (Run straight at where it is, she follows it and never gets there.)
+func meet_point(pl: Player) -> Vector2:
+	var b: Vector2 = m.ball.court_pos()
+	var v := Vector2(m.ball.vel.x, m.ball.vel.z)
+	var spd := v.length()
+	if spd < 0.3:
+		return b
+	var u := v / spd
+	var stop := spd / Ball.ROLL_DECEL
+	var cap := pl.speed_cap() * 0.9
+	for i in range(1, 41):
+		var t := i * 0.1
+		var tt := minf(t, stop)
+		var q := b + u * (spd * tt - 0.5 * Ball.ROLL_DECEL * tt * tt)
+		if maxf(0.0, pl.p.distance_to(q) - Player.LOOSE_REACH * 0.6) <= cap * t:
+			return q
+	return b + u * (spd * stop * 0.5)
 
 
 ## Is she one of the two nearest her team's players to a loose ball (and allowed where it is)? Never its thrower, when

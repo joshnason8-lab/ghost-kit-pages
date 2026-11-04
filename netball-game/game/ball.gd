@@ -26,6 +26,17 @@ const R := 0.112
 const G := 9.81
 const NET_DEPTH := 0.42      # the net hangs this far under the ring (Arena)
 const BOUNCE_E := 0.62       # how much of its speed down a ball keeps off the floor
+## The floor's grip on the ball (_fall). A netball is a hollow rubber shell (I = 2/3 m r², SHELL_K), so a ball that
+## meets the floor sliding, without the spin of a rolling ball, is gripped toward rolling: in full, its speed along
+## the floor falls to 1 / (1 + 2/3) = 60% of what it was (the contact point brought to rest, angular momentum about it
+## kept), as far as friction allows (Coulomb: at most FLOOR_MU times the impulse up, (1 + BOUNCE_E) x its speed down;
+## a rubber ball on a sprung wooden or acrylic court, about 0.5-0.6). A ball already rolling keeps its speed, but for
+## the rubber's own loss at each bounce (BOUNCE_KEEP). Rolling, ROLL_DECEL slows it: more than a polished floor's
+## rolling resistance and air drag (some 0.3-1 m/s² at netball speeds), as the outdoor courts' grit is.
+const SHELL_K := 2.0 / 3.0
+const FLOOR_MU := 0.55
+const BOUNCE_KEEP := 0.95
+const ROLL_DECEL := 2.5
 const FLAT_MAX := 16.0       # m/s: the fastest any throw crosses the floor (an elite long pass is released at ~17-19)
 
 var state := "dead"          # held, flight, loose, dead
@@ -46,6 +57,7 @@ var _moving := false         # dead, but still falling or rolling (Ball.dead)
 var carrier: Player = null   # dead, in the hands of the player who had it when the whistle went (Ball.dead)
 var _mesh: MeshInstance3D
 var _spin := Vector3.ZERO
+var _roll := Vector2.ZERO     # loose: the speed along the floor its spin would roll it at (0: no spin; _grip)
 ## The venue's props (Arena.solid): a flight or a loose ball that meets one comes off it (WsgSolidProps.bounce), at
 ## the prop's own restitution and friction. A flight that meets one is loose from there on; a shot stops where it
 ## touched the ring, the post or its arm (f_struck: the match plays the rebound). struck tells the match each touch.
@@ -268,6 +280,7 @@ func loose(at: Vector3, v: Vector3) -> void:
 	state = "loose"
 	pos = at
 	vel = v
+	_roll = Vector2.ZERO
 
 
 ## Out of play at `at`. moving: the whistle has gone with the ball in the air or rolling, and it goes on as it was
@@ -281,6 +294,7 @@ func dead(at: Vector3, moving := false, by: Player = null) -> void:
 	pos = at
 	vel = v
 	_moving = moving and by == null
+	_roll = Vector2.ZERO
 
 
 ## A dead ball handed on: tossed from where it is to land at `to` (on the floor) in t seconds, under gravity; it
@@ -293,6 +307,7 @@ func toss(to: Vector3, t: float) -> void:
 	vel = (to - pos) / t
 	vel.y += 0.5 * G * t
 	_moving = true
+	_roll = Vector2.ZERO
 
 
 ## The one place the ball's position changes, once a frame.
@@ -411,8 +426,7 @@ func _fall(dt: float) -> void:
 		var t := clampf((vy0 + sqrt(a)) / G, 0.0, dt) if vy0 < 0.0 or was.y > R else 0.0
 		var hit := Vector3(was.x + vel.x * t, R, was.z + vel.z * t)
 		var down := vy0 - G * t
-		vel.x *= 0.9
-		vel.z *= 0.9
+		_grip(-down if down < -0.6 else G * dt, down < -0.6)
 		pos = hit
 		if down < -0.6:
 			bounced.emit(hit, -down)
@@ -441,10 +455,29 @@ func _fall(dt: float) -> void:
 	# Rolling on: the floor slows it.
 	if pos.y <= R + 0.001:
 		var flat := Vector2(vel.x, vel.z)
-		flat = flat.move_toward(Vector2.ZERO, 2.5 * dt)
+		flat = flat.move_toward(Vector2.ZERO, ROLL_DECEL * dt)
+		_roll = _roll.move_toward(Vector2.ZERO, ROLL_DECEL * dt)
 		vel.x = flat.x
 		vel.z = flat.y
 	_mesh.rotate(Vector3(vel.z, 0, -vel.x).normalized() if Vector2(vel.x, vel.z).length() > 0.01 else Vector3.RIGHT, Vector2(vel.x, vel.z).length() / R * dt)
+
+
+## The floor's grip at a touch: its speed along the floor (and its spin, _roll) brought toward rolling by friction,
+## up to what an impulse up of `up` m/s (its speed down at a bounce, or gravity's over a step rolling) allows; and the
+## rubber's loss at a bounce.
+func _grip(up: float, bounce: bool) -> void:
+	var vh := Vector2(vel.x, vel.z)
+	var slip := vh - _roll
+	if slip.length() > 0.001:
+		var dv := minf(slip.length() * SHELL_K / (1.0 + SHELL_K), FLOOR_MU * (1.0 + (BOUNCE_E if bounce else 0.0)) * up)
+		var d := slip.normalized()
+		vh -= d * dv
+		_roll += d * dv / SHELL_K
+	if bounce:
+		vh *= BOUNCE_KEEP
+		_roll *= BOUNCE_KEEP
+	vel.x = vh.x
+	vel.z = vh.y
 
 
 func court_pos() -> Vector2:

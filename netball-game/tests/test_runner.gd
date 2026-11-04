@@ -756,7 +756,13 @@ func _ball_free_in_play() -> void:
 		var tl := (v00.y + sqrt(v00.y * v00.y + 2.0 * Ball.G * (p00.y - Ball.R))) / Ball.G
 		var meet := Vector2(p00.x + v00.x * tl, p00.z + v00.z * tl)
 		var reach := Vector2(from.x, from.z).distance_to(meet)
-		to.p = Rules.onside_point(to.pos, h.p + (h.p - to.p).normalized() * 1.5, to.dir, 0.3)
+		# (Back by the thrower, clear of the catch: a line her areas stop her at can leave her by it, and she takes it.)
+		var catch_at := Vector2(m.ball.f_to.x, m.ball.f_to.z)
+		var back := (h.p - to.p).normalized()
+		for turn: float in [0.0, 0.8, -0.8, 1.6, -1.6]:
+			to.p = Rules.onside_point(to.pos, h.p + back.rotated(turn) * 1.5, to.dir, 0.3)
+			if to.p.distance_to(catch_at) > 2.5:
+				break
 		to.vel = Vector2.ZERO
 		var off_arc := 0.0
 		var land := {"at": Vector3.INF}
@@ -3772,6 +3778,7 @@ func _rules2() -> void:
 	await _r2_slips_happen()
 	await _r2_round_circle()
 	await _r2_rebound_met()
+	await _r2_pass_runs_on()
 	await _r2_watch()
 
 
@@ -4151,5 +4158,73 @@ func _r2_watch() -> void:
 	check(ob == 0 and off == 0, "AI v AI at the real rate: no obstruction or offside called without it (%d, %d)" % [ob, off])
 	check(longest < 6.0, "AI v AI: nobody stands still six seconds with her target metres away (%.1f s, %s)" % [longest, who])
 	check(snap < 0.6, "AI v AI: a loose ball taken is not popped into her hands (%.2f m)" % snap)
+	m.queue_free()
+	await frames(2)
+
+
+## 7. A pass nobody reached (the owner's note passes-gravity: "they just keep going"): on its own, a chest pass's
+## 9.4 m/s across the floor from 1.04 m up is gripped toward rolling at its first bounce (Ball._grip: a hollow shell
+## keeps 60% sliding in, as friction allows) and rolls on slowing; in play the nearest players run on to meet it
+## (TeamAI.meet_point) and take it within 6 m of where it went loose. The floor is seen at the bounce (Ball.bounced).
+func _r2_pass_runs_on() -> void:
+	var m := _study_match(23, {"venue": "outdoor"})
+	await _wait_live(m)
+	m.set_process(false)
+	# The ball alone: where its bounces and roll take it.
+	var b: Ball = m.ball
+	m.holder = null
+	b.loose(Vector3(0.0, 1.04, 0.0), Vector3(9.4, 0.0, 0.0))
+	var first := -1.0
+	var hits := [0]
+	var on_floor := func(_at, _sp): hits[0] += 1
+	b.bounced.connect(on_floor)
+	var kept := 0.0
+	for f in 150:
+		var vx := b.vel.x
+		b.step(1.0 / 30.0)
+		if hits[0] == 1 and first < 0.0:
+			first = (f + 1) / 30.0
+			kept = b.vel.x / vx
+	b.bounced.disconnect(on_floor)
+	var run := b.pos.x
+	print("  pass alone: down in %.2f s (a dropped ball %.2f s), %.0f%% of its speed along the floor kept at the first bounce, %d bounces, it went %.1f m in 5 s" % [first,
+		sqrt(2.0 * (1.04 - Ball.R) / Ball.G), kept * 100.0, hits[0], run])
+	check(first > 0.0 and first <= sqrt(2.0 * (1.04 - Ball.R) / Ball.G) + 0.2 and kept < 0.75, "a pass nobody reached comes down at once and the floor grips it (%.2f s, %.0f%% kept)" % [first, kept * 100.0])
+	m.set_process(true)
+	# In play: passes the receiver is taken away from, three of them; the nearest meet it.
+	var worst := 0.0
+	var seen := 0
+	for k in 3:
+		await _wait_live(m)
+		var guard := 0
+		while (m.holder == null or m.phase != "live" or m.shot_info.has("by")) and guard < 600:
+			await frames(1)
+			guard += 1
+		var h: Player = m.holder
+		if h == null:
+			continue
+		var to: Player = null
+		for o: Player in m.players[h.team]:
+			if o != h and not o.away() and o.p.distance_to(h.p) > 5.0 and o.p.distance_to(h.p) < 9.0 and o.pos != "GS" and o.pos != "GK":
+				to = o
+		if to == null:
+			continue
+		m.throw_pass(to, "chest")
+		var away := to.p + (to.p - h.p).normalized().rotated(PI * 0.5) * 3.0
+		to.place(Rules.onside_point(to.pos, away, to.dir, 0.2))
+		var start := Vector3.INF
+		for f in 150:
+			await frames(1)
+			to.target = to.p if m.ball.state == "flight" else to.target
+			if m.ball.state == "loose" and start == Vector3.INF:
+				start = m.ball.pos
+			if start != Vector3.INF and m.ball.state != "loose":
+				break
+		if start != Vector3.INF:
+			seen += 1
+			var went := Vector2(m.ball.pos.x - start.x, m.ball.pos.z - start.z).length()
+			worst = maxf(worst, went)
+			print("  pass not reached: it went on %.1f m, then %s (%s)" % [went, m.ball.state, m.holder.pos if m.holder else m.phase])
+	check(seen >= 2 and worst <= 6.0, "a pass nobody reached is met within 6 m (%d passes, %.1f m at most)" % [seen, worst])
 	m.queue_free()
 	await frames(2)

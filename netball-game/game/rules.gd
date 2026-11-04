@@ -27,6 +27,7 @@ const HOLD_LIMIT := 3.0              # seconds a player may hold the ball (held 
 const SHORT_PASS_MIN := 0.9          # metres between thrower and catcher: room for an opponent to intercept
 const OUT_OF_PLAY_GAP := 1.42        # m: the penalised player stands beside the thrower, an arm's length and more off
 const OUT_OF_PLAY_MIN := 1.32        # m: the nearest she comes to the thrower's body or landing foot, there or on her way
+const OUT_OF_PLAY_FAR := 1.5         # m: the furthest she stands from the thrower's spot and body (beside her, not off)
 
 ## Free passes and penalty passes (R6): what each infringement gives the other team (R11 playing the ball, R12 passing
 ## distances, R13 footwork, R14 offside, R15 out of court, R16 obstruction, R17 contact).
@@ -147,7 +148,7 @@ static func out_of_play_spot(pos: String, dir: int, spot: Vector2, thrower_dir: 
 				var q := onside_point(pos, c + u.rotated(s * deg_to_rad(deg)) * r, dir, 0.05)
 				var d := minf(q.distance_to(spot), q.distance_to(body))
 				var far := maxf(q.distance_to(spot), q.distance_to(body))
-				var miss := maxf(0.0, OUT_OF_PLAY_MIN - d) * 4.0 + maxf(0.0, far - 1.55) + maxf(0.0, (q - c).dot(u) - 0.25)
+				var miss := maxf(0.0, OUT_OF_PLAY_MIN - d) * 4.0 + maxf(0.0, far - OUT_OF_PLAY_FAR) + maxf(0.0, (q - c).dot(u) - 0.25)
 				if miss <= 0.0:
 					return q
 				if miss < best_miss:
@@ -161,8 +162,9 @@ static func out_of_play_spot(pos: String, dir: int, spot: Vector2, thrower_dir: 
 			for r: float in [near + half, near + half + 0.06, OUT_OF_PLAY_GAP + half, 1.5]:
 				var q := onside_point(pos, c + Vector2.from_angle(TAU * i / 48.0) * r, dir, 0.05)
 				var d := minf(q.distance_to(spot), q.distance_to(body))
+				var far := maxf(q.distance_to(spot), q.distance_to(body))
 				var fwd := (q - c).dot(u)
-				if d >= near and d <= 1.55 and fwd <= 0.28 and absf(fwd) < square:
+				if d >= near and far <= OUT_OF_PLAY_FAR and fwd <= 0.28 and absf(fwd) < square:
 					square = absf(fwd)
 					best = q
 		if square < INF:

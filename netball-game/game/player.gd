@@ -775,9 +775,10 @@ func reach(leap := false) -> float:
 	return h * 1.28 + (LEAP_UP if leap else 0.0)
 
 
-## Whether her hands meet a loose ball at pt (world) now: one lower than her hands she stoops to; one higher only
-## within her arms' easy reach of her shoulders, as her body is posed (standing, or up in a leap: TeamAI._play),
-## where both bodies' arms (hers and the foundation's) reach it. Without a body, her hands' model (hands_top).
+## Whether her hands meet a loose ball at pt (world) now (within LOOSE_REACH of her along the floor: Match): one no
+## higher than her shoulders she reaches or stoops to; one over them only within her arms' easy reach of them, as
+## her body is posed (standing, or up in a leap: TeamAI._play), where both bodies' arms (hers and the foundation's)
+## reach it. Without a body, her hands' model (hands_top).
 func meets(pt: Vector3) -> bool:
 	if pt.y >= hands_top():
 		return false
@@ -785,7 +786,8 @@ func meets(pt: Vector3) -> bool:
 		return true
 	var k := body.skeleton.global_transform.basis.get_scale().x
 	for s in ["l", "r"]:
-		if body.bone_world("upperarm_" + s).distance_to(pt) > _arm_len(s) * k * EASY_REACH:
+		var sh := body.bone_world("upperarm_" + s)
+		if pt.y > sh.y and sh.distance_to(pt) > _arm_len(s) * k * EASY_REACH:
 			return false
 	return true
 

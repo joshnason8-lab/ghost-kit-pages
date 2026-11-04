@@ -25,6 +25,10 @@ static func record(h: Node, venues: Array, frames: int, seed := 21, hover := {})
 		# (The frames the ball touches a prop - the post's pad, a board - it is held by it, not left in the air.)
 		var touch := {"f": -10, "now": 0}
 		m.ball.struck.connect(func(_hit): touch.f = touch.now)
+		# (The frame it meets the floor: Ball.bounced, as it hits. Its height at the frame's end can be past the bottom
+		# of the bounce, already on the way up, so a height at the floor alone misses a bounce between frames.)
+		var floor_hit := {"f": -10}
+		m.ball.bounced.connect(func(_at, _speed): floor_hit.f = touch.now)
 		for f in frames:
 			touch.now = f + 1
 			await h.get_tree().process_frame
@@ -94,7 +98,7 @@ static func record(h: Node, venues: Array, frames: int, seed := 21, hover := {})
 			elif not cur.is_empty() and cur.end == "loose":
 				cur.loose_t = float(cur.loose_t) + 1.0 / 30.0
 				cur.loose_flat = Vector2(at.x - cur.loose_at.x, at.z - cur.loose_at.z).length()
-				if float(cur.floor_t) < 0.0 and at.y <= Ball.R + 0.005:
+				if float(cur.floor_t) < 0.0 and (at.y <= Ball.R + 0.005 or int(floor_hit.f) == f + 1):
 					cur.floor_t = cur.loose_t
 				if b.state != "loose" or float(cur.loose_t) > 4.0:
 					# (Taken out of the air by a player before it came down: not a ball left to fall.)

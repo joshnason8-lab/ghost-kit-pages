@@ -486,6 +486,16 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   (Player.place: quarter starts and changes; a replay's end) reset the foundation's planter (FoundationLink.placed).
   CI: the world check's crowd rule runs in its own job (world-crowd) beside test-and-build, the two reports merged
   by world-check-report (--merge); the beta is published by its own job once all three have passed.
+- **A pass nobody reached comes down and is met** (owner note passes-gravity failed 23/24 after the rules round:
+  an outdoor chest pass at 9.4 m/s ran on 15.6 m). The floor grips a loose ball as a hollow rubber shell
+  (`Ball._grip`: sliding in, it keeps 1/(1 + 2/3) = 60% of its speed along the floor, as far as Coulomb friction,
+  mu 0.55, allows; then rolling, 95% a bounce for the rubber; ROLL_DECEL 2.5 m/s² kept): 90% -> 57% kept at the
+  first bounce. The nearest players run to where it will be (`TeamAI.meet_point`), not where it is. A ball over
+  her hands but below her shoulders she reaches for (`Player.meets` asked arm's reach of anything over her hands,
+  so a pass at waist height ran past everyone). The note's floor test now sees a bounce at `Ball.bounced` (a
+  measurement fix: the height at a frame's end missed a bounce bottoming between frames); its limits unchanged.
+  `Rules.out_of_play_spot` keeps her within OUT_OF_PLAY_FAR (1.5 m) of the thrower's spot and body in the corner
+  search too. Test `_r2_pass_runs_on`: a pass taken away from its receiver went on 6.7 m before, 2.8 m at most now.
 
 ## Next
 
