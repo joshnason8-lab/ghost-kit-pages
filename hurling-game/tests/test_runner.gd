@@ -37,6 +37,7 @@ func _ready() -> void:
 	_coach()
 	await _keeper_jerseys()
 	await _hawk_eye()
+	await _sin_bin_watch()
 	await _subs()
 	await _sent_off_walks_off()
 	await _tactics()
@@ -610,6 +611,31 @@ func _hawk_eye() -> void:
 			await frames(2)
 		m.queue_free()
 		await frames(2)
+
+
+## The sin bin: ten minutes on the referee's watch, added time included, across the break (Rules of Control
+## 1.2(ix)(d)); the half's own clock starting again at 0 does not shorten it.
+func _sin_bin_watch() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "COR", "venue": "county", "user_team": -1, "seed": 4, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	var binned: Player = m.player_by_num(1, 6)
+	m.watch = 2000.0
+	binned.sin_bin_until = m.watch + Rules.SIN_BIN_MIN * 60.0
+	m.half = 2
+	m.clock = 0.0
+	m.phase = m.P.DEAD
+	m.watch += 420.0
+	m._sin_bins()
+	check(not binned.on_pitch(), "sin bin: still out after 7 minutes on the watch, whatever the half's clock says")
+	m.watch += 181.0
+	m._sin_bins()
+	check(binned.on_pitch(), "sin bin: back after 10 minutes on the watch")
+	m.queue_free()
+	await frames(2)
+
 
 func _sent_off_walks_off() -> void:
 	for venue in ["stadium", "county", "parish"]:

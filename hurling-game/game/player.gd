@@ -89,7 +89,7 @@ var tire_k := 1.0                # match seconds a real second while the ball is
                                  # goes by the match clock, so a short match tires a man as a full one does
 var down_until := 0.0            # on the ground until then (match time)
 var sent_off := false
-var sin_bin_until := -1.0        # match clock (s) he may come back
+var sin_bin_until := -1.0        # Match.watch (s) when he may come back
 var yellows := 0
 var blacks := 0
 var ball_hand := false           # the ball shows in his left hand

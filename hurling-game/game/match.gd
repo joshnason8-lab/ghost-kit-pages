@@ -50,6 +50,7 @@ var phase_t := 0.0
 var now := 0.0               # real seconds since the start (the players' and the ball's clock)
 var half := 1                # 1, 2; 3 and 4 the halves of extra time
 var clock := 0.0             # seconds of match time played in this half
+var watch := 0.0             # the referee's watch over the whole match, added time and extra time included (the sin bin)
 var clock_k := 5.0           # match seconds a real second
 var half_len := 35.0 * 60.0
 var added := 0.0             # added time this half, in match seconds (shown in whole minutes)
@@ -267,7 +268,7 @@ func snapshot() -> Dictionary:
 		bench_ids.append(ids)
 	var cfg := config.duplicate(true)
 	cfg.erase("resume")
-	return {"v": 1, "config": cfg, "score": score.duplicate(true), "half": h, "clock": c, "stoppage": _stoppage,
+	return {"v": 1, "config": cfg, "score": score.duplicate(true), "half": h, "clock": c, "watch": watch, "stoppage": _stoppage,
 		"events": events.duplicate(true), "pstats": pstats.duplicate(true), "tstats": tstats.duplicate(true),
 		"subs": [int(teams[0].subs), int(teams[1].subs)], "bench": bench_ids, "slots": slots,
 		"tactics": [ai[0].tactics.duplicate(true), ai[1].tactics.duplicate(true)], "minute": match_minute()}
@@ -281,6 +282,7 @@ func _resume_state() -> void:
 	score = [[int(r.score[0][0]), int(r.score[0][1])], [int(r.score[1][0]), int(r.score[1][1])]]
 	half = int(r.half)
 	clock = float(r.clock)
+	watch = float(r.get("watch", total_clock()))
 	_stoppage = float(r.get("stoppage", 0.0))
 	events = (r.events as Array).duplicate(true)
 	for e in events:
@@ -926,6 +928,7 @@ func _run_clock(dt: float) -> void:
 	var live := phase in [P.LIVE, P.THROW_IN]
 	var k := clock_k if live else 1.0
 	clock += dt * k
+	watch += dt * k
 	if live:
 		_live_w += dt * k
 		live_real += dt
@@ -950,6 +953,7 @@ func _run_off_stoppage() -> void:
 		var cap := MAX_STOP * clock_k + (float(STOP_COST.penalty) if String(restart.get("kind", "")) == "penalty" else 0.0)
 		due = clampf(due, 0.0, cap)
 		clock += due
+		watch += due
 		_dead_w += due
 	_lost = 0.0
 	_check_added()
@@ -2463,7 +2467,9 @@ func _show_card(pl: Player, card: String) -> void:
 		"black":
 			pl.blacks += 1
 			tstats[pl.team].black += 1
-			pl.sin_bin_until = total_clock() + Rules.SIN_BIN_MIN * 60.0
+			# Ten minutes on the referee's watch, "irrespective of delays", through added time and into extra time
+			# (Rules of Control 1.2(ix)(d)).
+			pl.sin_bin_until = watch + Rules.SIN_BIN_MIN * 60.0
 			hud.banner(tr("CARD_BLACK"), Color("dddddd"))
 			hud.call_line(tr("SIN_BIN_LINE").format({"name": name}))
 		"red":
@@ -2502,7 +2508,7 @@ func _walk_off(pl: Player) -> void:
 func _sin_bins() -> void:
 	for pl in all_players():
 		var p: Player = pl
-		if p.sin_bin_until >= 0.0 and not p.sent_off and total_clock() >= p.sin_bin_until and phase != P.LIVE:
+		if p.sin_bin_until >= 0.0 and not p.sent_off and watch >= p.sin_bin_until and phase != P.LIVE:
 			p.sin_bin_until = -1.0
 			p.visible = true
 
