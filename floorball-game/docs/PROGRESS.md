@@ -227,6 +227,18 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.20-beta: the up-close hand margin; a Low polish pass (4 November 2026)
+
+- The lower fist off the shaft up close came from the stick layer's chest clearance (torso_r 0.1): it moved the top
+  hand after the lower hand's grip had been laid against it, and the stick then followed the top hand. torso_r 0.06:
+  up close 514 of 517 frames on the shaft (492 needed; 495 before), the lower thumb up 8013 of 8779 (7902), the tests'
+  lower fist off 30 of 1731 (57), wrists at most 68 degrees.
+- A Low pass at 1600 x 720 (tests/screenshots.gd, now with the World Finals' hub and Penalty shots): the home screen's
+  shade was drawn as 24 strips, each a pixel wider than its step, and the overlaps showed as vertical lines; it is one
+  solid part and one smooth fade now. The rest looked right: the three venues, the cameras, the pause menu, the setup,
+  Settings, the referees' signs, the World Finals and Penalty shots (the school's referees in yellow are the rule's:
+  Latvia's red shirts are dark). 0.9.20-beta, code 35.
+
 ### 0.9.19-beta: the planter for scaled bodies (4 November 2026)
 
 - The shared foundation synced to 8c87df4 (fd879f9, the planter: scaled-down bodies, and feet hovering while standing).

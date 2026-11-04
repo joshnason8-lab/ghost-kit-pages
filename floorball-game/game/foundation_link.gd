@@ -102,7 +102,8 @@ func _ready() -> void:
 	for m in [loco.look, loco.look_chest]:
 		if m:
 			m.active = false
-	legacy.torso_r = 0.1        # the forearms kept out of this (broader) body's chest
+	legacy.torso_r = 0.06       # the forearms kept out of this body's chest (0.1 moved the top hand off the stick, after the
+	                            # lower hand's grip was laid against it: the lower fist off the shaft up close)
 	reader = WsgLegacyPose.new(gb.skeleton, body.joints)
 	legacy.arms = reader
 	for side in ["Left", "Right"]:

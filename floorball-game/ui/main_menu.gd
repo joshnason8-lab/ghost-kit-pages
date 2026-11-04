@@ -23,13 +23,14 @@ func _ready() -> void:
 	shade.draw.connect(func():
 		var w := shade.size.x
 		var h := shade.size.y
-		var steps := 24
-		for i in steps:
-			var x0 := w * 0.64 * i / steps
-			var x1 := w * 0.64 * (i + 1) / steps
-			var t := float(i) / steps
-			var a := 0.94 if t < 0.55 else 0.94 * (1.0 - (t - 0.55) / 0.45)
-			shade.draw_rect(Rect2(x0, 0, x1 - x0 + 1, h), Color(Game.C_BG, a))
+		# (Solid over the menu, then one smooth fade: drawn as strips a pixel wider than their step, the overlaps showed
+		# as vertical lines across it.)
+		var solid := w * 0.64 * 0.55
+		shade.draw_rect(Rect2(0, 0, solid, h), Color(Game.C_BG, 0.94))
+		var c0 := Color(Game.C_BG, 0.94)
+		var c1 := Color(Game.C_BG, 0.0)
+		shade.draw_polygon(PackedVector2Array([Vector2(solid, 0), Vector2(w * 0.64, 0), Vector2(w * 0.64, h), Vector2(solid, h)]),
+			PackedColorArray([c0, c1, c1, c0]))
 		shade.draw_rect(Rect2(0, h * 0.86, w, h * 0.14), Color(0, 0, 0, 0.25)))
 	add_child(shade)
 	var board := Control.new()
