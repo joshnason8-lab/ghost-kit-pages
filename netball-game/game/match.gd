@@ -297,7 +297,8 @@ func _reserves(ld: WsgLoading = null) -> void:
 				"trim": tm.get("c2", Color.BLACK), "hair": Color("15100c"), "hair_style": int(e.get("hair", 0)),
 				"height": float(e.get("height", 1.75)), "pos": ""})
 			root.add_child(b)
-			b.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if b.mesh_instance:      # (none on a body out of the tree: a match built where it is not drawn)
+				b.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			b.set_meta("team", t)
 			var seats: Array = arena.bench_seats[t]
 			if i < seats.size():

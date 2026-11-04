@@ -114,6 +114,14 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "knees" in OS.get_cmdline_user_args():
+		# (Only the knees as drawn, Low and (with the clips) Medium: tests/test_runner.tscn -- knees)
+		FoundationLink.off = false
+		await _knees(foundation_ok)
+		FoundationLink.off = true
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -174,6 +182,7 @@ func _ready() -> void:
 	await _loading_overlay()
 	FoundationLink.off = false
 	await _foundation(foundation_ok)
+	await _knees(foundation_ok)
 	await _replays()
 	await _low_unchanged()       # (again, the foundation available: Low draws exactly what it did)
 	FoundationLink.off = true
@@ -3059,6 +3068,60 @@ func _foundation(available: bool) -> void:
 	Game.settings.graphics = Game.GFX_MEDIUM
 	m.queue_free()
 	await frames(2)
+	Game.settings.graphics = was
+
+
+## The foundation's world rule "knees" (no knee more than 4 cm behind its hip-ankle line, against the body's
+## forward), read as World.leg_bones maps our skeletons (tests/knee_probe.gd measures every mode at every tier): an AI
+## match at Low (our own bodies) and, with the licensed clips, at Medium (the foundation's: the players' and umpires'
+## legs reaching the game's feet - FoundationLink's FeetLayer, whose knee went toward the game's knee as a point and
+## bent a standing shooter's knees 10 cm backwards - and the seated reserves), every drawn skeleton every frame.
+func _knees(foundation_ok: bool) -> void:
+	var world: WsgWorldGame = (load("res://game/world.gd") as Script).new()
+	var probe: Script = load("res://tests/knee_probe.gd")
+	var was: int = int(Game.settings.graphics)
+	var lone := Skeleton3D.new()
+	check(world.call("leg_bones", lone).is_empty(), "knees: leg_bones maps no skeleton not ours")
+	lone.free()
+	for tier in ([Game.GFX_LOW, Game.GFX_MEDIUM] if foundation_ok else [Game.GFX_LOW]):
+		Game.settings.graphics = tier
+		Game.start_match({"home": "AUS", "away": "NZL", "venue": "arena", "user_team": -1, "headless_hud": true,
+			"seed": 4, "quarter_s": 20.0})
+		var m: Match = Game.current
+		await frames(30)
+		var names: Array = world.call("leg_bones", m.players[0][0].body.skeleton)
+		check(names.size() == 2 and names[0].slice(0, 3) == ["thigh_l", "shin_l", "foot_l"] and names[1].slice(0, 3) == ["thigh_r", "shin_r", "foot_r"]
+			and names[0][3] == Vector3(0, 0, 1), "knees: leg_bones names our body's legs (%s)" % [names])
+		var legs := 0
+		var worst := -INF
+		var who := ""
+		var reserves := 0
+		var unread := 0
+		for f in 450:
+			await get_tree().process_frame      # (the drawn body's modifiers run at the frame's end)
+			for sk: Skeleton3D in m.find_children("*", "Skeleton3D", true, false):
+				if not probe.call("drawn", sk):
+					continue
+				var bs: Array = probe.call("behind", world, sk)
+				if bs.is_empty():
+					unread += 1
+				if f == 0 and sk.get_parent() is WsgBody and not world.call("leg_bones", sk).is_empty():
+					reserves += 1
+				for b: float in bs:
+					if is_nan(b):
+						continue
+					legs += 1
+					if b > worst:
+						worst = b
+						who = " ".join(probe.call("who", sk))
+		var tag: String = ["Low", "Medium", "High"][tier]
+		check(unread == 0, "knees, %s: every drawn skeleton's legs read (%d unread)" % [tag, unread])
+		check(legs > 0 and worst <= 0.04, "knees, %s: no knee over 4 cm behind its hip-ankle line (worst %.1f cm, %s; %d legs)" % [tag, worst * 100.0, who, legs])
+		if tier > Game.GFX_LOW:
+			check(reserves > 0, "knees, %s: the reserves' foundation bodies mapped (%d)" % [tag, reserves])
+		print("knees: %s: %d legs, worst %.1f cm behind (%s), %d reserves mapped" % [tag, legs, worst * 100.0, who, reserves])
+		m.queue_free()
+		await frames(2)
 	Game.settings.graphics = was
 
 

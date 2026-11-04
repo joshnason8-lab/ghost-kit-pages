@@ -598,6 +598,33 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   injury note read "A England player is hurt": now "A player from England is hurt" (English; the other languages
   already said it their way). Test in `_break_screen`. No replays on Low (the foundation's bodies are kept for
   them, Medium and High), so none was shot.
+- **Knees** (the foundation's world rule "knees", enforced from 2026-11-06 12:00 UTC: no drawn knee more than 4 cm
+  behind its hip-ankle line). `World.leg_bones` maps our skeletons for the rule: our own body (ToonBody/HeroBody:
+  `thigh_l, shin_l, foot_l` / `thigh_r, shin_r, foot_r`, no toe bone, so the 4th entry is the forward at rest,
+  `Vector3(0, 0, 1)` in skeleton space) and the foundation body drawn for a seated reserve (FoundationLink kind
+  "reserve": no locomotor, so no WsgFootPlanter; the rig's `LeftUpLeg, LeftLeg, LeftFoot, LeftToeBase` and the
+  right's). The players' and umpires' WsgBody on Medium/High carry their locomotor's planter, which the rule reads
+  itself: [] for them. `World.knee_excuse` is "" (no move of ours bends a knee back). Measured first, with the new
+  `tests/knee_probe.tscn` (every mode at Low, Medium and High, 70 s of play with 30 s quarters, headless, each drawn
+  skeleton read inside skeleton_updated; the worse of the hips' forward and the forward at rest): before, every
+  mode x tier failed - Low 51-139 knees over 4 cm a mode (worst 20.8 cm, markers and runners), Medium/High 102-343
+  (worst 26.4 cm; most of them the shooters standing by the post). Two causes: (1) Gait's leg IK took the knee's
+  side from the foot's heading, so a foot turned well round from her body (a marker turning to the ball, a runner
+  turning round mid-stride with a folded leg) bent the knee back; now the pole is kept at least a quarter forward of
+  her body and of her hips, square to the hip-ankle line. (2) FoundationLink's FeetLayer bent the rig's knee toward
+  the game's knee as a point; the rig's hip is not where the game's is, so a near-straight game leg put that point
+  behind the rig's line. Now it takes the way the game's knee bends off its own line (straight: forward), kept a
+  quarter forward of the rig's hips and of its forward at rest. After: 0 knees over 4 cm in all twelve (worst 0.0 cm
+  anywhere: every knee on or in front of its line). Test `_knees` (`test_runner.tscn -- knees`).
+- **Mode starts headless** (the foundation's world check on 80283b2: "add_child on a null value", "cast_shadow on
+  Nil"): reproduced on ours headless (not under xvfb). Headless with fixed fps the frames spin while the loader's
+  thread works (2 s of loading was 4,000-16,000 frames), so the check's 120 s (3,600 frames) ran out, it freed the
+  mode's holder, and the start went on: `main.add_child` on a freed node, then every build step on a match out of
+  the tree (the reserves' `mesh_instance`, the HUD's root, the viewport all null). Now: a start whose screen is gone
+  builds nothing and frees the match; the build steps run only on a match in the tree; null guards on the reserves'
+  and FoundationLink's mesh, HUD.add_controls and Game.apply_graphics. Headless only, the match's files load at the
+  tap (held till it is up) and Flags.collect waits in place, so a start takes ~25 frames as on a screen. World check
+  (feet, pose, officials, loading, tiers): headless FAIL 3/5 with 16 SCRIPT ERRORs before, PASS 5/5 with none after.
 
 ## Next
 

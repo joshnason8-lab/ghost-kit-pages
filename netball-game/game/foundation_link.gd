@@ -74,8 +74,9 @@ func _ready() -> void:
 	body.set_detail(false)
 	_scale_body()
 	_make_material()
-	body.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if kind == "reserve" or not Game.shadows_enabled() \
-		else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	if body.mesh_instance:      # (none when the character failed to load)
+		body.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if kind == "reserve" or not Game.shadows_enabled() \
+			else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	legacy = BallLayer.new()
 	legacy.link = self
 	legacy.name = "Legacy"
@@ -143,7 +144,8 @@ func _make_material() -> void:
 		look.get("hair"), look.get("pos", ""), Game.hd()]
 	if _mats.has(key):
 		material = _mats[key]
-		body.mesh_instance.material_override = material
+		if body.mesh_instance:
+			body.mesh_instance.material_override = material
 		return
 	if _shader == null:
 		_shader = Shader.new()
@@ -195,7 +197,8 @@ func _make_material() -> void:
 	ToonBody._also_outlined.append(m)
 	_mats[key] = m
 	material = m
-	body.mesh_instance.material_override = m
+	if body.mesh_instance:
+		body.mesh_instance.material_override = m
 
 
 ## A team change or a new kit: the colours as the game's body has them now.
@@ -471,13 +474,18 @@ func _feet_offset() -> void:
 
 
 ## Where the game has her leg this frame (world): [the ankle, as the rig's would be on that foot; the knee; the
-## foot's turn (its basis, unscaled: the rig's foot turned as the game's from their rests)].
+## foot's turn (its basis, unscaled: the rig's foot turned as the game's from their rests); which way the game's knee
+## bends off its own hip-ankle line (unit; ZERO: the leg straight)].
 func game_leg(i: int) -> Array:
 	var gs := gb.skeleton
 	var s := "l" if i == 0 else "r"
 	var ft := gs.global_transform * gs.get_bone_global_pose(gs.find_bone("foot_" + s))
 	var kn := gs.global_transform * gs.get_bone_global_pose(gs.find_bone("shin_" + s)).origin
-	return [ft * _ankle_d, kn, ft.basis.orthonormalized()]
+	var hp := gs.global_transform * gs.get_bone_global_pose(gs.find_bone("thigh_" + s)).origin
+	var line := (ft.origin - hp).normalized()
+	var bend := (kn - hp) - line * line.dot(kn - hp)
+	# (Under a centimetre off the line, the leg is straight: no side to bend to of its own.)
+	return [ft * _ankle_d, kn, ft.basis.orthonormalized(), bend.normalized() if bend.length() > 0.01 * gb.scale.x else Vector3.ZERO]
 
 
 ## The drawn feet on the game's (Gait's, which plant each foot exactly where it comes down, 0 cm of slip:
@@ -490,6 +498,9 @@ class FeetLayer extends SkeletonModifier3D:
 	var link: FoundationLink
 	var weight := 1.0
 	var _ix := []
+	var _hips := -1
+	var _fwd_rest := Vector3(0, 0, 1)   # the body's forward at rest in the hips' frame (from the toes)
+	var _fwd_sk := Vector3(0, 0, 1)     # and in the skeleton's
 
 	func _process_modification_with_delta(_delta: float) -> void:
 		var sk := get_skeleton()
@@ -498,6 +509,14 @@ class FeetLayer extends SkeletonModifier3D:
 		if _ix.is_empty():
 			for leg in LEGS:
 				_ix.append(leg.map(func(n): return sk.find_bone(n)))
+			_hips = sk.find_bone("Hips")
+			var toe := sk.find_bone("LeftToeBase")
+			if toe >= 0 and _hips >= 0:
+				var f := sk.get_bone_global_rest(toe).origin - sk.get_bone_global_rest(_ix[0][2]).origin
+				f.y = 0.0
+				if f.length() > 0.001:
+					_fwd_sk = f.normalized()
+					_fwd_rest = sk.get_bone_global_rest(_hips).basis.orthonormalized().inverse() * f.normalized()
 		var inv := sk.global_transform.affine_inverse()
 		var sb := sk.global_transform.basis.orthonormalized().inverse()
 		var legs := [link.game_leg(0), link.game_leg(1)]
@@ -525,11 +544,14 @@ class FeetLayer extends SkeletonModifier3D:
 			var g: Array = legs[i]
 			# The foot turned as the game's is in the world (both feet face the way their bodies do at rest).
 			var turn: Basis = sb * (g[2] as Basis) * sk.get_bone_global_rest(_ix[i][2]).basis
-			_leg(sk, _ix[i], inv * (g[0] as Vector3), inv * (g[1] as Vector3), turn)
+			_leg(sk, _ix[i], inv * (g[0] as Vector3), sb * (g[3] as Vector3), turn)
 
-	## One leg (thigh, shin) turned so its ankle is at target (skeleton space), its knee bending toward knee_at, its
+	## One leg (thigh, shin) turned so its ankle is at target (skeleton space), its knee bending the way the game's
+	## does off its own hip-ankle line (bend, skeleton space; ZERO straight), never behind the body's forward; its
 	## foot turned to foot (skeleton space).
-	func _leg(sk: Skeleton3D, leg: Array, target: Vector3, knee_at: Vector3, foot: Basis) -> void:
+	## (It bent toward the game's knee as a point: the rig's hip is not where the game's is, and with the game's leg
+	## near straight that point lay behind the rig's hip-ankle line - a standing shooter's knees 10 cm backwards.)
+	func _leg(sk: Skeleton3D, leg: Array, target: Vector3, bend: Vector3, foot: Basis) -> void:
 		var th := sk.get_bone_global_pose(leg[0])
 		var sh := sk.get_bone_global_pose(leg[1])
 		var ft := sk.get_bone_global_pose(leg[2])
@@ -550,11 +572,24 @@ class FeetLayer extends SkeletonModifier3D:
 			dir = to.normalized()
 		var x := (a * a - b * b + d * d) / (2.0 * d)
 		var h := sqrt(maxf(0.0, a * a - x * x))
-		var pole := (knee_at - hip) - dir * (knee_at - hip).dot(dir)
-		var fwd := th.basis * Vector3(0, 0, 1)
+		var pole := bend - dir * bend.dot(dir)
+		var fwd := (sk.get_bone_global_pose(_hips).basis.orthonormalized() * _fwd_rest) if _hips >= 0 else Vector3(0, 0, 1)
 		fwd -= dir * fwd.dot(dir)
-		if pole.length() < 0.01:
+		if fwd.length() < 0.05:
+			fwd = th.basis * Vector3(0, 0, 1)    # (the leg along the body's forward: a kick's; the thigh's own)
+			fwd -= dir * fwd.dot(dir)
+		if pole.length() < 0.2 or pole.dot(fwd) < 0.0:
 			pole = fwd
+		# At least a quarter forward of her hips and of her body at rest, square to the leg (Gait's rule for its own).
+		pole = pole.normalized()
+		for ahead: Vector3 in [fwd, _fwd_sk - dir * _fwd_sk.dot(dir)]:
+			if ahead.length() < 0.2:
+				continue
+			ahead = ahead.normalized()
+			var k := pole.dot(ahead)
+			if k < 0.25:
+				pole = pole + ahead * (0.25 - k)
+				pole = (pole - dir * pole.dot(dir)).normalized()
 		var new_knee := hip + dir * x + pole.normalized() * h
 		var ankle := hip + dir * d
 		var parent := sk.get_bone_global_pose(sk.get_bone_parent(leg[0])).basis

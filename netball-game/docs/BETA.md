@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## Unreleased
+
+- **Knees**: no player's knee bends backwards any more. On Low a defender's knee could bend the wrong way as she
+  turned her feet toward the ball, and on Medium and High a shooter standing by the post could stand with her knees
+  pushed back; both now bend only forward.
+
 ## New in 0.9.10-beta
 
 - **Throw-ins**: the umpire on that line now steps off to stand beside the thrower, not on top of her.

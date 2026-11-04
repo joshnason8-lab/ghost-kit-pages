@@ -164,3 +164,34 @@ func cameras(_mode: String, root: Node) -> Array:
 		out.append(c)
 	m.cam.make_current()
 	return out
+
+
+## knees: each leg's bones on a skeleton of ours, [[thigh_l, shin_l, foot_l, toe_l], [thigh_r, shin_r, foot_r, toe_r]]:
+##   - our own body (ToonBody, and HeroBody on its bones: the players and umpires on Low, the reserves' figure under
+##     the foundation's on Medium and High): its bones thigh_*, shin_*, foot_*; it has no toe bone, so the 4th is the
+##     body's forward at rest in skeleton space, +Z (every bone's rest rotation is the identity, the figure facing +Z);
+##   - the foundation's body drawn for a reserve on the bench (FoundationLink kind "reserve": posed by the game, no
+##     locomotor, so no WsgFootPlanter for the rule to read): the rig's names, as WsgFootPlanter.LEGS has them.
+## [] for any other skeleton: the players' and umpires' WsgBody on Medium and High carry a WsgFootPlanter (their
+## WsgLocomotor's) the rule reads itself.
+func leg_bones(skeleton: Skeleton3D) -> Array:
+	if skeleton == null:
+		return []
+	var holder := skeleton.get_parent()
+	if holder is ToonBody and (holder as ToonBody).skeleton == skeleton:
+		var out := []
+		for s in ["l", "r"]:
+			out.append(["thigh_" + s, "shin_" + s, "foot_" + s, Vector3(0, 0, 1)])
+		return out
+	if holder is WsgBody and holder.get_parent() is FoundationLink:
+		var link := holder.get_parent() as FoundationLink
+		if link.body == holder and link.loco == null:
+			return WsgFootPlanter.LEGS.duplicate(true)
+	return []
+
+
+## knees: why a knee of SKELETON may be bent the wrong way this frame - only a named acrobatic move while it plays
+## (a leap's tuck), never by who she is. "": none. None of our moves bends a knee back (Poses' legs bend forward, Gait's
+## IK puts the knee ahead of the hip-ankle line, the reserves' seated knees over their feet), so none is excused.
+func knee_excuse(_skeleton: Skeleton3D) -> String:
+	return ""

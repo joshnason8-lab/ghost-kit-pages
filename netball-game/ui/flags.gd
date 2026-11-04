@@ -32,7 +32,9 @@ static func draw_async(jobs: Array) -> Dictionary:
 
 static func collect(job: Dictionary) -> void:
 	var tree := Engine.get_main_loop() as SceneTree
-	while not WorkerThreadPool.is_task_completed(int(job.task)):
+	# (Headless - tests, the world check - nothing is drawn while it waits: it waits here, not a frame at a time, so a
+	# start takes the frames it takes on a screen, not thousands of empty ones while the thread runs.)
+	while DisplayServer.get_name() != "headless" and not WorkerThreadPool.is_task_completed(int(job.task)):
 		await tree.process_frame
 	WorkerThreadPool.wait_for_task_completion(int(job.task))
 	for i in (job.jobs as Array).size():

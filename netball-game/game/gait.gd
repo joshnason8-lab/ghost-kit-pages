@@ -499,6 +499,21 @@ func _leg_ik(hips: Vector3, qh: Quaternion, s: String, a: Vector3, fy: float, pi
 	var r := clampf(d.length(), absf(la - lb) + 0.02, (la + lb) * 0.999)
 	var dn := d.normalized() if d.length() > 0.001 else Vector3.DOWN
 	var fwd := (Vector3(sin(fy), 0.0, cos(fy)) + Vector3(0, 0, 0.6)).normalized()
+	# The knee never bends behind her: toward the foot's heading, but at least a quarter forward of her body and of her
+	# hips. (A foot turned well round from her body - a marker's feet as she turns to the ball - took the knee round
+	# with it, 12 cm behind its hip-ankle line: the foundation's "knees" rule.)
+	# (Measured square to the hip-ankle line, where the knee goes: a folded leg mid-swing, the foot up behind or ahead,
+	# as her body turned round at a run, bent it 17 cm back with a heading that was forward of her.)
+	fwd -= dn * fwd.dot(dn)
+	for ahead: Vector3 in [Vector3(0, 0, 1), qh * Vector3(0, 0, 1)]:
+		ahead -= dn * ahead.dot(dn)
+		if ahead.length() < 0.2:
+			continue           # (the leg along it: no side of it to keep to)
+		ahead = ahead.normalized()
+		var k := fwd.normalized().dot(ahead) if fwd.length() > 0.001 else -1.0
+		if k < 0.25:
+			fwd = fwd.normalized() + ahead * (0.25 - k) if fwd.length() > 0.001 else ahead
+		fwd -= dn * fwd.dot(dn)
 	var h := fwd.cross(dn)
 	if h.length() < 0.05:
 		h = qh * Vector3.RIGHT

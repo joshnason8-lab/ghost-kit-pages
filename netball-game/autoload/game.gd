@@ -417,26 +417,51 @@ func start_match_loading(config: Dictionary) -> bool:
 	ld.log_label = "%s %s %s" % [String(config.get("mode", "quick")), String(config.get("venue", "arena")), ["low", "medium", "high"][g]]
 	if test_quarter_s > 0.0:
 		config.quarter_s = test_quarter_s
-	ld.request(match_files(config))
+	var files := match_files(config)
+	var held := []
+	if DisplayServer.get_name() == "headless":
+		# (Headless - tests, the world check - there is no screen to keep moving: the files load here, at once, and the
+		# loader finds them made. On the loader's thread a headless run spun thousands of empty frames waiting for
+		# them, and a check counting frames read a 2 s start as "still loading after 120 s".)
+		for p in files:
+			if ResourceLoader.exists(p):
+				held.append(ResourceLoader.load(p))     # (held till the match is up: else freed, and loaded again)
+	ld.request(files)
 	var m: Node = (load("res://game/match.gd") as Script).new()
 	m.config = config
 	m.staged = true
 	m.process_mode = Node.PROCESS_MODE_DISABLED    # nothing plays till it is whole
+	# (The screen it came from may be gone by the time the files are in - a test's or a check's holder freed while the
+	# loader's thread still ran, headless: then the match is never put up, its steps build nothing, and it is freed at
+	# the end; before, each step built on a match out of the tree, every node in it unready: "add_child on a null
+	# value", "cast_shadow on Nil".)
 	ld.step("Match", func():
+		if not is_instance_valid(main) or not main.is_inside_tree():
+			return
 		Sfx.music(false)
 		main.add_child(m))                          # behind the screen it came from, under the overlay
 	for st in m.build_steps(ld):
-		ld.step(String(st[0]), st[1], float(st[2]))
+		var work: Callable = st[1]
+		ld.step(String(st[0]), func():
+			if is_instance_valid(m) and m.is_inside_tree():
+				await work.call(), float(st[2]))
 	# The warm-up: it takes the screen's place behind the (now opaque) overlay, which draws each of its looks once, a
 	# few a frame, so the shaders compile a frame at a time and the bar moves (WsgLoading.warm; no 3D is drawn till
 	# then). done() then holds the overlay till the frames run smoothly; kick_off() starts the match on the first frame
 	# the player sees.
 	ld.warm(func():
+		if not is_instance_valid(m) or not m.is_inside_tree():
+			return null
 		_swap_in(m)
 		return m)
 	if not await ld.run():
 		if is_instance_valid(m) and not m.is_inside_tree():
 			m.free()
+		return true
+	if is_instance_valid(m) and not m.is_inside_tree():
+		m.free()             # (its screen gone before it was put up: nothing to start)
+		if is_instance_valid(ld):
+			await ld.done()
 		return true
 	await ld.done()
 	if is_instance_valid(m):
@@ -546,6 +571,8 @@ func quarter_minutes() -> int:
 # ---------------------------------------------------------------- graphics
 
 func apply_graphics(viewport: Viewport) -> void:
+	if viewport == null:
+		return               # (a match built out of the tree: no screen to set)
 	match int(settings.graphics):
 		GFX_LOW:
 			viewport.msaa_3d = Viewport.MSAA_DISABLED

@@ -80,6 +80,8 @@ func show_card(half_time := false) -> void:
 
 func add_controls(c: TouchControls) -> void:
 	_controls = c
+	if root == null:
+		return               # (the HUD not in the tree yet: nothing to put the buttons on)
 	root.add_child(c)
 	root.move_child(c, 1)
 	_add_pause()
