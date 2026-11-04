@@ -545,17 +545,49 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   pass, the AI's use, the arm angles on both paths, hips over the seat (the game's 0.000 m off; the foundation's hips
   0.16-0.19 m over the seat), feet on the floor, no part in a prop, standing to clap and sitting again. Contact
   sheet of the seated reserves and the signal on Low and Medium made for review (not kept in the repo).
+- **Positional changes; the non-English store listings** (Next items 3 and 2; branch netball-polish, from 0.9.7-beta;
+  no version bump). (1) Team changes now include two players on court swapping positions (RULES.md R3), at the moments
+  a substitution may be made: an interval, an injury stoppage, a time-out, and after a goal until the centre pass is
+  whistled (`Match.can_swap`; never in play, rolling changes or not). Each must play her new position: her own or one
+  of her `alt` positions (`DB.squad`: a neighbour's), so the pairs are GS-GA, GA-WA, WA-C, C-WD, WD-GD, GD-GK, each
+  open only while both women play the other's position (`Match.plays`, `swap_ok`); a player is in one swap at a time,
+  and not in one with an after-goal substitution asked for. Asked for (`Match.ask_swap`, tapped again it is taken
+  back), a swap is made as the teams next line up (`_apply_swaps`): in `_setup_centre` (the quarter's centre pass, or
+  the one after a goal, after that goal's substitutions), at `_end_injury` and at `_end_timeout`; asked for while the
+  teams line up for the centre pass after a goal, at once. `_swap` exchanges the two squad entries between the
+  position's Player nodes (the nodes stay with their positions, so the AI, the bibs, offside and `me` follow the
+  position), with each woman's spot and facing, her warning, suspensions, penalties since her last sanction and a
+  knock she played on with; both bodies are rebuilt for the new bibs and placed where each stood, so she walks to her
+  new spot; the box score has her at her new position; a banner names who now plays each. A substitution that leaves
+  an asked-for swap impossible drops it. UI (`Hud._changes`): where a swap may be asked for, a Substitutions /
+  Positions chip pair beside Team changes switches the list (the interval screen, the injury and time-out screens, the
+  pause menu's after-goal and rolling changes); Positions lists the six pairs ("GS  Hannah Rowe  ‹›  GA  Phoebe
+  Quinn"), down while asked for, off when impossible. The AI makes none (unchanged). WsgSim and the sim's checks treat
+  a swap as a placement (no teleport flagged). Strings `CHANGES_SUBS`, `CHANGES_SWAPS_NOTE` (the other chip is
+  `HOWTO_POSITIONS`), translated into the 18 languages from each one's words for team changes and substitutions,
+  listed for native review in each translation note under "Added for positional changes (needs native review)"; the
+  Chinese uses 交换 (no new characters, no font cut). Tests `-- swaps` (28 checks, also in the full run): none in
+  play; refused when one does not play the other's position, one swap a player, taken back when tapped again; asked
+  at the interval and made at the line-up for the centre pass (0.00 s in), each in the other's position and in the box
+  score; in play no frame offside, the old GS (now GA) in the centre third, the centre third offside for the old GA
+  (now GS); after a goal made at the line-up with each woman where she stood (0.01 m); made at once during the
+  line-up; from the pause menu (Team changes, Positions, a pair; one sharing a player off); in a time-out and an
+  injury stoppage made as play restarts; the AI asks for none. The fit audit adds the interval's Positions list and
+  the pause menu's changes in both lists. (2) The seven non-English store listings (af, zu, sw, ms-MY, zh-CN, si-LK,
+  ta-IN) brought up to en-GB: the Club Season line (single or home and away, the finals with a second chance for the
+  top two), the coach's tips, the sanctions in the free-pass line, the Club Season in the first release's notes;
+  check_listing within Play's limits (full descriptions 1,098-3,347 characters); docs/translation_notes/
+  store_listings.md "Added for the Club Season and the coach (needs native review)".
 
 ## Next
 
 1. Native speakers' review of every translation (docs/translation_notes/), the lower-resource languages first; the
    0.2 strings are listed under "Added in 0.2" in each, and the home-and-away season's under "Added for the
    home-and-away season (needs native review)", the preliminary final's word first.
-2. The non-English store listings: add the Club Season (single or home and away, the page-playoff finals) and the
-   coach (the English ones have them).
-3. The after-goal change: positional changes between players on court (at an interval too), and the without-ball
-   obstruction signal if the game ever calls that obstruction; settle the signal and how long play may wait for the
-   change against the PDF (item 6).
+2. Native review of the non-English store listings' new lines (docs/translation_notes/store_listings.md, "Added for
+   the Club Season and the coach") and of the positional changes' two strings in each translation note.
+3. The without-ball obstruction signal if the game ever calls that obstruction; settle the signal and how long play
+   may wait for an after-goal change against the PDF (item 6).
 4. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
 5. The upload key and the closed test (store/PLAY_STORE.md).
 6. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".

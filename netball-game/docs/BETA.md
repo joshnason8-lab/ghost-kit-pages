@@ -9,6 +9,16 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## Unreleased
+
+- **Positional changes**: besides substitutions, two of your players on court can now swap positions, at the
+  intervals, in an injury stoppage or a time-out, and after a goal (Pause, then Team changes). Tap Positions beside
+  Substitutions and pick a pair, say GS and GA; tap it again to change your mind. Each player can only move to a
+  position she plays. The swap is made as play restarts, and each player then keeps to her new position's areas.
+- The new words are in every language the game has, awaiting native speakers' checks.
+- The store listings in Afrikaans, isiZulu, Kiswahili, Bahasa Melayu, Chinese, Sinhala and Tamil now describe the Club
+  Season and the coach's tips, as the English ones do.
+
 ## New in 0.9.7-beta
 
 - **Home and away**: a Club Season can now be fourteen rounds, every club played at home and away (pick Single or

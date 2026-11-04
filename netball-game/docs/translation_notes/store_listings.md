@@ -4,13 +4,13 @@ Files: `store/listing/{af,zu,sw,ms-MY,zh-CN,si-LK,ta-IN}.txt`, translated from `
 
 | File | Short | Full |
 |---|---|---|
-| af.txt | 77 | 2424 |
-| zu.txt | 77 | 2816 |
-| sw.txt | 75 | 2662 |
-| ms-MY.txt | 77 | 2695 |
-| zh-CN.txt | 33 | 1012 |
-| si-LK.txt | 77 | 2674 |
-| ta-IN.txt | 75 | 3009 |
+| af.txt | 77 | 2709 |
+| zu.txt | 77 | 3183 |
+| sw.txt | 75 | 2943 |
+| ms-MY.txt | 77 | 3022 |
+| zh-CN.txt | 33 | 1098 |
+| si-LK.txt | 77 | 2930 |
+| ta-IN.txt | 75 | 3347 |
 
 Wherever possible, the terms match the in-game strings in `i18n/src/<lang>.json`, for example the names of the game modes and venues.
 
@@ -43,3 +43,17 @@ Check: the mix of loanwords and pure Sinhala; "ගෝල් කවය" for the g
 Check: the short description was shortened to fit 80 characters, so it no longer mentions 0.9 m. Also check "காற்பகுதி" for quarter, "வீராங்கனை" (female player) in the disclaimer, and whether "நாடுகளின் கிண்ணம்" works for Nations Cup.
 
 - zh-CN: aligned to 投球, the word the game uses (Singapore/Malaysia press term per zh.md); a native reviewer may still prefer 篮网球.
+
+## Added for the Club Season and the coach (needs native review)
+Every non-English listing brought up to the English one (en-GB): a Club Season line after the Nations Cup (eight
+clubs, seven rounds or fourteen home and away, then a finals series giving the top two a second chance, up to the grand
+final), the coach's tips after the language line, warnings, suspensions and ordering off added to the free-pass line,
+and the Club Season added to the first release's notes. Translated without native speakers, from each language's own
+words in the game: Klubseisoen / Afrigter se wenke / Groot eindstryd (af); Isizini Yamaklabhu / Izeluleko zomqeqeshi /
+owamanqamu omkhulu (zu); Msimu wa Klabu / Vidokezo vya kocha / fainali kuu (sw); Musim Kelab / Tip jurulatih / final
+besar (ms-MY); 俱乐部赛季 / 教练提示 / 总决赛 (zh-CN); සමාජ වාරය / පුහුණුකරුගේ ඉඟි / මහා අවසන් තරගය (si-LK);
+கழகப் பருவம் / பயிற்சியாளர் குறிப்புகள் / மாபெரும் இறுதி (ta-IN). Lengths above are after these additions
+(check_listing: all within Play's limits). Check first: the Club Season line as a whole (the "second chance" for the top
+two, and "home and away"), and the sanctions' words (warnings, suspensions, ordered off) in the free-pass line. The
+English listings' later release notes (0.2.0 to 0.7.0) are not translated: Play shows only the current release's
+notes.
