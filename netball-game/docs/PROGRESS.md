@@ -471,7 +471,7 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   became 1.39); `_restart_spacing` puts its marker on ground she may stand on; `_controls` gives the thumb that
   plays two minutes to score (one seed's first 90 s went 0-4 after the play changed, six seeds 11-6 for you); the
   palm checks skip a loose ball's 0.22 s on its way in.
-- **Foundation d70ac7d -> 5c2304e** (branch netball-fnd): the owner's notes run in CI on a fresh install's defaults
+- **Foundation d70ac7d -> a40a95e** (branch netball-fnd): the owner's notes run in CI on a fresh install's defaults
   (`XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1`). WsgSim's fetch behind a prop is wired (game/wsg_sim.gd `fetch`,
   `solid`, `fetch_reach`): the ball is put dead behind the prop as a throw-in to the team due the restart, the
   nearest player who may take it is sent for it round the props (Player._goal: the restart's taker follows
