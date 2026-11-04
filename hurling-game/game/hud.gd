@@ -58,6 +58,7 @@ func setup(p_match: Node) -> void:
 	_marks.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_marks.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_marks.draw.connect(_draw_marks)
+	_marks.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS   # Shapes' small discs
 	root.add_child(_marks)
 	_build_scorebug()
 	_call = _outlined("", "SubLabel", 24, Game.C_GOLD)
@@ -587,8 +588,8 @@ func _draw_marks() -> void:
 			var sp := cam.unproject_position(b)
 			if Rect2(Vector2.ZERO, vp).grow(-4).has_point(sp):
 				if not m.is_practice() or ball_px(cam, b, vp) < 4.0:
-					_marks.draw_circle(sp, 5.5, Color(0.05, 0.05, 0.05, 0.75))
-					_marks.draw_circle(sp, 3.8, Color(1, 1, 0.92))
+					Shapes.disc(_marks, sp, 5.5, Color(0.05, 0.05, 0.05, 0.75))
+					Shapes.disc(_marks, sp, 3.8, Color(1, 1, 0.92))
 			else:
 				_edge_arrow(sp, vp)
 		else:
@@ -608,13 +609,14 @@ func _draw_marks() -> void:
 			var c := cam.unproject_position(p)
 			var top := cam.unproject_position(p + Vector3(0, 2.1, 0))
 			var r := maxf(10.0, (c.y - top.y) * 0.32)
-			_marks.draw_arc(c, r, 0, TAU, 32, Color(Game.C_GOLD, 0.95), 3.0, true)
-			_marks.draw_string(Game.font_bold, top + Vector2(-12, -6), str(_active.num), HORIZONTAL_ALIGNMENT_CENTER, 24, 18, Game.C_GOLD)
+			Shapes.ring(_marks, c, r, 3.0, Color(Game.C_GOLD, 0.95))
 			if _active == m.carrier and _active.ball_hand:
 				var c2: Rules.Carry = m.carry_of(_active)
 				for i in Rules.MAX_STEPS:
 					var col := Game.C_DANGER if i < c2.steps and c2.steps >= 3 else (Game.C_GOLD if i < c2.steps else Color(1, 1, 1, 0.35))
-					_marks.draw_circle(top + Vector2(-15 + i * 10, -30), 3.6, col)
+					Shapes.disc(_marks, top + Vector2(-15 + i * 10, -30), 3.6, col)
+			# (The number after the circles: the circles are one draw call from Shapes' texture, the words another.)
+			_marks.draw_string(Game.font_bold, top + Vector2(-12, -6), str(_active.num), HORIZONTAL_ALIGNMENT_CENTER, 24, 18, Game.C_GOLD)
 
 
 ## How wide the sliotar is drawn on the screen (pixels across), seen through cam in a picture vp big.

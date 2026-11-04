@@ -78,10 +78,15 @@ draw calls, triangles and memory are what a phone draws.
 | **Parish, High** (no HD pack) | 127 / 136 | 407,486 / 295,560 | 157.3 / 85.8 MB | 493 |
 | **Parish, High with the HD pack** (Vulkan) | 127 | 529,317 | 375.7 MB | 553 |
 
-**Low now** (0.24.16, Vulkan, 1600 x 720, the owner's A16's shape; the Low polish pass, 4 November 2026): stadium 103
-draw calls / 170,407 triangles / 72.1 MB (textures 44.6 MB), county 103 / 162,989 / 71.8 MB, parish 106 / 124,387 /
-72.0 MB. The same as 0.24.13 to the draw call and triangle: each man's own number on his back costs one 640 x 96
-texture (0.1 MB) and nothing more. (The table above is from before the shared foundation's bodies.)
+**Low now** (0.24.17, Vulkan, 1600 x 720, the owner's A16's shape, 4 November 2026): stadium 87 draw calls / 163,088
+triangles / 72.6 MB (textures 45.2 MB), county 87 / 155,670 / 72.3 MB, parish 90 / 117,068 / 72.6 MB. **Low's budget is
+100 draw calls** on the A16 (the other games hold 90 to 100), and all three grounds are under it. 0.24.16 was 103, 103 and
+106: the match's HUD was 37 of them, 27 of those its circles (the buttons, their rings, the joystick, your player's
+ring, the ball's dot, the steps), each draw_circle or draw_arc a draw call of its own. They are drawn from one small
+texture now (`ui/shapes.gd`, Shapes.disc and Shapes.ring), all of a canvas's circles before its words, so they batch:
+the HUD is 28 now (the buttons' words, one font size each, and the scorebug most of the rest). The 3D picture is about
+51 (a body and a hurley each for the 30 men and the officials, the ground, the scenery's multimeshes, the crowd's
+cards). The same saving holds on Medium and High (the HUD is the same on every level).
 
 Against 0.10 (GL): the stadium's Low, Medium and High were 91 / 101,000, 92 / 191,000 and 132 / 343,000; the new
 corner stands and their crowd are the difference (the same on both renderers).

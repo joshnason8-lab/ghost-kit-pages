@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.17
+
+- **The throw-in as the rules have it** (Rule 2.1): the two midfielders from each side one behind the other on their
+  own side of halfway, everyone else back in position behind the 45s.
+- **Lighter on Low**: the match's buttons and markers are drawn far more cheaply (a phone's draw calls on Low down from
+  about 105 to under 90 a frame); they look the same.
+- **Feet** (the shared animation foundation): its latest planter.
+
 ## New in 0.24.16
 
 - **Cleaner screen titles**: the floodlights in the menus' backdrop sat right against every screen's title (Help read

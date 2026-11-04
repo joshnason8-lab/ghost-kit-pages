@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _keeper_jerseys()
 	await _hawk_eye()
 	await _sin_bin_watch()
+	await _throw_in_places()
 	await _hand_score()
 	await _temp_subs()
 	await _subs()
@@ -712,6 +713,30 @@ func _temp_subs() -> void:
 	m.watch += 11.0 * 60.0
 	m._run_temp()
 	check(String(slot2.data.id) == sub2 and m.temp_out(0).is_empty() and m.subs_left(0) == left, "a head injury he is not passed fit from: the substitute stays, uncounted")
+	m.queue_free()
+	await frames(2)
+
+
+## The throw-in (Rule 2.1): two from each side one behind the other on their own side of the halfway line; everyone
+## else behind the 45 m lines.
+func _throw_in_places() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "COR", "venue": "county", "user_team": -1, "seed": 4, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	m._place_for_throw_in(true)
+	var inside := 0
+	for k in 2:
+		var d := float(m.dir(k))
+		var a: Vector3 = m.player_by_num(k, 8).global_position
+		var b: Vector3 = m.player_by_num(k, 9).global_position
+		check(a.x * d < 0.0 and b.x * d < 0.0 and absf(a.z - b.z) < 0.3 and absf(a.x - b.x) > 0.8,
+			"throw-in: side %d's midfielders one behind the other on their own side (%s, %s)" % [k, a, b])
+		for pl in m.team_players(k):
+			if (pl as Player).line() != DB.POS_MF and absf((pl as Player).global_position.x) < Pitch.HALF_L - 45.0:
+				inside += 1
+	check(inside == 0, "throw-in: everyone else behind the 45 m lines (%d inside)" % inside)
 	m.queue_free()
 	await frames(2)
 

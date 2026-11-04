@@ -5,8 +5,13 @@ const NOTE := {"id": "2026-11-03-gliding", "game": "hurling", "date": "2026-11-0
 const Kit := preload("res://tests/note_kit.gd")
 
 
-## 12 s of live play on High, every body the camera poses every frame, as drawn: no planted foot slides over the grass more
-## than 4 cm in a step, 1.5 cm a step on average (WsgNoteChecks.foot_slip), running, turning, strafing or standing.
+## At least 12 s of live play on High, every body the camera poses every frame, as drawn: no planted foot slides over the
+## grass more than 4 cm in a step, 1.5 cm a step on average (WsgNoteChecks.foot_slip), running, turning, strafing or
+## standing. The watch goes on (up to 60 s) until it has at least MIN_POSED posed frames of feet, the number 12 s gave
+## before the Rule 2.1 throw-in (the lead, 4 November 2026): with everyone behind the 45s at the throw-in, the opening
+## play on this seed goes to the far side, out of the broadcast camera's every-frame range, and 12 s saw no feet at all.
+## The bounds are unchanged; only the time it takes to see as many feet is longer.
+const MIN_POSED := 607
 func check() -> void:
 	# (High: every body within 60 m of the camera posed every frame, as the owner sees them close.)
 	var keep = Game.settings.graphics
@@ -29,7 +34,10 @@ func check() -> void:
 				(runs[who] as Array).append(WsgNoteChecks.feet(b))
 			elif not (runs[who] as Array).is_empty():
 				(runs[who] as Array).append(null))])     # (a gap: not posed every frame here)
-	await Kit.frames(tree, 360)
+	var watched := 0
+	while watched < 360 or (_posed(runs) < MIN_POSED and watched < 1800):
+		await Kit.frames(tree, 30)
+		watched += 30
 	for c in cbs:
 		Kit.unwatch(c[0], c[1])
 	var steps := 0
@@ -59,9 +67,20 @@ func check() -> void:
 			else:
 				seg.append(fr)
 	var mean := sum / maxf(1.0, steps)
-	info("%d planted steps over 12 s: the most a foot slid in a step %.1f cm (%s), %.2f cm on average" % [steps, worst, worst_who, mean])
+	info("%d posed frames over %.0f s" % [_posed(runs), watched / 30.0])
+	expect(_posed(runs) >= MIN_POSED, "only %d posed frames of feet in %.0f s (%d wanted)" % [_posed(runs), watched / 30.0, MIN_POSED])
+	info("%d planted steps: the most a foot slid in a step %.1f cm (%s), %.2f cm on average" % [steps, worst, worst_who, mean])
 	expect(steps >= 20, "only %d steps seen" % steps)
 	expect(worst <= 4.0, "%s: a planted foot slid %.1f cm in one step (4 at most)" % [worst_who, worst])
 	expect(mean <= 1.5, "planted feet slide %.2f cm a step on average (1.5 at most)" % mean)
 	await Kit.done(tree, m)
 	Game.settings.graphics = keep
+
+
+static func _posed(runs: Dictionary) -> int:
+	var n := 0
+	for who in runs:
+		for fr in runs[who]:
+			if fr != null:
+				n += 1
+	return n

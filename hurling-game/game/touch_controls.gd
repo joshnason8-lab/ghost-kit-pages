@@ -36,6 +36,7 @@ const ACTIONS := ["hurl_button_1", "hurl_button_2", "hurl_button_3", "hurl_butto
 
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS   # Shapes' circles (_draw)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
@@ -251,10 +252,12 @@ func _draw() -> void:
 		rest.x = size.x - rest.x
 	var base := _joy_base if _joy_touch >= 0 else rest
 	var knob := _joy_knob if _joy_touch >= 0 else rest
+	# (The circles from Shapes' one texture, all of them before any word: a draw call for them all, not one each.)
 	if show_joystick:
-		draw_arc(base, JOY_R, 0, TAU, 48, Color(Game.C_INK, 0.28 if _joy_touch >= 0 else 0.12), 3.0, true)
-		draw_circle(knob, 34.0, Color(Game.C_INK, 0.7 if _joy_touch >= 0 else 0.18))
+		Shapes.ring(self, base, JOY_R, 3.0, Color(Game.C_INK, 0.28 if _joy_touch >= 0 else 0.12))
+		Shapes.disc(self, knob, 34.0, Color(Game.C_INK, 0.7 if _joy_touch >= 0 else 0.18))
 	# The buttons.
+	var words := []
 	for i in _layout().size():
 		var b: Array = _layout()[i]
 		var id := String(b[0])
@@ -272,14 +275,18 @@ func _draw() -> void:
 			col = col.lightened(0.3)
 		if primary:
 			var pr := r + 8.0 + 6.0 * (0.5 + 0.5 * sin(_pulse * 7.0))
-			draw_arc(c, pr, 0, TAU, 64, Color(col, 0.35), 4.0, true)
-		draw_circle(c, r, col)
-		draw_arc(c, r, 0, TAU, 64, Color(0.02, 0.05, 0.09, 0.8) if primary else Color(1, 1, 1, 0.22), 3.0, true)
-		var ink := Color("1d1307") if primary else Game.C_INK
-		_draw_label(id, c, r, ink, primary)
+			Shapes.ring(self, c, pr, 4.0, Color(col, 0.35))
+		Shapes.disc(self, c, r, col)
+		Shapes.ring(self, c, r, 3.0, Color(0.02, 0.05, 0.09, 0.8) if primary else Color(1, 1, 1, 0.22))
+		words.append([id, c, r, Color("1d1307") if primary else Game.C_INK, primary, i])
+	for w in words:
+		_draw_label(w[0], w[1], w[2], w[3], w[4])
 		# The key that presses it, on a computer.
+		var i: int = w[5]
+		var c: Vector2 = w[1]
+		var r: float = w[2]
 		if not OS.has_feature("mobile") and key_hints and not touch_seen and i < 4:
-			var kc: String = "Q" if id == "SWITCH" else ["␣", "J", "K", "L"][mini(i, 3)]
+			var kc: String = "Q" if w[0] == "SWITCH" else ["␣", "J", "K", "L"][mini(i, 3)]
 			draw_string(Game.font_bold, c + Vector2(r * 0.55, r * 0.95), kc, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Game.C_INK, 0.6))
 
 

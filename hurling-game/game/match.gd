@@ -2871,12 +2871,15 @@ func _pass_option(pl: Player, joy: Vector2) -> Player:
 func _throw_in_spot(pl: Player) -> Vector3:
 	var d := dir(pl.team)
 	if pl.line() == DB.POS_MF:
-		# The two midfielders on their own side of the halfway line, beside the referee.
-		return Vector3(-d * 1.2, 0, 1.2 if pl.pos_num == 8 else -1.2)
+		# The two midfielders "one behind the other in their own defensive sides of the halfway line", facing the
+		# referee (Rule 2.1; Rules of Control 1.3(ii)(a)).
+		return Vector3(-d * (1.0 if pl.pos_num == 8 else 2.2), 0, 0)
+	# "All other players shall be in their respective positions behind the 45 m lines": in position, out of the
+	# middle third.
 	var home: Vector3 = ai[pl.team].home_spot(pl)
-	# Everyone else in position, out of the centre.
-	if absf(home.x) < 10.0 and absf(home.z) < 10.0:
-		home.z += 12.0 * signf(home.z + 0.01)
+	var line45 := Pitch.HALF_L - 45.0 + 1.0
+	if absf(home.x) < line45:
+		home.x = line45 * (signf(home.x) if absf(home.x) > 0.5 else -d)
 	return home
 
 

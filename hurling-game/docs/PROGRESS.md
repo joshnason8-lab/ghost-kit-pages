@@ -860,6 +860,22 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.17, 4 November 2026)
+
+- **Throw-in** (Rule 2.1, the lead's go-ahead): the two midfielders one behind the other on their own side (number 8
+  in front), facing the referee; everyone else at his home spot, moved back behind his own side's 45 when it is in
+  front of it. Test _throw_in_places; docs/RULES.md's row "As written". The gliding note (2026-11-03) watches on past
+  its 12 s (up to 60 s) until it has as many posed frames of feet as 12 s gave before (607): with everyone behind the
+  45s the opening play on its seed went to the far side, out of the broadcast camera's every-frame range. Its bounds
+  are unchanged (20 steps, 4 cm worst, 1.5 cm mean); the why is in its header. It passes: 650 posed frames in 32 s,
+  39 steps, 0.8 cm the worst.
+- **Low draw calls** (the lead: other games hold 90-100 on the A16): Low's budget is 100. Stadium 87, county 87,
+  parish 90 at 1600 x 720 (were 103, 103, 106). The HUD's circles - the buttons, the joystick, the markers - from one
+  texture (ui/shapes.gd) instead of a draw call each; the HUD went from 37 draw calls to 28. Stills checked: the
+  buttons, rings and dots look as they did (docs/GRAPHICS.md).
+- **Foundation 2f814608** (706e3a6d: the planter's tolerances by the body's size; WsgToonDriver's planted feet, not
+  used here).
+
 ## Done (0.24.16, 4 November 2026)
 
 - **Low polish pass** (the lead, as Netball, Pok Ta Pok and Kho Kho did): stills on Low at 1600 x 720 (the A16's shape)
