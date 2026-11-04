@@ -101,6 +101,12 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "swaps" in OS.get_cmdline_user_args():
+		# (Only the positional changes: tests/test_runner.tscn -- swaps)
+		await _swaps()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "gait" in OS.get_cmdline_user_args():
 		# (Only the run: tests/test_runner.tscn -- gait)
 		await _gait_steps()
@@ -146,6 +152,7 @@ func _ready() -> void:
 	await _solid_props()
 	await _rules2()
 	await _match2()
+	await _swaps()
 	_tags()
 	await _coach()
 	await _navigation()
@@ -4695,3 +4702,172 @@ func _m2_seated() -> void:
 func _m2(ok: bool, what: String) -> void:
 	check(ok, what)
 	print("  %s %s" % ["ok  " if ok else "FAIL", what])
+
+
+# ---------------------------------------------------------------- -- swaps
+
+## Positional changes (R3): two players on court swap positions, asked for only at the moments a substitution may be
+## made (an interval, an injury stoppage, a time-out, after a goal), each able to play her new position, made as the
+## teams next line up (the centre pass; after an injury or a time-out, as play restarts). The women end in the right
+## positions and keep to their new areas.
+func _swaps() -> void:
+	print("-- swaps")
+	var m := _study_match(55, {"user_team": 0, "demo": false, "timeouts": true})
+	await frames(3)
+	await _wait_live(m)
+	var gs0 := String(m.player_at(0, "GS").data.id)
+	var ga0 := String(m.player_at(0, "GA").data.id)
+	_m2(m.phase == "live" and not m.can_swap(0) and not m.ask_swap(0, "GS", "GA") and (m.swaps[0] as Array).is_empty()
+		and String(m.player_at(0, "GS").data.id) == gs0, "swaps: none in play")
+	# The interval: asked for, not made until the centre pass that starts the next quarter.
+	m.time_left = 0.05
+	for f in 300:
+		await frames(1)
+		if m.phase == "break":
+			break
+	_m2(m.phase == "break" and m.can_swap(0), "swaps: may be asked for at an interval")
+	_m2(not m.ask_swap(0, "GS", "WA") and not m.ask_swap(0, "WA", "GK") and not m.ask_swap(0, "GS", "GS"),
+		"swaps: refused when one of them does not play the other's position")
+	_m2(m.ask_swap(0, "GS", "GA") and String(m.player_at(0, "GS").data.id) == gs0, "swaps: GS and GA asked for at the interval, not made yet")
+	_m2(not m.ask_swap(0, "GA", "WA") and (m.swaps[0] as Array).size() == 1, "swaps: a player is in one swap at most")
+	_m2(not m.ask_swap(0, "GS", "GA") and (m.swaps[0] as Array).is_empty() and m.ask_swap(0, "GS", "GA"),
+		"swaps: tapped again, the swap is taken back")
+	var c0 := String(m.player_at(0, "C").data.id)
+	var wd0 := String(m.player_at(0, "WD").data.id)
+	_m2(m.ask_swap(0, "C", "WD"), "swaps: a second pair (C and WD) asked for too")
+	# The interval's screen (once the teams have huddled) offers both kinds of change.
+	for f in 600:
+		if m.hud._break != null and is_instance_valid(m.hud._break):
+			break
+		await frames(1)
+	_m2(m.hud._break != null and is_instance_valid(m.hud._break) and not m.hud._break.find_children("ChangeKind", "", true, false).is_empty(),
+		"swaps: the interval's team changes offer substitutions and positions")
+	m.skip_break()
+	var made_in := ""
+	var made_t := -1.0
+	for f in 600:
+		await frames(1)
+		if String(m.player_at(0, "GS").data.id) == ga0:
+			made_in = m.phase
+			made_t = m.phase_t
+			break
+	_m2(made_in == "setup" and made_t < 0.1 and String(m.restart.get("kind", "")) == Rules.CENTRE,
+		"swaps: made as the teams line up for the centre pass (%s, %.2f s in)" % [made_in, made_t])
+	_m2(String(m.player_at(0, "GA").data.id) == gs0 and String(m.player_at(0, "GS").data.id) == ga0
+		and String(m.player_at(0, "C").data.id) == wd0 and String(m.player_at(0, "WD").data.id) == c0 and (m.swaps[0] as Array).is_empty(),
+		"swaps: each in the other's position (GS and GA, C and WD)")
+	_m2(String(m.stats[gs0].pos) == "GA" and String(m.stats[ga0].pos) == "GS" and String(m.stats[wd0].pos) == "C",
+		"swaps: the box score has each at her new position")
+	# Play: each keeps to her new position's areas (the old GS goes into the centre third now; the old GA stays in her
+	# goal third).
+	await _wait_live(m)
+	var new_ga := m.player_at(0, "GA")
+	var new_gs := m.player_at(0, "GS")
+	var new_c := m.player_at(0, "C")
+	var off := 0
+	var ga_in3 := false
+	var gs_out := false
+	for f in 360:
+		await frames(1)
+		if m.phase != "live":
+			continue
+		for pl: Player in [new_ga, new_gs, new_c]:
+			if Rules.offside(pl.pos, pl.p, pl.dir):
+				off += 1
+		ga_in3 = ga_in3 or Court.areas_at(new_ga.p, new_ga.dir).has(Court.A_CENTRE)
+		var gs_areas: Array = Court.areas_at(new_gs.p, new_gs.dir)
+		gs_out = gs_out or not (gs_areas.has(Court.A_ATT_CIRCLE) or gs_areas.has(Court.A_ATT_THIRD) or gs_areas.has(Court.A_OUT))
+	_m2(off == 0 and not gs_out, "swaps: no one offside in her new position (%d frames)" % off)
+	_m2(ga_in3, "swaps: the old GS, now GA, goes into the centre third")
+	_m2(Rules.offside(new_gs.pos, Vector2.ZERO, new_gs.dir) and not Rules.offside(new_ga.pos, Vector2.ZERO, new_ga.dir),
+		"swaps: the centre third is offside for the old GA (now GS), not for the old GS (now GA)")
+	# After a goal: asked in the goal's stoppage, made at the centre pass's line-up, each woman where she stood.
+	m._goal(m.player_at(1, "GS"), 1)
+	_m2(m.phase == "goal" and m.can_swap(0) and m.can_swap(1), "swaps: after a goal either team may ask")
+	var gd0 := String(m.player_at(0, "GD").data.id)
+	var gkn := String(m.player_at(0, "GK").data.id)
+	_m2(m.ask_swap(0, "GD", "GK") and String(m.player_at(0, "GD").data.id) == gd0, "swaps: asked for in the goal's stoppage, not made yet")
+	var last := {}
+	var jump := INF
+	made_in = ""
+	for f in 600:
+		await frames(1)
+		if String(m.player_at(0, "GD").data.id) == gkn:
+			made_in = m.phase
+			made_t = m.phase_t
+			jump = maxf(m.player_at(0, "GD").p.distance_to(last.get(gkn, Vector2.INF)), m.player_at(0, "GK").p.distance_to(last.get(gd0, Vector2.INF)))
+			break
+		for pl: Player in m.players[0]:
+			last[String(pl.data.id)] = pl.p
+	_m2(made_in == "setup" and made_t < 0.1, "swaps: after a goal, made as the teams line up for the centre pass (%s, %.2f s in)" % [made_in, made_t])
+	_m2(jump < 0.4, "swaps: each stays where she stood and goes to her new spot from there (%.2f m)" % jump)
+	var gsn := String(m.player_at(0, "GS").data.id)
+	# Asked for while the teams line up: made at once.
+	_m2(m.phase == "setup" and m.ask_swap(0, "GS", "GA") and String(m.player_at(0, "GA").data.id) == gsn,
+		"swaps: asked for at the centre pass's line-up, made at once (GS and GA back)")
+	await _wait_live(m)
+	_m2(not m.can_swap(0) and not m.ask_swap(0, "WA", "C"), "swaps: once the centre pass is whistled, none")
+	# The pause menu after a goal: Team changes, then Positions, then a pair (tapped again, taken back).
+	m._goal(m.player_at(1, "GS"), 1)
+	m.set_paused(true)
+	await frames(1)
+	var gc: Button = _button_named(m.hud, "GoalChange")
+	var had_gc := gc != null
+	if gc:
+		gc.pressed.emit()
+	await frames(2)
+	var kinds: Array = m.hud.find_children("ChangeKind", "", true, false)
+	if not kinds.is_empty():
+		((kinds[0] as Node).get_child(1) as Button).pressed.emit()
+	await frames(2)
+	var pair: Button = _button_named(m.hud, "SwapGSGA")
+	var had_pair := pair != null
+	if pair:
+		pair.pressed.emit()
+	await frames(2)
+	_m2(had_gc and had_pair and "GA" in m.swap_with(0, "GS"), "swaps: asked for from the pause menu after a goal (Team changes, Positions)")
+	pair = _button_named(m.hud, "SwapGSGA")
+	_m2(pair != null and pair.button_pressed and _button_named(m.hud, "SwapGAWA").disabled, "swaps: the pair stays down; one sharing a player is off")
+	pair.pressed.emit()
+	await frames(2)
+	_m2((m.swaps[0] as Array).is_empty(), "swaps: tapped again in the menu, taken back")
+	m.hud._close_changes()
+	m.set_paused(false)
+	m.call_timeout(0)
+	var wd1 := String(m.player_at(0, "WD").data.id)
+	_m2(m.phase == "timeout" and m.can_swap(0) and m.ask_swap(0, "C", "WD") and String(m.player_at(0, "WD").data.id) == wd1,
+		"swaps: asked for in a time-out, not made yet")
+	m.skip_break()
+	for f in 60:
+		await frames(1)
+		if m.phase != "timeout":
+			break
+	_m2(m.phase == "setup" and String(m.player_at(0, "C").data.id) == wd1, "swaps: made as play restarts after the time-out")
+	await _wait_live(m)
+	# An injury stoppage: asked for in it, made as play restarts.
+	var dfd: Player = m.player_at(1, "GK")
+	m._award(Rules.award("contact", 1, dfd.p, "GS", m.team_dir(0)), dfd, "contact")
+	m._stop_award.injured = m.player_at(0, "GK")
+	for f in 120:
+		await frames(1)
+		if m.phase == "injury":
+			break
+	var gk0 := String(m.player_at(0, "GK").data.id)
+	_m2(m.phase == "injury" and m.can_swap(0) and m.ask_swap(0, "GD", "GK") and String(m.player_at(0, "GK").data.id) == gk0,
+		"swaps: asked for in an injury stoppage, not made yet")
+	m.skip_break()
+	for f in 60:
+		await frames(1)
+		if m.phase != "injury":
+			break
+	_m2(m.phase != "injury" and String(m.player_at(0, "GD").data.id) == gk0, "swaps: made as play restarts after the injury")
+	_m2((m.swaps[1] as Array).is_empty() and not _logged_swap(m, 1), "swaps: the AI asks for none")
+	m.queue_free()
+	await frames(2)
+
+
+func _logged_swap(m: Match, t: int) -> bool:
+	for e in m.log:
+		if (e as Dictionary).has("swap") and int(e.team) == t:
+			return true
+	return false

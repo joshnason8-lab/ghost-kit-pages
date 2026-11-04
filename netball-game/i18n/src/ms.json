@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Rehat ialah {min} minit; Teruskan memulakan {next} sekarang.",
   "TEAM_CHANGES": "Pertukaran pemain",
   "TEAM_CHANGES_NOTE": "Ketik posisi untuk membawa masuk pemain simpanan seterusnya bagi posisi itu.",
+  "CHANGES_SUBS": "Penggantian",
+  "CHANGES_SWAPS_NOTE": "Ketik satu pasangan untuk menukar posisi dua pemain di gelanggang. Setiap pemain mesti boleh bermain di posisi barunya; pertukaran dibuat apabila permainan bersambung semula.",
   "RESULT_WIN": "Anda menang!",
   "RESULT_LOSS": "Tewas",
   "RESULT_DRAW": "Seri",

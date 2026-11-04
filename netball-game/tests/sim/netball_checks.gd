@@ -303,7 +303,7 @@ func _check_players(m, dt: float, phase: String) -> void:
 			var was: Vector2 = _prev_p.get(pl, p)
 			var moved := p.distance_to(was)
 			# Placed at a spot at once only at a period's start (the teams snapped to the centre pass after a break).
-			var snap: bool = _prev_phase == "break" or int(m.q) != _prev_q or "substitution" in _events_step
+			var snap: bool = _prev_phase == "break" or int(m.q) != _prev_q or "substitution" in _events_step or "swap" in _events_step
 			if moved > TOP_SPEED * 1.1 * dt + 0.02 and not snap:
 				_flag("player_teleport", "error", "%s%d jumped %.2f m in a %.3f s step (%s)" % [pl.pos, tm, moved, dt, phase])
 			_prev_p[pl] = p

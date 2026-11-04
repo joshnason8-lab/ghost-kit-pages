@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Ikhefu lithatha imizuzu engu-{min}; Qhubeka iqala {next} manje.",
   "TEAM_CHANGES": "Ukushintsha iqembu",
   "TEAM_CHANGES_NOTE": "Thepha isikhundla ukuze ungenise umdlali olandelayo ebhentshini odlala kuso.",
+  "CHANGES_SUBS": "Ukushintsha abadlali",
+  "CHANGES_SWAPS_NOTE": "Thepha ababili ukuze abadlali ababili enkundleni bashintshane izikhundla. Ngamunye kumele akwazi ukudlala isikhundla sakhe esisha; ukushintshana kwenziwa lapho umdlalo uqala kabusha.",
   "RESULT_WIN": "Uwinile!",
   "RESULT_LOSS": "Uhluliwe",
   "RESULT_DRAW": "Kulingene",

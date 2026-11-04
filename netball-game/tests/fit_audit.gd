@@ -605,6 +605,25 @@ func _match() -> void:
 	m.hud.show_break(2, 3)
 	await frames(6)
 	await audit("match_break")
+	# The positional changes' list (the Positions chip beside Team changes).
+	var kinds: Array = m.hud.find_children("ChangeKind", "", true, false)
+	if not kinds.is_empty():
+		((kinds[0] as Node).get_child(1) as Button).pressed.emit()
+		await frames(6)
+		await audit("match_break_swaps")
+	# The team changes from the pause menu (rolling changes, the after-goal change), in both lists.
+	m.hud.hide_break()
+	m.hud._rolling_changes(true)
+	await frames(6)
+	await audit("match_changes")
+	kinds = m.hud.find_children("ChangeKind", "", true, false)
+	if not kinds.is_empty():
+		((kinds[0] as Node).get_child(1) as Button).pressed.emit()
+		await frames(6)
+		await audit("match_changes_swaps")
+	m.hud._changes_layer.queue_free()
+	m.hud._changes_layer = null
+	m.hud.show_break(2, 3)
 	# The team card, before the match and at half-time (fully faded in).
 	m.hud.hide_break()
 	for half in [false, true]:

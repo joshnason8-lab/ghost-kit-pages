@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Mapumziko ni dakika {min}; Endelea huanza {next} sasa hivi.",
   "TEAM_CHANGES": "Mabadiliko ya timu",
   "TEAM_CHANGES_NOTE": "Gusa nafasi ili kuingiza mchezaji anayefuata kutoka benchi anayecheza nafasi hiyo.",
+  "CHANGES_SUBS": "Kubadilisha wachezaji",
+  "CHANGES_SWAPS_NOTE": "Gusa jozi ili wachezaji wawili uwanjani wabadilishane nafasi. Kila mmoja lazima aweze kucheza nafasi yake mpya; ubadilishanaji hufanywa mchezo unapoanza tena.",
   "RESULT_WIN": "Umeshinda!",
   "RESULT_LOSS": "Umeshindwa",
   "RESULT_DRAW": "Sare",

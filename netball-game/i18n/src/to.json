@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Ko e mālōlō ko e miniti ʻe {min}; ʻe kamata ʻe he Hoko atu ʻa e {next} he taimi ni.",
   "TEAM_CHANGES": "Fetongi timi",
   "TEAM_CHANGES_NOTE": "Tā ha tuʻunga ke ʻomi ʻa e tokotaha hoko mei he seá ʻoku vaʻinga ʻi ai.",
+  "CHANGES_SUBS": "Kau fetongi",
+  "CHANGES_SWAPS_NOTE": "Tā ha ongo tuʻunga ke fetongiʻaki ʻe he ongo tokotaha vaʻinga ʻi he malaʻe honau tuʻunga. Kuo pau ke vaʻinga ʻa e tokotaha kotoa ʻi hono tuʻunga foʻou; ʻe fai ʻa e fetongiʻaki ʻi he toe kamata ʻa e vaʻinga.",
   "RESULT_WIN": "Kuo ke ikuna!",
   "RESULT_LOSS": "Ikunaʻi",
   "RESULT_DRAW": "Tatau",

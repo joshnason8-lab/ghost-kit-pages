@@ -35,6 +35,7 @@ var _speed_l: Label
 var _controls: TouchControls = null
 var _layout_panel: Control = null
 var _changes_layer: Control = null   # rolling changes, from the pause menu
+var _swap_mode := false              # the team changes list shows positional changes (_swap_rows), not substitutions
 var _me_ring := 0.0
 var card: TeamCard = null
 
@@ -352,6 +353,9 @@ func _on_event(kind: String, info: Dictionary) -> void:
 		"goal_change":
 			# The after-goal change made (either team's): the position, who came off and who came on.
 			banner(tr("TEAM_CHANGES"), "%s  %s  ›  %s" % [info.pos, info.off, info.on], 2.0)
+		"swap":
+			# A positional change made: who now plays each of the two positions.
+			banner(tr("TEAM_CHANGES"), "%s  %s  ‹›  %s  %s" % [info.a, info.on_a, info.b, info.on_b], 2.0)
 		"gain":
 			if m.user_team >= 0:
 				banner(tr("CALL_INTERCEPT") if String(info.how) == "intercept" else tr("CALL_GAIN"), "", 1.2)
@@ -576,27 +580,52 @@ static func _pname(q: int) -> String:
 
 ## Team changes at an interval: each position with the player in it; tap to bring on the next one from the bench who
 ## plays that position. after_goal: the after-goal change, asked for (the button stays down; tap again to take it
-## back) and made at the centre pass (Match.goal_change).
+## back) and made at the centre pass (Match.goal_change). Where a positional change may be asked for too
+## (Match.can_swap), two chips switch the list between substitutions and positions (_swap_rows).
 func _changes(after_goal := false) -> VBoxContainer:
 	var v := VBoxContainer.new()
+	v.name = "TeamChanges"
 	v.add_theme_constant_override("separation", 6)
-	v.add_child(UI.label(tr("TEAM_CHANGES"), "SubLabel", 22))
-	v.add_child(UI.wrap(tr("TEAM_CHANGES_NOTE"), "MutedLabel", 15))
+	_swap_mode = false
+	_fill_changes(v, after_goal)
+	return v
+
+
+func _fill_changes(v: VBoxContainer, after_goal: bool) -> void:
+	if not is_instance_valid(v):
+		return   # (closed before a deferred refill)
+	for c in v.get_children():
+		v.remove_child(c)
+		c.queue_free()
+	var t: int = m.user_team
+	var swappable: bool = m.can_swap(t)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	var title := UI.label(tr("TEAM_CHANGES"), "SubLabel", 22)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	if swappable:
+		var chips := UI.chips_row([tr("CHANGES_SUBS"), tr("HOWTO_POSITIONS")], 1 if _swap_mode else 0, func(i):
+			_swap_mode = i == 1
+			_fill_changes.call_deferred(v, after_goal))
+		chips.name = "ChangeKind"
+		head.add_child(chips)
+	else:
+		_swap_mode = false
+	v.add_child(head)
+	v.add_child(UI.wrap(tr("CHANGES_SWAPS_NOTE") if _swap_mode else tr("TEAM_CHANGES_NOTE"), "MutedLabel", 15))
 	var grid := GridContainer.new()
-	grid.columns = 1   # a row each: the position, who plays it and who would come on
+	grid.columns = 1   # a row each: the position, who plays it and who would come on (or the pair that would swap)
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 6)
 	v.add_child(grid)
-	var t: int = m.user_team
+	if _swap_mode:
+		_swap_rows(grid, v, after_goal)
+		return
 	for pl in m.players[t]:
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 40)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var b := _change_button()
 		b.text = _change_text(pl)
 		b.disabled = m.next_on(pl) < 0
-		b.clip_text = true
-		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var who: Player = pl
 		if after_goal:
 			b.toggle_mode = true
@@ -614,7 +643,47 @@ func _changes(after_goal := false) -> VBoxContainer:
 					b.text = _change_text(who)
 					b.disabled = m.next_on(who) < 0)
 		grid.add_child(b)
-	return v
+
+
+func _change_button() -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, 40)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.clip_text = true
+	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	return b
+
+
+## Positional changes: a row for each pair of neighbouring positions (GS and GA ... GD and GK: every player plays her
+## own position and a neighbour's, DB.squad), "GS  Hannah Rowe  ‹›  GA  Amy Lee". Tap to ask for the swap (the button
+## stays down until it is made; tap again to take it back), made as the teams next line up (Match.ask_swap). A pair is
+## off when one of them could not play the other's position, or either is in another swap asked for.
+func _swap_rows(grid: GridContainer, v: VBoxContainer, after_goal: bool) -> void:
+	var t: int = m.user_team
+	for i in Rules.POSITIONS.size() - 1:
+		var a: String = Rules.POSITIONS[i]
+		var b2: String = Rules.POSITIONS[i + 1]
+		var pa: Player = m.player_at(t, a)
+		var pb: Player = m.player_at(t, b2)
+		if pa == null or pb == null:
+			continue
+		var b := _change_button()
+		b.name = "Swap" + a + b2
+		b.text = "%s  %s  ‹›  %s  %s" % [a, pa.data.name, b2, pb.data.name]
+		b.toggle_mode = true
+		var mine: Array = m.swap_with(t, a)
+		var asked: bool = not mine.is_empty() and b2 in mine
+		b.set_pressed_no_signal(asked)
+		var busy: bool = not m.swap_with(t, a).is_empty() or not m.swap_with(t, b2).is_empty()
+		for pl: Player in m.goal_changes[t]:
+			busy = busy or pl == pa or pl == pb
+		b.disabled = not asked and (busy or not m.swap_ok(t, a, b2))
+		b.pressed.connect(func():
+			Sfx.click()
+			m.ask_swap(t, a, b2)
+			_fill_changes.call_deferred(v, after_goal))
+		grid.add_child(b)
 
 
 ## A change button's words: the position, who plays it now and who would come on ("GS  Hannah Rowe  ›  Amy Lee").

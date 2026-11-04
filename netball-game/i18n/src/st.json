@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Phomolo ke metsotso e {min}; Tswela pele e qala {next} hona jwale.",
   "TEAM_CHANGES": "Diphetoho tsa sehlopha",
   "TEAM_CHANGES_NOTE": "Tobetsa boemo ho kenya mobapadi ya latelang bencheng ya bapalang boemo boo.",
+  "CHANGES_SUBS": "Ho fetola babapadi",
+  "CHANGES_SWAPS_NOTE": "Tobetsa para ho fapanyetsana maemo a babapadi ba babedi lebaleng. E mong le e mong o tlameha ho bapala boemo ba hae bo botjha; phapanyetsano e etsahala ha papadi e qala hape.",
   "RESULT_WIN": "O hlotse!",
   "RESULT_LOSS": "O hlotswe",
   "RESULT_DRAW": "Ho lekana",

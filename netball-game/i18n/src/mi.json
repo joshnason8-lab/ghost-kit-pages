@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "E {min} meneti te wā okioki; mā te Haere tonu ka tīmata a {next} ināianei.",
   "TEAM_CHANGES": "Whakarerekē kapa",
   "TEAM_CHANGES_NOTE": "Pāwhiria he tūranga kia uru mai te kaitākaro tūru e whai ake ana mō taua tūranga.",
+  "CHANGES_SUBS": "Kaitākaro whakakapi",
+  "CHANGES_SWAPS_NOTE": "Pāwhiria he takirua kia whakawhiti tūranga ai ngā kaitākaro tokorua kei te papa. Me āhei ia kaitākaro ki te tākaro i tōna tūranga hou; ka whakawhitia ina tīmata anō te tākaro.",
   "RESULT_WIN": "Ka toa koe!",
   "RESULT_LOSS": "Kua hinga",
   "RESULT_DRAW": "He ōrite",

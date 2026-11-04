@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Die pouse is {min} minute; Gaan voort begin {next} nou.",
   "TEAM_CHANGES": "Spanveranderings",
   "TEAM_CHANGES_NOTE": "Tik op 'n posisie om die volgende speler op die bank wat dit speel, in te bring.",
+  "CHANGES_SUBS": "Vervangings",
+  "CHANGES_SWAPS_NOTE": "Tik op 'n paar om twee spelers op die baan van posisie te laat ruil. Elkeen moet haar nuwe posisie kan speel; die ruil word gemaak wanneer die spel hervat.",
   "RESULT_WIN": "Jy wen!",
   "RESULT_LOSS": "Geklop",
   "RESULT_DRAW": "Gelykop",

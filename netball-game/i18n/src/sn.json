@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Kuzorora ndeemaminitsi {min}; Enderera inotanga {next} izvozvi.",
   "TEAM_CHANGES": "Shanduko dzetimu",
   "TEAM_CHANGES_NOTE": "Dzvanya nzvimbo kuti upinze mutambi anotevera ari pabhenji anotamba nzvimbo iyoyo.",
+  "CHANGES_SUBS": "Kuchinja vatambi",
+  "CHANGES_SWAPS_NOTE": "Dzvanya vaviri kuti vatambi vaviri vari munhandare vachinjane nzvimbo. Mumwe nemumwe anofanira kukwanisa kutamba nzvimbo yake itsva; kuchinjana kunoitwa kana mutambo watangazve.",
   "RESULT_WIN": "Wakunda!",
   "RESULT_LOSS": "Wakundwa",
   "RESULT_DRAW": "Maenzana",

@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "The interval is {min} minutes; Continue starts {next} now.",
   "TEAM_CHANGES": "Team changes",
   "TEAM_CHANGES_NOTE": "Tap a position to bring on the next player from the bench who plays it.",
+  "CHANGES_SUBS": "Substitutions",
+  "CHANGES_SWAPS_NOTE": "Tap a pair to swap two players on court. Each must play her new position; the swap is made as play restarts.",
   "RESULT_WIN": "You win!",
   "RESULT_LOSS": "Beaten",
   "RESULT_DRAW": "A draw",

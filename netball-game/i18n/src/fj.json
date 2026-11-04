@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Na cegu e {min} na miniti; na Tomana e tekivu {next} ena gauna oqo.",
   "TEAM_CHANGES": "Veisau ni timi",
   "TEAM_CHANGES_NOTE": "Tabaka e dua na itutu me curu mai na dauqito tarava mai na idabedabe e qito ena itutu koya.",
+  "CHANGES_SUBS": "Veisosomitaki",
+  "CHANGES_SWAPS_NOTE": "Tabaka e rua me rau veisau itutu e rua na dauqito e loma ni rara. E dodonu me qito yadua ena nona itutu vou; na veisau e caka ni tekivu tale na qito.",
   "RESULT_WIN": "O qaqa!",
   "RESULT_LOSS": "O druka",
   "RESULT_DRAW": "Tautauvata",

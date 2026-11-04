@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Boikhutso ke metsotso e {min}; Tswelela e simolola {next} jaanong.",
   "TEAM_CHANGES": "Diphetogo tsa setlhopha",
   "TEAM_CHANGES_NOTE": "Tobetsa boemo go tsenya motshameki yo o latelang mo bencheng yo o tshamekang boemo joo.",
+  "CHANGES_SUBS": "Go fetola batshameki",
+  "CHANGES_SWAPS_NOTE": "Tobetsa bobedi go ananya maemo a batshameki ba babedi mo lebaleng. Mongwe le mongwe o tshwanetse go kgona go tshameka boemo jwa gagwe jo bosha; go ananya go diragala fa motshameko o simolola gape.",
   "RESULT_WIN": "O fentse!",
   "RESULT_LOSS": "O fentswe",
   "RESULT_DRAW": "Go lekana",

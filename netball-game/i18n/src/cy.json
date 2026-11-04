@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Mae'r egwyl yn {min} munud; mae Parhau yn dechrau {next} nawr.",
   "TEAM_CHANGES": "Newidiadau i'r tîm",
   "TEAM_CHANGES_NOTE": "Tapiwch safle i ddod â'r chwaraewr nesaf o'r fainc sy'n chwarae yno ymlaen.",
+  "CHANGES_SUBS": "Eilyddion",
+  "CHANGES_SWAPS_NOTE": "Tapiwch bâr i ddau chwaraewr ar y cwrt gyfnewid safleoedd. Rhaid i bob un allu chwarae ei safle newydd; gwneir y newid pan fydd y chwarae'n ailddechrau.",
   "RESULT_WIN": "Chi sy'n ennill!",
   "RESULT_LOSS": "Wedi colli",
   "RESULT_DRAW": "Gêm gyfartal",

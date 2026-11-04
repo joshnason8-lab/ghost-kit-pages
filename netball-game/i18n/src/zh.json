@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "休息时间为 {min} 分钟；点“继续”立即开始{next}。",
   "TEAM_CHANGES": "换人",
   "TEAM_CHANGES_NOTE": "点击一个位置，换上替补席上该位置的下一名球员。",
+  "CHANGES_SUBS": "替补",
+  "CHANGES_SWAPS_NOTE": "点击一对位置，让场上两名球员交换位置。每人都必须能打她的新位置；比赛重新开始时交换。",
   "RESULT_WIN": "你赢了！",
   "RESULT_LOSS": "落败",
   "RESULT_DRAW": "平局",

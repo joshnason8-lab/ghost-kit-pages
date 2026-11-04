@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Nthawi yopuma ndi mphindi {min}; Pitirizani iyamba {next} tsopano.",
   "TEAM_CHANGES": "Kusintha osewera",
   "TEAM_CHANGES_NOTE": "Dinani udindo kuti mulowetse wosewera wotsatira pa benchi amene amasewera udindowo.",
+  "CHANGES_SUBS": "Kulowetsa osewera",
+  "CHANGES_SWAPS_NOTE": "Dinani awiri kuti osewera awiri pabwalo asinthane maudindo. Aliyense ayenera kusewera udindo wake watsopano; kusinthanaku kumachitika masewera akayambiranso.",
   "RESULT_WIN": "Mwapambana!",
   "RESULT_LOSS": "Mwagonja",
   "RESULT_DRAW": "Mwafanana",

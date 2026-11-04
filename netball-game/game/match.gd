@@ -67,6 +67,11 @@ var _timeout_until := 0.0
 ## centre pass waits no longer for it than it always does.
 var goal_changes: Array = [[], []]   # by team: the players on court asked to come off, made at the centre pass
 var _after_goal := false            # a goal was scored and the next centre pass not yet whistled
+## Positional changes (R3): two players on court swap positions, at the moments a substitution may be made (an
+## interval, an injury stoppage, a time-out, after a goal). Asked for, they are made as the teams next line up: at the
+## centre pass (_setup_centre), or as play restarts after an injury or a time-out; asked for while the teams line up
+## for the centre pass after a goal, at once. Each must play her new position (her own or one of her alt positions).
+var swaps: Array = [[], []]         # by team: [position, position] pairs asked for
 var _ai_change_q := [0, 0]          # the period of each team's last after-goal change by the AI (one a quarter)
 var _hurt_on := {}                  # Player -> true: hurt in a contact, played on (the AI takes her off after a goal)
 var stats := {}                     # player id -> counters
@@ -565,6 +570,7 @@ func _setup_centre(snap := false) -> void:
 	var t := Rules.centre_pass_team(cp_first, cp_n)
 	restart = {"to": t, "kind": Rules.CENTRE, "at": Vector2.ZERO, "shot": false, "why": "centre"}
 	_apply_goal_changes()
+	_apply_swaps()
 	restart.taker = player_at(t, "C")
 	_enter("setup")
 	pass_info = {}
@@ -1466,6 +1472,7 @@ func _end_injury() -> void:
 		substitute(hurt)
 	elif hurt:
 		_hurt_on[hurt] = true   # (she plays on: the AI may take her off after a goal)
+	_apply_swaps()
 	_break_skip = false
 	if hud:
 		hud.hide_break()
@@ -1473,6 +1480,7 @@ func _end_injury() -> void:
 
 
 func _end_timeout() -> void:
+	_apply_swaps()
 	_break_skip = false
 	if hud:
 		hud.hide_break()
@@ -2048,6 +2056,9 @@ func substitute(pl: Player) -> bool:
 		pl._ready()
 		pl.place(pl.p, pl.facing)
 		_hurt_on.erase(pl)
+		for pair: Array in (swaps[t] as Array).duplicate():
+			if not swap_ok(t, String(pair[0]), String(pair[1])):
+				(swaps[t] as Array).erase(pair)   # (she does not play the other position: the swap is off)
 		_reserves()
 		game_event.emit("substitution", {"team": t, "pos": pl.pos})
 		return true
@@ -2061,3 +2072,114 @@ func next_on(pl: Player) -> int:
 		if String(e.pos) == pl.pos or pl.pos in (e.alt as Array):
 			return i
 	return -1
+
+
+# ---------------------------------------------------------------- positional changes
+
+## Whether team t may ask for a positional change now: at the moments a substitution may be made (an interval, an
+## injury stoppage, a time-out; after a goal until the centre pass is whistled). Never in play, rolling changes or not.
+func can_swap(t: int) -> bool:
+	if t < 0 or t > 1:
+		return false
+	return phase in ["break", "injury", "timeout"] or can_goal_change(t)
+
+
+## Whether a squad entry plays pos: her own position or one of her alt positions (DB.squad).
+static func plays(e: Dictionary, pos: String) -> bool:
+	return String(e.get("pos", "")) == pos or pos in (e.get("alt", []) as Array)
+
+
+## Whether the players in positions a and b of team t could swap now: both on court (not suspended or ordered off) and
+## each able to play the other's position.
+func swap_ok(t: int, a: String, b: String) -> bool:
+	if a == b:
+		return false
+	var pa := player_at(t, a)
+	var pb := player_at(t, b)
+	if pa == null or pb == null:
+		return false
+	for pl: Player in [pa, pb]:
+		if pl.suspended > 0.0 or pl.ordered_off:
+			return false
+	return plays(pa.data, b) and plays(pb.data, a)
+
+
+## The swap asked for that involves position pos for team t ([a, b]), or [] when none.
+func swap_with(t: int, pos: String) -> Array:
+	for pair: Array in swaps[t]:
+		if pos in pair:
+			return pair
+	return []
+
+
+## Asks for the players in positions a and b of team t to swap, or, asked again, takes it back. Each player is in one
+## swap at most, and not in one with an after-goal substitution asked for. Asked while the teams line up for the
+## centre pass after a goal, it is made at once. Returns whether it is now asked for (or made).
+func ask_swap(t: int, a: String, b: String) -> bool:
+	if not can_swap(t):
+		return false
+	var mine := swap_with(t, a)
+	if not mine.is_empty() and b in mine:
+		(swaps[t] as Array).erase(mine)
+		return false
+	if not mine.is_empty() or not swap_with(t, b).is_empty() or not swap_ok(t, a, b):
+		return false
+	for pl: Player in goal_changes[t]:
+		if pl.pos == a or pl.pos == b:
+			return false
+	if phase == "setup":
+		return _swap(t, a, b)
+	(swaps[t] as Array).append([a, b])
+	return true
+
+
+## The positional changes asked for, made as the teams line up (each checked again: a substitution since may have
+## brought on someone who does not play the other position).
+func _apply_swaps() -> void:
+	for t in 2:
+		var asked: Array = swaps[t]
+		swaps[t] = []
+		for pair: Array in asked:
+			_swap(t, String(pair[0]), String(pair[1]))
+
+
+## Swaps the players in positions a and b of team t: each takes the other's bib (and so its areas), staying where she
+## stands, and goes to her new position's spot from there. What is hers (a warning, suspensions, penalties since her
+## last sanction, a knock she played on with) goes with her. The Player nodes stay with their positions.
+func _swap(t: int, a: String, b: String) -> bool:
+	if not swap_ok(t, a, b):
+		return false
+	var pa := player_at(t, a)
+	var pb := player_at(t, b)
+	var na := String(pa.data.name)
+	var nb := String(pb.data.name)
+	var d: Dictionary = pa.data
+	pa.data = pb.data
+	pb.data = d
+	var at := [pb.p, pa.p]
+	var face := [pb.facing, pa.facing]
+	for k in ["warned", "suspensions", "pens"]:
+		var v = pa.get(k)
+		pa.set(k, pb.get(k))
+		pb.set(k, v)
+	var hurt_a := _hurt_on.has(pa)
+	var hurt_b := _hurt_on.has(pb)
+	_hurt_on.erase(pa)
+	_hurt_on.erase(pb)
+	if hurt_b:
+		_hurt_on[pa] = true
+	if hurt_a:
+		_hurt_on[pb] = true
+	var i := 0
+	for pl: Player in [pa, pb]:
+		var id := String(pl.data.id)
+		if not stats.has(id):
+			stats[id] = _blank_stats(t, pl.data)
+		stats[id].pos = pl.pos
+		pl.body.queue_free()
+		pl._ready()
+		pl.place(at[i], face[i])
+		i += 1
+	log.append({"t": _elapsed(), "q": q, "swap": [a, b], "team": t})
+	game_event.emit("swap", {"team": t, "a": a, "b": b, "on_a": nb, "on_b": na})
+	return true

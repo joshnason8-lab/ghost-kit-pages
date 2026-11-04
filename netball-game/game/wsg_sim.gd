@@ -176,7 +176,7 @@ func start(config: Dictionary, seed: int, tree: SceneTree) -> Node:
 
 
 func _on_event(kind: String, info: Dictionary) -> void:
-	if kind in ["replay", "substitution", "replacement", "period_end", "centre_setup"]:
+	if kind in ["replay", "substitution", "replacement", "swap", "period_end", "centre_setup"]:
 		_epoch += 1
 	if kind == "period_end":
 		print("  netball seed %s: period %d over at %d-%d" % [cfg.get("seed", "?"), m.q, m.score[0], m.score[1]])

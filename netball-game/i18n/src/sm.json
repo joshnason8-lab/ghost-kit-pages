@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "O le malologa e {min} minute; o le Faʻaauau e amata ai {next} nei.",
   "TEAM_CHANGES": "Suiga o le ʻau",
   "TEAM_CHANGES_NOTE": "Paʻi se tulaga e aumai ai le isi tagata taʻalo mai le nofoa e taʻalo i lea tulaga.",
+  "CHANGES_SUBS": "Sui tagata taʻalo",
+  "CHANGES_SWAPS_NOTE": "Paʻi se paga e fesuiaʻi ai tulaga o tagata taʻalo e toʻalua i le malae. E tatau ona taʻalo le tagata taʻitasi i lona tulaga fou; e fai le fesuiaʻiga pe a toe amata le taʻaloga.",
   "RESULT_WIN": "Ua e manumalo!",
   "RESULT_LOSS": "Ua faiaina",
   "RESULT_DRAW": "Tutusa",

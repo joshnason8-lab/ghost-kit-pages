@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Ekiwummulo kya ddakiika {min}; Weeyongereyo etandika {next} kati.",
   "TEAM_CHANGES": "Enkyukakyuka mu ttiimu",
   "TEAM_CHANGES_NOTE": "Nyiga ekifo oyingize omuzannyi addako ku katebe azannya ekifo ekyo.",
+  "CHANGES_SUBS": "Okukyusa abazannyi",
+  "CHANGES_SWAPS_NOTE": "Nyiga ababiri abazannyi ababiri mu kisaawe bawanyisiganye ebifo. Buli omu alina okuzannya ekifo kye ekipya; okuwanyisiganya kukolebwa ng'omuzannyo guddamu.",
   "RESULT_WIN": "Owangudde!",
   "RESULT_LOSS": "Owanguddwa",
   "RESULT_DRAW": "Amaliri",

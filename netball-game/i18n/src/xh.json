@@ -215,6 +215,8 @@
   "INTERVAL_NOTE": "Ikhefu limizuzu eyi-{min}; Qhubeka iqala {next} ngoku.",
   "TEAM_CHANGES": "Utshintsho lweqela",
   "TEAM_CHANGES_NOTE": "Cofa isikhundla ukuze ungenise umdlali olandelayo ebhentshini osidlalayo.",
+  "CHANGES_SUBS": "Ukutshintsha abadlali",
+  "CHANGES_SWAPS_NOTE": "Cofa isibini ukuze abadlali ababini ebaleni batshintshiselane izikhundla. Ngamnye kufuneka akwazi ukudlala isikhundla sakhe esitsha; utshintshiselwano lwenziwa xa umdlalo uqala kwakhona.",
   "RESULT_WIN": "Uphumelele!",
   "RESULT_LOSS": "Woyisiwe",
   "RESULT_DRAW": "Kulingene",

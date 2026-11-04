@@ -69,11 +69,19 @@ third, 4 the rest of the defending third, 5 the defending circle):
   the teams line up for the centre pass, one asked for while they line up at once (`Match.goal_change`), and the
   centre pass is whistled exactly as it would be (no wait added). The AI uses it for a player hurt in a contact who
   played on, or now and then to rest a shooter well off her range, one change a quarter (the game models no
-  tiredness). *Simplified:* substitutions only, not positional changes between players on court (the interval's
-  team changes have none either); how long play may wait for the change is not stated in what could be read (see
-  "Still unconfirmed"), so the game adds no wait at all.
+  tiredness). How long play may wait for the change is not stated in what could be read (see "Still unconfirmed"),
+  so the game adds no wait at all.
+- **Positional changes** (team changes include players on court changing positions): at the same moments as a
+  substitution (an interval, an injury stoppage, a time-out, after a goal until the centre pass is whistled), two
+  players on court may swap positions, each only into a position she plays (her own or a neighbour's: `DB.squad`'s
+  `alt`), each player in one swap at a time (`Match.ask_swap`, `swap_ok`, `can_swap`). Asked for, a swap is made as
+  the teams next line up: at the centre pass, or as play restarts after an injury or a time-out; asked for while the
+  teams line up for the centre pass after a goal, at once. Each takes the other's bib and its areas (offside goes by
+  her new position) and walks to her new spot from where she stood; her warnings and penalties go with her. In the
+  Team changes list, a Positions chip beside Substitutions. The AI makes none (as before).
 - Test: `_match2` (the after-goal change allowed only after a goal, made at the centre pass, the centre pass not
-  held up; the AI's use).
+  held up; the AI's use); `_swaps` (`-- swaps`: positional changes only at the allowed moments, made at the line-up,
+  the right players in the right positions, keeping to their new areas).
 - Test: `_rules` ("GS may enter area 1" ... "GK is offside in area 3"), 35 checks.
 - Source: https://israelnetball.org.il/en/what-s-netball.html (the numbering), the rulebook.
 

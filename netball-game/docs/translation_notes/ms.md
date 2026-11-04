@@ -50,3 +50,13 @@
 - Check first: `STAGE_PRELIM_FINAL` (no established word was found; it means the final before the grand final),
   `STAGE_MAJOR_SEMI` / `STAGE_MINOR_SEMI`, `SEASON_HOME_AWAY`, and `LEAGUE_ABOUT_2` as a whole. Keep "{n}" (the
   number of rounds) in `SEASON_SINGLE` and `SEASON_HOME_AWAY`.
+
+## Added for positional changes (needs native review)
+- Keys `CHANGES_SUBS` (a chip beside Team changes: the list of substitutions) and `CHANGES_SWAPS_NOTE` (the note over
+  the list of positional changes: two players on court swap positions, each must be able to play her new one, and the
+  swap is made as play restarts). The other chip is `HOWTO_POSITIONS`, already translated. Translated without a
+  native speaker, from this language's own words for Team changes and its substitution note.
+- Terms chosen: substitutions **Penggantian**; swap **menukar posisi** ("pertukaran", as in the title Pertukaran pemain); pair **pasangan**; play restarts **permainan bersambung semula**.
+- Check first: that `CHANGES_SUBS` reads as "substitutions" (players coming on from the bench) and not as team changes
+  in general; that the note's "swap" means two players exchanging positions, not leaving the court; and that it fits
+  as a short chip.
