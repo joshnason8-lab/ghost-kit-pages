@@ -716,3 +716,17 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   POL_10 3.5 and OFFICIAL_2 4.1, random#39 KEN_9 4.5, random#41 PUN_9 6.4 -> clean. Left: POL_11 6.0, OFFICIAL_2 #45
   8.3, IND_7 4.6, OFFICIAL_1 3.8, PUN_9 5.6; CI's IND_11 31.4 jump and OFFICIAL_0 14.9 sideways start (not reproduced
   locally). All 7 suites, feet rules and owner notes as before (Floorball's 3 old stick notes); cadence unchanged.
+- **Planted slides, third round (Kabaddi's sidestep, Kho Kho's defender jumps, Kabaddi's Low walk)**:
+  - A let-go foot the clip stands down a step off where it is held steps there (Kabaddi extreme#10 OFFICIAL_0 14.9
+    cm, handed back into a sidestep -> clean). tests/sidestep_test.gd: 2 m/s at 74 degrees off facing, posed every
+    frame or every 3rd, handed back at speed (the lead: Kabaddi keeps its 1 m/s cap; the planter passes on its own).
+  - A released foot's catch-up changes its move by at most CHASE_OVER over the clip's own change, once it moves over
+    25 cm a frame (Kho Kho: a defender starting hard, the ease's last frame took a 40 cm lead at once): of Kho Kho's 9
+    defender jumps (25-34 cm) 7 gone; extreme#34 27.1 and fouls#101 25.5 left (unchanged: another cause).
+  - The 4 cm touch only for a foot already slow (toe and ankle): a40a95e's Low walk jump 2.8 -> 12.6 cm on Kabaddi's
+    walker (the lead's gate) -> 2.8, slip 0.5 (0.14.16: 0.9); Kabaddi extreme#42's 16.0 cm skid -> clean.
+  - WsgSim: --kinds is honoured on every tenth seed ("--kinds extreme --from 10" ran a targeted case: smoke failures
+    on seeds 10, 20... could not be run again).
+  - All 7 suites, feet rules, owner notes as before (Floorball's 3 old stick notes); foundation tests pass.
+  - Fade handback (a game's whole pose fading out under the capture): keep_pose and enabled=false both leave those
+    frames unmeasured by WsgSim - the planter is to handle it measured (next).

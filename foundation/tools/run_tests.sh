@@ -29,6 +29,7 @@ godot --headless --fixed-fps 30 --path . -s tests/feet_scale_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/feet_jump_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/planter_bone_map_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/planter_restart_test.gd
+godot --headless --fixed-fps 30 --path . -s tests/sidestep_test.gd
 godot --headless --fixed-fps 30 --path . -s tests/cadence_test.gd
 godot --headless --path . -s tests/crowd_test.gd
 godot --headless --path . -s tests/crowd_venue_test.gd

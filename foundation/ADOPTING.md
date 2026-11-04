@@ -1442,7 +1442,8 @@ up to a bound, while skids and jumps still fail: `{"planted slip": ["2026-11-13T
 Kho: replace a whole "foot slip" deferral with this one from 2026-11-06 12:00).
 WsgSim's feet failures name the foot and the frames of the worst reading ("... (2.0 at most; left foot, frames
 7677-7679)"), and the failure's frame is that one, not the match's last: `replay` stops there (the signature is the
-same as before). The replay command it writes carries `--input` when the batch ran with it (before 2026-11-04 it
+same as before). `batch --kinds K --from N` runs kind K on every seed (before 2026-11-04 every tenth seed ran a
+targeted case instead: a smoke's extreme#10 could not be run again). The replay command it writes carries `--input` when the batch ran with it (before 2026-11-04 it
 did not, and replayed an AI-only match - another match from that frame on: add `--input` to an older one).
 
 **`start_mode` must replace whatever the last call started, as a real tap does.** The tiers rule starts every mode
