@@ -9,6 +9,17 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.6-beta
+
+- **Fairer umpiring**: a call is made only when the infringement really happens (an obstruction once she is inside
+  0.9 m, offside once she is over the line); advantage is played once, and the same contact again is called.
+- **Centre pass**: the thrower may not be first to touch her own pass; the umpire calls it.
+- **Rebounds and loose balls**: players reach for the ball and it comes into their hands, never jumping into them; a
+  pass nobody reaches bounces, slows and is run down by the nearest players.
+- **Nobody gets stuck**: players walk round a goal circle they may not enter, and your player stays on the court
+  in every venue even with Keep me onside off.
+- Smoother feet on Low.
+
 ## New in 0.9.5-beta
 
 - **A full house in the arena**: the bowl is stepped rows of seats with real people in every seat; the rows nearest
