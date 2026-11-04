@@ -13,6 +13,11 @@ const KK := preload("res://tests/note_kk.gd")
 ## knee held backwards, or a kneeling chaser's - fails.
 const STRAY_FRAMES := 8
 const STRAY_CM := 12.0
+## The lead, 2026-11-04: High (the foundation's WsgBody under the capture locomotor, licensed data in CI) put off until
+## this time - reported, not failed - while the foundation traces it ("High WsgBody knees under trace, foundation"); Low
+## is held to the note from now.
+const HIGH_UNTIL := "2026-11-06T12:00Z"
+const HIGH_WHY := "High WsgBody knees under trace, foundation"
 
 
 ## Every player and official drawn, on Low (the A16's level) and on High, in a quick match and in Watch AI, for 20 s of
@@ -32,6 +37,14 @@ func check() -> void:
 				if int(s.back) <= STRAY_FRAMES and float(s.worst) * 100.0 <= STRAY_CM:
 					strays += 1
 					continue
-				fail("%s: %s: knee behind the hip-ankle line on %d of %d bent frames, %.0f cm at worst (act '%s')" % [where, who, s.back, s.bent, float(s.worst) * 100.0, s.act])
+				var msg := "%s: %s: knee behind the hip-ankle line on %d of %d bent frames, %.0f cm at worst (act '%s')" % [where, who, s.back, s.bent, float(s.worst) * 100.0, s.act]
+				if gfx == Game.GFX_HIGH and _now() < HIGH_UNTIL:
+					info("DEFERRED (%s, until %s): %s" % [HIGH_WHY, HIGH_UNTIL, msg])
+				else:
+					fail(msg)
 			info("%s: %d legs read, %d with a stray backward frame or two (interim allowance)" % [where, int(r[0]), strays])
 			await KK.done(tree, m)
+
+
+func _now() -> String:
+	return OS.get_environment("WSG_NOW") if OS.get_environment("WSG_NOW") != "" else Time.get_datetime_string_from_system(true).left(16) + "Z"

@@ -335,6 +335,10 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   every player and official, Low and High, quick match and Watch AI, the foundation's knees rule (1.5 cm bent, 4 cm
   back), interim allowance 8 frames / 12 cm for the swing-leg strays the foundation is tracing. Low before: runners and
   officials 450-590 of ~550 bent frames back, up to 33 cm; after: 9 legs with 1-6 frames, 4-11 cm; High 0.
+  CI's first run failed the note on High (the foundation's WsgBody under the capture locomotor, licensed data only in
+  CI: defenders 12-25 cm on 3-18% of bent frames): the note's forward was the game's facing, the drawn body's can lag
+  it; it now reads forward from the hips as the foundation's knees rule does (note_kk.hips_forward), and High is put
+  off to 2026-11-06 12:00 (the lead: "High WsgBody knees under trace, foundation"); Low held from now.
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

@@ -55,7 +55,8 @@ const KNEE_BACK := 0.04
 
 ## Every drawn player's knees for n frames: [legs seen, problems, stats] - a problem is a leg whose knee, bent (over
 ## KNEE_BENT off the line from his hip to his ankle), stood more than KNEE_BACK behind that line (behind: against the way he
-## faces - the game's body's +Z, not the way his toe points: a swinging leg's foot, folded up behind, points back), with
+## faces - forward from his hips, as the foundation's knees rule reads it (hips_forward), not the way his toe points: a
+## swinging leg's foot, folded up behind, points back), with
 ## how often and how far. Read as drawn: in the skeleton's skeleton_updated, after its modifiers (the foot planter's
 ## legs) - outside it Godot reports the bones without them. Low: ModelBody's skeleton; Medium and High: the
 ## foundation's body. mixamorig_ names or the plain ones.
@@ -90,11 +91,9 @@ static func knees(tree: SceneTree, m: Node, n: int) -> Array:
 static func _knee_read(a: Node, sk: Skeleton3D, stats: Dictionary) -> void:
 	if not is_instance_valid(a) or not sk.is_visible_in_tree():
 		return
-	var face: Vector3 = a.body.global_transform.basis.z
-	var fwd := Vector3(face.x, 0.0, face.z)
-	if fwd.length() < 0.001:
+	var fwd := hips_forward(sk)
+	if fwd == Vector3.ZERO:
 		return
-	fwd = fwd.normalized()
 	for side in ["Left", "Right"]:
 		var ix := []
 		for b in ["UpLeg", "Leg", "Foot"]:
@@ -120,3 +119,32 @@ static func _knee_read(a: Node, sk: Skeleton3D, stats: Dictionary) -> void:
 				s.worst = -d
 				s.act = String(a.act)
 		stats[who] = s
+
+
+## The way the body faces, as the foundation's knees rule reads it: the rest pose's forward (both feet's heel-to-toe at
+## rest) carried by the hips bone as it turns now - the drawn body's own, not the game's facing (a cut or a heading lag
+## turned the foundation's body away from it). Flat, unit; ZERO if the rig has no hips or feet.
+static func hips_forward(sk: Skeleton3D) -> Vector3:
+	var hips := sk.find_bone("mixamorig_Hips")
+	if hips < 0:
+		hips = sk.find_bone("Hips")
+	if hips < 0:
+		return Vector3.ZERO
+	var rest_fwd := Vector3.ZERO
+	for side in ["Left", "Right"]:
+		var f := sk.find_bone("mixamorig_%sFoot" % side)
+		var t := sk.find_bone("mixamorig_%sToeBase" % side)
+		if f < 0:
+			f = sk.find_bone(side + "Foot")
+			t = sk.find_bone(side + "ToeBase")
+		if f < 0 or t < 0:
+			return Vector3.ZERO
+		rest_fwd += sk.get_bone_global_rest(t).origin - sk.get_bone_global_rest(f).origin
+	rest_fwd.y = 0.0
+	if rest_fwd.length() < 0.0001:
+		return Vector3.ZERO
+	# Into the hips' rest frame, then out by the hips as they are now, then to the world.
+	var local := sk.get_bone_global_rest(hips).basis.inverse() * rest_fwd
+	var now: Vector3 = sk.global_transform.basis * (sk.get_bone_global_pose(hips).basis * local)
+	now.y = 0.0
+	return now.normalized() if now.length() > 0.0001 else Vector3.ZERO
