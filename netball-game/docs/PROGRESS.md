@@ -454,6 +454,23 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   sheets: courtside, lower tier, upper tier), prop_audit passes. The shared cards have no look or clap poses, so the
   cut-outs do not turn to the ball or clap in time (Crowd calls the cards' watch_ball and clap, ready for art
   that has them).
+- **Rules round two: the simulated matches' findings** (docs/SIM.md, WsgSim's first matches and run_batch's first
+  batch; test_runner `-- rules2`, also in the full run). Your player with Keep me onside off stays in the run-off
+  (`Player.bounds`, set by `Match._set_me`; the arena's boards held her, the hall's floor let her run 8.4 m past
+  it, the park's 1.1 m). A pass nobody reached runs on loose: its thrower may not touch it first (replayed ball,
+  called on your player; the AI's leaves it), and a centre pass so is still to be touched in the centre third.
+  Advantage is played once: the same player infringing the same shooter again in that hold is called at once (your
+  GK holding INTERCEPT was waved on up to nine times). The AI's slips are made before they are called: obstruction
+  has the marker step in inside 0.9 m (it was called from 1.2 m), offside has a player step over her line (it was
+  called on one in her own area); a fenced player already over a line steps back out. Fenced players go round a
+  goal circle they may not enter (`Match.round_circles` in `Player._goal`; a WD stood at its line). A loose ball is
+  taken only in her hands' reach (over her hands, within her arms' easy reach of her shoulders, standing or in a
+  leap for one coming down over her) and brought in from where she met it over 0.22 s (`Ball.hold`): the ball's
+  biggest step into the hands at a rebound 1.51 -> 0.19 m. Rates and speeds unchanged. Alongside: the penalised
+  player's place in a corner by a circle is searched finer (`Rules.out_of_play_spot`: one 1.63 m off the thrower
+  became 1.39); `_restart_spacing` puts its marker on ground she may stand on; `_controls` gives the thumb that
+  plays two minutes to score (one seed's first 90 s went 0-4 after the play changed, six seeds 11-6 for you); the
+  palm checks skip a loose ball's 0.22 s on its way in.
 
 ## Next
 

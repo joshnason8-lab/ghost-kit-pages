@@ -80,7 +80,10 @@ corrected in round two.
 - In the game: `Rules.offside` on the player's foot each frame; called when she **steps** into the area
   (`Match._check_offside`). The AI's players keep to their areas: they pull up at a line as a player does
   (`Player._room_along`, the "fence"). Your player does too while **Keep me onside** is on (Settings); with it off,
-  step over a line and the umpire calls it. A few AI mistakes are made on purpose (`TeamAI._slips`).
+  step over a line and the umpire calls it. A few AI mistakes are made on purpose (`TeamAI._slips`): the player
+  steps over the line of her area and is called then, as anyone else is; an obstruction slip is the marker stepping
+  in inside 0.9 m of the landing foot, arms up, and called when she is there (the umpire calls only what happened).
+  Test: `_r2_slips_happen`.
 - Two players of opposite teams offside together: a simultaneous infringement (below).
 - Tests: `_rules` ("GS on the transverse line: onside (on the line is fine)", "GS over the transverse line, in the
   centre third: offside", "WA inside the circle: offside" ...); `_rules_in_play`
@@ -119,9 +122,11 @@ corrected in round two.
 - **Over a third (R12; 12.3 or 12.4, the two sources differ)**: the ball may not cross a whole third without being caught or touched by a player in it: a free
   pass where it crossed the second line. `Rules.over_third`; the AI never tries it; your pass can. Test: `_rules`.
 - **Replayed ball**: she may not catch her own throw before another player (or the goal post) has touched it.
-  `Rules.replayed_ball`. *Simplified:* the game's passes always go to a team-mate; the rule is in the module and
-  tested. *Not yet called in play:* a pass its receiver does not reach runs on loose, and the thrower can pick it up
-  (WsgSim found it, docs/SIM.md).
+  `Rules.replayed_ball`. The game's passes always go to a team-mate; one its receiver does not reach runs on loose,
+  and its thrower may not be the first to touch it (off the goal post she may): your player who does is called, a
+  free pass to the other team where she took it; the AI's thrower leaves it to the others (`Match._run_loose`,
+  `TeamAI._chaser`). A centre pass nobody reached is still to be touched first in the centre third (R8), by a
+  player who may: else a centre pass fault. Test: `_r2_own_pass` (test_runner `-- rules2`).
 - Not in the game because the game's players never do them: striking with a fist, kicking, rolling the ball to a
   team-mate, falling with it, throwing from the ground, using the post for support.
 
@@ -165,7 +170,9 @@ corrected in round two.
   infringement. In the game: a penalty against the defence while the attacking team's shooter has the ball in her
   circle is played as advantage more often than not (`Match._infringe`); the HUD shows "Advantage" and the call.
   The offender then steps clear of the player she infringed, about 2 m to the side and a little back, never between
-  her and the goal, until the ball has gone (`TeamAI.give_way`). Test: `_advantage_clear`.
+  her and the goal, until the ball has gone (`TeamAI.give_way`). Advantage is played once: the same player
+  infringing the same shooter again while she holds that ball is called at once (your player, who does not step
+  away by herself, holding INTERCEPT on the shooter). Tests: `_advantage_clear`, `_r2_advantage_once`.
 
 ## Scoring (R9)
 
