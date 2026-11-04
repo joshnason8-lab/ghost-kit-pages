@@ -859,6 +859,17 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.13, 4 November 2026)
+
+- **Rules read against the full Official Guide Part 2, 27.03.2026** (roadmap 2; gaa.ie now reachable): free and 65
+  distance 20 m for all but the taker (2.4(a), 4.11(a), 4.17(a)); sideline 13 m for teammates too (2.8, 4.11(b));
+  the free from the centre of the 20 m line laid out as a penalty (2.4(c)); black-card penalty only under 5.45
+  (senior inter-county), its zone not within 25 m of a sideline (Definitions 9); a yellow after a black a red
+  (1.2(ix)(e)). Three differences left for the owner (docs/RULES.md, "Left as they are"). Suite 740/0; score check
+  (35 min) PASS: 1.69 points a live minute (real 1.58), 63% of shots score (real 60%).
+- **Foundation 3b700012** (a let-go foot steps down; a released foot's catch-up rate-limited; the 4 cm touch for a
+  slow foot only).
+
 ## Done (0.24.12, 4 November 2026)
 
 - **Keepers' jerseys** (roadmap 11): Match.keeper_jerseys - the one of eight kit colours furthest (redmean) from both

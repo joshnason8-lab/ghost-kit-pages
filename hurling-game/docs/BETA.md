@@ -9,6 +9,14 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.13
+
+- **The rules, checked against the full Official Guide** (2026): at a free or a 65 everyone but the taker, on both
+  sides, stands 20 m off (it was 13 m, opponents only); at a sideline 13 m, teammates too; a free from the centre of
+  the 20 m line is set up like a penalty, with the keeper and full-backs on the goal line; the black card only where
+  it applies (senior county) and not near the sidelines; a yellow after a black is a red.
+- **Smoother feet** (the shared animation foundation): a foot let go steps down instead of jumping.
+
 ## New in 0.24.12
 
 - **Goalkeepers in a colour of their own**: each keeper wears the kit colour furthest from both sides' colours, the
