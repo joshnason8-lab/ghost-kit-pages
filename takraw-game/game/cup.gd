@@ -9,7 +9,9 @@ extends RefCounted
 ##   royal: the Royal Cup, a yearly invitational played in a shopping mall's atrium, as Thailand's is;
 ##   asia: the Asian Championship, the Asian nations;
 ##   sea: the Southeast Asian Championship, the region's nations, as at the SEA Games.
-## The event is the regu, or the team event: three regus a tie, the first to win two.
+## The event is the regu; the team event, three regus a tie, the first to win two; or the mixed quadrant, two men and
+## two women a side (DB.mixed), where it is really played: the Royal Cup (as Thailand's King's Cup has it) and the
+## Southeast Asian Championship (as the SEA Games have it) - MIXED_KINDS.
 
 const KINDS := {
 	"world": {"name": "CUP_WORLD", "venue": "mall", "field": ["THA", "MAS", "JPN", "VIE", "INA", "MYA", "KOR", "IND", "PHI", "LAO", "SGP", "IRN",
@@ -20,10 +22,12 @@ const KINDS := {
 	"sea": {"name": "CUP_SEA", "venue": "provincial", "field": ["THA", "MAS", "VIE", "INA", "MYA", "PHI", "LAO", "SGP", "CAM", "BRU"]},
 }
 
+const MIXED_KINDS := ["royal", "sea"]
+
 var kind := "world"
 var user := ""
 var women := false
-var event := "regu"            # "regu" or "team"
+var event := "regu"            # "regu", "team" or "mixed"
 var year := 2027
 var groups: Array = []         # [[ids of A], [ids of B]]
 var fixtures: Array = []       # [{home, away, played, sets, set_scores, stage, group}]
@@ -37,18 +41,18 @@ static func create(p_kind: String, country: String, p_women := false, p_event :=
 	var c := Cup.new()
 	c.kind = p_kind
 	c.user = country
-	c.women = p_women
-	c.event = p_event
+	c.event = p_event if p_event in ["regu", "team"] or (p_event == "mixed" and p_kind in MIXED_KINDS) else "regu"
+	c.women = p_women and c.event != "mixed"
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	# The field: the strongest eight that enter, with your country in it whatever its rank.
 	var field: Array = (KINDS[p_kind].field as Array).duplicate()
-	field.sort_custom(func(a, b): return DB.strength(a, p_women) > DB.strength(b, p_women))
+	field.sort_custom(func(a, b): return DB.event_strength(a, c.women, c.event) > DB.event_strength(b, c.women, c.event))
 	var eight: Array = field.slice(0, 8)
 	if not (country in eight):
 		eight[7] = country
 	# Seeded into two groups: 1 and 2 apart, then the rest drawn.
-	eight.sort_custom(func(a, b): return DB.strength(a, p_women) > DB.strength(b, p_women))
+	eight.sort_custom(func(a, b): return DB.event_strength(a, c.women, c.event) > DB.event_strength(b, c.women, c.event))
 	var a := [eight[0]]
 	var b := [eight[1]]
 	var rest: Array = eight.slice(2)
@@ -83,6 +87,8 @@ func to_dict() -> Dictionary:
 
 func title() -> String:
 	var t := TranslationServer.translate(String(KINDS[kind].name))
+	if event == "mixed":
+		return "%s\u00a0· %s" % [t, TranslationServer.translate("EVENT_MIXED")]
 	return TranslationServer.translate("WOMENS_EVENT").format({"e": t}) if women else t
 
 
@@ -122,7 +128,7 @@ func record_user_result(result: Dictionary) -> void:
 func sim_next() -> void:
 	var f := next_fixture()
 	if not f.is_empty():
-		_apply(f, Sim.play(f.home, f.away, women, 3, 15))
+		_apply(f, Sim.play(f.home, f.away, women, 3, 15, null, 0, event))
 	_play_rest()
 	_advance()
 
@@ -132,7 +138,7 @@ func _play_rest() -> void:
 		# The knockouts, or the group stage once yours is done: everything left in the stage.
 		for f in fixtures:
 			if not f.played and f.stage == stage and f.home != user and f.away != user:
-				_apply(f, Sim.play(f.home, f.away, women, 3, 15))
+				_apply(f, Sim.play(f.home, f.away, women, 3, 15, null, 0, event))
 		return
 	# The group stage a matchday at a time: every other team up to as many matches as you have played.
 	var mine := _played(user)
@@ -143,7 +149,7 @@ func _play_rest() -> void:
 			if f.played or f.stage != "group" or f.home == user or f.away == user:
 				continue
 			if _played(f.home) < mine and _played(f.away) < mine:
-				_apply(f, Sim.play(f.home, f.away, women, 3, 15))
+				_apply(f, Sim.play(f.home, f.away, women, 3, 15, null, 0, event))
 				changed = true
 
 
@@ -201,7 +207,7 @@ func _advance() -> void:
 					medals.silver = _loser(f)
 			stage = "done"
 			if medals.gold == user:
-				Records.add_title("cup_" + kind, year)
+				Records.add_title("cup_" + kind + (":mixed" if event == "mixed" else ""), year)
 			return
 	if next_fixture().is_empty():
 		_play_rest()

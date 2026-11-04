@@ -314,8 +314,8 @@ func get_season():
 	return season
 
 
-func new_season(league_id: String, team_id: String, women := false):
-	season = Season.create(league_id, team_id, women)
+func new_season(league_id: String, team_id: String, women := false, event := "regu"):
+	season = Season.create(league_id, team_id, women, event)
 	save_season()
 	return season
 

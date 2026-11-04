@@ -1,7 +1,8 @@
 extends Control
 ## International: pick a tournament (the World Championship, the Royal Cup, the Asian or the Southeast Asian Championship),
-## men's or women's, the regu or the team event, and your country; then the tournament's home: the two groups, your
-## next match, the knockouts, and the medals.
+## the regu or the team event, men's or women's, or the mixed quadrant where the tournament has one (Cup.MIXED_KINDS:
+## two men and two women a side, so no men's or women's to pick), and your country; then the tournament's home: the
+## two groups, your next match, the knockouts, and the medals.
 
 var _kind := "world"
 var _women := false
@@ -37,16 +38,24 @@ func _choose() -> void:
 				_refresh()))
 	left.add_child(UI.scroll(list))
 	var evs := ["regu", "team"]
-	(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("EVENT_REGU"), tr("EVENT_TEAM")], evs.find(_event), func(i):
-		_event = evs[i]))
-	(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
-		_women = i == 1
+	if _kind in Cup.MIXED_KINDS:
+		evs.append("mixed")
+	if not _event in evs:
+		_event = "regu"
+	var names := {"regu": "EVENT_REGU", "team": "EVENT_TEAM", "mixed": "EVENT_MIXED"}
+	(parts[1] as HBoxContainer).add_child(UI.chips_row(evs.map(func(e): return tr(names[e])), evs.find(_event), func(i):
+		_event = evs[i]
 		_refresh()))
+	var mixed := _event == "mixed"
+	if not mixed:
+		(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
+			_women = i == 1
+			_refresh()))
 	# The countries that take part in this event (the strongest first): no United States at the Asian Championship.
 	var field: Array = Cup.KINDS[_kind].field
-	var ids := DB.countries_ranked(_women).filter(func(id): return id in field)
+	var ids := DB.countries_ranked(_women and not mixed, mixed).filter(func(id): return id in field)
 	var grid := UI.team_grid(self, ids, 2, func(id):
-		Game.new_cup(_kind, id, _women, _event)
+		Game.new_cup(_kind, id, _women and not mixed, _event)
 		Game.show_screen("res://ui/cup_screen.gd"))
 	(parts[2] as VBoxContainer).add_child(UI.scroll(grid))
 

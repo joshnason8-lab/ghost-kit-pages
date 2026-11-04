@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.20: **the mixed quadrant in League Season and International.** Starting a season, pick the regu or
+the mixed quadrant (two men and two women a side): in a mixed season every match is mixed, yours and the rest.
+In International, the Royal Cup and the Southeast Asian Championship have it as a third event, after the regu
+and the team event. How to Play's rules now state the format plainly. Worth trying a mixed season with your club.
+
 New in 0.15.19: **on Medium and High, a landing foot plants at once.** A foot coming down from a step was
 planted a frame late and could slide a few centimetres as it touched; now it holds from the moment it touches.
 Low is unchanged. Nothing else changes in play.

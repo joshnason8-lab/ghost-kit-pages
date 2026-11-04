@@ -486,11 +486,19 @@ func _season() -> void:
 	Game.show_screen("res://ui/season_hub.gd")
 	await frames(10)
 	await audit("season_pick")
+	# The mixed quadrant picked (no men's or women's to pick), on Indonesia's league (the one with a women's choice).
+	var pick: Node = Game.show_screen("res://ui/season_hub.gd")
+	pick.set("_league", "ID")
+	pick.set("_event", "mixed")
+	pick.call("_refresh")
+	await frames(10)
+	await audit("season_pick_mixed")
 	# Each league's home: Malaysia mid-Grand Prix and in its knockouts, Thailand's ties, Indonesia's finals, a season's
 	# end (relegation and promotion), and a Division 1 club's.
 	for ls in [["MY", "NSN", 3, "season_hub"], ["MY", "FRS", 6, "season_playoffs"], ["TH", "NPT", 4, "season_th"],
-			["ID", "MKS", 7, "season_id"], ["MY", "KDH", 400, "season_over"], ["MY", "PRS", 400, "season_div1"]]:
-		var se = Game.new_season(ls[0], ls[1])
+			["ID", "MKS", 7, "season_id"], ["MY", "KDH", 400, "season_over"], ["MY", "PRS", 400, "season_div1"],
+			["TH", "SPB", 3, "season_th_mixed", "mixed"], ["MY", "PRK", 400, "season_over_mixed", "mixed"]]:
+		var se = Game.new_season(ls[0], ls[1], false, ls[4] if ls.size() > 4 else "regu")
 		for i in int(ls[2]):
 			if se.phase != "done":
 				se.sim_round()
@@ -506,6 +514,20 @@ func _cup() -> void:
 	Game.show_screen("res://ui/cup_screen.gd")
 	await frames(10)
 	await audit("cup_pick")
+	# The Royal Cup with the mixed quadrant picked (its third event chip; no men's or women's to pick).
+	var pick: Node = Game.show_screen("res://ui/cup_screen.gd")
+	pick.set("_kind", "royal")
+	pick.set("_event", "mixed")
+	pick.call("_refresh")
+	await frames(10)
+	await audit("cup_pick_mixed")
+	var mixed = Game.new_cup("royal", "MAS", false, "mixed")
+	mixed.sim_next()
+	Game.save_cup()
+	Game.show_screen("res://ui/cup_screen.gd")
+	await frames(12)
+	await audit("cup_hub_mixed")
+	Game.delete_cup()
 	var cup = Game.new_cup("sea", "PHI", true, "team")
 	cup.sim_next()
 	Game.save_cup()

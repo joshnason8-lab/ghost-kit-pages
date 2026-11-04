@@ -1,11 +1,13 @@
 extends Control
-## League Season: pick a league and a club, then the season's home, laid out for the league's real format: the STL's
+## League Season: pick a league, the regu (men's, or women's where the league has them) or the mixed quadrant (two men
+## and two women a side, every fixture), and a club; then the season's home, laid out for the league's real format: the STL's
 ## Grand Prix standings and the Grand Prix being played; the Thai league's table of ties; Indonesia's region and the
 ## national finals. Your next match (play it, or let it be played), the latest results, and at the end the champions,
 ## who went up or down, and the awards.
 
 var _league := "MY"
 var _women := false
+var _event := "regu"   # or "mixed"
 
 
 func setup(_args: Dictionary) -> void:
@@ -34,7 +36,14 @@ func _choose() -> void:
 			id == _league, func():
 				_league = id
 				_refresh()))
-	if bool(DB.LEAGUES[_league].get("women", false)):
+	var evs := ["regu", "mixed"]
+	(parts[1] as HBoxContainer).add_child(UI.chips_row([tr("EVENT_REGU"), tr("EVENT_MIXED")], evs.find(_event), func(i):
+		_event = evs[i]
+		_refresh()))
+	var mixed := _event == "mixed"
+	if mixed:
+		pass   # (two men and two women a side: no men's or women's to pick)
+	elif bool(DB.LEAGUES[_league].get("women", false)):
 		var gender := UI.chips_row([tr("MEN"), tr("WOMEN")], 1 if _women else 0, func(i):
 			_women = i == 1
 			_refresh())
@@ -51,7 +60,7 @@ func _choose() -> void:
 		elif _league == "ID":
 			tags[id] = UI.pill(tr(DB.zone_of(id)), Game.C_TEAL)
 	var grid := UI.team_grid(self, ids, 2, func(id):
-		Game.new_season(_league, id, _women)
+		Game.new_season(_league, id, _women and not mixed, _event)
 		Game.show_screen("res://ui/season_hub.gd"), tags)
 	(parts[2] as VBoxContainer).add_child(UI.scroll(grid))
 
@@ -69,7 +78,10 @@ func _hub(s: Season) -> void:
 	var title := tr(DB.LEAGUES[s.league].name)
 	if s.league == "MY":
 		title = tr("STL_DIV1" if s.division == 2 else "STL_PREMIER")
-	var v := UI.page(self, title, func(): Game.goto_menu(), tr("SEASON_YEAR").format({"y": s.year}) + "\u00a0· " + s.stage_name())
+	var sub := tr("SEASON_YEAR").format({"y": s.year}) + "\u00a0· " + s.stage_name()
+	if s.match_event == "mixed":
+		sub = tr("EVENT_MIXED") + "\u00a0· " + sub
+	var v := UI.page(self, title, func(): Game.goto_menu(), sub)
 	var right: HBoxContainer = get_meta("header_right")
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 20)
@@ -182,7 +194,7 @@ func _next(s: Season, rv: VBoxContainer) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	row.add_child(UI.button(tr("PLAY"), true, func():
-		var cfg := {"home": f.home, "away": f.away, "venue": venue, "event": "regu", "sets": 3, "points": 15,
+		var cfg := {"home": f.home, "away": f.away, "venue": venue, "event": s.match_event, "sets": 3, "points": 15,
 			"difficulty": int(Game.settings.difficulty), "mode": "season", "user_team": 0 if f.home == s.team else 1,
 			"women": s.women, "stage": s.match_stage()}
 		if bool(f.get("tie", false)):

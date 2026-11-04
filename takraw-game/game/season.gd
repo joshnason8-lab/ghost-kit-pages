@@ -18,6 +18,7 @@ var league := "MY"
 var division := 1              # Malaysia: 1 the Premier League, 2 Division 1
 var team := ""
 var women := false
+var match_event := "regu"      # "regu", or "mixed": every match a mixed quadrant (two men and two women a side)
 var year := 2026
 var events: Array = []         # see _event()
 var ev_i := 0
@@ -35,11 +36,12 @@ var draw_seed := 0
 var quiet := false             # played out unseen (Division 1 before your Premier season): no end-of-season business
 
 
-static func create(league_id: String, team_id: String, p_women := false) -> Season:
+static func create(league_id: String, team_id: String, p_women := false, p_event := "regu") -> Season:
 	var s := Season.new()
 	s.league = league_id
 	s.team = team_id
-	s.women = p_women and bool(DB.LEAGUES[league_id].get("women", false))
+	s.match_event = "mixed" if p_event == "mixed" else "regu"
+	s.women = p_women and bool(DB.LEAGUES[league_id].get("women", false)) and s.match_event == "regu"
 	s.year = int(DB.LEAGUES[league_id].get("year", 2026))
 	s.draw_seed = hash(team_id) + Time.get_ticks_msec()
 	match String(DB.LEAGUES[league_id].format):
@@ -72,8 +74,8 @@ static func create(league_id: String, team_id: String, p_women := false) -> Seas
 
 static func from_dict(d: Dictionary) -> Season:
 	var s := Season.new()
-	for k in ["league", "division", "team", "women", "year", "events", "ev_i", "premier", "div1", "standings", "phase",
-			"champion", "relegated", "promoted", "recent", "player_stats", "news", "draw_seed"]:
+	for k in ["league", "division", "team", "women", "match_event", "year", "events", "ev_i", "premier", "div1", "standings",
+			"phase", "champion", "relegated", "promoted", "recent", "player_stats", "news", "draw_seed"]:
 		if d.has(k):
 			s.set(k, d[k])
 	s.year = int(s.year)
@@ -84,7 +86,7 @@ static func from_dict(d: Dictionary) -> Season:
 
 
 func to_dict() -> Dictionary:
-	return {"league": league, "division": division, "team": team, "women": women, "year": year, "events": events,
+	return {"league": league, "division": division, "team": team, "women": women, "match_event": match_event, "year": year, "events": events,
 		"ev_i": ev_i, "premier": premier, "div1": div1, "standings": standings, "phase": phase, "champion": champion,
 		"relegated": relegated, "promoted": promoted, "recent": recent, "player_stats": player_stats, "news": news,
 		"draw_seed": draw_seed}
@@ -135,7 +137,8 @@ func _gp_event(kind: String, gp: int, clubs: Array) -> Dictionary:
 	return ev
 
 
-## A league round robin: home and away (twice) or once; Thai ties are two regus each.
+## A league round robin: home and away (twice) or once; Thai ties are two regus each (a mixed season's fixtures are one
+## mixed quadrant each: the clubs have one each).
 func _league_event(clubs: Array, twice: bool) -> Dictionary:
 	var ev := _event("league", String(DB.LEAGUES[league].name), {}, "", "", clubs)
 	var rounds := _round_robin(clubs, false)
@@ -144,7 +147,7 @@ func _league_event(clubs: Array, twice: bool) -> Dictionary:
 			rounds.append(r)
 	for r in rounds:
 		for f in r:
-			f.tie = league == "TH"
+			f.tie = league == "TH" and match_event != "mixed"
 	ev.stages.append({"kind": "league", "key": "LEAGUE_STAGE", "groups": [clubs.duplicate()], "rounds": rounds, "round_i": 0})
 	return ev
 
@@ -332,7 +335,7 @@ func sim_rest() -> void:
 
 func _sim(f: Dictionary) -> Dictionary:
 	if not bool(f.get("tie", false)):
-		return Sim.play(f.home, f.away, women, 3, 15)
+		return Sim.play(f.home, f.away, women, 3, 15, null, 0, match_event)
 	# A Thai tie: both regus, the clubs' first and second.
 	var won := [0, 0]
 	var regus := []
@@ -592,13 +595,14 @@ func _season_done() -> void:
 			champion = String(events[events.size() - 1].champion)
 	news.append({"key": "NEWS_CHAMPION", "args": {"t": champion}})
 	if champion == team and (format() != "gp" or division == 1):
-		Records.add_title("league_" + league, year)
+		Records.add_title("league_" + league + (":mixed" if match_event == "mixed" else ""), year)
 
 
 ## The Premier season you were not in, played out quietly: who it sends down to Division 1.
 func _quiet_premier() -> void:
 	var q := Season.new()
 	q.league = league
+	q.match_event = match_event
 	q.team = ""
 	q.year = year
 	q.draw_seed = draw_seed + 1
@@ -743,6 +747,7 @@ func next_season() -> Season:
 	s.league = league
 	s.team = team
 	s.women = women
+	s.match_event = match_event
 	s.year = year + 1
 	s.draw_seed = draw_seed + 101
 	match format():
@@ -753,6 +758,7 @@ func next_season() -> Season:
 				# Division 1 is played before the season: its finalists join the Premier League.
 				var q := Season.new()
 				q.league = league
+				q.match_event = match_event
 				q.year = s.year
 				q.draw_seed = s.draw_seed
 				q.quiet = true

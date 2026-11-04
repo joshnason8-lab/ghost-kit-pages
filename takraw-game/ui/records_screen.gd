@@ -27,6 +27,8 @@ func _ready() -> void:
 	if titles.is_empty():
 		right[1].add_child(UI.wrap(tr("RECORDS_NONE"), "MutedLabel", 18))
 	for t in titles:
-		var key := String(t.key)
+		var key := String(t.key).get_slice(":", 0)   # (":mixed": a mixed quadrant title)
 		var name := tr(DB.LEAGUES[key.substr(7)].name) if key.begins_with("league_") else tr(String(Cup.KINDS.get(key.substr(4), {}).get("name", key)))
+		if String(t.key).ends_with(":mixed"):
+			name += "\u00a0· " + tr("EVENT_MIXED")
 		right[1].add_child(UI.label("%s\u00a0· %d" % [name, int(t.year)], "SubLabel", 20))

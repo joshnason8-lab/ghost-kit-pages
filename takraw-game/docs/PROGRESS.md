@@ -670,6 +670,37 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The mixed quadrant in the league season and the cups (0.15.20)
+
+The owner's answers (via the lead, 2026-11-04): the format stands - two men and two women a side, the men's 1.52 m net
+- and the mixed quadrant is to be played in the league season and the international cups too, as its own event.
+
+- **How to Play, Rules, "The regu"** (RULES_PLAYERS_TEXT, 13 languages): the mixed sentence now states the format
+  plainly ("Mixed quadrant is two men and two women a side, at the men's net"), without 0.15.17's "varies by
+  tournament". The Japanese and Chinese fonts cut again (異 and 异 no longer used).
+- **The league season**: a new season is the regu (men's, or women's in Indonesia) or the mixed quadrant (an event chip
+  before the clubs; mixed has no men's or women's to pick). Season.match_event ("regu" or "mixed", saved; an older
+  save reads as the regu): every fixture of a mixed season is a mixed quadrant - your Play (match config event) and
+  every fixture played out (Sim.play's event: DB.mixed line-ups, two men and two women, their stats and awards).
+  Thailand's ties of two regus are one mixed quadrant each in a mixed season (a club has one), 2 points a win. Every
+  league and format as before: the STL's Grand Prix and Division 1, Thailand's league, Indonesia's regions and
+  finals; promotion and relegation; next season keeps the event. The season's home says "Mixed quadrant" over the
+  year; a mixed title goes in the record book as its own (the league's name, then "· Mixed quadrant").
+- **The international cups**: the mixed quadrant is a third event (after the regu and the team event) where it is
+  really played - the Royal Cup (as Thailand's King's Cup has it) and the Southeast Asian Championship (as the SEA
+  Games have it): Cup.MIXED_KINDS. Not the World or Asian Championship (the game claims no mixed event they do not
+  hold; one list to widen). The field ranked by the mixed strength (DB.mixed_strength: the men's and the women's,
+  half each); groups, knockouts, medals and the record book as the regu's; the cup's title "Royal Cup · Mixed
+  quadrant".
+- **The owner note** 2026-11-03_mixed_quadrant now also plays a mixed season fixture (the Malaysian season's first,
+  as Play builds it) and takes its result into the season (the round's other fixtures played out with mixed line-ups:
+  24 women in the season's stats), checks Thailand's mixed season has no ties of two regus and that a mixed season
+  saves and reads back as mixed; and plays a mixed cup match (the Southeast Asian Championship) taken into the cup,
+  which goes on (three other group matches), the World Championship refusing the event, the cup saved and read back.
+- **fit_audit**: the season and cup pick screens with the mixed quadrant picked, a mixed Thai season, a mixed season's
+  end, a mixed Royal Cup's home; every language, three phone shapes.
+- **Low's budget unchanged**: no new assets (the mixed matches are 0.15.16's: the same draw calls as the quadrant).
+
 ## A landing foot planted as it touches (0.15.19)
 
 - **Foundation 5c2304e -> a40a95e**: a planter run's time covers every tick since its last (a body posed every other
@@ -724,7 +755,7 @@ Cup (from 2022), now a fifth event in Quick Match and Watch AI (the lead's pick 
 owner). Four a side on the quadrant's rules: the men's best tekong and striker and the women's best feeder and striker
 (DB.mixed, its places DB.MIXED_WOMEN), each on their own body; the substitutes a man and a woman in turn; the net at
 the men's 1.52 m. The handbook does not say how many of each are on court, or the net's height: two and two at the
-men's net is the game's reading (one table and one line to change if the rule is otherwise).
+men's net was the game's reading, and the owner confirmed it on 2026-11-04 (0.15.20).
 
 - The match: a player's kick and spike heights follow his own body (a woman's are lower), not the match's event.
 - Strings in all 13 languages (EVENT_MIXED, EVENT_NOTE_MIXED), the Korean and Chinese fonts cut again for their new
@@ -734,7 +765,7 @@ men's net is the game's reading (one table and one line to change if the rule is
   side, a woman feeding, the men's net, and is played to its end (Low 17-15, High 7-15).
 - Low's budget: the same draw calls as the men's quadrant (74 at the National Arena, 79 at the beach), fewer
   primitives (115,172 against 124,088), 1.7 MB more video memory (both bodies' textures).
-- Not yet in the league season or the international events: their events stay as they are.
+- In the league season and the international cups from 0.15.20 (below).
 
 ## Low's officials on the shared planter; publishing in place (0.15.15)
 

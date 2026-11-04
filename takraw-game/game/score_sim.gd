@@ -6,13 +6,14 @@ extends RefCounted
 
 
 ## A match between home and away: {winner (0 home, 1 away), sets [a, b], set_scores [[a, b] ...], stats}. regu_no:
-## a club's second regu (a Thai league tie's), from the players its first did not use.
+## a club's second regu (a Thai league tie's), from the players its first did not use. event "mixed": each side's
+## mixed quadrant (DB.mixed: two men and two women), whatever women says.
 static func play(home: String, away: String, women := false, best_of := 3, set_points := 15, rng: RandomNumberGenerator = null,
-		regu_no := 0) -> Dictionary:
+		regu_no := 0, event := "regu") -> Dictionary:
 	if rng == null:
 		rng = RandomNumberGenerator.new()
 		rng.randomize()
-	var lineups := [_lineup(home, women, regu_no), _lineup(away, women, regu_no)]
+	var lineups := [_lineup(home, women, regu_no, event), _lineup(away, women, regu_no, event)]
 	var p_home := rally_chance(lineups[0], lineups[1])
 	var cap := 17 if set_points == 15 else 25
 	var to_win := 2 if best_of >= 3 else 1
@@ -47,7 +48,9 @@ static func rally(stats: Dictionary, lineups: Array, p_home: float, rng: RandomN
 	return w
 
 
-static func _lineup(id: String, women: bool, regu_no: int) -> Array:
+static func _lineup(id: String, women: bool, regu_no: int, event := "regu") -> Array:
+	if event == "mixed":
+		return DB.mixed(id)
 	var skip := []
 	for n in regu_no:
 		for pd in DB.regu(id, women, 3, skip):

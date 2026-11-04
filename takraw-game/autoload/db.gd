@@ -183,8 +183,11 @@ func countries() -> Array:
 
 
 ## Countries in order of strength (men's or women's).
-func countries_ranked(women := false) -> Array:
+func countries_ranked(women := false, mixed := false) -> Array:
 	var ids: Array = COUNTRIES.keys()
+	if mixed:
+		ids.sort_custom(func(a, b): return mixed_strength(a) > mixed_strength(b))
+		return ids
 	ids.sort_custom(func(a, b): return int(COUNTRIES[a][1 if women else 0]) > int(COUNTRIES[b][1 if women else 0]))
 	return ids
 
@@ -208,6 +211,16 @@ func zone_of(id: String) -> String:
 func strength(id: String, women := false) -> int:
 	var t := team(id)
 	return int(t.get("str_w" if women else "str", 60))
+
+
+## A team's strength in the mixed quadrant: its men's and its women's, half each (two of each on court).
+func mixed_strength(id: String) -> int:
+	return (strength(id, false) + strength(id, true)) / 2
+
+
+## The strength a season or a cup ranks by: the men's, the women's, or the mixed quadrant's.
+func event_strength(id: String, women: bool, event: String) -> int:
+	return mixed_strength(id) if event == "mixed" else strength(id, women)
 
 
 ## A team's rating (0-100) from its best regu.
