@@ -521,8 +521,10 @@ static func standings(headers: Array, rows: Array, highlight: String, gold := 0,
 	var g := GridContainer.new()
 	g.columns = headers.size() + 1
 	g.add_theme_constant_override("h_separation", 14)
-	g.add_theme_constant_override("v_separation", 1 if compact else 5)
-	var fs := 17 if compact else 20
+	# (Compact, the World Finals' four group tables in one scroll: still big enough to read on a phone - 19 px rows and
+	# a little air between them; at 17 px with none the PROGRESS list had them as too small on a phone.)
+	g.add_theme_constant_override("v_separation", 4 if compact else 5)
+	var fs := 19 if compact else 20
 	g.add_child(label("#", "EyebrowLabel"))
 	for h in headers:
 		g.add_child(label(String(h), "EyebrowLabel"))
