@@ -372,6 +372,8 @@ func save_paths() -> Array:
 ## WsgSim seeds 101 and 103), a foundation fault the foundation is fixing; listed under the report's warnings till then.
 func deferred() -> Dictionary:
 	# Until 11-06 12:00 any foot slip is put off; from then only a planted slide up to 10 cm, to 11-13 (the lead,
-	# 2026-11-04's call: bounded, so a bigger slide, any skid and any low-foot jump still fail).
+	# 2026-11-04's call: bounded, so a bigger slide and any skid still fail); a low-foot jump up to 32 cm to 11-08 (the
+	# foundation's fast-low-foot fix due 11-07; a bigger jump still fails).
 	return {"foot slip": ["2026-11-06T12:00Z", "the lead, 2026-11-03: planter slips 2-4 cm under Kho Kho's AI (WsgSim seeds 101, 103); foundation fix pending"],
-		"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-04: planted slides up to 9.3 cm under the AI (CI smoke on 0.12.15: 12 over 2.5 cm, defenders and the field umpires); foundation fix pending - bounded at 10 cm, as Takraw's 7.5 and Kabaddi's 8", 10.0]}
+		"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-04: planted slides up to 9.3 cm under the AI (CI smoke on 0.12.15: 12 over 2.5 cm, defenders and the field umpires); foundation fix pending - bounded at 10 cm, as Takraw's 7.5 and Kabaddi's 8", 10.0],
+		"low jump": ["2026-11-08T12:00Z", "the lead, 2026-11-04: Foundation fast-low-foot fix, due 11-07 (CI smoke cases collisions101 hd8 31.0, random29 ad6 29.9, extreme34 hd11 27.1, fouls101 hd8 25.5, dream101 ad10 25.2; extreme16 ump_a) - bounded at 32 cm", 32.0]}
