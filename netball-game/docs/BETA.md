@@ -9,7 +9,7 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
-## Unreleased
+## New in 0.9.8-beta
 
 - **Positional changes**: besides substitutions, two of your players on court can now swap positions, at the
   intervals, in an injury stoppage or a time-out, and after a goal (Pause, then Team changes). Tap Positions beside
