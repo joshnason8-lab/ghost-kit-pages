@@ -16,7 +16,7 @@ could not confirm; the game's choice is given beside it.
 | Posts | 0.30 m outside the side lines | Exact |
 | Ball | Synthetic, 12 holes, 20 crossings; men 170-180 g, women 150-160 g | 175 g / 155 g |
 | Scoring | **Since 1 February 2024**: rally point, sets to 15, from 14-all win by 2 up to 17; best of three sets | Default; 21-point sets (the 2013-2024 rule, deuce to 25) as an option |
-| Service | **Since 1 February 2024**: alternates every point, whoever wins it (it was three serves a side, 2013-2024) | Alternates every point |
+| Service | **Since 1 February 2024**: alternates every point, whoever wins it (it was three serves a side, 2013-2024, alternating every point from deuce) | Alternates every point; three a side (2013-2024) as a Quick Match option |
 | The serve | The score is called; an inside player throws the ball to the tekong, who kicks it over the net with his non-kicking foot in the service circle. Both of the serving side's inside players stand in their quarter circles; the receivers anywhere on their side | Exact, with the faults below |
 | Ends | Change after each set, and in the third set when a side reaches 8 | Exact |
 | Time-outs | One a side a set, up to a minute | Not in the game: the match moves straight on |

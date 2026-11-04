@@ -42,6 +42,7 @@ func _ready() -> void:
 	await _loading_overlay()
 	await _play_as_and_officials()
 	await _matches()
+	await _three_serves()
 	await _sim_to_end()
 	FoundationLink.off = false
 	await _foundation(WsgClips.available())
@@ -1287,6 +1288,50 @@ func _matches() -> void:
 		check(kills > 0, "%s: spikes won points" % c[0])
 		m.queue_free()
 		await frames(2)
+
+
+## The 3-serve rule of 2013-2024, a quick match's option (the ROADMAP's, for the lead): each side serves three in a row
+## whoever wins the points, and from deuce (20-all in sets to 21, 14-all in sets to 15) the serve alternates every point;
+## today's rule (ISTAF since 2024) alternates every point. The rule itself (Match.next_server), then a match played on it.
+func _three_serves() -> void:
+	var M: Script = load("res://game/match.gd")
+	check(M.next_server(0, 0, 1, 0, 15, 1) == [1, 0] and M.next_server(1, 0, 3, 5, 21, 1) == [0, 0], "today's rule: the serve alternates every point")
+	var seq := [0]
+	var sv := [0, 0]
+	for i in 8:
+		sv = M.next_server(int(sv[0]), int(sv[1]), i + 1, 0, 21, 3)
+		seq.append(int(sv[0]))
+	check(seq == [0, 0, 0, 1, 1, 1, 0, 0, 0], "the 3-serve rule: three a side whoever wins the points (%s)" % [seq])
+	check(M.next_server(0, 1, 20, 20, 21, 3) == [1, 0] and M.next_server(1, 0, 21, 20, 21, 3) == [0, 0], "the 3-serve rule: from 20-all (sets to 21) it alternates every point")
+	check(M.next_server(0, 0, 14, 14, 15, 3) == [1, 0] and M.next_server(0, 0, 14, 13, 15, 3) == [0, 1], "the 3-serve rule: from 14-all (sets to 15) it alternates, not before")
+	# A match on it: the serve taken at each serve's toss, with the score.
+	var m: Node = M.new()
+	m.config = {"home": "THA", "away": "MAS", "venue": "national", "event": "regu", "sets": 1, "points": 15, "serves": 3,
+		"user_team": -1, "demo": true, "seed": 21, "mode": "quick"}
+	add_child(m)
+	var tosses := []
+	var last := Vector2i(-1, -1)
+	var guard := 0
+	while int(m.state) != int(m.S.OVER) and guard < 60000:
+		guard += 1
+		var sc := Vector2i(int(m.points[0]), int(m.points[1]))
+		if int(m.state) == int(m.S.TOSS) and sc != last:
+			last = sc
+			tosses.append([sc.x, sc.y, int(m.server)])
+		await frames(1)
+	var bad := []
+	for i in range(1, tosses.size()):
+		var a: int = int(tosses[i][0])
+		var b: int = int(tosses[i][1])
+		var changed: bool = int(tosses[i][2]) != int(tosses[i - 1][2])
+		var deuce: bool = a >= 14 and b >= 14
+		var want: bool = true if deuce or (int(tosses[i - 1][0]) >= 14 and int(tosses[i - 1][1]) >= 14) else (a + b) % 3 == 0
+		if changed != want:
+			bad.append("%d-%d" % [a, b])
+	check(int(m.state) == int(m.S.OVER) and tosses.size() >= 15, "the 3-serve rule: a match played to its end (%d serves)" % tosses.size())
+	check(bad.is_empty(), "the 3-serve rule: the serve passed after every third point, and every point from deuce (wrong at %s)" % [bad])
+	m.queue_free()
+	await frames(2)
 
 
 ## Simulate to the end (the pause menu): offered in a season's or a tournament's match, not a quick one; from the score

@@ -670,6 +670,23 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## The 3-serve rule of 2013-2024 as an option (0.15.21)
+
+The ROADMAP's idea, for the lead: the serve as it was from 2013 until ISTAF's change of 1 February 2024.
+- **The rule** (Match.next_server): each side serves three in a row, whoever wins the points; from deuce (both a point
+  short of the set: 20-all in sets to 21, 14-all in sets to 15) the serve alternates every point; each set starts a
+  fresh turn. Today's rule (the default): the serve alternates every point. Researched: the old format's three
+  serves a side, and the 21-point rulebooks' "at deuce the service alternates at every point" (a 2026 Singapore
+  tournament's rules, still on the old format); ISTAF's change to one serve (Sinar Harian, 2023).
+- **Quick Match and Watch AI**: a field under the event, "The serve": Alternate (today's rule) / Three each (classic),
+  saved with the settings (Settings.serves); the match config's "serves": 1 or 3. League Season, International and
+  WsgSim keep today's rule (WsgSim's match configs are unchanged, so every seed plays the match it did).
+- **Sets to 21**: the deciding set's ends change at 11, as the old rule had it (8 in sets to 15, as before).
+- Two strings in 13 languages (SERVES_ONE, SERVES_THREE; the field's label is How to Play's "The serve"); the Japanese
+  font cut again for 交 and 互.
+- test_runner (_three_serves): the rule itself (three a side, deuce at 20-all and at 14-all, today's alternation), and
+  a match played on it, the serve taken at every toss: it passes after every third point, and every point from deuce.
+
 ## The mixed quadrant in the league season and the cups (0.15.20)
 
 The owner's answers (via the lead, 2026-11-04): the format stands - two men and two women a side, the men's 1.52 m net

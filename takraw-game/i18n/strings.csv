@@ -52,6 +52,8 @@ SETS_THREE,Best of three,2 ใน 3 เซต,Terbaik tiga set,Terbaik dari tiga
 SET_POINTS,Sets to,เซตละ,Set hingga,Set sampai,Điểm mỗi séc,ເຊັດລະ,ဆက်အမှတ်,សិតដល់,Set hanggang,セットの得点,세트 점수,每局分数,सेट के अंक
 POINTS_15,15 points (today's rule),15 แต้ม (กติกาปัจจุบัน),15 mata (peraturan semasa),15 poin (aturan terkini),15 điểm (luật hiện hành),15 ຄະແນນ (ກະຕິກາປັດຈຸບັນ),15 မှတ် (လက်ရှိ စည်းမျဉ်း),15 ពិន្ទុ (ច្បាប់បច្ចុប្បន្ន),15 puntos (kasalukuyang patakaran),15点（現行ルール）,15점 (현행 규칙),15分（现行规则）,15 अंक (मौजूदा नियम)
 POINTS_21,21 points (classic),21 แต้ม (แบบคลาสสิก),21 mata (klasik),21 poin (klasik),21 điểm (cổ điển),21 ຄະແນນ (ແບບດັ້ງເດີມ),21 မှတ် (ရိုးရာ),21 ពិន្ទុ (បុរាណ),21 puntos (klasiko),21点（クラシック）,21점 (클래식),21分（经典）,21 अंक (क्लासिक)
+SERVES_ONE,Alternate (today's rule),สลับทุกแต้ม (กติกาปัจจุบัน),Bergilir (peraturan semasa),Bergantian (aturan terkini),Luân phiên (luật hiện hành),ສະຫຼັບກັນ (ກະຕິກາປັດຈຸບັນ),အလှည့်ကျ (လက်ရှိ စည်းမျဉ်း),ឆ្លាស់គ្នា (ច្បាប់បច្ចុប្បន្ន),Salitan (kasalukuyang patakaran),交互（現行ルール）,번갈아 (현행 규칙),轮流（现行规则）,बारी-बारी (मौजूदा नियम)
+SERVES_THREE,Three each (classic),ฝ่ายละ 3 ลูก (แบบคลาสสิก),Tiga servis sebelah (klasik),Tiga servis per tim (klasik),Mỗi đội ba quả (cổ điển),ຝ່າຍລະ 3 ລູກ (ແບບດັ້ງເດີມ),တစ်ဖက် ၃ ကြိမ်စီ (ရိုးရာ),ម្ខាង 3 ដង (បុរាណ),Tatlo bawat panig (klasiko),各3本（クラシック）,팀당 3번 (클래식),每方三次（经典）,हर तरफ़ तीन (क्लासिक)
 DIFFICULTY,Difficulty,ระดับความยาก,Kesukaran,Kesulitan,Độ khó,ຄວາມຍາກ,ခက်ခဲမှု,កម្រិតលំបាក,Hirap,難易度,난이도,难度,कठिनाई
 DIFF_EASY,Rookie,มือใหม่,Pemula,Pemula,Tập sự,ມືໃໝ່,အသစ်,អ្នកថ្មី,Baguhan,ルーキー,루키,新秀,नौसिखिया
 DIFF_NORMAL,Pro,มือโปร,Pro,Pro,Chuyên nghiệp,ມືອາຊີບ,ပရို,អាជីព,Pro,プロ,프로,职业,प्रो

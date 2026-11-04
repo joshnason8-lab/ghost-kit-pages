@@ -52,6 +52,8 @@
   "SET_POINTS": "세트 점수",
   "POINTS_15": "15점 (현행 규칙)",
   "POINTS_21": "21점 (클래식)",
+  "SERVES_ONE": "번갈아 (현행 규칙)",
+  "SERVES_THREE": "팀당 3번 (클래식)",
   "DIFFICULTY": "난이도",
   "DIFF_EASY": "루키",
   "DIFF_NORMAL": "프로",

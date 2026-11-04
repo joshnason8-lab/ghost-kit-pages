@@ -15,6 +15,11 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.21: **the old 3-serve rule, for the old-school.** Quick Match (and Watch AI) has a new choice under the
+serve: alternate every point (today's rule) or three each (the 2013-2024 rule: each side serves three in a row whoever
+wins the points, then one each from deuce). Goes well with 21-point sets, as it was played; in a third set to 21 the
+ends now change at 11, as they did then. League Season and International keep today's rules.
+
 New in 0.15.20: **the mixed quadrant in League Season and International.** Starting a season, pick the regu or
 the mixed quadrant (two men and two women a side): in a mixed season every match is mixed, yours and the rest.
 In International, the Royal Cup and the Southeast Asian Championship have it as a third event, after the regu

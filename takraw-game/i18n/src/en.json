@@ -52,6 +52,8 @@
   "SET_POINTS": "Sets to",
   "POINTS_15": "15 points (today's rule)",
   "POINTS_21": "21 points (classic)",
+  "SERVES_ONE": "Alternate (today's rule)",
+  "SERVES_THREE": "Three each (classic)",
   "DIFFICULTY": "Difficulty",
   "DIFF_EASY": "Rookie",
   "DIFF_NORMAL": "Pro",

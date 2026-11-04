@@ -91,6 +91,7 @@ var settings := {
 	                        # computer's
 	"sets": 1,              # 0 one set, 1 best of three: the real match
 	"points": 0,            # 0 sets to 15 (the ISTAF rule), 1 to 21 (the long sets of the old rule)
+	"serves": 0,            # 0 the serve alternating every point (the ISTAF rule since 2024), 1 three a side (2013-2024)
 	"event": 0,             # the event in Quick Match: 0 Regu (3), 1 Team (three regus), 2 Quadrant (4), 3 Doubles (2)
 	"seen_howto": false,
 	"dev": false,
@@ -240,7 +241,7 @@ func load_settings() -> void:
 		# Saved before Auto: still Auto if the level is the one the game would pick, else the level chosen.
 		if not data.has("gfx_auto") and data.has("graphics") and int(data.graphics) >= 0:
 			settings.gfx_auto = int(data.graphics) == detect_graphics()
-	for k in ["camera", "graphics", "gfx_cap", "fps", "btn_size", "difficulty", "assist", "game_speed", "play_as", "sets", "points", "event"]:
+	for k in ["camera", "graphics", "gfx_cap", "fps", "btn_size", "difficulty", "assist", "game_speed", "play_as", "sets", "points", "serves", "event"]:
 		settings[k] = int(settings[k])
 
 

@@ -52,6 +52,8 @@
   "SET_POINTS": "セットの得点",
   "POINTS_15": "15点（現行ルール）",
   "POINTS_21": "21点（クラシック）",
+  "SERVES_ONE": "交互（現行ルール）",
+  "SERVES_THREE": "各3本（クラシック）",
   "DIFFICULTY": "難易度",
   "DIFF_EASY": "ルーキー",
   "DIFF_NORMAL": "プロ",

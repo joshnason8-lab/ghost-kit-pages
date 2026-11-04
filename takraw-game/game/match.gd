@@ -51,6 +51,8 @@ var points := [0, 0]
 var set_no := 1
 var set_scores: Array = []   # [[a, b], ...] for the sets played
 var server := 0              # the team serving next
+var serves_each := 1         # serves a side makes in turn: 1, ISTAF's rule since 2024; 3, the 2013-2024 rule (config serves)
+var serves_in_turn := 0      # serves the side serving has made in its turn (the 3-serve rule)
 var first_server := 0        # the team that served first in this set
 var ends_changed_mid := false
 var challenges := [1, 1]
@@ -172,6 +174,7 @@ func _setup() -> void:
 	sets_to_win = 2 if int(config.get("sets", 3)) >= 3 else 1
 	set_points = int(config.get("points", 15))
 	set_cap = 17 if set_points == 15 else 25
+	serves_each = 3 if int(config.get("serves", 1)) == 3 else 1
 
 
 ## The venue, its crowd and the ball. LD (the loading overlay, when built behind it): the venue's build yields a frame
@@ -1920,16 +1923,31 @@ func _after_point() -> void:
 	if won >= 0:
 		_set_won(won)
 		return
-	# The serve alternates every point (ISTAF, since 1 February 2024).
-	server = 1 - server
-	# The third set: the ends change when a side reaches 8.
+	# The next serve: alternating every point (ISTAF, since 1 February 2024), or three a side (2013-2024).
+	var nx := next_server(server, serves_in_turn, a, b, set_points, serves_each)
+	server = int(nx[0])
+	serves_in_turn = int(nx[1])
+	# The third set: the ends change when a side reaches 8 (11 in sets to 21, the old rule's).
 	var deciding: bool = sets[0] == sets_to_win - 1 and sets[1] == sets_to_win - 1 and sets_to_win > 1
-	if deciding and not ends_changed_mid and (a >= 8 or b >= 8):
+	var mid := 8 if set_points <= 15 else 11
+	if deciding and not ends_changed_mid and (a >= mid or b >= mid):
 		ends_changed_mid = true
 		_change_ends()
 		hud.banner(tr("CHANGE_ENDS"), Game.C_GOLD)
 	Crowd.set_excite(0.0)
 	_begin_setup()
+
+
+## Who serves the next point, and how many serves that side has made in its turn, after a point that left the score
+## A-B: ISTAF's rule since 1 February 2024 (EACH 1), the serve alternating every point whoever wins it; the 2013-2024
+## rule (EACH 3), each side serving three in a row whoever wins the points, and from deuce (both a point short of the
+## set: 20-all in sets to 21, 14-all in sets to 15) the serve alternating every point.
+static func next_server(serving: int, done: int, a: int, b: int, points_to: int, each: int) -> Array:
+	if each <= 1 or (a >= points_to - 1 and b >= points_to - 1):
+		return [1 - serving, 0]
+	if done + 1 >= each:
+		return [1 - serving, 0]
+	return [serving, done + 1]
 
 
 func _set_won(team: int) -> void:
@@ -1946,6 +1964,7 @@ func _set_won(team: int) -> void:
 	set_no += 1
 	first_server = 1 - first_server
 	server = first_server
+	serves_in_turn = 0
 	points = [0, 0]
 	run = [0, 0]
 	challenges = [1, 1]

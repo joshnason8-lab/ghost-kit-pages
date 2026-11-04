@@ -52,6 +52,8 @@
   "SET_POINTS": "Set sampai",
   "POINTS_15": "15 poin (aturan terkini)",
   "POINTS_21": "21 poin (klasik)",
+  "SERVES_ONE": "Bergantian (aturan terkini)",
+  "SERVES_THREE": "Tiga servis per tim (klasik)",
   "DIFFICULTY": "Kesulitan",
   "DIFF_EASY": "Pemula",
   "DIFF_NORMAL": "Pro",

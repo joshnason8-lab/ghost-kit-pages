@@ -52,6 +52,8 @@
   "SET_POINTS": "每局分数",
   "POINTS_15": "15分（现行规则）",
   "POINTS_21": "21分（经典）",
+  "SERVES_ONE": "轮流（现行规则）",
+  "SERVES_THREE": "每方三次（经典）",
   "DIFFICULTY": "难度",
   "DIFF_EASY": "新秀",
   "DIFF_NORMAL": "职业",

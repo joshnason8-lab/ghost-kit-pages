@@ -116,6 +116,10 @@ func _build() -> void:
 	ev[1].add_child(UI.field(tr("SET_POINTS"), UI.chips([tr("POINTS_15"), tr("POINTS_21")], int(Game.settings.points), func(i):
 		Game.settings.points = i
 		Game.save_settings())))
+	# The serve: alternating every point (ISTAF since 2024), or three a side (2013-2024, for the old-school).
+	ev[1].add_child(UI.field(tr("RULES_SERVE"), UI.chips([tr("SERVES_ONE"), tr("SERVES_THREE")], int(Game.settings.get("serves", 0)), func(i):
+		Game.settings.serves = i
+		Game.save_settings())))
 	if not watch:
 		ev[1].add_child(UI.difficulty_field(self))
 
@@ -143,6 +147,7 @@ func _play() -> void:
 	Game.play_match({
 		"home": _home, "away": _away, "venue": _venue, "event": events[clampi(int(Game.settings.event), 0, events.size() - 1)],
 		"sets": 3 if int(Game.settings.sets) == 1 else 1, "points": 21 if int(Game.settings.points) == 1 else 15,
+		"serves": 3 if int(Game.settings.get("serves", 0)) == 1 else 1,
 		"difficulty": 2 if watch else int(Game.settings.difficulty), "mode": "watch" if watch else "quick",
 		"user_team": -1 if watch else 0, "women": _women,
 	}, [_play_btn])
