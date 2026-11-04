@@ -94,6 +94,20 @@ func pose_excuse(_body: Node) -> String:
 	return ""
 
 
+## knees: the legs of a skeleton of the game's own whose bones neither its WsgFootPlanter maps nor are the rig's own
+## names (bare or Mixamo): [[hip, knee, ankle, toe] (left), [...] (right)] by bone name; [] for the defaults (and for a
+## skeleton not yours). No toe bone: the fourth is the body's forward at rest as a Vector3 in the skeleton's own space
+## (e.g. [["thigh_l", "shin_l", "foot_l", Vector3(0, 0, 1)], ["thigh_r", "shin_r", "foot_r", Vector3(0, 0, 1)]]).
+func leg_bones(_skeleton: Skeleton3D) -> Array:
+	return []
+
+
+## knees: why the body drawn by SKELETON bends a knee backwards now by design, or "" if it does not - a named acrobatic
+## move playing (a roll, a sunback kick, a dive), never by actor, role or tier. Counted with its reason, not failed.
+func knee_excuse(_skeleton: Skeleton3D) -> String:
+	return ""
+
+
 ## feet: one of the game's players as it plays (its character, scale and locomotor set up as in a match), standing
 ## at the origin under PARENT: [WsgBody, WsgLocomotor]; [] not wired. It is driven along the match path (walk, jog,
 ## a turn, a run, a stop).
