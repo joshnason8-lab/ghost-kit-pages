@@ -61,6 +61,14 @@ func _cases(hero: WsgBody) -> void:
 		fails.append("carried: a planted foot slid %.1f cm in a step (2.0 at most)" % float(s[2].max_cm))
 	if float(s[2].skid_cm) > 2.0:
 		fails.append("carried: a foot flat on the ground slid %.1f cm in one frame (2.0 at most)" % float(s[2].skid_cm))
+	# The knees bend forward, whichever way the rig's thigh bones face (Sepak Takraw's Mixamo RealBody: the thigh's +Z
+	# points back; taken for forward, every bent knee was flipped behind - the owner's "broken backwards knees").
+	for back in [false, true]:
+		var kn: Array = await _knees(hero.skeleton, back)
+		var rig := "thigh +Z backward" if back else "thigh +Z forward"
+		print(_tag + "crouching, the feet held (%s): the knees %.1f and %.1f cm in front of the hip-ankle line (forward of the feet)" % [rig, float(kn[0]) * 100.0, float(kn[1]) * 100.0])
+		if float(kn[0]) < 0.01 or float(kn[1]) < 0.01:
+			fails.append("crouching (%s): a knee %.1f cm in front of the hip-ankle line - bent backwards (1.0 at least)" % [rig, minf(float(kn[0]), float(kn[1])) * 100.0])
 	var far: float = await _landing_far(hero.skeleton)
 	print(_tag + "landing, drawn every 3rd frame: planted with the ankle %.1f cm over its standing height (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
 	if far < 0.02:
@@ -75,12 +83,20 @@ func _cases(hero: WsgBody) -> void:
 
 
 ## A copy of SRC's skeleton at rest, a planter under it.
-func _rig(src: Skeleton3D) -> Array:
+func _rig(src: Skeleton3D, thigh_z_back := false) -> Array:
 	var own := Skeleton3D.new()
 	for i in src.get_bone_count():
 		own.add_bone(src.get_bone_name(i))
+	var half := Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO)
 	for i in src.get_bone_count():
 		var rest := src.get_bone_rest(i)
+		if thigh_z_back:
+			# (The thigh turned half round its own length - its +Z pointing back, as on a Mixamo RealBody - and the shin
+			# turned back again, so every bone stands where it stood.)
+			if src.get_bone_name(i).ends_with("UpLeg"):
+				rest = rest * half
+			elif src.get_bone_parent(i) >= 0 and src.get_bone_name(src.get_bone_parent(i)).ends_with("UpLeg"):
+				rest = half * rest
 		if _cm:
 			rest.origin *= 100.0
 		own.set_bone_parent(i, src.get_bone_parent(i))
@@ -183,6 +199,38 @@ func _carried(src: Skeleton3D) -> Array:
 	var rule := WsgNoteChecks.foot_slip(frames)
 	holder.queue_free()
 	return [steps[0], lowest[0], rule]
+
+
+## The body standing, then lowered 8 cm while the planter holds its feet on the floor (the knees must bend): how far each
+## knee is drawn in front of the line from its hip to its ankle, along the foot's way (heel to toe).
+func _knees(src: Skeleton3D, thigh_z_back: bool) -> Array:
+	var r := _rig(src, thigh_z_back)
+	var holder: Node3D = r[0]
+	var own: Skeleton3D = r[1]
+	var pl: WsgFootPlanter = r[2]
+	var out := [0.0, 0.0]
+	# (Read as drawn, the planter's legs on: in the skeleton's update.)
+	own.skeleton_updated.connect(func():
+		for k in 2:
+			var side: String = ["Left", "Right"][k]
+			var g := func(n: String) -> Vector3: return own.global_transform * own.get_bone_global_pose(own.find_bone(side + n)).origin
+			var hip: Vector3 = g.call("UpLeg")
+			var knee: Vector3 = g.call("Leg")
+			var ank: Vector3 = g.call("Foot")
+			var fwd: Vector3 = g.call("ToeBase") - ank
+			fwd.y = 0.0
+			var line := (ank - hip).normalized()
+			var off := (knee - hip) - line * (knee - hip).dot(line)
+			out[k] = off.dot(fwd.normalized()))
+	for f in 6:
+		pl.tick(1.0 / 30.0)
+		await process_frame
+	for f in 10:
+		holder.position.y -= 0.008
+		pl.tick(1.0 / 30.0)
+		await process_frame
+	holder.queue_free()
+	return out
 
 
 ## The clip's pose on tiptoe: the hips up RISE, each foot pitched toe-down until its toe is back where it stood.
