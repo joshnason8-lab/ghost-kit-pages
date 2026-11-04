@@ -1313,6 +1313,7 @@ jog. Its stride was too short for the body, and the feet slid 3–5 cm a step.
 - the crowd sits or stands properly, facing the play;
 - planted feet slide 2 cm a step at most, with no toe-up;
 - no T-pose, A-pose or block figure appears;
+- no knee is drawn bent backwards, at any tier, on any body (yours included: knees, knee_strays);
 - officials are real people, dressed as officials;
 - key sounds stay crisp at a distance;
 - the loading overlay is up in the tap's frame;
@@ -1356,6 +1357,16 @@ Some hooks have defaults:
   holds (e.g. a hand within a few cm of the pole during the pole-turn anim), never by actor, role or gait. The pose rule
   then counts those frames ("excused by the game (why): N frames") instead of failing; every other T/A-pose fails.
   (The same applies to `bodies()`' `pose_excuse` in WsgSim.)
+- `leg_bones(skeleton) -> Array` is []: the knees rule finds a skeleton's legs by the names its `WsgFootPlanter` maps,
+  then by the rig's own (`LeftUpLeg` ... `LeftToeBase`, bare or with a Mixamo prefix). Return
+  `[[hip, knee, ankle, toe], [...]]` by bone name (left, right) for a rig of your own it cannot find (no toe bone: the
+  fourth is the body's forward at rest, a `Vector3` in the skeleton's space, e.g. `Vector3(0, 0, 1)`); the report lists
+  every skeleton with bones but no legs it knows.
+- `knee_excuse(skeleton) -> String` is "": as `pose_excuse`, for a named acrobatic move only (a roll, a sunback kick, a
+  dive) while it plays. The knees rule counts those knee-frames with the reason; every other backward knee fails.
+  (From 2026-11-06 12:00 UTC for backward knees held over 2 frames, on over 0.5% of a body's bent frames, or over
+  15 cm; single strays are the separate rule `knee_strays`, from 2026-11-13 12:00 UTC. If your CI splits the check
+  into `--only` jobs, add both. The owner saw "broken backwards knees" on Sepak Takraw's own Low bodies, 2026-11-04.)
 
 **From 2026-11-03 12:00 UTC a failing rule fails your build.** Before then the check reports the same failures but
 exits 0 with a warning. That gives you the morning to write `world.gd` without turning a beta already in CI red.

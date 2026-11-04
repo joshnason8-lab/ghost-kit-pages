@@ -7,7 +7,7 @@ OUT="${TMPDIR:-/tmp}/wsg_world_check_test"
 export WSG_WORLD_ENFORCE=1
 rm -rf "$OUT"
 mkdir -p "$OUT"
-RULES=feet,feet_low,pose,officials,sounds,loading,joystick,web,tiers
+RULES=feet,feet_low,pose,knees,knee_strays,officials,sounds,loading,joystick,web,tiers
 GAME=res://tests/world_demo/world.gd
 run() {
 	name=$1
@@ -18,7 +18,7 @@ FAIL=0
 if ! run clean --only $RULES; then
 	echo "world_check_test: the demo world fails a rule it keeps:"; grep -E "FAIL|NOT WIRED" "$OUT/clean.log"; FAIL=1
 fi
-for bad in loading pose officials feet feet_low sounds joystick tiers; do
+for bad in loading pose knees officials feet feet_low sounds joystick tiers; do
 	run "$bad" --only $RULES --bad "$bad"
 	code=$?
 	broke=$(grep -E "^[a-z_]+ +(FAIL|NOT WIRED)" "$OUT/$bad.log" | awk '{print $1}' | tr '\n' ' ')
@@ -95,7 +95,7 @@ run reuse_bad --only crowd --reuse "crowd=$OUT/reuse_bad" && { echo "world_check
 run reuse_none --only crowd --reuse "crowd=$OUT/nothing_there" && { echo "world_check_test: --reuse with no result passed"; FAIL=1; }
 # --merge: parallel --only jobs as one report; a rule no job ran fails it.
 run part_a --only feet,feet_low,pose,officials,sounds,loading,joystick,web
-run part_b --only tiers,props,crowd
+run part_b --only tiers,props,crowd,knees,knee_strays
 run merged --merge "$OUT/part_a,$OUT/part_b" || { echo "world_check_test: the merged report of two clean jobs failed"; cat "$OUT/merged.log"; FAIL=1; }
 run merged_short --merge "$OUT/part_a" && { echo "world_check_test: a merge missing rules passed"; FAIL=1; }
 grep -q "no parallel job ran this rule" "$OUT/merged_short.log" && echo "world_check_test: --reuse and --merge: a reused result counts, a missing rule fails"

@@ -181,5 +181,8 @@ class DemoMatch:
 				b.reset_pose()
 				continue
 			loco.drive(delta, vel, atan2(vel.x, vel.z), vel)
+			if i == 0 and _bad == "knees" and loco.planter:
+				# (The foot planter's knee pole taken the wrong way round: the fault Sepak Takraw's Mixamo rig had.)
+				loco.planter._thigh_z_fwd = -1.0
 		official.position = Vector3(0, 0, -8)
 		official.follow(delta, Vector3.ZERO, (players[0][0] as WsgBody).position)
