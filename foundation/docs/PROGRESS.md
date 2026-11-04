@@ -782,3 +782,16 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   0.0, run 7.0 -> 0.0, stop 7.8 -> 0.0 cm, no skids; without toe 4.6 / 5.9 (Pok Ta Pok passes Player.TOE). Suite
   849-855/0, notes PASS, sim seeds unchanged. toon_driver_test: the feet rule on a toon walking to running, 13.8 cm
   without, 0.0 with. Other games: no WsgToonDriver; 7 suites, notes and feet as before.
+- **Knees (2026-11-04): e04af650, b07f7d99..e58d0051, 040a5df5.** The planter's knee pole comes from each rig's rest
+  toe direction against the thigh (e04af650; Takraw High's 16-40 degree swing-leg flicks). A planter-carried leg whose
+  knee the IK puts more than 3 cm (by leg length) behind the hip-ankle line, against the body's forward (the rest
+  heel-to-toe carried by the hips), is turned to the body's forward (KNEE_BACK_MAX); a body going 1 m/s or faster
+  counts every leg as carried (KNEE_FRONT_SPEED, 040a5df5: Hurling's trailing leg held 16.6 cm back -> 0 on 17b93cc5).
+  New world rules knees (from 11-06 12:00) and knee_strays (11-13 12:00): every mode x Low/Medium/High, every visible
+  skeleton with legs; hooks leg_bones and knee_excuse (ADOPTING 5.18, WORLD_RULES.md). Open: CI cost (Kabaddi > 30
+  min for the two rules; share mode starts with the tiers rule, #85), only drawn skeletons (#87), Kabaddi's idle
+  defender twist (#84, 11-13), a unit case for a held trailing leg (#88).
+- **Known: Godot abort at exit (134) after AUDIO TEST: PASS (2026-11-04 ~23:40 UTC, run_tests.sh on 040a5df5, local
+  container, XDG_DATA_HOME a fresh temp dir).** The first in every logged run; audio_test.gd alone 3/3 exit 0 (each
+  "6 ObjectDB instances were leaked at exit"), spectator and toon driver (skipped by set -e) PASS. If it comes again:
+  root-cause before the next push - leaked AudioStreamPlayers / audio threads at shutdown first (run with --verbose).
