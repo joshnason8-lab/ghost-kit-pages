@@ -36,12 +36,19 @@ var _prev := [Vector3.INF, Vector3.INF]
 ## planted later it slid the 3-4 cm it moved into its hold (Floorball's referee stopping: its toe at 1.0 m/s over the
 ## frame, 1.7 in its last 60 Hz tick).
 const LAND_TOE := 1.2
+## How low a foot coming down is touching (m over its floor; never less on a body scaled down): over the feet rule's
+## 3 cm touch (WsgNoteChecks.TOUCH, unscaled, its ankle's floor where the planted ankle stands - higher than a heel-up
+## stance's rest), so a foot the rule reads down is one the planter has planted - at 3.0 cm the rule read a landing foot
+## down a draw before the planter did, and counted what it moved then (Kabaddi's far players: 4.4-7.6 cm; PUN_9, scaled
+## 0.95, its toe 3.50 cm up against the planter's 3.32: 6.4 cm).
+const TOUCH_H := 0.04
 const LAND_SPAN := 1.0 / 30.0
 var _toe_back := [[], []]                    # each toe's last few ticks: [tick time, toe (world)]
 var _drawn_move := [0.0, 0.0]                # how far across each foot was drawn to move last tick
 var _tick := 0
 var _done := -1
 var _tick_dt := 1.0 / 30.0
+var _tick_acc := 0.0                         # the game time of every tick since the planter last ran
 ## World height of the ground under the body.
 var ground_y := 0.0
 @export var release := 0.12
@@ -180,15 +187,23 @@ var _ran_at := -1
 ## once a step, on the step's own time, however often the skeleton redraws in between.
 func tick(delta: float) -> void:
 	_tick += 1
-	_tick_dt = delta
+	_tick_acc += delta
 
 
 func _process_modification_with_delta(_frame_delta: float) -> void:
 	var fresh := _tick != _done
 	_done = _tick
+	# (A run's time is every tick's since the last run, not the last tick's: a far body drawn every 3rd frame moved
+	# 3 frames' worth between runs, read as 3 times as fast - a landing foot too fast to plant, so planted a draw
+	# late, 6.4 cm on (Kabaddi's far players). A game ticking twice a draw read its feet twice as fast too.)
+	if fresh:
+		_tick_dt = _tick_acc if _tick_acc > 0.0 else _tick_dt
+		_tick_acc = 0.0
 	var now := Engine.get_process_frames()
 	if _ran_at >= 0 and now - _ran_at > STALE_FRAMES and not keep_pose:
 		reset()
+		# (Back after a while: not the whole while as one tick.)
+		_tick_dt = minf(_tick_dt, 1.0 / 30.0)
 	_ran_at = now
 	var delta := _tick_dt if fresh else 0.0
 	var sk := get_skeleton()
@@ -255,7 +270,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# comes through flat, and one let slide there glided on the floor (a hard stop from a run: the clip brought
 			# the foot in flat 23 cm a frame and snapped it back 7 cm, read as swinging - the lead, 2026-11-03).
 			var flat := maxf(ank.y - floor_ankle, toe.y - (ground_y + _toe_rest * sc)) < 0.02 * sc
-			is_down = h < 0.05 * sc if was else (h < 0.03 * sc and (vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE))
+			is_down = h < 0.05 * sc if was else (h < TOUCH_H * maxf(sc, 1.0) and (vel < 0.6 + body_speed * 0.8 or flat or tvel < LAND_TOE))
 			if contact_fn.is_valid():
 				is_down = bool(contact_fn.call(i, ank, toe, was))
 			# A foot let go at the end of its reach is lifting: not down again until it has left the ground.
