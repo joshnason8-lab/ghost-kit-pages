@@ -1,4 +1,7 @@
-**New in 0.14.26: knees checked the shared way.** The knee check now measures exactly as the World Stage games'
+**New in 0.14.27: no knee flicks mid-stride.** The shared foot planting no longer flicks a swinging leg's knee
+backwards for a frame or two as a step lands (seen on High's raiders, and twice in a Low match).
+
+**In 0.14.26: knees checked the shared way.** The knee check now measures exactly as the World Stage games'
 shared check does (each body's own forward, as drawn): on Low and on High every knee bends forward (2 and 1 stray
 frames in a match, under 8 cm). Nothing you would see changes.
 

@@ -773,3 +773,9 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   Low 2 of 14,283 bent knee-frames backward (worst 7.1 cm, a defender in ready), High 1 of 7,656 (7.1 cm, an umpire
   walking); every official measured on both (scorers 0/720 Low, 0/204 High). 0.14.25's High 519/12,679 was heel-to-toe
   forward: the twist hold and raid-stance toes, not knees. tests/knee_probe.tscn keeps heel-to-toe (a twist finder).
+
+## 0.14.27: foundation e58d005 (the planter's swing-leg knee flicks)
+
+- e58d0051: the planter no longer flicks a swinging leg's knee backwards as a step lands (High's raider, the 2-frame
+  knee_strays body in watch AI at Low), the lone-stray verdict, knees run after joystick. Low gate: feet_low equal to
+  0.14.16 on every line; suite, owner notes (10), feet, props, officials, pose and tackle_check 19/19 pass.
