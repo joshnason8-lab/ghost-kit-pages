@@ -145,9 +145,14 @@ func step_feet(dt: float, speed: float, on_feet := true) -> void:
 	if _feet_at != Vector3.INF and p.distance_to(_feet_at) > 1.2:
 		planter.reset()
 	_feet_at = p
+	# Under the game's own pose of the whole body (kneeling, rising, a dive, lying, getting up) the planter keeps the
+	# legs exactly as posed (keep_pose); off (enabled = false) it still lifted the ankles to its floor and bent a
+	# kneeling chaser's knees backwards, 25-28 cm behind the hip-ankle line on every frame. Far from the play it is off.
 	var on := on_feet and feet_near
-	if planter.enabled != on:
-		planter.enabled = on
+	var keep := not on_feet
+	if planter.enabled != on or planter.keep_pose != keep:
+		planter.enabled = on or keep
+		planter.keep_pose = keep
 		planter.reset()
 	planter.ground_y = 0.0
 	planter.body_speed = speed
