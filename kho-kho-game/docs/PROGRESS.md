@@ -317,6 +317,8 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   a planter's time every tick since its last run) - Low's stop 1.7 cm. A Medium/High "planter off through the pose's
   fade" try (2c2f85a, then keep_pose) changed none of the defenders' 25-33 cm jumps (they are not in the fade) and was
   reverted (the lead): the foundation's 3b700012 fixes 7 of the 9; it waits on a Low regression fix before it is synced.
+- 0.12.12: foundation 31f60da (3b700012: a released foot's catch-up rate-limited on a hard start, 7 of the 9 defender
+  jumps gone; 31f60da3: not under a game's contact_fn, so Low's feet equal a40a95e's - stop 1.7, walk 1.5 cm).
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.12
+
+- **Feet** on Medium and High: a defender who stands up and sets off hard no longer has a foot jump forward under
+  him (the shared foundation's fix: a lifted foot catches up with the stride a little at a time, not in one frame;
+  seven of the nine cases the simulations found are gone, the last two are being traced). Low is unchanged.
+
 ## What's new in 0.12.11
 
 - **Your stars in a championship.** The championship's page now shows your side's best chaser (the most outs over
