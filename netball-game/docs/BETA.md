@@ -16,7 +16,7 @@ about 2019).
 - **A second chance for the top two**: the finals are the top-four series netball leagues play. First v second in
   the major semi-final (the winner goes straight to the grand final), third v fourth in the minor semi-final (the
   loser is out), then the preliminary final, then the grand final. A season you started before keeps its old finals.
-- The new words are in English for now in every language; translations to follow.
+- In every language the game has; the new words await native speakers' checks.
 
 ## New in 0.9.6-beta
 

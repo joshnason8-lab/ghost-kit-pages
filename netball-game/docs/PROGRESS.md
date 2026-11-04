@@ -509,8 +509,11 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   and plays on with the same results a seed gave before. The game has no club grounds: every club match is in the
   hall, the home club's, as before. Strings: MENU_LEAGUE_DESC and LEAGUE_ABOUT (which described the old finals)
   replaced by MENU_LEAGUE_DESC_2 and LEAGUE_ABOUT_2; SEASON_FORMAT, SEASON_SINGLE, SEASON_HOME_AWAY,
-  STAGE_MAJOR_SEMI, STAGE_MINOR_SEMI, STAGE_PRELIM_FINAL, LEAGUE_THROUGH, LEAGUE_KNOCKED_OUT new; English in every
-  language until translated, listed in each translation note under "Added for the home-and-away season". Tests:
+  STAGE_MAJOR_SEMI, STAGE_MINOR_SEMI, STAGE_PRELIM_FINAL, LEAGUE_THROUGH, LEAGUE_KNOCKED_OUT new; translated into
+  all 18 other languages from each one's own terms in the game (the old two descriptions their base), and listed for
+  native review in each translation note under "Added for the home-and-away season (needs native review)". The
+  English store listings' Club Season line is the new format (check_listing: within Play's limits). Noto Sans SC cut
+  again for the Chinese words' three new characters (tools/subset_fonts.py's zh step). Tests:
   test_runner `_season` (`-- season`): 14 rounds, each pair twice with home and away swapped; a seeded season
   replays the same over a save and load in the rounds and in the finals; the bracket with each semi won both ways;
   an old save (and one older, without the generator's state) loads and plays on. `_league` checks the new finals.
@@ -525,8 +528,8 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
 4. A phone test on a Mali-G52-class phone; trim crowd/render scale if Low drops under 30 fps.
 5. The upload key and the closed test (store/PLAY_STORE.md). (The umpires are the players' model now, 0.8.6.)
 6. Open the rules PDF when the network allows and settle the items in RULES.md "Still unconfirmed".
-7. Translate the home-and-away season's strings (each docs/translation_notes/<code>.md, "Added for the home-and-away
-   season"); the English store listings' Club Season line ("seven rounds, then semi-finals") when the version is set.
+7. Native review of the home-and-away season's strings (each docs/translation_notes/<code>.md, "Added for the
+   home-and-away season (needs native review)"), the preliminary final's word first.
 
 ## Decisions
 
