@@ -1,0 +1,61 @@
+# Fijian (fj) translation notes
+
+**Confidence: low to medium.** Written in standard (Bauan) Fijian. Everyday UI words are fairly safe; netball jargon, abbreviations and several coined terms are best guesses. **This file needs review by a native Fijian speaker, ideally someone involved in netball, before release.** Fijian pronouns are not gendered, so the she/her rule needs no special handling.
+
+## Netball terms chosen
+- Netball: **netiboli** (loan as used in Fijian-language media, e.g. reports on the Fiji Pearls). Only appears in `MENU_EYEBROW`.
+- Positions (POS_NAME_*): kept in **English**, as players in Fiji use them. Abbreviations unchanged.
+- Team: **timi**; player: **dauqito**; match: **veiqati**; game/play: **qito**; umpire: **dauveilewai**; whistle: **uvi**; ball: **polo**; court/venue: **rara**; opponent: **dauveiqati**.
+- Goal: **goli**; to score: **vakarawa goli**; shoot/shot: **viri**; shooter: **dauviri**; ring: **mama**; post: **duru**.
+- Third: **ikatolu** (e loma = centre, ni ravu = attacking, ni taqomaki = defending); circle: **wavoki** (wavoki ni goli).
+- Centre pass: **pasi ni lomadonu**; free pass: **pasi galala**; penalty pass: **pasi ni itotogi**; throw-in: **viri i loma**.
+- Offside: **sivi iyalayala** ("over the boundary"); obstruction: **tarovi**; contact: **veitarai**; advantage: **yaga**; held ball: **taura balavu**; footwork: **lakolako ni yava** / call **cala ni yava**; landing foot: **yava ni tu**; bib: **isulu ni itutu**.
+- Quarter: **kota**; extra time: **gauna e vakuri**; half-time: **veimama ni gauna**; time-out / pause: **cegu**.
+- Buttons: Pasi, Laveta (lob, "lift"), Viri, Kovea (intercept, "snatch"), Taqomaka, Veisau. CTRL_* texts refer to them in capitals.
+- Cup: **Kapa** (loan; "Kapa ni Veimatanitu" = Nations Cup). Medals: Koula / Siliva / Varasa.
+
+## Check first
+- `MENU_CUP` "Kapa ni Veimatanitu" — is there a more usual word for a trophy/cup competition?
+- `wavoki` for the circles and `ikatolu ni ravu` for the attacking third — coined; check they are clear.
+- `CALL_BREAKING` "Lako taumada", `CALL_REPLAYED_BALL` "Taura tale", `CALL_GAIN` "Veisau na polo!", `CALL_INTERCEPT` "Sa kovei!" — may have established forms, or players may use English.
+- `ON`/`OFF` **Waqa / Boko** (light/extinguish).
+- `QUARTER_SHORT` **K{n}**, `EXTRA_TIME_SHORT` **GV{n}** (gauna e vakuri) — revert to ET{n} if clearer.
+- `BOX_*`: G/V (goli/vakatovotovo), Soli, Vuke, Rawa, Kove, Taro, Lesu, Toto, Yali; CPR kept. `COL_P/W/D/L` = Q/R/T/D (qito, rawa/qaqa, tautauvata, druka), `COL_PTS` Maka.
+- `DIFF_*` chips: Vou / Kalabu / Cecere / Vuravura.
+- `VERSION_N` "Tabana {v}", `DEV_ON/OFF`, `CTRL_KEYS_TEXT` ("kii vakatakilakila" for arrow keys) — technical wording is uncertain.
+- Country names: Ositerelia, Niusiladi, Igiladi, Aferika ki Ceva, Sikotiladi, Airelani ki Vualiku, Viti, Singapoa, Malesia; others left as international spellings.
+- Fijian runs long: `BIB_TEAM_NOTE`, `GFX_NOTE`, `RULES_COURT_TEXT`, `TIMEOUTS_NOTE` are about 1.3x English; check layout.
+
+## Added in 0.2
+- Coach **vakatavulica** (as in Fijian sports reporting); tips **ivakasala**; umpiring **veilewai** (from dauveilewai), levels Lailai na uvi / Vakamatau / Wiliwili dina.
+- Escalate **vakalevutaki** ("Vakalevutaki: pasi ni itotogi"); advance **toso i liu** ("Toso i liu na pasi"); ordered off **vakasavai** (as in RULES_SANCTIONS_TEXT).
+- Club season **Sisini ni Kalabu** (loan); table **ivakatagedegede** (as in STAGE_DONE); round **raundi**; grand final **fainala levu**; premiers **Dauqaqa ni liki!** (liki as in RULES_DZ).
+- Tap **tabaka** (as in QUIT_SURE), stick **joystick**, dashed ring **mama ni laini motumotu**, banner **ivakatakilakila e cake**. 0.9 m with a decimal point.
+- Check first: `MENU_LEAGUE` "Sisini" (yabaki is an alternative), `COACH` "Vakatavulica", `UMP_STANDARD` "Vakamatau", `UMP_REAL` "Wiliwili dina", `CALL_ESCALATE`/`CALL_ADVANCE`, and `LEAGUE_TABLE` (a long word for a tab or header; "Teveli" would be shorter).
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI**. Watch **Raica**; home/away **Itaukei / Vulagi** (hosts / guests); speed **Totolo**; records **ivolatukutuku** as in MENU_RECORDS.
+
+## Added for the home-and-away season (needs native review)
+- Keys `MENU_LEAGUE_DESC_2`, `LEAGUE_ABOUT_2`, `SEASON_FORMAT`, `SEASON_SINGLE`, `SEASON_HOME_AWAY`,
+  `STAGE_MAJOR_SEMI`, `STAGE_MINOR_SEMI`, `STAGE_PRELIM_FINAL`, `LEAGUE_THROUGH`, `LEAGUE_KNOCKED_OUT`: a Club Season of
+  seven rounds (Single) or fourteen (Home and away), and the top-four finals with a second chance for the top two.
+  Translated without a native speaker, from this language's own terms already in the game (semi-final, grand final,
+  finals, round, the home and away sides).
+- The two descriptions are the old `MENU_LEAGUE_DESC` and `LEAGUE_ABOUT` translations (now removed) brought up to
+  date. Terms chosen: season **Sisini**; single **Vakadua**; home and away
+  **E vale kei na veisiko**; major semi-final **Semifainala levu**; minor semi-final
+  **Semifainala lailai**; preliminary final **Fainala taumada**.
+- Check first: `STAGE_PRELIM_FINAL` (no established word was found; it means the final before the grand final),
+  `STAGE_MAJOR_SEMI` / `STAGE_MINOR_SEMI`, `SEASON_HOME_AWAY`, and `LEAGUE_ABOUT_2` as a whole. Keep "{n}" (the
+  number of rounds) in `SEASON_SINGLE` and `SEASON_HOME_AWAY`.
+
+## Added for positional changes (needs native review)
+- Keys `CHANGES_SUBS` (a chip beside Team changes: the list of substitutions) and `CHANGES_SWAPS_NOTE` (the note over
+  the list of positional changes: two players on court swap positions, each must be able to play her new one, and the
+  swap is made as play restarts). The other chip is `HOWTO_POSITIONS`, already translated. Translated without a
+  native speaker, from this language's own words for Team changes and its substitution note.
+- Terms chosen: substitutions **Veisosomitaki**; swap **veisau itutu**; pair **e rua**; play restarts **tekivu tale na qito**.
+- Check first: that `CHANGES_SUBS` reads as "substitutions" (players coming on from the bench) and not as team changes
+  in general; that the note's "swap" means two players exchanging positions, not leaving the court; and that it fits
+  as a short chip.

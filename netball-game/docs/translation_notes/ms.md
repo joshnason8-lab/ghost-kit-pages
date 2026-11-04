@@ -1,0 +1,62 @@
+# Bahasa Melayu, Malaysia (ms) translation notes
+
+**Confidence: medium.** General UI and rules text should read naturally; netball position names and some umpire calls in Malay vary between schools/MSSM material and what club players actually say (many use the English terms). A review by a Malaysian netball player or coach is recommended before release.
+
+## Netball terms chosen
+- Netball: **bola jaring** (standard Malaysian term).
+- Positions (POS_NAME_*): **Penjaring Gol, Penyerang Gol, Penyerang Sayap, Pemain Tengah, Pertahanan Sayap, Pertahanan Gol, Penjaga Gol** — the descriptive Malay names used in school material. Abbreviations GS/GA/WA/C/WD/GD/GK kept in English.
+- Court: **gelanggang**; thirds: **pertiga tengah / serangan / pertahanan**; goal circle: **bulatan gol**; centre circle: **bulatan tengah**; post: **tiang**; ring: **gelung**.
+- Centre pass **hantaran tengah**; free pass **hantaran bebas**; penalty pass **hantaran penalti**; throw-in **balingan masuk**; held ball **bola dipegang**; footwork **langkah kaki**; offside **ofsaid** (common loanword); obstruction **halangan**; contact **sentuhan**; advantage **kelebihan**; umpire **pengadil**.
+- Buttons: Hantar, Lambung, Jaring, Pintas, Halang, Tukar (all <= 7 letters).
+- Player pronoun: Malay "dia" is gender-neutral, so no gender marking needed.
+
+## Check first
+- `POS_NAME_*` — confirm these are the names Malaysian players/teachers use; "Penjaring" vs "Penembak" for GS, "Pemain Tengah" vs "Tengah" for C.
+- `CALL_BREAKING` "Mula awal", `CALL_REPLAYED_BALL` "Main semula bola", `CALL_INTIMIDATION` "Ugutan" — no confirmed official Malay umpire call; players may say the English.
+- `CALL_GAIN` "Rampas bola!", `BTN_DEFEND` "Halang" (also the root of "halangan" = obstruction; may want "Bertahan" if it fits the button).
+- `KEEP_ONSIDE` "Elak ofsaid" (= avoid offside), rephrased.
+- `QUARTER_SHORT` "S{n}" (suku) and `EXTRA_TIME_SHORT` "MT{n}" (masa tambahan) — invented abbreviations.
+- `BOX_*`: G/C (gol/cubaan), Suapan, Bantu, CPR kept, Rampas, Pint, Pesong, Lant, Pen, Hilang — confirm or revert to English stats abbreviations.
+- `COL_P/W/D/L` → P/M/S/K (Perlawanan/Menang/Seri/Kalah), as in Malaysian league tables; `COL_PTS` "Mata".
+- `VS` "lwn" (lawan) — standard in Malaysian press.
+- `RULES_FOOTWORK_TEXT`, `RULES_PENALTIES_TEXT` — long rule sentences; check flow and length.
+- `TIMEOUTS`, `TIMEOUTS_NOTE`, `ROLLING`, `ROLLING_NOTE`, `TIME_OUT_N`, `TIME_OUT_CALLED`, `TIME_OUT_NOTE`, `INJURY_HELD`, `INJURY_NOTE`, `CALL_WARNING`, `CALL_SUSPENSION`, `SANCTION_LINE`: added later, check.
+
+## Added in 0.2
+- Coach **jurulatih**; tips **tip jurulatih**; umpiring (setting) **pengadilan**; "fewer whistles" **kurang wisel**; standard **Standard**; real rate **kadar sebenar**.
+- Escalate **dinaikkan** (CALL_ESCALATE "Dinaikkan: hantaran penalti"); pass advanced **hantaran dimarakan**; ordered off **diusir keluar** (as in RULES_SANCTIONS_TEXT).
+- Club season **Musim Kelab**; table **kedudukan** (standings; *jadual* would mean schedule); round **pusingan**; grand final **final besar**; premiers **Juara!** (same as CUP_WON); titles **kejuaraan**.
+- "Mark her" is **kawal dia**; "dashed ring" is **gelang putus-putus**; "tap" is **ketik**.
+
+## Check first (0.2)
+- UMPIRING "Pengadilan": correct but also means "court/tribunal"; "Tiupan wisel" or "Gaya pengadil" may read better.
+- STAGE_GRAND_FINAL "Final besar": Malaysian leagues often just say "Grand Final".
+- CALL_ADVANCE "Hantaran dimarakan".
+- ROUND_N_OF "Pusingan {n} daripada {of}" is about 1.5x English; check where it is shown.
+
+## Added for Watch AI
+- Keys `MENU_WATCH`, `MENU_WATCH_DESC`, `WATCH_HOME`, `WATCH_AWAY`, `WATCH_GO`, `WATCH_NOTE`, `SPEED` (an AI v AI match to watch; the home and away sides on its team sheet; the 1x/2x speed). AI kept as **AI** (Malaysian usage; "kecerdasan buatan" in full). Watch **Tonton**; home/away **Tuan rumah / Pelawat**; speed **Kelajuan**.
+
+## Added for the home-and-away season (needs native review)
+- Keys `MENU_LEAGUE_DESC_2`, `LEAGUE_ABOUT_2`, `SEASON_FORMAT`, `SEASON_SINGLE`, `SEASON_HOME_AWAY`,
+  `STAGE_MAJOR_SEMI`, `STAGE_MINOR_SEMI`, `STAGE_PRELIM_FINAL`, `LEAGUE_THROUGH`, `LEAGUE_KNOCKED_OUT`: a Club Season of
+  seven rounds (Single) or fourteen (Home and away), and the top-four finals with a second chance for the top two.
+  Translated without a native speaker, from this language's own terms already in the game (semi-final, grand final,
+  finals, round, the home and away sides).
+- The two descriptions are the old `MENU_LEAGUE_DESC` and `LEAGUE_ABOUT` translations (now removed) brought up to
+  date. Terms chosen: season **Musim**; single **Sekali**; home and away
+  **Laman sendiri dan tandang**; major semi-final **Separuh akhir utama**; minor semi-final
+  **Separuh akhir kecil**; preliminary final **Final awal**.
+- Check first: `STAGE_PRELIM_FINAL` (no established word was found; it means the final before the grand final),
+  `STAGE_MAJOR_SEMI` / `STAGE_MINOR_SEMI`, `SEASON_HOME_AWAY`, and `LEAGUE_ABOUT_2` as a whole. Keep "{n}" (the
+  number of rounds) in `SEASON_SINGLE` and `SEASON_HOME_AWAY`.
+
+## Added for positional changes (needs native review)
+- Keys `CHANGES_SUBS` (a chip beside Team changes: the list of substitutions) and `CHANGES_SWAPS_NOTE` (the note over
+  the list of positional changes: two players on court swap positions, each must be able to play her new one, and the
+  swap is made as play restarts). The other chip is `HOWTO_POSITIONS`, already translated. Translated without a
+  native speaker, from this language's own words for Team changes and its substitution note.
+- Terms chosen: substitutions **Penggantian**; swap **menukar posisi** ("pertukaran", as in the title Pertukaran pemain); pair **pasangan**; play restarts **permainan bersambung semula**.
+- Check first: that `CHANGES_SUBS` reads as "substitutions" (players coming on from the bench) and not as team changes
+  in general; that the note's "swap" means two players exchanging positions, not leaving the court; and that it fits
+  as a short chip.

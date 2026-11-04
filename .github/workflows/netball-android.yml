@@ -1,0 +1,432 @@
+name: Netball Unleashed · Android build
+
+# Builds the Godot project in netball-game/ into the beta APK you can sideload,
+# after running the headless test suite.
+
+on:
+  push:
+    paths:
+      - "netball-game/**"
+      - "!netball-game/tools/media/**"   # the media kit has its own workflow (netball-media-kit.yml)
+      - ".github/workflows/netball-android.yml"
+  # No pull_request trigger: a push already reports its checks on the PR's head commit, and a second run of the
+  # same commit only doubled every failure email.
+  workflow_dispatch:
+
+# One run per branch: a newer push cancels an older run, so an older build can never publish over a newer one.
+concurrency:
+  group: netball-android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: netball-game
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150   # (the tests, the props audit, the world check and the owner's notes play many matches)
+    permissions:
+      contents: read    # (the beta is published by the publish job, once every check has passed)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shared foundation (fails without a required commit)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: Rules and smoke test (every rule, screens in every language, the cup, AI matches, movement)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
+
+      - name: Text fit (every screen, every language, four screen shapes)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- fit_audit.jsonl 2>&1 | tee fit.log | tail -25
+          if grep -q "SCRIPT ERROR" fit.log; then grep -A4 "SCRIPT ERROR" fit.log; exit 1; fi
+
+      - name: Touch input (scrolling from anywhere on a page, taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      # The owner: nobody walks through a table, a bench or a board, and the ball bounces off them. A Watch-AI match at
+      # every venue (the arena at Low too): any body more than 2 cm into a prop, or any ball step through one, fails.
+      # The close-ups go to the runner's temp folder (never into the project, so never into the APK).
+      - name: Props audit (bodies and the ball against every prop, every venue)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/prop_audit.gd -- res://tests/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 150 2>&1 | tee prop_audit.log | grep -v "^$" | tail -40
+          if grep -q "SCRIPT ERROR" prop_audit.log; then grep -A4 "SCRIPT ERROR" prop_audit.log; exit 1; fi
+
+      # The world rules every game keeps (the foundation's docs/WORLD_RULES.md, ADOPTING §5.18) on our own code
+      # (game/world.gd): props, crowd, planted feet, no T/A-pose or block figure, the umpires dressed as officials, key
+      # sounds crisp at a distance, the loading overlay at the tap, the stick on every camera, no licensed data on the
+      # Web, each mode within its graphics tier. A failing rule fails the build from 2026-11-03 12:00 UTC. (No Web export
+      # here: the Web preset's exclude filter is checked; the pack is not built.)
+      # (The crowd rule - 27 of the check's 30 minutes, on the 6,000-seat arena - runs in its own job beside this one,
+      # world-crowd; the two reports are merged into one verdict by world-check-report, ADOPTING 5.18's parallel jobs.)
+      - name: World check (the foundation's world rules on our modes; the crowd in its own job)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only "props,feet,feet_low,pose,knees,knee_strays,officials,sounds,loading,joystick,web,tiers" --reuse "props=$RUNNER_TEMP/prop_audit" 2>&1 | tee world_check.log | grep -v "^$" | tail -60
+
+      - name: World check report (this job's rules)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-main
+          path: ${{ runner.temp }}/world
+
+      # The owner's notes, each a test for good (tests/owner_notes/, ADOPTING §5.16): none may be removed from
+      # INDEX.json (the guard reads its history), and every one must pass here, where the licensed data is (a skip fails).
+      - name: The owner's notes are all still listed
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
+
+      - name: The owner's notes (every note the owner has given, measured over its whole range)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          # (On a fresh install's default settings: an empty user dir, and WSG_NOTES_FRESH fails a run on saved ones.)
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 3000 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd 2>&1 | tee owner_notes.log | grep -v "^gait:\|^foundation steps:\|^  "
+          if grep -q "SCRIPT ERROR" owner_notes.log; then grep -A4 "SCRIPT ERROR" owner_notes.log; exit 1; fi
+
+      # The beta key: the owner's shared keystore (repository secret BETA_KEYSTORE_B64, PKCS12, storepass and keypass
+      # "android", alias "androiddebugkey"), so every beta installs over the last. Without the secret, a throwaway
+      # key for the export (the APK is then signed with uber-apk-signer's fixed debug key below).
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          KEYSTORE=$HOME/debug.keystore
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::BETA_KEYSTORE_B64 is not set: this APK is signed with uber-apk-signer's debug key, not the owner's beta key, so it will not install over betas signed with that key."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+          fi
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          mkdir -p build
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          ls -la build
+
+      # Signed with the owner's beta key when the secret is set (so each beta installs over the last and keeps the
+      # player's saves), else with uber-apk-signer's fixed debug key. The certificate's SHA-256 goes in the log, and
+      # with the secret it must be the owner's.
+      - name: Sign APK
+        run: |
+          curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          if [ "$BETA_KEY" = 1 ]; then
+            java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed \
+              --ks "$KEYSTORE" --ksAlias androiddebugkey --ksPass android --ksKeyPass android
+          else
+            java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed
+          fi
+          mv ${PROJECT_DIR}/build/signed/*.apk ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
+          ls -la ${PROJECT_DIR}/build
+          APKSIGNER=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/apksigner | sort -V | tail -1)
+          CERT=$("$APKSIGNER" verify --print-certs ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk | grep -m1 "certificate SHA-256 digest" | sed 's/.*digest: *//' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          echo "APK signing certificate SHA-256: $CERT"
+          WANT="6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+          if [ "$BETA_KEY" = 1 ] && [ "$CERT" != "$WANT" ]; then
+            echo "::error::The APK is not signed with the owner's beta key (got $CERT)."
+            exit 1
+          fi
+          python3 ${PROJECT_DIR}/tools/check_pages.py ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
+
+      # The foundation's release gate (ADOPTING 5.19): the owner's key, the version, the licensed data where it belongs
+      # (in the APK, never on the Web), a clean export, compressed textures, no duplicates, and a version above the APK
+      # now published on the tag (Obtainium offers only a higher version: bump version/name and version/code).
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download netball-unleashed-beta -p '*.apk' -O "$RUNNER_TEMP/previous.apk" || true
+          PREV=""
+          if [ -s "$RUNNER_TEMP/previous.apk" ]; then PREV="--previous $RUNNER_TEMP/previous.apk"; fi
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk \
+            --version "$VERSION" $PREV --out "$RUNNER_TEMP/gate"
+
+      - name: Release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: netball-unleashed-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/netball-unleashed-${{ env.VERSION }}.apk
+          if-no-files-found: error
+
+  # The world check's crowd rule (the crowd audit: every venue's crowd seated, facing the play, at each tier), in a job
+  # of its own beside test-and-build: it alone took about 27 of the check's 30 minutes.
+  world-crowd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: World check, the crowd rule (the crowd audit)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          set -o pipefail
+          timeout 3000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --only crowd 2>&1 | tee world_crowd.log | grep -v "^$" | tail -40
+          if grep -q "SCRIPT ERROR" world_crowd.log; then grep -A4 "SCRIPT ERROR" world_crowd.log; exit 1; fi
+
+      - name: World check report (the crowd)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-crowd
+          path: ${{ runner.temp }}/world
+
+  # The two parts' reports as one world check (world_check.gd --merge): a rule neither part ran fails it.
+  world-check-report:
+    needs: [test-and-build, world-crowd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "world-*"
+          path: ${{ runner.temp }}/parts
+
+      - name: World check (merged)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . -s res://tools/wsg/world_check.gd -- --out "$RUNNER_TEMP/world" --merge "$RUNNER_TEMP/parts/world-main,$RUNNER_TEMP/parts/world-crowd"
+
+      - name: World check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check
+          path: ${{ runner.temp }}/world
+
+  # Publishing waits for every check: the build and its tests and owner's notes (test-and-build), the crowd
+  # (world-crowd) and the merged world check (world-check-report).
+  publish:
+    needs: [test-and-build, world-crowd, world-check-report]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/claude/netball-game' || github.ref == 'refs/heads/claude/netball-foundation-pilot')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to publish the beta release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The version
+        run: echo "VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' ${PROJECT_DIR}/project.godot)" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: netball-unleashed-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "netball-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
+      - name: Publish the beta release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/netball-game'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=netball-unleashed-beta
+          APK=${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          The latest beta of **Netball Unleashed** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android** (64-bit phones): tap \`netball-unleashed-${VERSION}.apk\` under Assets below. When it has
+          downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
+          any earlier Netball Unleashed beta and keeps your saves.
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          # Published safely (the foundation's ADOPTING 5.19): the new release, whole, under a tag of its own first (if
+          # that fails, the old release is untouched); then the swap, seconds apart, so the tag never points at nothing.
+          NEXT="$TAG-next-$GITHUB_RUN_ID"
+          gh release create "$NEXT" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Netball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$NEXT" --json assets -q '.assets[].name' | grep -q "$(basename "$APK")"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          for i in 1 2 3 4; do gh release edit "$NEXT" --tag "$TAG" && break; sleep $((i * 5)); done
+          gh release view "$TAG"   # (fails the step if the swap did not take)
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$NEXT" || true
+
+      # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/netball-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=netball-foundation-pilot
+          APK=${PROJECT_DIR}/build/netball-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Netball Unleashed (${VERSION}), built from \`${GITHUB_SHA::7}\`: the players and umpires
+          on the World Stage Games shared rig with motion-capture running. Installs over the beta and keeps your saves
+          (the same game); reinstall the beta to go back.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Netball Unleashed ${VERSION}" --notes-file notes.md
+          gh release view "$TAG"
