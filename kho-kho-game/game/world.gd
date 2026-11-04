@@ -174,7 +174,9 @@ func cameras(_mode: String, root: Node) -> Array:
 		var c := Camera3D.new()
 		c.name = ["broadcast", "close", "behind the pole"][mode]
 		c.fov = m.cam.fov
-		(m.cam.get_parent() as Node).add_child(c)
+		# (Under the mode's own root, which the world check keeps till it is done - not the match's: a later start_mode
+		# frees the match, as a tap does, and the knees rule's starts freed these copies before the joystick rule read them.)
+		root.add_child(c)
 		c.global_transform = m.cam.global_transform
 		out.append(c)
 	m._cam_mode = keep
