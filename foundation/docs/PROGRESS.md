@@ -742,3 +742,8 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   Low officials not affected by these paths (contact_fn) - Takraw to confirm with its probe; Kho Kho extreme#28 jump
   stays fixed. Pok Ta Pok's collisions#101 44.0 / fair#101 45.7 jumps read the same on a40a95e: older, not from this.
   The pre-push check now runs feet_low on every game.
+  - 31f60da3: Takraw's probe found its Low officials slipping more (skids >2 cm 3 -> 5, p90 4.7 -> 6.0): the release
+    rate limit fired on their dodge starts. The rate limit is now off under a game's contact rule too. Confirmed by the
+    games: Takraw's probe dumps (seeds 7, 11) byte-identical to a40a95e, completion#103 / extreme#14 / random#21 /
+    extreme#20 clean; Kho Kho Low feet_low = a40a95e. All four regressions cleared (lead told 2026-11-04).
+    Still open, older: Takraw extreme#4 official 5.8; Kho Kho extreme#34 / fouls#101 jumps; Kabaddi OFFICIAL_2 8.3.
