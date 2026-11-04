@@ -730,3 +730,15 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   - All 7 suites, feet rules, owner notes as before (Floorball's 3 old stick notes); foundation tests pass.
   - Fade handback (a game's whole pose fading out under the capture): keep_pose and enabled=false both leave those
     frames unmeasured by WsgSim - the planter is to handle it measured (next).
+- **Correction to 3b700012 (four regressions the games found)**: 3b700012 was checked without feet_low; Kho Kho's Low
+  body (its contact_fn) regressed (walk 6.1, stop 7.5 cm), Takraw's Low officials (contact_fn) and completion#103,
+  Kabaddi's IND_11 jump came back on CI, Floorball extreme#3 gained a 26.6 cm jump. Fixed:
+  - the let-go step: never under a game's contact rule; only on a body moving 0.5-2.5 m/s and a step's way off
+    (2-30 cm) - a nearly still referee stepped a stride's way, and his sprint's next strides jumped (Floorball);
+  - the release rate limit only while the body speeds up over 4 m/s^2 across 0.2 s (Kho Kho's stop and walk);
+  - the 3-4 cm touch band needs only a slow ankle (completion#103 clean again; Kabaddi's Low gate holds).
+  Measured: Kho Kho Low = its a40a95e figures; Kabaddi Low = 0.14.16's; Floorball extreme#3 no jump; Kabaddi
+  extreme#10 clean, extreme#16 on 0.14.17 clean locally (IND_11's jump was CI-only); Takraw completion#103 clean,
+  Low officials not affected by these paths (contact_fn) - Takraw to confirm with its probe; Kho Kho extreme#28 jump
+  stays fixed. Pok Ta Pok's collisions#101 44.0 / fair#101 45.7 jumps read the same on a40a95e: older, not from this.
+  The pre-push check now runs feet_low on every game.
