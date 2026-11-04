@@ -9,6 +9,9 @@ extends SceneTree
 ##  - a far body, drawn (its planter run) every 3rd frame, coming down while going on at 0.64 m/s: planted on the first
 ##    draw within the touch (4 cm), its speed read over the 3 frames' ticks - read over one, 3 times as fast, it was
 ##    planted a draw late, 6.4 cm on, read as a planted slide (Kabaddi's far players).
+##  - a body standing still, its clip's foot hovering 3.5 cm up and drifting at 0.85 m/s (an idle's settle: the ankle
+##    faster than a stance foot's, the toe slow): planted - not left to drift under the feet rule's 3 cm touch (Kho Kho's
+##    referee, extreme#28: 9.2 cm); and on a body scaled 0.95 at 2.9 cm (under the rule's unscaled 3 cm: 3.2 cm).
 ##   godot --headless --fixed-fps 30 --path . -s tests/planter_restart_test.gd
 
 var fails := []
@@ -43,6 +46,13 @@ func _initialize() -> void:
 	print("landing, drawn every 3rd frame: planted with the ankle %.1f cm over its standing height (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
 	if far < 0.02:
 		fails.append("landing, drawn every 3rd frame: planted with the ankle %.1f cm up - a draw late, 6.4 cm on (the first draw within the touch, 4 cm: 3.4-4.4)" % (far * 100.0))
+	for c in [[1.0, 0.035], [0.95, 0.029]]:
+		var hv: Array = await _hover_still(hero.skeleton, float(c[0]), float(c[1]))
+		print("standing, scale %.2f, a foot hovering %.1f cm up and drifting: planted %s, moved %.1f cm once planted" % [c[0], float(c[1]) * 100.0, hv[0], float(hv[1]) * 100.0])
+		if not bool(hv[0]):
+			fails.append("standing, scale %.2f: a foot hovering %.1f cm up, drifting at 0.85 m/s, never planted (it slides under the feet rule's 3 cm touch)" % [c[0], float(c[1]) * 100.0])
+		elif float(hv[1]) > 0.02:
+			fails.append("standing, scale %.2f: the hovering foot moved %.1f cm once planted (2.0 at most)" % [c[0], float(hv[1]) * 100.0])
 	hero.queue_free()
 	print("PLANTER RESTART TEST: ", "PASS" if fails.is_empty() else "FAIL %s" % [fails])
 	quit(0 if fails.is_empty() else 1)
@@ -195,3 +205,41 @@ func _landing_far(src: Skeleton3D) -> float:
 		await process_frame
 	holder.queue_free()
 	return float(planted_at[0]) - standing
+
+
+## A body standing (body_speed 0) at SCALE, the whole pose drifting 0.85 m/s across, its feet 10 cm up and then held UP
+## over where they stand (the clip's idle: both feet just off the floor): [the left foot planted within 6 frames of
+## coming down, how far its ankle was drawn to move from then on].
+func _hover_still(src: Skeleton3D, scale: float, up: float) -> Array:
+	var r := _rig(src)
+	var holder: Node3D = r[0]
+	var own: Skeleton3D = r[1]
+	var pl: WsgFootPlanter = r[2]
+	holder.scale = Vector3.ONE * scale
+	var ankle := own.find_bone("LeftFoot")
+	var drawn := []
+	var planted_at := [-1]
+	own.skeleton_updated.connect(func():
+		drawn.append(own.global_transform * own.get_bone_global_pose(ankle).origin)
+		if planted_at[0] < 0 and float(pl.contact[0]) > 0.5:
+			planted_at[0] = drawn.size() - 1)
+	# (Drifting 10 cm up first - its speed already read - then down to UP: no earlier frame reads it still.)
+	holder.position.y = 0.10
+	pl.body_speed = 0.0
+	for f in 16:
+		if f == 4:
+			holder.position.y = up
+			planted_at[0] = -1
+			drawn.clear()
+		holder.position.x += 0.85 / 30.0
+		pl.tick(1.0 / 30.0)
+		await process_frame
+	var most := 0.0
+	if planted_at[0] >= 0:
+		for k in range(planted_at[0] + 1, drawn.size()):
+			var a: Vector3 = drawn[k - 1]
+			var b: Vector3 = drawn[k]
+			most = maxf(most, Vector2(b.x - a.x, b.z - a.z).length())
+	var out := [planted_at[0] >= 0 and planted_at[0] < 6, most]
+	holder.queue_free()
+	return out
