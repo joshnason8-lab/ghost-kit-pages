@@ -1,0 +1,4 @@
+# Licensed data from the private assets repo (tools/fetch_assets.sh): never committed here.
+addons/wsg_foundation/data/
+.godot/
+*.import
