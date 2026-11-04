@@ -15,6 +15,10 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.19: **on Medium and High, a landing foot plants at once.** A foot coming down from a step was
+planted a frame late and could slide a few centimetres as it touched; now it holds from the moment it touches.
+Low is unchanged. Nothing else changes in play.
+
 New in 0.15.18: **on Medium and High, no sliding feet as a player moves off after a kick.** When a player set off
 again after a kick, a set or a block, a foot could slide a few centimetres along the floor (up to 7 cm) from where
 it had been planted before the move; now his feet start where they are drawn. A stepping foot's toe also no longer

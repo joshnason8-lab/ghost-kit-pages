@@ -670,6 +670,21 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## A landing foot planted as it touches (0.15.19)
+
+- **Foundation 5c2304e -> a40a95e**: a planter run's time covers every tick since its last (a body posed every other
+  frame steps at its real pace), and a landing foot counts as touching at 4 cm, so it is planted before the feet
+  rule reads it down at 3.
+- **Medium/High WsgSim, the worst seeds** (deferred() -> {} in a scratch copy, --input, the licensed library present,
+  every player linked): extreme#14 and random#21 clean (as on 5c2304e); targeted:completion#103 clean (4.2 cm on
+  5c2304e, 5.7 on 582bc16); extreme#4's official 5.8 cm unchanged (the Foundation is tracing it).
+- **Low unchanged**: the Low feet probe (regu, seeds 7 and 11, 150 s each) gives the same summary (players: 9 jumps
+  over 25 cm, 11 flat skids over 2 cm; officials: 1 and 3).
+- Suite 0 failures and 0 error lines with the licensed library (its nine foundation checks run and pass); owner notes
+  28/28 on a fresh install's defaults.
+- (Local runs need the licensed library in addons/wsg_foundation/data/, gitignored: without it FoundationLink is off
+  and a "Medium" or "High" match draws the game's own bodies - 0.15.17's and 0.15.18's local runs had lost it; CI had it.)
+
 ## The planter back on after a while off (0.15.18)
 
 - **Foundation 582bc16 -> 5c2304e** (the Foundation's fix for our Medium/High WsgSim seeds extreme#14, 7.0 cm, and
