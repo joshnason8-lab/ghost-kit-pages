@@ -251,7 +251,12 @@ func fetch_reach(p: Vector3) -> bool:
 ## Checks put off with the lead's word (WsgSimGame.deferred): planted feet, the foundation's planter (its let-go fix,
 ## c4fdcd6, cleared the replayed slips; a few at 2.1 cm remain).
 func deferred() -> Dictionary:
-	return {"foot slip": ["2026-11-06T12:00Z", "the lead, 2026-11-03: the foundation planter, Foundation owns (after its c4fdcd6 the replayed 3.8-4.0 cm slips are gone; 2.1 cm ones remain)"]}
+	# The lead, 2026-11-04 (bounded, as Kho Kho's: nothing worse can pass unnoticed). Foundation owns the planter.
+	return {
+		"foot slip": ["2026-11-06T12:00Z", "the lead, 2026-11-03: the foundation planter, Foundation owns (after its c4fdcd6 the replayed 3.8-4.0 cm slips are gone; 2.1 cm ones remain)"],
+		"low jump": ["2026-11-10T12:00Z", "the lead, 2026-11-04: a low foot's one-frame jump of 28.5-45.7 cm late in three AI-only earth-court matches (targeted:scoring#101, targeted:collisions#101, targeted:fair#101); Foundation owns", 46.0],
+		"planted slip": ["2026-11-13T12:00Z", "the lead, 2026-11-04: planted slides of 2.3-3.3 cm (extreme#48, extreme#50, targeted:collisions#101, targeted:fair#101), as the other games; Foundation owns", 3.5],
+	}
 
 
 func balance_keys(cfg: Dictionary) -> Dictionary:
