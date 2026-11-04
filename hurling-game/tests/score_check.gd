@@ -26,7 +26,7 @@ func _ready() -> void:
 	print("length  real min  live min   goals  points  shots   (means a match, both sides)")
 	for li in lengths.size():
 		var length := float(lengths[li])
-		var sum := {"goals": 0.0, "points": 0.0, "shots": 0.0, "scores": 0.0, "live": 0.0, "real": 0.0, "sidelines": 0.0, "frees": 0.0, "yellow": 0.0, "red": 0.0, "black": 0.0, "no_score": 0.0, "falls": 0.0, "injuries": 0.0}
+		var sum := {"goals": 0.0, "points": 0.0, "shots": 0.0, "scores": 0.0, "live": 0.0, "real": 0.0, "sidelines": 0.0, "frees": 0.0, "yellow": 0.0, "red": 0.0, "black": 0.0, "no_score": 0.0, "falls": 0.0, "injuries": 0.0, "clears": 0.0}
 		for i in n:
 			var home: String = ids[(i * 2 + li) % 6]
 			var away: String = ids[(i * 2 + li + 3) % 6]
@@ -56,6 +56,7 @@ func _ready() -> void:
 			sum.no_score += int(m.get_meta("no_scores", 0))
 			sum.falls += int(m.get_meta("falls", 0))
 			sum.injuries += int(m.get_meta("injuries", 0))
+			sum.clears += int(m.get_meta("clears", 0))
 			m.queue_free()
 			await get_tree().process_frame
 		for key in sum:
@@ -65,8 +66,8 @@ func _ready() -> void:
 		for key in sum:
 			mean[key] = sum[key] / n
 		print("%4d    %6.1f   %6.1f    %5.2f  %6.1f  %5.1f" % [int(length), mean.real, mean.live, mean.goals, mean.points, mean.shots])
-		print("      (information) %.1f frees, %.2f yellow, %.2f black, %.2f red cards, %.2f scores waved off, %.1f hard falls, %.2f injuries a match" % [
-			mean.frees, mean.yellow, mean.black, mean.red, mean.no_score, mean.falls, mean.injuries])
+		print("      (information) %.1f frees, %.2f yellow, %.2f black, %.2f red cards, %.2f scores waved off, %.1f hard falls, %.2f injuries, %.1f clearances, %.1f sideline cuts a match" % [
+			mean.frees, mean.yellow, mean.black, mean.red, mean.no_score, mean.falls, mean.injuries, mean.clears, mean.sidelines])
 		# The match takes about as long as the length says, and has the ball live in proportion.
 		_check(mean.real > length * 0.8 and mean.real < length * 1.3, "%d min: takes %.1f real minutes" % [int(length), mean.real])
 		var share: float = mean.live / REAL.live_min

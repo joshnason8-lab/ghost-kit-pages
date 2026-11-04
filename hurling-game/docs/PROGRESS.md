@@ -860,6 +860,14 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.15, 4 November 2026)
+
+- **Sideline cuts** (CI's 35-minute score check on 0.24.14: 1.3 a full match, under its floor of 2; CI's matches are
+  not this machine's from the same seeds, so its three are a fresh sample each run): the clearance over the sideline
+  three in four times for a hemmed-in back (was one in two). Four full matches: 7.8 sideline cuts and 9.5 clearances
+  a match (were 6.7 and 7.7), 1.66 points a live minute (real 1.58), 62% of shots scoring (real 60%). score_check now
+  prints clearances and sideline cuts. Suite 762/0; owner notes 26/26.
+
 ## Done (0.24.14, 4 November 2026)
 
 - **The owner's calls** (4 November, through the lead): the Guide's cautions per foul, no scoring with the hand

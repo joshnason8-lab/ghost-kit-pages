@@ -9,6 +9,11 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.15
+
+- **More sideline cuts**: a back hemmed in near his own goal, or pinned against the sideline with no pass on, puts it
+  over the sideline more often, as real defenders do (about 8 sideline cuts a full match, was under 7).
+
 ## New in 0.24.14
 
 - **The Official Guide's cards, scores and advantage** (the owner's call): every pull-down, trip and careless hurley is

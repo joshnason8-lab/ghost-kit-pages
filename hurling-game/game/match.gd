@@ -1519,6 +1519,7 @@ func _carrier_brain(pl: Player, t: TeamAI) -> void:
 				_strike_pass(pl, d.to)
 				return
 			"clear":
+				set_meta("clears", int(get_meta("clears", 0)) + 1)
 				_strike_to(pl, d.target)
 				return
 			"hand_pass":
