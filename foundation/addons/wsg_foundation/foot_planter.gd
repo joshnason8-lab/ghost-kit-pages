@@ -587,10 +587,11 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# whole lead at once - 40 cm in a frame, then planted dead - a 33 cm jump (Kho Kho's defenders starting hard).)
 			var grow := CHASE_OVER * sc * pow(maxf(delta, _tick_dt) * 30.0, 2.0) + float(_clip_turn[i])
 			var dv: Vector2 = gap - (_rel_prev[i] as Vector2)
-			# (Only while the body speeds up - a stop's release held back slid its foot 7.5 cm, Kho Kho's Low stop - and
+			# (Not under a game's own contact rule - Sepak Takraw's Low officials' dodges, held back, skidded - and only while
+			# the body speeds up - a stop's release held back slid its foot 7.5 cm, Kho Kho's Low stop - and
 			# only a move big enough to read as a jump: a walk's release, held back, dragged its foot along the floor -
 			# Kabaddi's Low walk 0.9 -> 2.1 cm from 15 cm a frame; from 25, 0.5.)
-			if gap.length() > RELEASE_RATE_FROM * sc and dv.length() > grow and _accel > RELEASE_ACCEL:
+			if gap.length() > RELEASE_RATE_FROM * sc and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
 				gap = (_rel_prev[i] as Vector2) + dv.normalized() * grow
 				capped = true
 			if capped:
