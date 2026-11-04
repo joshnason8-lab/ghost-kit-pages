@@ -90,6 +90,7 @@ func _ready() -> void:
 	body.visible = false        # till its first pose (a frame of the rig's T-pose with the hurley otherwise)
 	body.scale = toon.scale
 	body.mesh_instance.material_override = toon.mesh_instance.material_override
+	body.mesh_instance.set_instance_shader_parameter("number", int(toon.look.get("number", 0)))
 	if prefix == "hero_hd":
 		body.mesh_instance.material_override = _hd_material(toon.mesh_instance.material_override)
 	elif prefix.ends_with("_body_hd"):

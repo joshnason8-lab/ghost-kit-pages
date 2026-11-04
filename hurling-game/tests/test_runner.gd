@@ -39,6 +39,7 @@ func _ready() -> void:
 	await _hawk_eye()
 	await _sin_bin_watch()
 	await _hand_score()
+	await _temp_subs()
 	await _subs()
 	await _sent_off_walks_off()
 	await _tactics()
@@ -669,6 +670,48 @@ func _hand_score() -> void:
 	m.ball.last_kind = "strike"
 	m._over_end_line(Vector3(Pitch.HALF_L * s, Pitch.BAR_H + 1.5, 0.5), s)
 	check(m.score[0][1] == pts + 1, "a struck point counts")
+	m.queue_free()
+	await frames(2)
+
+
+## The owner (4 November 2026): temporary substitutes for blood and head injuries, as the Official Guide has them
+## (Rules of Control 1.5(b)): not counted among the five, no time limit; the man back when treated.
+func _temp_subs() -> void:
+	var m: Node = load("res://game/match.gd").new()
+	m.config = {"home": "KIL", "away": "COR", "venue": "county", "user_team": -1, "seed": 4, "length": 8.0, "mode": "test"}
+	m.set_meta("test", true)
+	add_child(m)
+	await frames(3)
+	var slot: Player = m.player_by_num(0, 6)
+	var man: Dictionary = slot.data
+	var left: int = m.subs_left(0)
+	var bench_n: int = m.teams[0].bench.size()
+	m.carrier = null
+	m.hurt(slot, "blood")
+	m._run_temp()
+	check(String(slot.data.id) != String(man.id) and slot.on_pitch(), "a blood injury: his temporary substitute in his place")
+	check(int(slot.body.mesh_instance.get_instance_shader_parameter("number")) == int(slot.data.num) and int(slot.data.num) > 15,
+		"the substitute wears his own number on his back (%s)" % slot.body.mesh_instance.get_instance_shader_parameter("number"))
+	check(m.subs_left(0) == left and int(m.teams[0].subs) == 0, "the temporary substitute does not count among the five")
+	check(m.teams[0].bench.size() == bench_n - 1 and m.temp_out(0).size() == 1, "off for treatment, his substitute off the bench")
+	var snap: Dictionary = m.snapshot()
+	check((snap.temp as Array)[0].size() == 1, "a suspended match keeps the man off for treatment")
+	m.watch += 60.0
+	m._run_temp()
+	check(String(slot.data.id) != String(man.id), "not back before he is treated")
+	m.watch += 10.0 * 60.0
+	m._run_temp()
+	check(String(slot.data.id) == String(man.id), "treated, he comes back on for his substitute")
+	check(m.teams[0].bench.size() == bench_n and m.temp_out(0).is_empty() and m.subs_left(0) == left, "... who goes back among the substitutes; still none counted")
+	# A head injury he is not passed fit from: his substitute stays on, still not counted.
+	var slot2: Player = m.player_by_num(0, 11)
+	m.hurt(slot2, "head")
+	m._run_temp()
+	(m.temp_out(0)[0] as Dictionary).fit = false
+	var sub2 := String(slot2.data.id)
+	m.watch += 11.0 * 60.0
+	m._run_temp()
+	check(String(slot2.data.id) == sub2 and m.temp_out(0).is_empty() and m.subs_left(0) == left, "a head injury he is not passed fit from: the substitute stays, uncounted")
 	m.queue_free()
 	await frames(2)
 

@@ -266,11 +266,20 @@ func snapshot() -> Dictionary:
 		for pd in teams[k].bench:
 			ids.append(String(pd.id))
 		bench_ids.append(ids)
+	# Men off for treatment, and the ones hurt and due off at the next break.
+	var temp := []
+	var hurt_ids := []
+	for k in 2:
+		var tk := []
+		for e in temp_out(k):
+			tk.append({"pd": String(e.pd.id), "sub": String(e.sub.id), "kind": e.kind, "back": e.back, "fit": e.fit})
+		temp.append(tk)
+		hurt_ids.append(_injured.filter(func(q): return (q.pl as Player).team == k).map(func(q): return {"id": String(q.pl.data.id), "kind": q.kind}))
 	var cfg := config.duplicate(true)
 	cfg.erase("resume")
 	return {"v": 1, "config": cfg, "score": score.duplicate(true), "half": h, "clock": c, "watch": watch, "stoppage": _stoppage,
 		"events": events.duplicate(true), "pstats": pstats.duplicate(true), "tstats": tstats.duplicate(true),
-		"subs": [int(teams[0].subs), int(teams[1].subs)], "bench": bench_ids, "slots": slots,
+		"subs": [int(teams[0].subs), int(teams[1].subs)], "bench": bench_ids, "slots": slots, "temp": temp, "hurt": hurt_ids,
 		"tactics": [ai[0].tactics.duplicate(true), ai[1].tactics.duplicate(true)], "minute": match_minute()}
 
 
@@ -323,6 +332,26 @@ func _resume_state() -> void:
 			pl.fatigue = float(sl.f)
 			if not pl.on_pitch():
 				pl.visible = false
+		# Men off for treatment: their places held by their substitutes (the slots above), back when treated.
+		var squad_all := DB.squad(String(team.id))
+		for t in (r.get("temp", [[], []]) as Array)[k]:
+			var e := {"kind": String(t.kind), "back": float(t.back), "fit": bool(t.fit)}
+			for pd in squad_all:
+				if String(pd.id) == String(t.pd):
+					e.pd = pd
+				if String(pd.id) == String(t.sub):
+					e.sub = pd
+			for pl in team.players:
+				if String((pl as Player).data.id) == String(t.sub):
+					e.slot = pl
+			if e.has("pd") and e.has("sub") and e.has("slot"):
+				if not team.has("temp_out"):
+					team["temp_out"] = []
+				(team["temp_out"] as Array).append(e)
+		for h in (r.get("hurt", [[], []]) as Array)[k]:
+			for pl in team.players:
+				if String((pl as Player).data.id) == String(h.id):
+					_injured.append({"pl": pl, "kind": String(h.kind)})
 	_set_lods()
 
 
@@ -434,7 +463,7 @@ func _make_teams() -> void:
 			carries[pl] = Rules.Carry.new()
 			pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
 		tstats[k] = {"shots": 0, "wides": 0, "frees": 0, "s65": 0, "sidelines": 0, "puckouts": 0, "puckouts_won": 0,
-			"yellow": 0, "red": 0, "black": 0, "subs": 0, "scores_play": 0, "scores_placed": 0, "shots_play": 0, "shots_placed": 0}
+			"yellow": 0, "red": 0, "black": 0, "subs": 0, "temp": 0, "scores_play": 0, "scores_placed": 0, "shots_play": 0, "shots_placed": 0}
 	_set_lods()
 
 
@@ -446,7 +475,8 @@ func _look(k: int, pd: Dictionary, keeper: bool) -> Dictionary:
 	var helmet := c2.darkened(0.2) if c2.get_luminance() > 0.85 else c2
 	var look := {"skin": _skin(int(pd.skin)), "hair": _hair(int(pd.hair)), "hair_style": int(pd.hair_style),
 		"jersey": c1, "trim": c2, "shorts": Color("f6f6f2") if c1.get_luminance() < 0.6 else Color("1a1a1a"),
-		"socks": c1, "helmet": helmet, "design": int(team.design), "height": float(pd.height), "kind": "player"}
+		"socks": c1, "helmet": helmet, "design": int(team.design), "height": float(pd.height), "kind": "player",
+		"number": int(pd.get("num", 0))}
 	if keeper:
 		if _keeper_cols.is_empty():
 			_keeper_cols = keeper_jerseys([teams[0].c1, teams[0].c2, teams[1].c1, teams[1].c2])
@@ -2391,6 +2421,7 @@ func _dispossess(d: Player, c: Player, kind: String) -> void:
 	if rng.randf() < 0.18:
 		c.play("fall")
 		c.down_until = now + 1.2
+		_maybe_hurt(c)
 
 
 ## Is the carrier through on goal: inside the 20 m line or the arc, in front of the posts, with the goal before him?
@@ -2425,6 +2456,7 @@ func _aggressive_foul(by: Player, on: Player, foul: String, denial: bool) -> voi
 	if foul in ["FOUL_PULL_DOWN", "FOUL_TRIP", "FOUL_CHARGE"] and rng.randf() < 0.6:
 		on.play("fall")
 		on.down_until = now + 1.1
+		_maybe_hurt(on)
 		if carrier == on:
 			_release(on)
 			ball.launch(Vector3(rng.randf_range(-3, 3), 1.0, rng.randf_range(-3, 3)), on, "deflect")
@@ -2582,6 +2614,7 @@ func _begin_setup() -> void:
 		_auto_subs(k)
 		_manager_tactics(k)
 	_run_subs()
+	_run_temp()
 	# The end of a half comes at a break in play once the time is up.
 	if _time_up() and String(restart.kind) != "penalty":
 		_end_half()
@@ -2944,6 +2977,7 @@ func _second_half() -> void:
 	for k in 2:
 		_auto_subs(k)
 	_run_subs()
+	_run_temp()
 	_place_for_throw_in(true)
 	phase = P.INTRO
 	phase_t = 1.2
@@ -3071,29 +3105,130 @@ func _run_subs() -> void:
 		_ref_whistle("whistle_double")      # the referee waves the substitute on
 		team.subs = int(team.subs) + 1
 		tstats[k].subs += 1
-		var ghost := Player.new(off.data, k, off.body.look)
-		ghost.set_meta("seat", bench.next_seat(k))
-		add_child(ghost)
-		ghost.global_position = off.global_position
-		ghost.yaw = off.yaw
-		ghost.fatigue = off.fatigue
-		_leaving.append(ghost)
-		var old_name := DB.player_name(off.data, true)
-		var old_id := String(off.data.id)
-		off.take_over(pd, _look(k, pd, int(pd.line) == DB.POS_GK))
-		off.tire_k = clock_k
-		off.put(Vector3(clampf(off.global_position.x, -20.0, 20.0), 0, -Pitch.HALF_W - 1.5))
-		off.vel = Vector3.ZERO
-		carries[off] = Rules.Carry.new()
-		pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
+		var old_id := _swap_on(off, pd)
 		events.append({"t": match_minute(), "team": k, "kind": "sub", "by": String(pd.id), "how": old_id})
-		hud.substitution(String(team.id), DB.player_name(pd, true), old_name)
-		if off == active:
-			_set_active(off)
 	_set_lods()
 
 
-# ---------------------------------------------------------------- the shoot-out
+## The man in off's place walks to the dugout and pd takes the place in the shape, on from the sideline; the board
+## shows it (title: the sub board's heading). Returns the id of the man going off.
+func _swap_on(off: Player, pd: Dictionary, title := "") -> String:
+	var k := off.team
+	var team: Dictionary = teams[k]
+	var ghost := Player.new(off.data, k, off.body.look)
+	ghost.set_meta("seat", bench.next_seat(k))
+	add_child(ghost)
+	ghost.global_position = off.global_position
+	ghost.yaw = off.yaw
+	ghost.fatigue = off.fatigue
+	_leaving.append(ghost)
+	var old_name := DB.player_name(off.data, true)
+	var old_id := String(off.data.id)
+	off.take_over(pd, _look(k, pd, int(pd.line) == DB.POS_GK))
+	off.tire_k = clock_k
+	off.put(Vector3(clampf(off.global_position.x, -20.0, 20.0), 0, -Pitch.HALF_W - 1.5))
+	off.vel = Vector3.ZERO
+	carries[off] = Rules.Carry.new()
+	if not pstats.has(pd.id):
+		pstats[pd.id] = {"goals": 0, "points": 0, "free_g": 0, "free_p": 0, "wides": 0, "team": k, "num": int(pd.num)}
+	hud.substitution(String(team.id), DB.player_name(pd, true), old_name, title)
+	if off == active:
+		_set_active(off)
+	return old_id
+
+
+# ---------------------------------------------------------------- injuries and temporary substitutes
+
+## Injuries (the owner, 4 November 2026, from the Official Guide, Rules of Control 1.5(b)): a man who goes down hard
+## now and then comes up bleeding, or with a suspected head injury. Play goes on (1.5(a)); at the next break the
+## referee sends him off for treatment and a temporary substitute comes on - the manager's choice, the best fresh man
+## for that line - which does not count among the five (Rules.subs_allowed), and has no time limit. Treated (a blood
+## injury a few minutes, a head injury the ten of an assessment), he comes back at a break for the man who replaced
+## him, who goes back to the bench; a head injury now and then keeps him off, and the substitute stays on.
+const INJURY_P := 0.03          # a hard fall that leaves a man injured (about one temporary substitute in two matches)
+const HEAD_SHARE := 0.25        # of injuries, a suspected head injury (the rest blood)
+const HEAD_BACK := 0.7          # of head injuries, the man passed fit to come back
+const BLOOD_MIN := [3.0, 7.0]   # minutes on the watch a blood injury takes to treat
+const HEAD_MIN := 10.0
+
+var _injured: Array = []        # men hurt, off at the next break: [{pl: Player, kind: "blood" | "head"}]
+
+
+## A hard fall (a pull-down, a trip, a charge, a heavy tackle): now and then he is hurt.
+func _maybe_hurt(pl: Player) -> void:
+	set_meta("falls", int(get_meta("falls", 0)) + 1)
+	if pl == null or not pl.on_pitch() or not pl.visible or pl.is_keeper() or pl.role != "":
+		return
+	if rng.randf() >= INJURY_P:
+		return
+	hurt(pl, "head" if rng.randf() < HEAD_SHARE else "blood")
+
+
+## pl is hurt (kind "blood" or "head"): off for treatment at the next break.
+func hurt(pl: Player, kind: String) -> void:
+	for q in _injured:
+		if q.pl == pl:
+			return
+	for e in temp_out(pl.team):
+		if e.slot == pl:
+			return       # (the temporary substitute himself: the slot waits for its man)
+	_injured.append({"pl": pl, "kind": kind})
+	set_meta("injuries", int(get_meta("injuries", 0)) + 1)
+	hud.call_line(tr("INJURY_BLOOD" if kind == "blood" else "INJURY_HEAD").format({"name": DB.player_name(pl.data, true)}))
+
+
+## The men off for treatment from side k: [{pd (the injured man), slot (the Player now his substitute), sub (his
+## substitute's pd), kind, back (Match.watch when treated), fit (to come back)}].
+func temp_out(k: int) -> Array:
+	return teams[k].get("temp_out", [])
+
+
+## At a break: the injured off and their temporary substitutes on; the treated back on.
+func _run_temp() -> void:
+	for q in _injured.duplicate():
+		var pl: Player = q.pl
+		if not is_instance_valid(pl) or not pl.on_pitch() or pl == carrier or pl == taker:
+			if not is_instance_valid(pl) or not pl.on_pitch():
+				_injured.erase(q)
+			continue
+		_injured.erase(q)
+		var k := pl.team
+		var team: Dictionary = teams[k]
+		var sub := best_bench(k, pl.line())
+		if sub.is_empty():
+			continue
+		team.bench.erase(sub)
+		bench.leave(k, sub)
+		_ref_whistle("whistle_double")
+		var pd: Dictionary = pl.data
+		var kind := String(q.kind)
+		var mins: float = HEAD_MIN if kind == "head" else rng.randf_range(BLOOD_MIN[0], BLOOD_MIN[1])
+		var entry := {"pd": pd, "slot": pl, "sub": sub, "kind": kind, "back": watch + mins * 60.0,
+			"fit": kind == "blood" or rng.randf() < HEAD_BACK}
+		if not team.has("temp_out"):
+			team["temp_out"] = []
+		(team["temp_out"] as Array).append(entry)
+		team.temp = int(team.temp) + 1
+		tstats[k]["temp"] = int(tstats[k].get("temp", 0)) + 1
+		_swap_on(pl, sub, tr("TEMP_SUB_BLOOD" if kind == "blood" else "TEMP_SUB_HEAD"))
+		events.append({"t": match_minute(), "team": k, "kind": "temp_sub", "by": String(sub.id), "how": String(pd.id)})
+	for k in 2:
+		for e in temp_out(k).duplicate():
+			if watch < float(e.back):
+				continue
+			var slot: Player = e.slot
+			if not is_instance_valid(slot) or slot == carrier or slot == taker:
+				continue
+			if not bool(e.fit) or not slot.on_pitch() or String(slot.data.id) != String(e.sub.id):
+				# Not passed fit (or his substitute sent off or replaced since): the slot stays as it is.
+				(teams[k]["temp_out"] as Array).erase(e)
+				continue
+			(teams[k]["temp_out"] as Array).erase(e)
+			_ref_whistle("whistle_double")
+			_swap_on(slot, e.pd, tr("TEMP_BACK"))
+			teams[k].bench.append(e.sub)      # (back among the substitutes, free to come on again)
+			events.append({"t": match_minute(), "team": k, "kind": "temp_back", "by": String(e.pd.id), "how": String(e.sub.id)})
+	_set_lods()
 
 ## Level after extra time in a knock-out game: five penalties each from the 20 m line, goals only, then sudden
 ## death, the same five taking them again. Taken as free-taking practice's frees are (the owner: "use this setup for

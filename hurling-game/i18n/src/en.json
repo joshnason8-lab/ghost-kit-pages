@@ -466,5 +466,10 @@
   "HAWKEYE_NO": "NÍL · wide",
   "CALL_NO_SCORE": "NO SCORE",
   "NO_POINT_HAND": "A point cannot be scored with the hand: a free out.",
-  "NO_SCORE_CARRY": "Carried over the line: a free out."
+  "NO_SCORE_CARRY": "Carried over the line: a free out.",
+  "INJURY_BLOOD": "{name} is bleeding: off for treatment at the next break",
+  "INJURY_HEAD": "{name}: a suspected head injury, off to be assessed at the next break",
+  "TEMP_SUB_BLOOD": "Blood substitute",
+  "TEMP_SUB_HEAD": "Head injury substitute",
+  "TEMP_BACK": "Back on"
 }

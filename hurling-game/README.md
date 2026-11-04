@@ -100,7 +100,8 @@ ui/         home screen (the programme), match setup (the team sheets), the cham
             play, move buttons, licences, language picker, loading screen, backdrop, drawn art, substitutions,
             tactics
 i18n/       src/en.json, src/ga.json, strings.csv (generated)
-assets/     player/ (the baked model: mesh, texture, kit mask, clips), env/ (skies, ground scans, water, the
+assets/     player/ (the baked model: mesh, texture, kit mask, clips; digits.png, the jersey numbers drawn from
+            Oswald by tools/player/make_digits.py, OFL), env/ (skies, ground scans, water, the
             surrounds' models, from the shared assets), art/ (the home screen's cover), icon/, audio/
 fonts/      Noto Sans and Oswald (cut to the letters used); both SIL OFL
 tools/      build_i18n.py, subset_fonts.py, check_scripts.py, check_pages.py, audio/make_music.py (the jig),

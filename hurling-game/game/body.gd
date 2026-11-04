@@ -68,6 +68,8 @@ func _ready() -> void:
 	var h := float(look.get("height", 1.78))
 	scale = Vector3.ONE * (h / 1.80)
 	mesh_instance = MeshInstance3D.new()
+	# (His number on his back, the kit shader's: look.number, 0 none.)
+	mesh_instance.set_instance_shader_parameter("number", int(look.get("number", 0)))
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	skeleton.add_child(mesh_instance)
 	mesh_instance.skeleton = NodePath("..")

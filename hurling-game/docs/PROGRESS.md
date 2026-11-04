@@ -683,18 +683,19 @@ anything else "x_hd.<ext>"), VRAM-compressed (ETC2/ASTC on phones) with mipmaps:
    four times slower, well inside a 33 ms frame.
 2. **The full Official Guide**: read the rules against it once the network allows `www.gaa.ie` (docs/RULES.md).
 3. **More frees and shots**: real matches have about 26 frees and 77 shots; the game about 17 and 70.
-4. **Temporary substitutes** (blood, a head injury) and injuries, and the sin-binned player's replacement rules.
-5. **Umpires who now and then get a close one wrong** (a balance change: the owner's call), ~~and Hawk-Eye at the
+4. ~~**Temporary substitutes** (blood, a head injury) and injuries~~ (done, 4 November 2026: docs/RULES.md).
+5. ~~Umpires who now and then get a close one wrong~~ (the owner: no, the calls stay correct), ~~and Hawk-Eye at the
    stadium~~ (done, 0.24.12: a point or wide over the bar within 0.4 m of a post shows the Hawk-Eye card, then TÁ or NÍL).
 6. **Commentary-style call-outs** and crowd songs ("Come on the ...", "[County] abú!"), and a recorded referee's
    whistle and hurley strike (none to be had from Kenney or OpenGameArt: docs/SOUNDS.md).
 7. **A native Irish speaker** to read `i18n/src/ga.json` (docs/LANGUAGES.md lists the terms to check).
 8. **Camogie**, with its own rules done properly (60 minutes, the 45, hand-passed goals, its contact rules).
-9. **Club hurling**: invented parish clubs in a county championship, at the parish field.
+9. **Club hurling** (the owner: later): invented parish clubs in a county championship, at the parish field.
 10. A stand model for the stadium and the county ground (a section with its seat rows at a known rise and depth, so
     the crowd can be seated on it), if the owner wants one: the only gap the graphics update left.
 11. ~~Goalkeepers in their own jerseys~~ (done: each keeper in the colour furthest from both sides', the referee's
-    and the umpires', 0.24.12), and a number per man on the back (the owner's model, without the 11 in its
+    and the umpires', 0.24.12), ~~and a number per man on the back~~ (done, 4 November 2026: each man's own, drawn by the kit
+    shader over the texture's printed 11) (the owner's model, without the 11 in its
     texture, or a texture of numbers).
 12. A hurler model with the hurley in hand, if a later Meshy model gets it right (two tries did not).
 

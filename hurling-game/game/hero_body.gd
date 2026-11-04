@@ -267,6 +267,7 @@ static func kit_material(look: Dictionary, _rest: Dictionary) -> ShaderMaterial:
 		mat.set_shader_parameter("detail_r", load(ULTRA_DIR + "cotton_jersey_rough_2k.jpg"))
 	mat.set_shader_parameter("albedo", _tex[tk][0])
 	mat.set_shader_parameter("kit", _tex[tk][1])
+	mat.set_shader_parameter("digits", load(DIR + "digits.png"))
 	var jersey: Color = look.get("jersey", Color("c8202f"))
 	mat.set_shader_parameter("jersey", _v(jersey))
 	mat.set_shader_parameter("trim", _v(look.get("trim", Color.WHITE)))
@@ -364,6 +365,11 @@ uniform float sock_top = 0.0;
 uniform float boot_top = 0.0;
 uniform float chest_y = 1.3;
 uniform float spine_y = 1.1;
+// Each player's own number on his back (the model's texture has an 11 printed there: taken off in NUM_BOX), drawn from
+// a row of digits 0-9 (tools/player/make_digits.py) in the trim colour; 0: none (officials, the bench's baked mesh).
+uniform sampler2D digits : filter_linear_mipmap;
+instance uniform int number = 0;
+const vec4 NUM_BOX = vec4(-0.15, 0.15, -0.23, 0.09);   // x from, x to; y from chest_y - , to chest_y +
 uniform vec3 light_dir = vec3(0.35, 0.85, 0.4);
 uniform float shade = 0.72;
 // The sculpt's relief, baked from the HD model onto the body drawn (tools/blender): 0 none (the game's own body).
@@ -397,6 +403,11 @@ void fragment() {
 	float cover = m.r + m.g + m.b + m.a;
 	vec4 w = pow(m, vec4(6.0));
 	m = mix(m, w / max(w.r + w.g + w.b + w.a, 1e-6), smoothstep(0.2, 0.45, cover));
+	// The back's number box: the texture's printed 11 (trim in the mask) is jersey there.
+	float nu = (rp.x - NUM_BOX.x) / (NUM_BOX.y - NUM_BOX.x);
+	float nv = ((chest_y + NUM_BOX.w) - rp.y) / (NUM_BOX.w - NUM_BOX.z);
+	bool in_num = leg < 0.5 && rp.z < 0.0 && nu > 0.0 && nu < 1.0 && nv > 0.0 && nv < 1.0;
+	if (in_num) { m.r += m.g; m.g = 0.0; }
 	vec3 shirt = jersey;
 	if (leg > 0.5) {
 		shirt = socks;
@@ -418,6 +429,20 @@ void fragment() {
 	c = mix(c, trim, m.g);
 	c = mix(c, shorts, m.b);
 	c = mix(c, paint(t, skin, ref_skin), m.a);
+	if (in_num && number > 0) {
+		// One digit in the middle half, two side by side (seen from behind: tens on the left).
+		float u = 1.0 - nu;
+		int d = number % 10;
+		float du = (u - 0.25) * 2.0;
+		if (number >= 10) {
+			d = u < 0.5 ? (number / 10) % 10 : number % 10;
+			du = u < 0.5 ? u * 2.0 : u * 2.0 - 1.0;
+		}
+		if (du > 0.0 && du < 1.0) {
+			float a = texture(digits, vec2((float(d) + du) / 10.0, nv)).a;
+			c = mix(c, trim, a * m.r);
+		}
+	}
 	if (shorts_to > 0.0 && abs(rp.x) < 0.21 && rp.y > shorts_to && rp.y < spine_y - 0.1) { c = shorts; }
 	if (sock_top > 0.0 && abs(rp.x) < 0.21 && rp.y > boot_top && rp.y < sock_top) { c = socks; }
 	// The relief: the baked normal (its z rebuilt: a compressed normal map keeps x and y) on the surface's own.

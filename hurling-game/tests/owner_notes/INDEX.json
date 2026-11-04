@@ -192,6 +192,22 @@
    "date": "2026-11-04",
    "version": "Hurling 0.24.13",
    "words": "Follow the GAA Official Guide: advantage for aggressive fouls only."
+  },
+  {
+   "id": "2026-11-04-temp-subs",
+   "file": "2026-11-04_temp_subs.gd",
+   "game": "hurling",
+   "date": "2026-11-04",
+   "version": "Hurling 0.24.13",
+   "words": "Temporary subs for blood and head injuries: YES. Use the rules as you found them: no time limit and not counted. Injuries become a match event, so keep them rare and realistic, with an owner note and an AI sub."
+  },
+  {
+   "id": "2026-11-04-numbers",
+   "file": "2026-11-04_numbers.gd",
+   "game": "hurling",
+   "date": "2026-11-04",
+   "version": "Hurling 0.24.13",
+   "words": "Numbers on players' backs: YES. Fix the baked \"11\" in the model so each player wears their own number, on every tier, within the Low budget."
   }
  ]
 }

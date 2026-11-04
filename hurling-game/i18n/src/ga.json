@@ -472,5 +472,10 @@
   "HAWKEYE_NO": "NÍL · amú",
   "CALL_NO_SCORE": "NÍL SCÓR ANN",
   "NO_POINT_HAND": "Ní féidir cúilín a scóráil leis an lámh: saorphoc amach.",
-  "NO_SCORE_CARRY": "Iompraithe thar an líne: saorphoc amach."
+  "NO_SCORE_CARRY": "Iompraithe thar an líne: saorphoc amach.",
+  "INJURY_BLOOD": "{name} ag cur fola: amach le haghaidh cóireála ag an gcéad stad eile",
+  "INJURY_HEAD": "{name}: gortú cinn amhrasta, amach le measúnú ag an gcéad stad eile",
+  "TEMP_SUB_BLOOD": "Ionadaí fola",
+  "TEMP_SUB_HEAD": "Ionadaí gortú cinn",
+  "TEMP_BACK": "Ar ais ar an bpáirc"
 }

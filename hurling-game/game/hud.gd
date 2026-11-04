@@ -442,8 +442,8 @@ func call_line(text: String) -> void:
 
 ## A substitution on the fourth official's board, below the score: the county's colours, the man coming on (green)
 ## and the man going off (red), four seconds each; two or three at once are shown in turn.
-func substitution(team_id: String, on_name: String, off_name: String) -> void:
-	_sub_queue.append([team_id, on_name, off_name])
+func substitution(team_id: String, on_name: String, off_name: String, title := "") -> void:
+	_sub_queue.append([team_id, on_name, off_name, title if title != "" else tr("SUB_BOARD")])
 	if _sub_board == null:
 		_show_next_sub()
 
@@ -477,7 +477,7 @@ func _show_next_sub() -> void:
 	v.add_theme_constant_override("separation", 0)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(v)
-	v.add_child(UI.label(tr("SUB_BOARD").to_upper() + "  ·  " + DB.short_name(String(it[0])), "EyebrowLabel", 14, Game.C_GOLD))
+	v.add_child(UI.label(String(it[3]).to_upper() + "  ·  " + DB.short_name(String(it[0])), "EyebrowLabel", 14, Game.C_GOLD))
 	v.add_child(UI.label("↑  " + String(it[1]), "SubLabel", 21, Color("6fdc7a")))
 	v.add_child(UI.label("↓  " + String(it[2]), "SubLabel", 21, Color("ff6b5e")))
 	root.add_child(panel)
