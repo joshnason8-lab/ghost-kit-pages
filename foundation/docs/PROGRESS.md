@@ -747,3 +747,17 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
     games: Takraw's probe dumps (seeds 7, 11) byte-identical to a40a95e, completion#103 / extreme#14 / random#21 /
     extreme#20 clean; Kho Kho Low feet_low = a40a95e. All four regressions cleared (lead told 2026-11-04).
     Still open, older: Takraw extreme#4 official 5.8; Kho Kho extreme#34 / fouls#101 jumps; Kabaddi OFFICIAL_2 8.3.
+- **b91fadce + fd879f98: two scale-shrink faults from 9ad1c8ab/3b700012 (Kho Kho's smoke on 0.12.12, Kabaddi random#13)**:
+  - the 3-4 cm touch band wanted a slow ankle: a standing referee's idle hovered a foot 3.8 cm up (toe slow), never
+    planted, drifting 9.2 cm (Kho Kho extreme#28). A body under 0.5 m/s takes a slow toe or flat foot there again; the
+    3 cm band never shrinks under 3 cm (defenders at 0.95: 3.2 cm). Test: planter_restart_test's hovering foot.
+  - the release rate limit's 25 cm threshold shrank with body scale: on BAN_5 (under 0.95) a 23.8 cm catch-up was held
+    back and snapped, a 26.6 cm jump (Kabaddi random#13 on 0.14.19). Now 25 cm or more.
+  - Measured on every game's current head (the bench copies were stale; all refreshed; suites at each CI's fps): all 7
+    suites 0 failures, owner notes PASS, feet_low PASS in 6 (Pok Ta Pok's own Low toon bodies fail as deferred to 11-08,
+    the same on its shipped foundation - WsgToonDriver task). Kho Kho smoke (--smoke --input, 81 matches, 0 failed) on
+    9406eac: slides >2.5 21 -> 13 against CI on 31f60da; shard 0 side by side with a40a95e and 31f60da: nothing new,
+    extreme#28 ref 7.3 / hd10 3.2, #10, #12, #34 slides gone, and a40a95e's extreme#28 33.1 / #42 29.7 jumps stay gone.
+    Older, still open: extreme#16 (ump_a 35.9 jump in the smoke, 6.2/6.7 slides), dream#103 9.3, dream#101 ump_b 6.6-7.4,
+    extreme#44 4.5, human#103 4.3; Kho Kho's 5 CI jumps (collisions#101 31.0, random#29 29.9, extreme#34 27.1,
+    fouls#101 25.5, dream#101 25.2).
