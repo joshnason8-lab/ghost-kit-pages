@@ -77,6 +77,27 @@ func start_mode(mode: String, parent: Node) -> void:
 	Game.start_match(cfg)
 
 
+## The knees rule (WORLD_RULES "knees"): the legs of the game's own code-built Body (game/body.gd), which Low draws posed
+## by WsgToonDriver - thigh/shin/foot, no toe bone - so [hip, knee, ankle, the body's forward at rest]; it faces +Z
+## (its left thigh at +X, the ball of its foot at +Z: Player.TOE). [] for any other skeleton (the foundation's rigs
+## are read by their own names).
+func leg_bones(skeleton: Skeleton3D) -> Array:
+	if skeleton == null or skeleton.find_bone("thigh_l") < 0 or skeleton.find_bone("LeftUpLeg") >= 0:
+		return []
+	return [["thigh_l", "shin_l", "foot_l", Vector3(0, 0, 1)], ["thigh_r", "shin_r", "foot_r", Vector3(0, 0, 1)]]
+
+
+## A named acrobatic move whose knees the knees rule excuses while it plays: the dive (the hip down on the earth, a
+## leg swept under: Player.A.DIVE). Per move, never per actor or role.
+func knee_excuse(skeleton: Skeleton3D) -> String:
+	var n: Node = skeleton
+	while n != null and not (n is Player):
+		n = n.get_parent()
+	if n is Player and (n as Player).action == Player.A.DIVE:
+		return "dive"
+	return ""
+
+
 ## Two judges at every court (Officials: on the ground by the analco on the earth courts, on the coping on the stone).
 func officials(_mode: String) -> int:
 	return 2
