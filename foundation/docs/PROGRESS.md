@@ -773,3 +773,12 @@ Lead session: session_016XKAyHkTQRNMGEgZbjNK28. Pilot branch: `claude/hurling-fo
   the planter (Takraw's wsg modes, its production flag) jumps >25 / skids >2 / p90: own 9/11/2.3, wsg 2/0/0.4, wsgown
   0/5/0.2 - the switch is the lead's call. Other games: suites, notes, feet as before; Low bodies built from a game's
   own glb also gain (Kho Kho Low walk 1.5 -> 0.4 cm, jump 8.6 -> 4.9; Takraw Low standing 1.3 -> 0.7).
+- **50f9e87f: 8dc70d9 and 0bd11720 required (11-04 12:00 UTC)**, with the feet rule and the fetch hook: check_foundation
+  verified on Kho Kho and Pok Ta Pok with the new manifest.
+- **f4fc2f04: WsgToonDriver holds a foot the clip puts down (plant, on by default; option toe)** - Pok Ta Pok's Low
+  toon bodies had no planter (7-15 cm a step, deferred to 11-08). A world-space hold by a two-bone turn of the game's
+  thigh and shin (knee to the front), let go rising with the clip over 0.25 s, the heel up at the leg's reach, a step
+  past it. Pok Ta Pok 8140746 with toe (0, -0.025, 0.14): feet_low walk 13.3 -> 1.3, jog 11.9 -> 0.0, turned 15.1 ->
+  0.0, run 7.0 -> 0.0, stop 7.8 -> 0.0 cm, no skids; without toe 4.6 / 5.9 (Pok Ta Pok passes Player.TOE). Suite
+  849-855/0, notes PASS, sim seeds unchanged. toon_driver_test: the feet rule on a toon walking to running, 13.8 cm
+  without, 0.0 with. Other games: no WsgToonDriver; 7 suites, notes and feet as before.
