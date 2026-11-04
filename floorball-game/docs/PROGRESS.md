@@ -227,6 +227,13 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
+### 0.9.22-beta: the knees rule (4 November 2026)
+
+- The shared foundation synced to f080f27: the world rules "knees" (from 11-06 12:00) and "knee_strays" (11-13).
+  world.gd's leg_bones names the game's own body's legs (thigh_, shin_, foot_; it faces +Z). knees passes on every mode
+  and tier; knee_strays shows 4 single frames on the foundation's bodies (4.4-6.0 cm), the planter's fix pending.
+  0.9.22-beta, code 37.
+
 ### 0.9.21-beta: the planter's knee pole per rig (4 November 2026)
 
 - The shared foundation synced to e04af65 (WsgFootPlanter works out per rig which way the thigh faces for its knee
