@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## New in 0.9.9-beta
+
+- Players' feet stay planted more reliably as they land, stop and turn (the shared animation foundation's latest
+  fixes).
+
 ## New in 0.9.8-beta
 
 - **Positional changes**: besides substitutions, two of your players on court can now swap positions, at the
