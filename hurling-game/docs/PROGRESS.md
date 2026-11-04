@@ -859,6 +859,19 @@ The owner's 0.20 playtest (code 34):
   watch stadium Crowd 277 ms, practice Crowd 784 ms (WsgCrowd3D.build_venue, 2,400 full figures - the Foundation's
   offer of checkpoints in it taken up). Test _loading_overlay; the half-time test now measures running further out.
 
+## Done (0.24.12, 4 November 2026)
+
+- **Keepers' jerseys** (roadmap 11): Match.keeper_jerseys - the one of eight kit colours furthest (redmean) from both
+  sides' colours, the referee's and the umpires'; the away keeper's 200 apart from the home keeper's. Worst over all
+  380 pairings 130 (was 49: Limerick's keeper in green). The teams are now made before their players, so the home
+  keeper's colour is chosen knowing the away side (the first cut gave him no looks at all: the in-match test caught it).
+- **Hawk-Eye** (roadmap 5): at the stadium, a point or a wide over the bar within 0.4 m of a post's inside edge shows
+  the Hawk-Eye card, then TÁ or NÍL; the umpire's flag waits 1.4 s for it. Shown only: the call is unchanged.
+- **Foundation** 2846235d (owner notes on a fresh user dir; CI runs them with WSG_NOTES_FRESH=1), 5c2304e4 (the
+  planter restarts cleanly; a step's toe clears the floor; WsgSim names the frames of the worst foot reading),
+  a40a95e0 (a planter run covers every tick since its last; a landing foot touches at 4 cm).
+- Suite 734/0; owner notes 21/21; text fit 0 problems.
+
 ## Done (0.24.11, 3 November 2026)
 
 - **Foundation 70e571a8** (planter 7def933a, required 2026-11-06 12:00: landings planted on the frame they read down,

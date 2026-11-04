@@ -9,6 +9,15 @@
 
 Each new beta installs over the last and keeps your saves.
 
+## New in 0.24.12
+
+- **Goalkeepers in a colour of their own**: each keeper wears the kit colour furthest from both sides' colours, the
+  referee's black and the umpires' white (a fixed green put Limerick's keeper in his own outfielders' green).
+- **Hawk-Eye at the stadium**: a point or a wide over the bar close to a post shows the Hawk-Eye card, then TÁ or NÍL,
+  before the umpire flags it.
+- **Smoother feet** (the shared animation foundation): a foot that lands counts as down a touch sooner, and the feet
+  restart cleanly after a pause.
+
 ## New in 0.24.11
 
 - **Cleaner footwork at speed**: a foot left behind when a player stops hard now steps instead of jumping, and a foot
