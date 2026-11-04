@@ -679,7 +679,7 @@ func _animate(dt: float) -> void:
   Groups: `ARMS`, `LEGS`, `TORSO`, `HEAD`. Options: `every`, `offset` (which of `every` frames: by default the
   bodies take turns), `face` (your body built facing -Z: `PI`), `scale` (0: the skeleton's world scale), `auto_apply`
   (false: take `pose()` and blend it with your own pose dictionaries), `facing_from_node`, `auto_resume`, `rng`,
-  `cut_from_heading`. `WsgToonDriver.off = true` turns it off everywhere.
+  `cut_from_heading`, `plant` (default true, below), `toe`. `WsgToonDriver.off = true` turns it off everywhere.
 - **Your rest is read from your skeleton**, not assumed: identity rests with the arms hanging (ToonBody), an A-pose
   with the legs apart (Kabaddi's rigged bodies: the hips are lifted by what the splayed legs lose in height), any
   rest rotations. A bone you do not map (or do not have) is left alone; bones between mapped ones are carried.
@@ -689,6 +689,15 @@ func _animate(dt: float) -> void:
   37 at 4.5, against the beta's own clips' 110 and 248); the sprint is worse (the ActorCore sprint's feet cover a
   third less ground than its root: about 2 m/s at a full sprint - the planter hides it on Medium/High). A body posed
   every 2nd/3rd frame is carried along whole in between, as the FoundationLink's are.
+- **Planted feet (plant, on by default)**: a foot the clip puts down - within 3 cm of where it stands and as slow as a
+  stance foot, or flat, or coming down within 2.5 cm - is held where it landed by a two-bone turn of your thigh and
+  shin (its foot keeps its turn; the knee bends to your body's front), the heel coming up at the leg's reach, a step
+  in a 5 cm arc if the body carries it past; let go it rises with the clip's foot and comes across over 0.25 s
+  (eased). It runs after `apply()` in `update()`; with `auto_apply` off call `plant_feet(dt)` after your own
+  `apply()`. **Pass `toe`** - the ball of your foot in your foot bone (Pok Ta Pok's: `Vector3(0, -0.025, 0.14)`,
+  as its feet are read): a foot down on its ball, the heel up, is held by it (without it Pok Ta Pok's Low walk read
+  4.6 cm, jog 5.9; with it 1.3 and 0). Pok Ta Pok's Low before: walk 13.3 cm a step, jog 11.9, turned 15.1, run 7.0,
+  stop 7.8; after: 1.3, 0.0, 0.0, 0.0, 0.0, no skids. `{"plant": false}` leaves the clip's feet as they come.
 - **Kabaddi**: the drawn body on Low is `RiggedBody`'s Skeleton3D (the 17 names already: no bone_map), built facing
   -Z: `WsgToonDriver.new(rig.skeleton, {}, {"face": PI})`, updated after `rig.drive(h)` (its grounding, plants and
   turn limits are then the driver's, except under an override). Its fingers hang under the hands and are left alone.

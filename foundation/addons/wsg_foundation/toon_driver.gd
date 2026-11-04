@@ -104,6 +104,29 @@ var _acc := 0.0
 var _tick := 0
 var _offset := 0
 var _down := [true, true]
+## Holds a foot the capture has down where it landed - a two-bone turn of the game's thigh and shin, its foot keeping
+## its turn - and lets it go over RELEASE once the capture lifts it: the game's toon has no planter, and the clip's feet
+## slid under a body not going the clip's speed (Pok Ta Pok's Low players: 7-15 cm a step). options {"plant": false}
+## leaves the clip's feet as they come.
+var plant := true
+## Over this long (s), eased in and out (the foot lands its swing where the clip's foot is, without a lurch).
+const RELEASE := 0.25
+var _lock := [Vector3.INF, Vector3.INF]      # where each foot is held (the world)
+var _lw := [0.0, 0.0]                          # how much (1 held, easing to 0 let go)
+var _was_w := [Vector3.INF, Vector3.INF]     # each ankle as the clip put it last frame (the world)
+var _out := [false, false]                   # let go past the leg's reach: stepping, until the clip lifts it
+var _speed := 0.0                            # the body's speed across (m/s), this update
+var _held := [false, false]                  # down last frame (held)
+var _was_y := [INF, INF]                     # each ankle's height last frame (the world)
+## The ball of the foot in the game's foot bone (options toe; Pok Ta Pok's: (0, -0.025, 0.14)): a foot down on it, its
+## heel up, is held by it. ZERO: the ankle only.
+var toe := Vector3.ZERO
+var _on_toe := [false, false]                # held by its ball, not its ankle
+var _was_t := [Vector3.INF, Vector3.INF]
+## How high a foot let go past its reach steps (m, an arc over RELEASE): across the floor it is read as sliding.
+const STEP_UP := 0.05
+## A body slower than this (m/s) is nearly still.
+const STILL := 0.5
 
 
 ## Whether the capture can drive a toon here (the licensed clips are in this build and the driver is not off).
@@ -122,6 +145,8 @@ func _init(toon_skeleton: Skeleton3D, bone_map := {}, options := {}) -> void:
 	facing_from_node = bool(options.get("facing_from_node", true))
 	auto_resume = bool(options.get("auto_resume", true))
 	scale = float(options.get("scale", 0.0))
+	plant = bool(options.get("plant", true))
+	toe = options.get("toe", Vector3.ZERO)
 	var f = options.get("face", Quaternion.IDENTITY)
 	face = Quaternion(Vector3.UP, float(f)) if (f is float or f is int) else (f as Quaternion)
 	_offset = int(options.get("offset", _made))
@@ -271,6 +296,7 @@ func update(dt: float, velocity: Vector3, facing = 0.0, want_velocity := Vector3
 	if loco == null or dt <= 0.0:
 		return false
 	var yaw: float = atan2(facing.x, facing.z) if facing is Vector3 else float(facing)
+	_speed = Vector2(velocity.x, velocity.z).length()
 	_ease(dt)
 	if _whole_body():
 		# The game's own move over all of it: the capture waits (and costs nothing).
@@ -297,6 +323,7 @@ func update(dt: float, velocity: Vector3, facing = 0.0, want_velocity := Vector3
 	_tick += 1
 	if auto_apply:
 		apply(1.0)
+		plant_feet(dt)
 	return fresh
 
 
@@ -354,6 +381,146 @@ func apply(weight := 1.0, bones := []) -> void:
 		if i == 0:
 			var p := _hips_rest + _hips_off
 			skeleton.set_bone_pose_position(ti, p if w >= 0.999 else skeleton.get_bone_pose_position(ti).lerp(p, w))
+
+
+## The feet held where the capture put them down (plant), on the skeleton as it is posed now: update() runs it after
+## apply(); a game laying the pose itself (auto_apply off) calls it after its own apply().
+func plant_feet(dt: float) -> void:
+	if not plant or not _have or not skeleton.is_inside_tree():
+		return
+	var xf := skeleton.global_transform
+	var inv := xf.affine_inverse()
+	for f in 2:
+		var s := [11, 12, 13] if f == 0 else [14, 15, 16]
+		var th := _ti[s[0]]
+		var sh := _ti[s[1]]
+		var ft := _ti[s[2]]
+		if th < 0 or sh < 0 or ft < 0 or skeleton.get_bone_parent(sh) != th or skeleton.get_bone_parent(ft) != sh \
+				or _over[s[0]] > 0.001 or _over[s[1]] > 0.001 or _over[s[2]] > 0.001:
+			_lock[f] = Vector3.INF
+			_lw[f] = 0.0
+			continue
+		var gh := skeleton.get_bone_global_pose(th)
+		var gk := skeleton.get_bone_global_pose(sh)
+		var ga := skeleton.get_bone_global_pose(ft)
+		var hip := gh.origin
+		var knee := gk.origin
+		var ank := ga.origin
+		var a := hip.distance_to(knee)
+		var b := knee.distance_to(ank)
+		var ank_w := xf * ank
+		# Down as the planter reads it, from the clip's foot on the game's body: within 3 cm of where it stands and as
+		# slow as a stance foot (under 0.6 + 0.8 x the body's speed; a swing goes about twice the body's), held from its
+		# first frame on the floor; it stays down under 3 cm however the clip moves it (a start's blend whips its feet about
+		# at 4-13 m/s on the floor), under 5 cm until it goes as fast as a swing - a foot carried past the leg's reach
+		# steps (below). (Not the rig's own down: a
+		# walk's swing never rises 3.5 cm on it, and the foot was held through it - the leg dragged, the knee folded.)
+		var stand_y := (xf * skeleton.get_bone_global_rest(ft).origin).y - (xf.origin.y - skeleton.global_position.y)
+		var spd := Vector2(ank_w.x - (_was_w[f] as Vector3).x, ank_w.z - (_was_w[f] as Vector3).z).length() / maxf(dt, 0.001) \
+			if _was_w[f] != Vector3.INF else INF
+		_was_w[f] = ank_w
+		var land := 0.6 + 0.8 * _speed
+		var down: bool = (ank_w.y < stand_y + 0.03 and spd < land) if not _held[f] \
+			else (ank_w.y < stand_y + 0.03 or (ank_w.y < stand_y + 0.05 and spd < 0.6 + 1.2 * _speed))
+		# (Nearly still - a stop, standing: the rig's own down too, its feet's small shuffles faster than a still body's
+		# stance; a still body has no swing to hold through.)
+		if _speed < STILL and _down[f] and ank_w.y < stand_y + 0.05:
+			down = true
+		# (Or its ball down, its heel up - as the feet rule reads it: the lower of ankle and ball within 3 cm, the ball
+		# under 1.2 m/s.)
+		var toe_w := xf * (ga * toe) if toe != Vector3.ZERO else Vector3.INF
+		var toe_floor := stand_y + ((xf * (skeleton.get_bone_global_rest(ft) * toe)).y - (xf * skeleton.get_bone_global_rest(ft).origin).y) \
+			if toe != Vector3.ZERO else 0.0
+		var tspd := Vector2(toe_w.x - (_was_t[f] as Vector3).x, toe_w.z - (_was_t[f] as Vector3).z).length() / maxf(dt, 0.001) \
+			if toe != Vector3.ZERO and _was_t[f] != Vector3.INF else INF
+		_was_t[f] = toe_w
+		var toe_down := toe != Vector3.ZERO and toe_w.y < toe_floor + 0.03 and tspd < land and ank_w.y >= stand_y + 0.03
+		down = down or toe_down
+		# (Flat on the floor - within 2 cm, its ball too - it is down however fast the clip moves it, as the planter has
+		# it: a swing never comes through flat, and one let go there skidded across the floor; and coming down within
+		# 2.5 cm, the margin the feet rule's own flat reading takes from the lowest it goes - a landing at 3.2 m/s,
+		# 2.3 cm up and falling, skidded 4 cm a frame.)
+		var falling: bool = float(_was_y[f]) < INF and ank_w.y < float(_was_y[f]) - 0.0005
+		_was_y[f] = ank_w.y
+		if (ank_w.y < stand_y + 0.02 or (falling and ank_w.y < stand_y + 0.025)) and (toe == Vector3.ZERO or toe_w.y < toe_floor + 0.025):
+			down = true
+		if _out[f]:
+			if ank_w.y > stand_y + 0.03:
+				_out[f] = false
+			down = false
+		_held[f] = down
+		if down:
+			if _lock[f] == Vector3.INF:
+				# (Held by its ball if that touched first: the ankle then goes where the foot's turn puts it.)
+				_on_toe[f] = toe_down and not (ank_w.y < stand_y + 0.03)
+				_lock[f] = toe_w if _on_toe[f] else ank_w
+			elif _lw[f] < 1.0:
+				# (Down again while still being let go: held where it is drawn now, not snapped back.)
+				_lock[f] = ank_w.lerp(_lock[f] if not _on_toe[f] else (_lock[f] as Vector3) - (toe_w - ank_w), smoothstep(0.0, 1.0, _lw[f]))
+				_on_toe[f] = false
+			_lw[f] = 1.0
+		elif _lock[f] != Vector3.INF:
+			_lw[f] = move_toward(_lw[f], 0.0, dt / RELEASE)
+			if _lw[f] <= 0.0:
+				_lock[f] = Vector3.INF
+		if _lock[f] == Vector3.INF:
+			continue
+		# (Far off - a teleport, a new play: let it go at once.)
+		if ank.distance_to(inv * (_lock[f] as Vector3)) > (a + b):
+			_lock[f] = Vector3.INF
+			_lw[f] = 0.0
+			continue
+		# (At the end of the leg's reach, the body going on: the heel comes up over the held spot - the ankle rises, not
+		# across: a toon standing on straight legs had its held spot dragged a few mm a frame, 2-6 cm a step. Only past
+		# the leg's reach across does the held spot come along, rather than the foot let go across the floor at once.)
+		var lk: Vector3 = inv * (_lock[f] as Vector3)
+		if _on_toe[f]:
+			lk -= (ga * toe) - ank
+		var reach := (a + b) * 0.995
+		var dv := lk - hip
+		var up := xf.basis.inverse() * Vector3.UP
+		var vert := dv.dot(up.normalized())
+		var across := dv - up.normalized() * vert
+		if across.length() > reach and not _out[f]:
+			# (Past it across - the body carried on: the foot steps after it, let go in an arc over RELEASE.)
+			_out[f] = true
+			down = false
+		if across.length() > reach:
+			# (At its height, as far across as the leg reaches there.)
+			lk = hip + up.normalized() * vert + across.normalized() * sqrt(maxf(0.0, reach * reach - vert * vert))
+		elif dv.length() > reach:
+			lk = hip + across - up.normalized() * sqrt(maxf(0.0, reach * reach - across.length_squared()))
+		var target: Vector3 = ank.lerp(lk, smoothstep(0.0, 1.0, _lw[f]))
+		# (Let go, it rises with the clip's foot and comes across as it does: over the floor it is read as sliding.)
+		if not down:
+			target.y = maxf(target.y, ank.y)
+		if _out[f]:
+			target.y = maxf(target.y, lk.y + STEP_UP * sin(PI * clampf(1.0 - _lw[f], 0.0, 1.0)))
+		var d := hip.distance_to(target)
+		d = clampf(d, absf(a - b) + 0.001, (a + b) * 0.9999)
+		var t := (target - hip).normalized()
+		# The knee bends forward (the toon's front): on a leg nearly straight the way it bends now is a few mm either way.
+		var pole := face.inverse() * Vector3.BACK
+		pole = pole - t * pole.dot(t)
+		if pole.length_squared() < 1e-8:
+			continue
+		pole = pole.normalized()
+		var x := (a * a - b * b + d * d) / (2.0 * d)
+		var kn := hip + t * x + pole * sqrt(maxf(0.0, a * a - x * x))
+		var r1 := Quaternion((knee - hip).normalized(), (kn - hip).normalized())
+		var r2 := Quaternion((r1 * (ank - knee)).normalized(), (hip + t * d - kn).normalized())
+		var qh := gh.basis.get_rotation_quaternion()
+		var qk := gk.basis.get_rotation_quaternion()
+		var qa := ga.basis.get_rotation_quaternion()
+		var pq := Quaternion.IDENTITY
+		var par := skeleton.get_bone_parent(th)
+		if par >= 0:
+			pq = skeleton.get_bone_global_pose(par).basis.get_rotation_quaternion()
+		var nh := (r1 * qh).normalized()
+		var nk := (r2 * r1 * qk).normalized()
+		skeleton.set_bone_pose_rotation(th, (pq.inverse() * nh).normalized())
+		skeleton.set_bone_pose_rotation(sh, (nh.inverse() * nk).normalized())
+		skeleton.set_bone_pose_rotation(ft, (nk.inverse() * qa).normalized())
 
 
 ## Stride phase of the capture (0..1 from the left foot's landing), for a game that keys sounds or effects off it.

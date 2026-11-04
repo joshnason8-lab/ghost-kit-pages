@@ -6,7 +6,8 @@ extends SceneTree
 ## stride frequency rises with speed and a planted foot does not skate; an override of 1 leaves the game's pose
 ## exactly as it was (all of it, or the arms only), pose() is the same pose as a dictionary, staggering poses only
 ## on its frames; a Kabaddi-like toon (A-pose, legs apart, facing -Z, its own bone names) runs the right way round;
-## and the CPU for 14 bodies is measured. Without the library (or with it hidden, as here at the end): available()
+## the feet rule on a toon walking to running, with plant (a foot down held) and without; and the CPU for 14 bodies
+## is measured. Without the library (or with it hidden, as here at the end): available()
 ## is false and update() changes nothing.
 
 const DT := 1.0 / 60.0
@@ -41,6 +42,13 @@ func _initialize() -> void:
 		quit(2))
 	if WsgClips.available():
 		await _with_data()
+		var on: Array = await _feet_rule(true)
+		var off: Array = await _feet_rule(false)
+		print("feet rule, walk-jog-run: planted slide %.1f cm, skid %.1f, jump %.1f (the clip's feet as they come: %.1f, %.1f, %.1f)" % [on[0], on[1], on[2], off[0], off[1], off[2]])
+		_check(float(off[0]) > 2.0, "the case tests it: the clip's own feet slide over 2 cm a step on the toon (%.1f)" % off[0])
+		_check(float(on[0]) <= 2.0, "a foot down is held: planted slide %.1f cm (2.0 at most)" % on[0])
+		_check(float(on[1]) <= 2.0, "a held foot does not skid: %.1f cm in a frame (2.0 at most)" % on[1])
+		_check(float(on[2]) <= WsgWorldRules.JUMP_MAX_CM, "a held foot let go does not jump: %.1f cm (%.0f at most)" % [on[2], WsgWorldRules.JUMP_MAX_CM])
 	else:
 		print("(no clip library in this build: only the fallback is tested)")
 	_without_data()
@@ -308,6 +316,35 @@ func _with_data() -> void:
 	drivers.clear()
 	for h in holders:
 		h.free()
+
+
+## The feet rule (WsgNoteChecks.foot_slip) on a toon walking, jogging and running (1.5, 3.5, 6 m/s, 2.5 s each), with
+## the driver's plant (a foot down held where it landed) and without: the clip's feet slid under the toon's own body -
+## Pok Ta Pok's Low players 7-15 cm a step. [planted slide, flat skid, low-foot jump] in cm.
+func _feet_rule(plant: bool) -> Array:
+	var t := _toon(NETBALL, false)
+	var holder: Node3D = t[0]
+	var sk: Skeleton3D = t[1]
+	var d := WsgToonDriver.new(sk, {}, {"offset": 0, "plant": plant})
+	var frames := []
+	var pos := holder.position
+	# (A second's settle first, from the toon's rest into the clip, as _run does: not measured.)
+	for spd in [0.0, 1.5, 3.5, 6.0]:
+		for k in roundi((1.0 if spd == 0.0 else 2.5) / DT):
+			var vel := Vector3(0, 0, spd)
+			pos += vel * DT
+			holder.position = pos
+			d.update(DT, vel, 0.0)
+			await process_frame
+			if spd == 0.0:
+				continue
+			var fl := _wpos(sk, "foot_l")
+			var fr := _wpos(sk, "foot_r")
+			frames.append([fl, fl, fr, fr])
+	holder.queue_free()
+	var r := WsgNoteChecks.foot_slip(frames)
+	print("  (plant %s: slide at %s, skid at %s, jump at %s; %d frames a phase)" % [plant, r.max_at, r.skid_at, r.jump_at, roundi(2.5 / DT)])
+	return [float(r.max_cm), float(r.skid_cm), float(r.jump_cm)]
 
 
 ## Without the library: available() is false, a driver does nothing, the game's pose stays as it was.
