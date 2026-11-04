@@ -638,3 +638,13 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   first 4,200 frames: officials' frames sidestepping faster than 1 m/s 921 -> 394 (turning only) -> 106 at exactly the
   cap; the fastest sidestep 2.0 -> 1.0 m/s.
 
+
+
+## 0.14.17: foundation a40a95e (a landing foot planted as it touches)
+
+- Foundation a40a95e: a landing foot was planted a draw after the feet rule read it as down; the planter now counts it
+  touching at 4 cm (never less on a scaled body - PUN_9 is 0.949). On 328d7dd's smoke seeds (--input) it clears 7 of
+  the 12 Medium slides the foundation reproduced: knockout#103 OFFICIAL_1 7.6, random#41 PUN_9 6.4, extreme#14 IND_8
+  4.6, random#39 KEN_9 4.5, extreme#16 OFFICIAL_2 4.4, extreme#44 OFFICIAL_2 4.1 and POL_10 3.5 cm. Still the
+  foundation's: POL_11 6.0, OFFICIAL_2 8.3, IND_7 4.6, OFFICIAL_1 3.8, PUN_9 5.6 cm and IND_11's 31.4 cm jump.
+

@@ -1,4 +1,8 @@
-**New in 0.14.16: officials move like officials.** An umpire hurrying along his line to keep up with a raid turns and
+**New in 0.14.17: feet that land and stay.** On every graphics level, a foot coming down at the end of a step is held
+where it touches the floor from the moment it touches, instead of a frame later: players and officials stopping,
+starting and turning no longer slide a landing foot a few centimetres along the mat.
+
+**In 0.14.16: officials move like officials.** An umpire hurrying along his line to keep up with a raid turns and
 jogs that way, as real officials do, and turns back to face the play as he arrives; facing the play he only steps
 sideways or back slowly (up to 1 m/s). He used to scuttle sideways at a jogging pace with his feet sliding under him.
 
