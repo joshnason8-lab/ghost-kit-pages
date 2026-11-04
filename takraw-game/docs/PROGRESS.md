@@ -670,6 +670,13 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Foundation e04af65: the knee fix from the foundation (0.15.29)
+
+- **Foundation 28e82f9 -> e04af65**: its e04af65 is the knee-pole fix 0.15.28 carried in our copy (the same logic;
+  our marked lines gone), with f4fc2f0 (WsgToonDriver: not used here), 1f5efe5 (WsgSim: the low-foot jump deferrable
+  on its own) and the REQUIRED list's 29212ba4 as a plain line. The suite, the owner's notes (the knee note: the same
+  numbers) and the world check's feet and pose rules pass.
+
 ## Knees the right way round; the ball spinning (0.15.28)
 
 The owner (0.15.27, a screenshot of Low players in their ready stance): "the players stances regressed to look like

@@ -49,7 +49,7 @@ const SEVERITY := {"script error": 5, "nan": 5, "out of bounds": 4, "score": 5, 
 
 static var _log: WsgSimLog = null
 var _deferred := {}       # check -> "reason until time" (WsgSimGame.deferred, before its time)
-var _deferred_cm := {}    # check -> the most it is deferred up to (cm; "planted slip" only), INF for any
+var _deferred_cm := {}    # check -> the most it is deferred up to (cm; "planted slip", "low jump"), INF for any
 static var _warm := false
 
 ## Options: stop_frame (replay: stop there and print the state), verbose, realtime (1x: the determinism check),
@@ -454,7 +454,10 @@ func run(game: WsgSimGame, kind: String, seed: int, tree: SceneTree) -> Dictiona
 		if skid > FOOT_SLIP_CM:
 			_fail(out, "foot slip", "%s: a foot flat on the ground slid %.1f cm in one frame (%.1f at most%s)" % [nm, skid, FOOT_SLIP_CM, skid_at[1]], _at_t(skid_at, t), _at_f(skid_at, frame), {}, [])
 		if jump > WsgWorldRules.JUMP_MAX_CM:
-			_fail(out, "foot slip", "%s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most%s)" % [nm, jump, WsgWorldRules.JUMP_MAX_CM, jump_at[1]], _at_t(jump_at, t), _at_f(jump_at, frame), {}, [])
+			# (As the planted slide: the low-foot jump alone can be put off up to a bound - "low jump": [until, why, cm] -
+			# while skids and slides keep their own checks: the lead, 2026-11-04, for Kho Kho's five defender jumps.)
+			var jumped := "%s: a foot low over the ground jumped %.1f cm in one frame (%.0f at most%s)" % [nm, jump, WsgWorldRules.JUMP_MAX_CM, jump_at[1]]
+			_fail(out, "low jump" if _deferred.has("low jump") and jump <= float(_deferred_cm["low jump"]) else "foot slip", jumped, _at_t(jump_at, t), _at_f(jump_at, frame), {}, [])
 	out["result"] = game.result()
 	out["balance"] = game.balance_keys(cfg)
 	if input:

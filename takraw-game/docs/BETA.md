@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.29: **the knee fix from its source.** The shared foundation now carries the knee fix 0.15.28 shipped (its
+e04af65), so the game takes it from there. Nothing changes in play.
+
 New in 0.15.28: **knees that bend the right way, and a ball that spins.** On Low, the players' and the referees' knees
 had been bent backwards ("broken backwards knees") by the shared foot planter, which read the wrong way as forward on
 our players' skeleton: in a ready stance, walking to fetch the ball, running. They bend forward again. The ball spins
