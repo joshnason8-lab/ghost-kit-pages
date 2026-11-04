@@ -15,6 +15,7 @@ const JOG := 3.5              # her usual pace
 const WALK := 2.2             # to the middle at a break
 const LINE := 0.8             # how far outside the line she stands
 const END_Y := 3.5            # where on her goal line: this far from its middle, on her side
+const CLEAR := 1.5            # how far she keeps off a player outside the lines (a throw-in's thrower) along her line
 
 var half := -1                # -1: the half at x < 0; +1: x > 0
 var side := 1                 # the side line she walks: z = side * (HALF_W + LINE)
@@ -107,6 +108,33 @@ func follow(ball: Vector2) -> void:
 	target = Vector2(x, side * (Court.HALF_W + LINE))
 
 
+## Her spot on her line kept CLEAR of these (the players outside the lines and a throw-in's spot: Match): she slides
+## along her line, side line or goal line, to stand off the thrower, never on top of her (the owner's "solid"; on
+## Low, 0.9.9, the umpire level with the ball stood where the thrower stood). On the side of it she is on (never
+## through the thrower to the other), toward the middle of the court when she is level with it.
+func keep_clear(spots: Array) -> void:
+	_crowded = false
+	for s: Vector2 in spots:
+		_crowded = _crowded or p.distance_to(s) < CLEAR - 0.2
+	var on_end := absf(target.x) > Court.HALF_L + LINE * 0.6 and absf(target.y) < Court.HALF_W + LINE * 0.6
+	for i in 2:
+		for s: Vector2 in spots:
+			var d := target - s
+			if d.length() >= CLEAR:
+				continue
+			if on_end:
+				var by := p.y - s.y   # (the side of it she is on: never through her to the other)
+				var sg := signf(by) if absf(by) > 0.05 else (-signf(s.y) if absf(s.y) > 0.05 else float(side))
+				target.y = s.y + sg * sqrt(maxf(CLEAR * CLEAR - d.x * d.x, 0.0))
+			else:
+				var bx := p.x - s.x
+				var sg := signf(bx) if absf(bx) > 0.05 else -float(half)
+				target.x = s.x + sg * sqrt(maxf(CLEAR * CLEAR - d.y * d.y, 0.0))
+
+
+var _crowded := false         # on top of one of them: she steps off even while she signals
+
+
 ## A break: to the middle of the court, walking, beside her colleague.
 func to_middle() -> void:
 	at_end = false
@@ -143,8 +171,10 @@ func advance(dt: float, ball: Vector2) -> void:
 	# Her pace (play far from her and she runs to catch up); still while she signals.
 	var spd := pace if to.length() < 6.0 or pace == WALK else SPEED
 	var want := to.limit_length(spd) if to.length() > 0.2 else Vector2.ZERO
-	if sig != "":
+	if sig != "" and not _crowded:
 		want = Vector2.ZERO
+	elif sig != "":
+		want = want.limit_length(WALK)   # (stepping off the thrower's spot as she signals)
 	vel = vel.move_toward(want, 10.0 * dt)
 	if solid:
 		# Her step among the venue's props (WsgSolidProps.move), the velocity she really moved at handed on.

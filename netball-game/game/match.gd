@@ -508,11 +508,21 @@ func _step(delta: float) -> void:
 		for pl in players[t]:
 			pl.moves = 0
 			pl.advance(dt)
+	_off_court.clear()
+	for t in 2:
+		for pl in players[t]:
+			if not Court.on_court(pl.p) and not pl.away():
+				_off_court.append(pl.p)
+	if phase == "setup" and String(restart.get("kind", "")) == Rules.THROW_IN and restart.has("spot"):
+		_off_court.append(restart.spot)
+	elif phase == "stop" and String(_stop_award.get("kind", "")) == Rules.THROW_IN:
+		_off_court.append(Rules.throw_in_spot(_stop_award.at))   # (the spot from the whistle: she steps off it)
 	for u in umpires:
 		if phase == "break":
 			u.to_middle()
 		else:
 			u.follow(ball.court_pos())
+			u.keep_clear(_off_court)
 		u.advance(dt, ball.court_pos())
 	ball.step(dt)
 	if heard() and phase in ["setup", "live", "goal"]:
@@ -525,6 +535,10 @@ func _step(delta: float) -> void:
 	cam.end_dir = team_dir(maxi(user_team, 0))
 	# At a break the camera looks over to the huddles by the benches.
 	cam.track(Vector2(0.0, Court.HALF_W) if phase == "break" else ball.court_pos(), 0 if phase == "break" else att, dt)
+
+
+## The players outside the lines and a throw-in's spot (from its whistle) this step: the umpires stand off them (Umpire.keep_clear).
+var _off_court: Array = []
 
 
 func _clock_runs() -> bool:

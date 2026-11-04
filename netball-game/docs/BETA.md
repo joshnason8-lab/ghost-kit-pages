@@ -9,6 +9,13 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones (every phone sold since
 about 2019).
 
+## Unreleased
+
+- **Throw-ins**: the umpire on that line now steps off to stand beside the thrower, not on top of her.
+- **Club Season on Low**: the scoreboard's club crests cost less to draw, so a club match on Low is back within the
+  game's own drawing budget (the crests look the same).
+- The injury stoppage's note reads "A player from England is hurt" (it said "A England player").
+
 ## New in 0.9.9-beta
 
 - Players' feet stay planted more reliably as they land, stop and turn (the shared animation foundation's latest

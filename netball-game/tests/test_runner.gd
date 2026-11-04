@@ -69,6 +69,13 @@ func _ready() -> void:
 		print("test_runner: %d checks, %d failures" % [checks, failures])
 		get_tree().quit(1 if failures > 0 else 0)
 		return
+	if "umpire" in OS.get_cmdline_user_args():
+		# (Only the umpires on their lines: tests/test_runner.tscn -- umpire)
+		await _umpire_goal_line()
+		await _umpire_clear_of_thrower()
+		print("test_runner: %d checks, %d failures" % [checks, failures])
+		get_tree().quit(1 if failures > 0 else 0)
+		return
 	if "loading" in OS.get_cmdline_user_args():
 		# (Only the loading overlay on the Start buttons: tests/test_runner.tscn -- loading)
 		await _loading_overlay()
@@ -124,6 +131,7 @@ func _ready() -> void:
 	_cup()
 	_league()
 	_season()
+	_crest_bake()
 	await _matches()
 	await _rules_in_play()
 	await _ball_in_play()
@@ -147,6 +155,7 @@ func _ready() -> void:
 	await _front_mark()
 	await _rebound_spots()
 	await _umpire_goal_line()
+	await _umpire_clear_of_thrower()
 	await _huddle()
 	await _reserves()
 	await _solid_props()
@@ -185,6 +194,29 @@ func check(ok: bool, what: String) -> void:
 func frames(n: int) -> void:
 	for i in n:
 		await get_tree().process_frame
+
+
+## A club's small crest (the scoreboard's, the tables') draws its shield from a texture baked once, one draw call
+## where the shapes took five (a Club Season match on Low drew 104 calls, over the game's 100: 0.9.9): the texture
+## is the shield as drawn, its colour in the middle, the sash's across it, the rim's at its edge, clear outside;
+## the scoreboard's crests are small enough to use it; a second ask finds it kept.
+func _crest_bake() -> void:
+	var id: String = DB.club_ids()[0]
+	var t := DB.team(id)
+	var tex := Crest.shield_texture(id, 60, 67, 2.4)
+	var img := tex.get_image()
+	var near := func(a: Color, b: Color) -> bool: return absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) < 0.12 and a.a > 0.9
+	var mid: Color = img.get_pixel(30, 52)          # low in the shield, under the sash
+	var sash: Color = img.get_pixel(30, 22)         # across the sash at its middle (0.26-0.40 of the height there)
+	var rim: Color = img.get_pixel(30, 4)           # the top edge (0.06 of the height)
+	var out: Color = img.get_pixel(1, 64)           # a bottom corner: outside the shield
+	check(img.get_width() == 60 and img.get_height() == 67, "crest bake: its size (%dx%d)" % [img.get_width(), img.get_height()])
+	check(near.call(mid, t.c1), "crest bake: the club's colour in the shield (%s, want %s)" % [mid, t.c1])
+	check(near.call(sash, (t.c1 as Color).lerp(t.c2, 0.85)), "crest bake: the sash across it (%s)" % sash)
+	check(near.call(rim, (t.c2 as Color).lightened(0.2)), "crest bake: the rim at its edge (%s)" % rim)
+	check(out.a < 0.05, "crest bake: clear outside the shield (%s)" % out)
+	check(Crest.shield_texture(id, 60, 67, 2.4) == tex, "crest bake: kept, not drawn again")
+	check(24.0 / 1.12 <= Crest.BAKE_MAX and 40.0 / 1.12 <= Crest.BAKE_MAX, "crest bake: the scoreboard's and the tables' crests are baked")
 
 
 ## Every screen, in every language: it opens and builds.
@@ -1778,6 +1810,15 @@ func _break_screen() -> void:
 	if b:
 		b.pressed.emit()
 		check(String(gs.data.name) == coming, "tapping it brings her on")
+	# The injury stoppage's line reads right for every team ("A England player is hurt" read wrong: 0.9.9 on Low).
+	m.hud.show_break(-2, 1, 0)
+	await frames(2)
+	var note := ""
+	for n: Node in m.hud._break.find_children("*", "Label", true, false):
+		if (n as Label).text.contains(DB.team_name("ENG")):
+			note = (n as Label).text
+	check(note.begins_with("A player from England is hurt"), "the injury note names the team well (%s)" % note)
+	m.hud.hide_break()
 	m.queue_free()
 	await frames(2)
 
@@ -2015,6 +2056,52 @@ func _umpire_goal_line() -> void:
 	check(shirt.g > shirt.r + 0.2 and shirt.b > shirt.r + 0.2 and shirt.v > 0.6, "a light teal shirt (%s)" % shirt.to_html(false))
 	u.queue_free()
 	await frames(1)
+
+
+## A throw-in: the umpire on that line stands off the thrower (Umpire.CLEAR), never on top of her (seen on Low, 0.9.9:
+## the umpire walking her side line level with the ball stood where the thrower stood, a body in a body). Throw-ins
+## on both side lines up and down the court and on a goal line; from the thrower on her spot to the pass, every umpire
+## is 1.2 m and more from her (and from the spot once the throw-in is set up).
+func _umpire_clear_of_thrower() -> void:
+	var m := _study_match(23)
+	await _wait_live(m)
+	var closest := INF
+	var who := ""
+	var seen := 0
+	var spots := [Vector2(-8.0, Court.HALF_W), Vector2(-3.0, -Court.HALF_W), Vector2(2.5, Court.HALF_W), Vector2(7.0, -Court.HALF_W),
+		Vector2(11.0, Court.HALF_W), Vector2(-11.5, -Court.HALF_W), Vector2(Court.HALF_L, 3.0), Vector2(-Court.HALF_L, -2.0)]
+	for at: Vector2 in spots:
+		var guard := 0
+		while m.phase != "live" and guard < 600:
+			await frames(1)
+			guard += 1
+		m.pass_info = {}
+		m.shot_info = {}
+		m._award(Rules.throw_in(1, at), null, "throw_in")
+		guard = 0
+		while m.phase != "setup" and guard < 200:
+			await frames(1)
+			guard += 1
+		var taker: Player = m.restart.get("taker")
+		var spot: Vector2 = m.restart.get("spot", at)
+		var on_spot := false
+		var f := 0
+		while f < 400 and taker != null and not (m.phase == "live" and m.holder != taker):
+			if m.holder == taker and taker.stopped:
+				on_spot = true
+				for u: Umpire in m.umpires:
+					var d := u.p.distance_to(taker.p)
+					if d < closest:
+						closest = d
+						who = "throw-in at %s: an umpire %.2f m from the thrower (umpire %s, thrower %s)" % [at, d, u.p, taker.p]
+			await frames(1)
+			f += 1
+		seen += 1 if on_spot else 0
+	print("  throw-ins: the closest an umpire came to the thrower %.2f m (%s)" % [closest, who])
+	check(seen >= spots.size() - 1, "throw-ins: the thrower on her spot (%d of %d)" % [seen, spots.size()])
+	check(closest >= 1.2, "throw-ins: every umpire stands 1.2 m and more off the thrower (closest %.2f m; %s)" % [closest, who])
+	m.queue_free()
+	await frames(2)
 
 
 ## A break: each team huddles by its bench, the seven in a tight ring facing in, the umpires in the middle; the

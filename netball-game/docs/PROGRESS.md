@@ -578,6 +578,26 @@ reasons. Anyone picking the work up (after a usage limit, a restart, a context s
   top two), the coach's tips, the sanctions in the free-pass line, the Club Season in the first release's notes;
   check_listing within Play's limits (full descriptions 1,098-3,347 characters); docs/translation_notes/
   store_listings.md "Added for the Club Season and the coach (needs native review)".
+- **Low polish pass** (after 0.9.9-beta; the owner plays on Low on a Samsung A16): stills of every venue and screen on
+  Low at 1600x720 (20:9) and 1280x720 (16:9) with the new `tests/low_stills.tscn` (a Quick Match in each venue: the
+  centre pass, play, a penalty pass, a throw-in, a shot, a goal's close shot, the pause menu with Team changes'
+  Substitutions and Positions, the interval; the Club Season's hub, its loading overlay at the tap, a match in the
+  hall, the finals single and home and away; `throwin`: the AI's throw-ins alone), checked against the world rules
+  and the owner's notes. Kept: crowd cards are people facing the play, umpires in their kit, no T-pose or block
+  figures, the overlay up at the tap, text fits at both shapes. Fixed: (1) **the umpire stood on the thrower** at
+  every throw-in (she walks her side line level with the ball, 0.8 m out; the thrower stands 0.1 m out at the same
+  place: 0.70 m between their middles, one body in the other on screen). `Umpire.keep_clear` slides her spot along
+  her line, side or goal line, to 1.5 m off any player outside the lines and off the throw-in's spot from its
+  whistle, on the side she is already on (never through the thrower); a signalling umpire on top of the spot steps
+  off at a walk. Test `_umpire_clear_of_thrower` (eight throw-ins, both side lines and both goal lines): closest
+  0.70 m before, 1.68 m after (at least 1.2). (2) **A Club Season match on Low drew 104 calls** (the game's line is
+  100; Quick Match 92): each club crest's shield was five draw calls (two polygons, an antialiased rim, the letters'
+  outline and the letters), 14 for the scoreboard's two. A crest 48 px tall or less now draws its shield from a
+  texture baked once on the CPU (`Crest.shield_texture`, convex scanline fill 4x over, Lanczos down), the letters
+  as before: 104 -> 96 (hall, 1600x720), the hub 210 -> 138; it looks the same. Test `_crest_bake`. (3) The
+  injury note read "A England player is hurt": now "A player from England is hurt" (English; the other languages
+  already said it their way). Test in `_break_screen`. No replays on Low (the foundation's bodies are kept for
+  them, Medium and High), so none was shot.
 
 ## Next
 
