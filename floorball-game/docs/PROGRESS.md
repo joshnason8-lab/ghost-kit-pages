@@ -227,14 +227,19 @@ address waits for the owner's own site), and the media kit brief:
   CREDITS.txt. The workflow "Floorball Unleashed · media kit" builds it and puts it on the release
   floorball-unleashed-media (a prerelease, never "latest").
 
-### 0.9.15-beta: the lower hand on the stick at Steady pace (3 November 2026)
+### 0.9.15-beta: the lower hand on the stick at Steady pace (4 November 2026)
 
 - At Steady pace (80%, the phone's default) a sprinting shooter up close had his lower fist off the shaft in 6% of
-  frames (the owner's note holding-stick-up-close, failing in CI's fresh settings; a stale local settings file had
-  Real pace). With the lower arm at full stretch the stick's turn about the top fist toward it was refused whenever it
-  would take the blade into the floor. Now it turns up to 20 degrees and slides up along its own line (the shaft's
-  line, both fists on it, unchanged) to keep the blade on the floor. 494 of 517 frames on the shaft (95% needed).
-- Local checks now run from the game's default settings, as CI's do. 0.9.15-beta, code 30.
+  frames, and the lower thumb was up in just under 90% (the owner's notes holding-stick-up-close and thumbs-up, red in
+  CI's fresh settings; a stale local settings file had Real pace). The lower arm reached full stretch, and the wrist
+  limit (55 degrees) turned that hand back every other frame, the next frame's grip lined up on the forearm rocking
+  with it. Now: the lower fist is placed within 95% of its arm's reach on a sprint (97% standing), the elbow bent; the
+  wrist limit is 68 degrees (the owner's note allows 70); and the stick's turn toward the lower fist, refused before
+  whenever it took the blade into the floor, slides the stick up along its own line instead.
+- From fresh defaults: up close 494 of 517 frames on the shaft (492 needed), the lower thumb up in 7989 of 8779
+  (7902), the tests' lower fist off in 45 of 1731 (57 allowed), wrists at most 68 degrees (70).
+- CI: the release waits for the owner's notes (a publish job needing both), and the notes run on a fresh install's
+  defaults (XDG_DATA_HOME, WSG_NOTES_FRESH). Local checks start from defaults too. 0.9.15-beta, code 30.
 
 ### 0.9.14-beta: the goal frame solid along the floor; replays cleared (3 November 2026)
 

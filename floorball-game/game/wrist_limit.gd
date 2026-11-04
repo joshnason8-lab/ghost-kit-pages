@@ -6,7 +6,9 @@ extends SkeletonModifier3D
 ## (FoundationLink._place_stick), so the fist stays on it. Added before the helpers (WsgBody.add_modifier): they follow
 ## the hand as it ends up.
 
-const MAX_DEG := 55.0
+## (68: under the owner's note's 70. At 55 it turned the lower hand back every other frame on a sprint, and the hand
+## lined up on that forearm next frame rocked with it - the lower fist off the shaft at Steady pace.)
+const MAX_DEG := 68.0
 const SIDES := ["Left", "Right"]
 var _ix := []         # [forearm, hand, middle knuckle] each side
 var _for := -1

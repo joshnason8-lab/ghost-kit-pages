@@ -421,7 +421,10 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	# (Worked out for the bodies in full detail, near the camera; the others keep their last.)
 	if body.full or _slid.is_empty():
 		var x_t := maxf(_slide(sk, top, top_at - qt * v_top, down), 0.03 - TOP_AT)
-		var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down), 0.06 - spacing)
+		# (The lower arm kept further inside its reach the faster he runs - its elbow bent, never at full stretch on a
+		# sprint, where the top hand landing a little off its place left this fist off the shaft: Steady pace, up close.)
+		var run_k := clampf((player.vel.length() - 2.0) / 3.0, 0.0, 1.0)
+		var x_l := maxf(_slide(sk, low, top_at + down * (x_t + spacing) - ql * v_low, down, lerpf(0.97, LOW_REACH_RUN, run_k)), 0.06 - spacing)
 		# Still out of the lower arm's reach (it can slide no nearer the top hand): that fist rolled round the shaft,
 		# the wrist toward the shoulder, as far as it must (at most 60 degrees).
 		_slid = [x_t, x_l, _roll(sk, low, top_at + down * (x_t + spacing + x_l), ql * v_low, down)]
@@ -438,14 +441,18 @@ func holds(sk: Skeleton3D, hips_g: Transform3D, lift: Vector3) -> Dictionary:
 	return {top: ["Hips", in_hips, 1.0], low: [top + "Hand", hand_t.affine_inverse() * hand_l, _low_w]}
 
 
+## The most of the lower arm's reach its fist is placed at on a sprint (0.97 standing).
+const LOW_REACH_RUN := 0.95
+
+
 ## How far along dir a wrist meant for wrist must move for the side's arm to reach it comfortably (WsgPoseLayer's own
 ## rule: within 0.97 of the arm, no nearer the shoulder than half of it): the nearer way; the nearest point of the
 ## line when it never comes within reach.
-func _slide(sk: Skeleton3D, side: String, wrist: Vector3, dir: Vector3) -> float:
+func _slide(sk: Skeleton3D, side: String, wrist: Vector3, dir: Vector3, far := 0.97) -> float:
 	var s := sk.get_bone_global_pose(sk.find_bone(side + "Arm")).origin
 	var arm: float = _reach_len[side]
 	var v := wrist - s
-	var want := clampf(v.length(), arm * 0.5, arm * 0.97)
+	var want := clampf(v.length(), arm * 0.5, arm * far)
 	if is_equal_approx(want, v.length()):
 		return 0.0
 	var b := v.dot(dir)
@@ -572,9 +579,7 @@ static func _along(q0: Quaternion, dir: Vector3) -> Quaternion:
 	return (Quaternion(across, to) * q0).normalized()
 
 
-## How far the stick may turn about the top fist toward the lower one (degrees), and slide up along its line to keep
-## its blade off the floor as it does.
-const LOW_TURN_MAX := 20.0
+## How far the stick may slide up along its line to keep its blade off the floor as it turns toward the lower fist.
 const LOW_SLIDE_MAX := 0.06
 
 
@@ -603,7 +608,7 @@ func _place_stick() -> void:
 	# should that arm not have quite reached the shaft.
 	var fist: Vector3 = hand * ((_grip_pt[top] as Vector3) - (body.joints[top + "Hand"] as Vector3))
 	xf = _turn_about(xf, heel, xf.origin, fist, 15.0)
-	# And about the top fist (at most LOW_TURN_MAX, never lowering the blade into the floor) toward the lower fist, should
+	# And about the top fist (at most 10 degrees, never lowering the blade into the floor) toward the lower fist, should
 	# that arm not have reached it (a pass's follow-through across the chest).
 	var lo: Vector3 = body.bone_world(low + "Hand") * ((_grip_pt[low] as Vector3) - (body.joints[low + "Hand"] as Vector3))
 	var d := (xf.basis * Vector3.DOWN).normalized()
@@ -612,7 +617,7 @@ func _place_stick() -> void:
 	# fists on it, unchanged - until the blade is back on it: at full stretch on a sprint, Steady pace, the turn refused
 	# outright left the lower fist off the shaft for a frame now and then.)
 	if _low_w > 0.5 and d.dot(lo - pivot) > 0.04 * s:
-		var turned := _turn_about(xf, pivot, xf * Vector3(0, -Body.STICK_LEN * 0.5, 0), lo, LOW_TURN_MAX)
+		var turned := _turn_about(xf, pivot, xf * Vector3(0, -Body.STICK_LEN * 0.5, 0), lo, 10.0)
 		var h2 := turned * Vector3(0, -Body.STICK_LEN, 0)
 		var up := turned.basis.y.normalized()
 		if h2.y < floor_y and up.y > 0.3:
