@@ -316,8 +316,18 @@ func step(dt: float) -> void:
 		"held":
 			if holder:
 				# (Her hands' point has the ball still on its way in to them: Player._hands_on_ball reaches for it.)
+				var was := pos
+				var easing := _ease_left > 0.0
 				pos = holder.hand_point()
 				_ease_left = maxf(0.0, _ease_left - dt)
+				if solid and easing:
+					# On its way in from where she met it, it moves along a way of its own: never through a prop on it
+					# (the post's pad). It stops against it, and she gives way by what was left.
+					var w := solid.sweep(was, pos, R)
+					if w.hit:
+						var stop: Vector3 = (w.pos as Vector3) + (w.normal as Vector3) * 0.002
+						holder.held_off += _back(stop.distance_to(pos) + 0.03)
+						pos = stop
 				if solid:
 					# Her hands can't take it into a prop (the post's pad): she gives way (Player.advance, held_off: back by
 					# as far as it went in, and a little), and a touch rests it against the prop, still in her palms.
@@ -330,7 +340,7 @@ func step(dt: float) -> void:
 					var depth := q.distance_to(pos)
 					if depth > 0.0:
 						holder.held_off += _back(depth + 0.03)
-						if depth <= 0.015:
+						if depth <= 0.015 or easing:
 							pos = q
 		"flight":
 			var was := pos
