@@ -9,6 +9,12 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.14
+
+- **Feet** on Medium and High: a standing umpire's or referee's resting foot is held on the ground (it hovered just
+  above it and slid as he turned), and the defenders' smaller feet are read as down when they are (the shared
+  foundation's fix). Low is unchanged.
+
 ## What's new in 0.12.13
 
 - **New records are named at the final whistle.** When a match beats your record book's best - your biggest win,
