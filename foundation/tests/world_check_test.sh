@@ -28,6 +28,14 @@ for bad in loading pose knees officials feet feet_low sounds joystick tiers; do
 		echo "world_check_test: --bad $bad caught: $(grep -E "^$bad " "$OUT/$bad.log" | cut -c21- | cut -c1-150)"
 	fi
 done
+# A mode freeing the last one's match, knees asked for before joystick: joystick still reads every mode's cameras (the
+# knees rule starts every mode again; run before joystick, it freed Kho Kho's cameras: "joystick NOT WIRED").
+run freed_knees --only knees,knee_strays,joystick --bad freed
+if ! grep -qE "^joystick +PASS" "$OUT/freed_knees.log"; then
+	echo "world_check_test: knees before joystick lost the modes' cameras:"; grep -E "^(joystick|knees)" "$OUT/freed_knees.log"; FAIL=1
+else
+	echo "world_check_test: knees asked before joystick: joystick still reads the cameras"
+fi
 # One knee a little backward on one frame: a stray ("knee_strays"), not "knees".
 run knee_stray --only knees,knee_strays --bad knee_stray
 if ! grep -qE "^knee_strays +FAIL" "$OUT/knee_stray.log" || ! grep -qE "^knees +PASS" "$OUT/knee_stray.log"; then
