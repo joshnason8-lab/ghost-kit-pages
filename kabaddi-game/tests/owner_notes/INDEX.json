@@ -72,6 +72,14 @@
    "date": "2026-11-04",
    "version": "0.14.19-beta",
    "words": "a held player's presses always do something visible (the lead's record: after one failed lion jump, Break free did nothing until he was down)"
+  },
+  {
+   "id": "2026-11-04-knees-forward",
+   "file": "2026-11-04_knees_forward.gd",
+   "game": "kabaddi",
+   "date": "2026-11-04",
+   "version": "0.14.24-beta",
+   "words": "no backward knees on Low or High, outside named acrobatics (the lead's record: Low bodies bent knees 20-32 cm backwards until 0.14.23)"
   }
  ]
 }

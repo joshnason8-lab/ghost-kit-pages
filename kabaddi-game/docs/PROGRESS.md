@@ -730,3 +730,16 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   so it is covered once synced.
 - Gates on e04af65: suite, owner notes (9, fresh), feet, feet_low (equal to 0.14.16 on every line), props, officials,
   pose and tackle_check 19/19 pass.
+
+## 0.14.24: owner note "no backward knees on Low or High" (the lead, 2026-11-04)
+
+- tests/owner_notes/2026-11-04_knees_forward.gd: an autoplayed match on Low (the game's RiggedBody and the planter) and
+  on High (the foundation's bodies), 12 s from the first raid, outside replays and named acrobatics (dive, jump,
+  dubki, held, holding, fallen, rise): a knee bent over 15 degrees more than 4 cm behind its hip-ankle line (forward:
+  heel to toe) is backward; at most 0.5% of the bent knee-frames and none over 15 cm (the foundation's "knees" rule).
+  Low: 0 of 11,479. High: 10 of 2,177, worst 20.3 cm - a jogging raider (4 frames) and an umpire jogging and
+  turning along his line (6 frames, 14.3 cm), both with the foundation's locomotor on the legs (FoundationLink mode
+  "move"): sent to the foundation; High is said, not failed, until its rule is enforced (2026-11-06 12:00 UTC).
+- tests/knee_probe.tscn: the same measure per actor, any tier (KP_ALL=1: every actor). With e04af65 at Low all seven
+  officials read clean here (the scorers bent every frame, all forward); the foundation's two officials at ~48% are
+  being looked at with them (forward from the officials' rig's hips?).

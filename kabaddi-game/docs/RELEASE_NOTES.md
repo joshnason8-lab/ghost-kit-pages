@@ -1,4 +1,7 @@
-**New in 0.14.23: knees bend the right way on Low.** On Low graphics the shared foot planting could bend a
+**New in 0.14.24: a guard on knees.** A new automatic check plays a match on Low and on High and fails the build if
+a knee bends backwards (outside dives, holds, jumps and falls). On Low every knee now bends forward.
+
+**In 0.14.23: knees bend the right way on Low.** On Low graphics the shared foot planting could bend a
 player's or official's knee backwards (most bodies, 20-32 cm behind the leg's line). It now works out which way each
 rig's thigh faces, so knees bend forward. Medium and High were not affected.
 
