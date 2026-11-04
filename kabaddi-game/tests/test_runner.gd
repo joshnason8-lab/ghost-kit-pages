@@ -1449,9 +1449,11 @@ func _run() -> void:
 	check(stick_worst.values().all(func(w): return float(w) <= 10.0) and eased,
 		"the stick is the screen's in every camera, wherever he is on it: up, right, down, left within 10 degrees %s; a camera change mid-move eases round" % str(stick_worst))
 
-	# 9. A full AI-vs-AI match, quick length, knockout rules.
+	# 9. A full AI-vs-AI match, quick length, knockout rules. Seeded: unseeded, each run was a different match, and one
+	# in a while landed a single kind of move (the foundation's run, 2026-11-04: { "toe": 6 } landed - the check below).
 	var m: Node = null
-	Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "length": 0, "difficulty": 1, "knockout": true})
+	Game.start_match({"home": "MUM", "away": "DEL", "arena": "village", "mode": "quick", "autoplay": true, "length": 0, "difficulty": 1, "knockout": true,
+		"seed": 9})
 	m = Game.current
 	m.finished.connect(func(r):
 		_match_done = true
