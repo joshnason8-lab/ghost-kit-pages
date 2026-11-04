@@ -536,13 +536,25 @@ static func _mesh_tris(m: Mesh) -> int:
 ## How long each mode is watched at each tier for the knees rule (frames at 30 fps; a knee read every frame).
 static var KNEE_FRAMES := 240
 ## A body's backward knees fail "knees" (what the owner saw) when they hold more than KNEE_RUN frames running, or come on
-## more than KNEE_SHARE of its bent knee-frames, or any one goes more than KNEE_GROSS_CM behind. Fewer and smaller -
+## more than KNEE_SHARE of its bent knee-frames (2 or more of them), or any one goes more than KNEE_GROSS_CM behind. Fewer and smaller -
 ## single strays - fail "knee_strays" (the lead, 2026-11-04: deferred to 11-13 12:00, "planter step swing flick, #82").
 const KNEE_RUN := 2
 const KNEE_SHARE := 0.005
 const KNEE_GROSS_CM := 15.0
 ## knee_strays' lines and fails from the last knees() run (one pass reads both).
 static var knee_strays_last := {}
+
+
+## A body's backward knees (BACK knee-frames of BENT bent ones, LONGEST running at most, WORST cm behind at most): which
+## rule they fail - "knees" (held more than KNEE_RUN frames, over KNEE_GROSS_CM, or 2 or more on more than KNEE_SHARE of
+## its bent frames), "knee_strays" (fewer, smaller), or "" (none). (A lone frame is never the share's: on a body bent
+## only briefly, 1 in 30 is 3% - Hurling's sprinters; the lead, 2026-11-04.)
+static func knee_verdict(back: int, bent: int, longest: int, worst: float) -> String:
+	if back <= 0:
+		return ""
+	if longest > KNEE_RUN or worst > KNEE_GROSS_CM or (back >= 2 and float(back) > KNEE_SHARE * float(maxi(bent, 1))):
+		return "knees"
+	return "knee_strays"
 
 
 ## knees: in every mode at every tier the player can choose, no knee drawn bends backwards - every skeleton under the
@@ -635,7 +647,7 @@ static func knees(game: WsgWorldGame, parent: Node) -> Dictionary:
 					continue
 				var what := "%s: %s bent a knee backwards on %d of %d bent knee-frames, %d running at most (worst %.1f cm behind its hip-ankle line, frame %d)" % [
 					tag, rec.name, rec.back, rec.bent, rec.longest, rec.worst, rec.at]
-				if int(rec.longest) > KNEE_RUN or float(rec.back) > KNEE_SHARE * float(maxi(int(rec.bent), 1)) or float(rec.worst) > KNEE_GROSS_CM:
+				if knee_verdict(int(rec.back), int(rec.bent), int(rec.longest), float(rec.worst)) == "knees":
 					r.fails.append(what)
 				else:
 					rs.fails.append(what)

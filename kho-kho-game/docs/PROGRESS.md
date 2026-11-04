@@ -343,6 +343,8 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   "knee_strays" from 11-13): world check knees PASS at Low, Medium and High (Low 1-4 single strays, deferred). The note
   now calls WsgNoteChecks.knees with the lead's thresholds (over 2 frames running, over 0.5%, or over 15 cm fails;
   fewer, shorter strays put off to 11-13 as knee_strays).
+- 0.12.17: foundation e58d005 (the planter's swing-leg flick fixed, #82; knees and knee_strays after joystick): the
+  knees note's Low strays 9 legs (up to 14 cm) -> 1 frame of 4.1 cm; High 0.
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

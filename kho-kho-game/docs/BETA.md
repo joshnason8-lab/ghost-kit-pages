@@ -9,6 +9,11 @@
 Each new beta installs over the last and keeps your saves. It runs on 64-bit Android phones, which is every phone sold
 since about 2019. The Play bundle also carries a 32-bit build for older Android Go phones.
 
+## What's new in 0.12.17
+
+- **No knee flicks backward mid-stride.** The last odd frame of a knee bending backwards as a player swings a leg
+  through (up to 14 cm, a frame at a time) is gone on Low - the shared foundation's step fix.
+
 ## What's new in 0.12.16
 
 - **Knees bend the right way on Low.** Players' and umpires' knees no longer bend backwards: standing and running (the
