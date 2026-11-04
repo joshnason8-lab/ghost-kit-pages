@@ -319,6 +319,9 @@ school and stadium grounds, built in code with no draw call more (docs/GROUNDS.m
   reverted (the lead): the foundation's 3b700012 fixes 7 of the 9; it waits on a Low regression fix before it is synced.
 - 0.12.12: foundation 31f60da (3b700012: a released foot's catch-up rate-limited on a hard start, 7 of the 9 defender
   jumps gone; 31f60da3: not under a game's contact_fn, so Low's feet equal a40a95e's - stop 1.7, walk 1.5 cm).
+- 0.12.13: Records.add_match returns the records a match broke (only a best that stood before; your side's only);
+  the result screen names them under the score (REC_NEW in 14 languages; test_runner._new_records; the fit audit
+  with all three broken and long names).
 
 ## Round eight: 0.8.0-beta, defenders learned from real matches (24 October 2026, the owner's request)
 

@@ -649,6 +649,7 @@ func _grounds() -> void:
 # ---------------------------------------------------------------- championships
 
 func _cups() -> void:
+	_new_records()
 	# Your stars: your side's players over the matches you play (outs added up, the longest single defence kept),
 	# nobody from the other side, and saved with the championship.
 	var sc: Cup = Cup.create("world", "IND")
@@ -694,6 +695,26 @@ func _cups() -> void:
 			Game.cup = null
 			var back = Game.get_cup()
 			check(back != null and back.champion == c.champion, "%s: saves and loads" % kind)
+
+
+## The record book names what a match broke: only a best that stood before (a first match sets it), and only your side's.
+func _new_records() -> void:
+	var keep: Dictionary = Game.records.duplicate(true)
+	Game.records = {}
+	var mk := func(margin: int, outs: int, run: float) -> Dictionary:
+		return {"config": {"user_team": 0}, "winner": 0, "score": [10 + margin, 10], "teams": ["MAH", "KAR"],
+			"stats": {"a": {"name": "Asha", "side": 0, "outs": outs, "best_run": run, "run": 0.0},
+				"z": {"name": "Zoya", "side": 1, "outs": 30, "best_run": 900.0, "run": 0.0}}}
+	var first: Array = Records.add_match(mk.call(5, 3, 60.0))
+	check(first.is_empty(), "new records: a first match sets the book and breaks nothing (%s)" % str(first))
+	var same: Array = Records.add_match(mk.call(4, 3, 50.0))
+	check(same.is_empty(), "new records: equalling or falling short breaks nothing (%s)" % str(same))
+	var b: Array = Records.add_match(mk.call(8, 6, 120.0))
+	var keys := b.map(func(x): return x[0])
+	check(keys == ["REC_BEST_MARGIN", "REC_MOST_OUTS", "REC_LONGEST_RUN"] and int(b[1][1]) == 6 and b[2][2] == "Asha",
+		"new records: a bigger win, more outs and a longer defence are named, the other side's ignored (%s)" % str(b))
+	Game.records = keep
+	Game.save_records()
 
 
 ## The city league: eight sides, each plays the others home and away (14 rounds), the franchise league's points,

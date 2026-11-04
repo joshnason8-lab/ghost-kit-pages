@@ -476,6 +476,9 @@ func _menus() -> void:
 		for pd in DB.pick(["WBE", "APR"][k], false, 9, false):
 			r.stats[pd.id] = {"name": pd.name, "num": pd.num, "side": k, "outs": 2, "dives": 1, "pole_dives": 0, "khos": 14,
 				"def_time": 141.0, "best_run": 96.0, "run": 0.0, "times_out": 1, "fouls": 0}
+	# All three records broken, with long names.
+	r.new_records = [["REC_BEST_MARGIN", 23, "APR"], ["REC_MOST_OUTS", 9, "Venkatalakshmi Subramaniam"],
+		["REC_LONGEST_RUN", 187.0, "Rajalakshmi Chandrasekaran"]]
 	Game.show_screen("res://ui/result_screen.gd", {"result": r})
 	await frames(12)
 	await audit("result")

@@ -57,6 +57,20 @@ func _ready() -> void:
 	how.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.fit(how, 2)
 	tv.add_child(how)
+	# Records this match broke in your record book, under the score where they are seen first.
+	for b in result.get("new_records", []):
+		var what := ""
+		match String(b[0]):
+			"REC_BEST_MARGIN":
+				what = UI.bits([tr("POINTS_N").format({"n": int(b[1])}), tr("VS") + " " + DB.team_name(String(b[2]))])
+			"REC_LONGEST_RUN":
+				what = UI.bits([_mmss(float(b[1])), String(b[2])])
+			_:
+				what = UI.bits([str(int(b[1])), String(b[2])])
+		var nr := UI.label("%s · %s: %s" % [tr("REC_NEW"), tr(String(b[0])), what], "SubLabel", 20, Game.C_SAFFRON)
+		UI.fit(nr, 2)
+		nr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tv.add_child(nr)
 	tv.add_child(MatchHud.score_by_turn(_turns_view()))
 	# The box score, a card a side.
 	var cols := VBoxContainer.new()

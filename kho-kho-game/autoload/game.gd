@@ -384,7 +384,7 @@ func play_match(config: Dictionary, buttons: Array = []) -> void:
 
 
 func on_match_finished(result: Dictionary) -> void:
-	Records.add_match(result)
+	result["new_records"] = Records.add_match(result)
 	if String(result.config.get("mode", "quick")) == "cup":
 		get_cup().record_user_result(result)
 		save_cup()
