@@ -112,8 +112,9 @@ var _across := [0.0, 0.0]                    # easing across from where a let-go
 ## slowed. (35 cm flat let a stop from 8 m/s still jump 24 cm; the clip's move plus 15, 29.)
 const CHASE_MAX := 0.25
 const CHASE_OVER := 0.10
-## A released foot's catch-up is held to CHASE_OVER of change a frame only once it moves more than this a frame (m,
-## scale 1).
+## A released foot's catch-up is held to CHASE_OVER of change a frame only once it moves more than this a frame (m;
+## never less on a body scaled down - the feet rule's jump bound is unscaled: a 23.8 cm catch-up on a body at 0.94, held
+## back, snapped the next frame, a 26.6 cm jump - Kabaddi's BAN_5, random#13).
 const RELEASE_RATE_FROM := 0.25
 ## ...and only while the body speeds up faster than this over ACCEL_SPAN (m/s^2): a walk's speed wavers a little every
 ## frame (Kho Kho's Low walk 1.5 -> 3.2 cm held back on every waver, its turned jog 0.2 -> 1.7).
@@ -595,7 +596,7 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 			# the body speeds up - a stop's release held back slid its foot 7.5 cm, Kho Kho's Low stop - and
 			# only a move big enough to read as a jump: a walk's release, held back, dragged its foot along the floor -
 			# Kabaddi's Low walk 0.9 -> 2.1 cm from 15 cm a frame; from 25, 0.5.)
-			if gap.length() > RELEASE_RATE_FROM * sc and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
+			if gap.length() > RELEASE_RATE_FROM * maxf(sc, 1.0) and dv.length() > grow and _accel > RELEASE_ACCEL and not contact_fn.is_valid():
 				gap = (_rel_prev[i] as Vector2) + dv.normalized() * grow
 				capped = true
 			if capped:
