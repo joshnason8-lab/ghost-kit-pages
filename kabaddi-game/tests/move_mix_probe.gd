@@ -1,7 +1,8 @@
 extends Node
 ## godot --headless --path . --fixed-fps FPS res://tests/move_mix_probe.tscn -- SEED [arena]
 ## One AI-vs-AI quick match (as the suite's section 9), and the moves its raiders tried and landed: the same seed at
-## different --fixed-fps should give about the same mix (move choice by the second, not by the frame).
+## different --fixed-fps should give about the same mix (move choice by the second, not by the frame). In CI at 15 (a
+## slow phone): exits 1 when the mix is narrower than the suite's bar.
 
 var done := false
 var result := {}
@@ -29,4 +30,8 @@ func _ready() -> void:
 			used[mv] = used.get(mv, 0) + 1
 	print("MIX fps %d seed %s raids %d landed %s tried %s" % [roundi(1.0 / get_process_delta_time()),
 		args[0] if args.size() > 0 else "9", result.get("raid_log", []).size(), JSON.stringify(used), JSON.stringify(tried)])
-	get_tree().quit(0)
+	# The suite's own bar for a mix (test_runner, section 9): exits 1 below it, or when the match did not finish.
+	var mixed := done and used.size() >= 2 and tried.size() >= 2 and used.size() + tried.size() >= 4
+	if not mixed:
+		print("MIX FAIL: %s" % ("the match did not finish" if not done else "raiders tried and landed too few kinds of move"))
+	get_tree().quit(0 if mixed else 1)

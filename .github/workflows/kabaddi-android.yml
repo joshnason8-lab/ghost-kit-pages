@@ -87,6 +87,12 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
 
+      # The suite's full AI match again at 15 frames a second (a slow phone): raiders still try and land a mix of moves
+      # (the AI's chances are each second's, Match.per_frames - the lead, 2026-11-05).
+      - name: Full AI match at 15 frames a second
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 900 godot --headless --path . --fixed-fps 15 res://tests/move_mix_probe.tscn -- 9
+
       # The tackles, holds, escapes and get-ups, scenario by scenario (tests/tackle_check, docs/TACKLE_SYSTEM.md):
       # 0fe9d2a broke Break free here on 29 Oct and nothing noticed until 4 Nov - it runs on every build now.
       - name: Tackle check (19 scenarios)

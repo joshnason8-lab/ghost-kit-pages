@@ -2031,7 +2031,7 @@ func _ai_raider(dt: float) -> Vector3:
 	var home := pos_in(opp, raider.position.x * 0.8 * side(opp), -1.2)
 
 	if holders.size() > 0:
-		if raid.ai_dodge_cd <= 0.0 and rng.randf() < 0.35 * skill:
+		if raid.ai_dodge_cd <= 0.0 and rng.randf() < per_frames(0.35 * skill, dt):
 			raid.ai_dodge_cd = rng.randf_range(0.6, 1.1)
 			var low := 0
 			for h in holders:
@@ -2048,7 +2048,7 @@ func _ai_raider(dt: float) -> Vector3:
 		if d.state in ["telegraph", "dive"] and dist < 2.4 and dist < td:
 			threat = d
 			td = dist
-	if threat and raid.ai_dodge_cd <= 0.0 and rng.randf() < clampf(skill * 0.6, 0.15, 0.8):
+	if threat and raid.ai_dodge_cd <= 0.0 and rng.randf() < per_frames(clampf(skill * 0.6, 0.15, 0.8), dt):
 		raid.ai_dodge_cd = rng.randf_range(0.7, 1.4)
 		var away := (raider.position - threat.position)
 		away.y = 0
@@ -2232,6 +2232,12 @@ func defend_hint() -> String:
 ## How much this raider likes a move: strong moves get used far more than weak ones.
 func _tend(move: String) -> float:
 	return pow(raider.move_skill(move), 3.0) * 3.0
+
+
+## A chance P that was each frame's at 60 frames a second, over DT seconds: the same each second at any frame rate (a
+## slow phone, the battery saver's 30, the tests' --fixed-fps) as on a phone at 60, the default (Game.smooth_cap).
+static func per_frames(p: float, dt: float) -> float:
+	return 1.0 - pow(1.0 - clampf(p, 0.0, 1.0), maxf(dt, 0.0) * 60.0)
 
 
 func _pick(weights: Dictionary) -> String:

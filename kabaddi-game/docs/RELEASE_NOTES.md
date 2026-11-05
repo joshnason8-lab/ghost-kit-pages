@@ -1,4 +1,9 @@
-**New in 0.14.27: no knee flicks mid-stride.** The shared foot planting no longer flicks a swinging leg's knee
+**New in 0.14.28: AI raiders as quick on a slow phone.** A computer raider's tries to wriggle out of a hold, and
+to sidestep a defender diving at him, came once a frame: on a phone drawing 30 frames a second (the battery saver,
+or a busy moment on Low) he went for them half as often as at 60. They now come as often each second at any frame
+rate, just as at 60 (the default), so nothing changes on a phone running smoothly.
+
+**In 0.14.27: no knee flicks mid-stride.** The shared foot planting no longer flicks a swinging leg's knee
 backwards for a frame or two as a step lands (seen on High's raiders, and twice in a Low match).
 
 **In 0.14.26: knees checked the shared way.** The knee check now measures exactly as the World Stage games'
