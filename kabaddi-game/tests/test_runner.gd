@@ -1452,8 +1452,8 @@ func _run() -> void:
 	# Chances taken each frame are the same each second at any frame rate (the AI raider's escape from a hold and his
 	# dodge of a dive were each frame's, so at 30 or 15 frames a second he went for them half or a quarter as often).
 	var match_gd: GDScript = preload("res://game/match.gd")
-	var once := func(fps: float) -> float: return 1.0 - pow(1.0 - float(match_gd.per_frames(0.25, 1.0 / fps)), fps)
-	check(absf(float(match_gd.per_frames(0.25, 1.0 / 60.0)) - 0.25) < 1e-6 and absf(once.call(15.0) - once.call(60.0)) < 1e-6
+	var once := func(fps: float) -> float: return 1.0 - pow(1.0 - float(match_gd.per_frames(0.01, 1.0 / fps)), fps)
+	check(absf(float(match_gd.per_frames(0.01, 1.0 / 60.0)) - 0.01) < 1e-6 and absf(once.call(15.0) - once.call(60.0)) < 1e-6
 			and absf(once.call(30.0) - once.call(60.0)) < 1e-6,
 		"a chance each frame is the same each second at 15, 30 and 60 frames a second (%.3f, %.3f, %.3f)" % [once.call(15.0), once.call(30.0), once.call(60.0)])
 
