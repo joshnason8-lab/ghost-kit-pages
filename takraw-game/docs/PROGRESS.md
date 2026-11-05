@@ -670,6 +670,18 @@ The owner's request for every game: a home-screen entry to watch a whole AI-v-AI
   pauses and resumes; replays; played to the end; "Match over"; records untouched; Quit goes home. fit_audit has the
   setup, the match at 2× and the result; the media kit's `menus/` has its screen.
 
+## Foundation 040a5df: the knee's front side on the move (0.15.33)
+
+- **Foundation e58d005 -> 040a5df**: WsgFootPlanter keeps every leg of a body moving 1 m/s or faster (KNEE_FRONT_SPEED)
+  on the knee's front side, not only a leg it carries through the air.
+- **The knee note** (a minute of Watch AI, sagittal, past 15 degrees backward): Low players 2 -> 0 of 20,986 bent
+  frames (worst 29 -> 0); officials, the bench and High in play 0. High's walk between points unchanged (5 of 8,147,
+  worst 40): the shin flung sideways, at the stroll's 2.2 m/s, 4 of the 5 while he turns 87-317 degrees a second
+  (Player.YAW_MAX allows 540). Sent to the Foundation (its #84, the twist hold); the note's cap for it stays at 45.
+- The world check (every mode at Low, Medium and High): feet, feet_low, pose and knees PASS; knee_strays (deferred to
+  11-13) one single frame, a Low body in the season at frame 123, 4.1 cm behind (the 4 cm line; 0 on e58d005) - sent
+  to the Foundation.
+
 ## Foundation e58d005: the swing-leg knee flicks (0.15.32)
 
 - **Foundation f080f27 -> e58d005**: WsgFootPlanter never puts a knee it carries through the air (its own step, a hold

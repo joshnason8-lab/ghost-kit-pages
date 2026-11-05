@@ -15,6 +15,9 @@ uninstall that one first (its saves go with it).
 
 ## What to try
 
+New in 0.15.33: **no backward knees on Low.** The shared foot planter keeps a moving player's knees bending forward.
+On Low, a minute of play now has no knee bent backwards at all (2 frames in 0.15.32). Watch the players run and walk.
+
 New in 0.15.32: **fewer knee flicks.** The shared foot planter no longer flicks a stepping leg's knee backwards
 for a frame. On Low the players' few backward-knee frames went from 6 to 2 a minute, and on High the walk between
 points from 8 to 5. Watch the players' legs as they walk back to their places.
