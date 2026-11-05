@@ -1,0 +1,564 @@
+# Progress
+
+Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-game`; release tag
+`pok-ta-pok-rivals-beta`; folders `pok-ta-pok-game/` (the Godot project, self-contained, with its own
+`.github/workflows/android.yml` for a standalone repo) and `pok-ta-pok-rivals/` (the pages). The root workflows are
+`.github/workflows/pok-ta-pok-android.yml` and `pok-ta-pok-play-bundle.yml`, path-filtered to these folders.
+
+**If you are resuming:** read this file and `git log` first.
+
+## Done
+
+- **Research** (October 2026): rules, court, ball, officials and clothing from Aguilar-Moreno, CONADE, the
+  Secretaría de Cultura inventory, the UNAM thesis, NPR, Penn Museum and the Met (docs/RULES.md). Markets and languages
+  from StatCounter, INEGI, DataReportal, Pew and Mexican tourism figures (docs/LANGUAGES.md). Name check: nothing
+  called "Pok Ta Pok Rivals" was found. The closest is "POK" on Steam (2027) and "Ulama" on Play, so the title is
+  kept.
+- **The rules module** (`game/rules.gd`):
+  - The ulama count: one side holds it; a raya to the holder adds one; a raya to the other side takes one off.
+  - Urria on 3 and 7, or 3, 5 and 7, or off. Eight wins.
+  - Who wins a raya: the ball dies in a half, goes past an end, goes out at a side, or touches a player anywhere but
+    the hip.
+  - The serve: male abajo or male arriba.
+  - The classic court's points and the ring.
+  - The time limit.
+
+  Every rule is tested in `tests/test_runner.gd`.
+- **The match**:
+  - A heavy ball (3.6 kg, bounces 0.42 on earth and 0.58 on stone, rolling resistance) with the classic court's talud,
+    walls, end courts and rings.
+  - Players with one writer of position, acceleration limits and strides matched to speed.
+  - Hip strikes and dives timed to the ball.
+  - Team AI that reads the ball's path, turns side-on and sends deep lobs or low skidding drives.
+  - Two judges (veedores) at the analco who signal each raya.
+  - A raya tally board.
+  - Pause, auto graphics, haptics only for your own side.
+- **Bodies**: code-built and lit (not cel-shaded), on 17 bones, wearing the documented ulama gear (gamuza, chimali,
+  faja). The classic court's yoke and knee pad are reconstructed. Judges wear everyday clothes.
+- **The crowd**: one draw call, rendered at load time from the same 3D bodies (front and back), everyone facing the
+  court. This is tested at every venue and graphics level.
+- **Four venues**:
+  - A Sinaloa village court at dusk.
+  - A festival court by day, with stands, awnings and papel picado.
+  - A Yucatán stone court in the forest, with a pyramid on the skyline.
+  - The stone court by torchlight.
+
+  They use the shared skies and surfaces, Poly Haven limestone (CC0) and shared tree cards; the agave is built in
+  code.
+- **Screens**:
+  - The home screen is a carved stela whose glyph blocks are the menu, read in paired columns.
+  - Match setup: the court, two towns with their players by position, a court diagram, side size, urria, time,
+    level.
+  - The town tournament: eight towns, knock-out.
+  - The result screen with a box score.
+  - Settings, How to Play (four tabs, including the story), the licences, and Move buttons.
+- **Six languages** (es, en, pt, fr, de, it): fit_audit is clean on every screen at four screen shapes.
+- **CI**: the root and standalone workflows, both green on the PR. The beta APK (64- and 32-bit) is on the
+  `pok-ta-pok-rivals-beta` release, and the Play bundle workflow passes (unsigned).
+- **Store**: `store/PLAY_STORE.md`, listings in 11 Play locales (`store/listing/`), the 512 icon and the feature
+  graphic rendered from the stone ring, and six 1920x1080 screenshots (`store/graphics/`).
+- **Performance** (perf_probe, after the body reduction): village Low 59 draws / 53k triangles, stone Low 60 / 64k,
+  both well inside the Low budget (100 draws, 90k triangles). High: village 75 / 138k, stone 74 / 131k. The crowd is
+  one draw call at every level.
+- **Pages**: `pok-ta-pok-rivals/` (index, privacy, support).
+- **0.2.0 (October 2026)**:
+  - **Motion capture** (CMU Graphics Lab library, mocap.cs.cmu.edu; credited in Licences). The run is take **09_02**
+    (subject 9, "run"), the serve's underhand toss **124_12** (subject 124, "Underhand Toss", 4.4–6.0 s, release at
+    5.43 s). `tools/mocap/bvh_retarget.py` retargets them to the 17 bones: one gait cycle cut between left-foot strikes,
+    resampled to 30 fps, root motion dropped (the player is still the one writer of position; only the clip's speed
+    and cycle length are kept), the upper arms' and thighs' twist from the elbow's and knee's plane, and foot locks:
+    a small drawing-only offset of the hips holds a planted heel or toe still while the root moves on. The run blends
+    in from 2 to 3.2 m/s over the hand-made one; strides are matched to the clip. The serve plays the toss at its own
+    speed (SERVE_T 1.6 s, release at 0.64), abajo bowled lower by blending in the hand-made serve; the ball sits in the
+    hand bone. Low plays the nearest frame. With low balls now dived for, a dive's return is a scramble (least error 0.55, 62% of the power), or the hard level kept rallies alive for a minute. Tests: each clip loads, and a planted foot slips under 3 cm (worst 2.7 cm).
+  - **Meshy people**: three ulama players (lean, tall, stocky), a judge and eight townspeople, made with Meshy (560
+    credits: 1,763 before, 1,203 after). The players are rigged and follow the game's skeleton bone by bone
+    (`game/rigged_body.gd`); the gear (faja in the team's colour, chimali, yoke, knee pad, a judge's hat) stays code-built
+    over them. The crowd's sheet is rendered from the townspeople at loading. Prepared for phones by
+    `tools/meshy/prepare.gd` (9.4k triangles High, 4.7k Medium, 3–4.7k Low; 1024 textures; the fans 512).
+  - **The owner's list**: menu music (an original piece for cane flute, frame drum, slit drum and seed rattles,
+    `tools/music/compose.py`); the dusk court readable (brighter, rim light on the bodies, a faint pale ring round the
+    ball, the ulama camera closer); the server no longer spins on the spot holding the ball (he turned to face the ball
+    in his own hand: a bug); a standing hip cannot meet a ball below 34 cm (dive for it); the ring shot (see RULES);
+    a slowed replay from below the ring after a ball through it; Settings: play the whole team or one player.
+
+- **0.3.0, the sound update** (docs/SOUNDS.md): recorded sounds from kenney.nl (CC0) and opengameart.org (CC0, one
+  CC-BY 4.0 crowd pack), made by `tools/sound/process.py`. A recorded body thump under the hip strike, the ball on
+  earth, bare feet on earth and stone, the crowd's murmur, cheer and applause (real crowd recordings, softened), interface
+  clicks, and each court's surroundings: crickets and a far dog in the village, birds in the Yucatán forest, crickets and
+  the torches' fire at night. Pause holds every sound. Players grunt or breathe on half their strikes. Audio went from
+  748 KB to 1.4 MB. A test checks every sound file loads and that nothing plays while paused.
+- **0.4.0, the size update** (the owner allowed the APK to grow for looks and sound; Low unchanged, tested):
+  - Medium and High load sharper surfaces: the six Poly Haven surfaces at 1K (Medium) and 2K (High; its normal maps at
+    1K, as a 2K normal map compressed for phones is 5.6 MB and its detail does not show at a match's distance),
+    VRAM-compressed (ETC2 on phones) with mipmaps. Low keeps the 512 files.
+  - High's skies at 4K (Poly Haven, tone-matched to the 2K ones within 2/255); Low and Medium keep the 2K.
+  - The Meshy players' and judge's own 2048 textures on Medium and High (VRAM-compressed); Low keeps the 1024.
+  - Eight more Meshy townspeople (a Yucatec woman in a huipil, a Sinaloa man in a texana, an old man with a cane, a
+    girl, a mother with a baby in a rebozo, a young man in a plain football shirt, a Maya man in white with a red sash,
+    a woman in an apron): Medium and High bake a crowd sheet of 32 figures at 96 x 264 pixels each; Low
+    keeps sixteen at 64 x 176.
+  - The carved stone ring (Meshy), fitted to the ring's exact hole and size, on Medium and High.
+    The stela came back looking like a classical column, so it was not used.
+  - Long stereo recordings for each court's surroundings and a longer crowd bed with chatter on Medium and High (JC
+    Sounds, CC-BY 4.0; Gregor Quendel), and three cheers and two applause takes in turn.
+  - Meshy credits for this update: 440 (1,203 before, 763 after), for the eight townspeople, the ring and the stela.
+- **0.4.1, the beta key**: both APKs are signed with the owner's beta keystore (repository secret BETA_KEYSTORE_B64)
+  instead of a build tool's own debug key, so every beta from now on installs over the last. CI logs each APK's
+  certificate SHA-256 and fails if it is not the beta key's. Without the secret it warns and falls back. A phone with
+  an earlier beta (signed with the old key) has to uninstall it once.
+- **0.5.0, from the owner's two videos of pok ta pok in Yucatán** (a night street game in Mérida with a ring on a post,
+  and a court game in a park with sloped benches and wall rings):
+  - The stone courts serve *de bote*: thrown up and over to come down just past the analco and played off the bounce
+    (the receivers wait for it to bounce; tested). Ulama's earth courts keep their documented rolled and thrown serves.
+  - The ball is livelier on stone (0.58 to 0.68 bounce; talud and walls likewise) and a rolling ball slows sooner
+    (0.7 to 1.3 m/s²); earth unchanged. On stone the AI waits for a ball to come up off a bounce rather than diving,
+    a dive scoops the ball up (at least 26°), and its power follows its timing: at the hard level the stone court
+    had become minutes-long rallies of dives back and forth (CI caught it); now most balls are hip strikes, as in
+    the videos. Ulama's dives are as they were.
+  - The copal offering before games on the stone courts (game/ritual.gd; docs/CULTURE.md has what was decided and
+    why): an elder in white with a smoking censer, players' arms raised to the sky, a conch; skippable; not on the
+    Sinaloa courts.
+  - Not changed: the many variations in the videos (the Mérida game's freestanding ring on a post, its street court,
+    the park show's painted figures). The ring on a post belongs to the revival rule set still on the Next list.
+- **0.5.1, the legal pages in the game**: Settings > About opens Licences, Help and the Privacy policy as the game's
+  own screens (they scroll, have Back, and work offline); the game opens no web pages. Licences lists every outside
+  work by what it is, who made it, its licence and where it is from (CMU motion capture, Meshy, Poly Haven, Kenney,
+  Gregor Quendel, JC Sounds and the four CC0 OpenGameArt sounds), then the fonts, Godot and the engine's parts. Help
+  has how to play, the controls, the rules in brief, the graphics levels and how to report a bug. Privacy says what
+  this build does: no data collected, no ads or analytics, no internet permission, vibration only. Both in six
+  languages; a test opens each from Settings in every language and checks it has its text and Back. The public
+  privacy page (pok-ta-pok-rivals/privacy.html) says the same and is what the Play listing links to once merged.
+- **0.5.2**: the fonts' notice no longer credits Uncial Antiqua (a font this game does not ship; the notice came from
+  another game), and gives the Oswald project's current address beside the one its font file carries (which no longer
+  exists).
+- **0.5.3, ready for Google Play** (the steps only the owner can take are in store/PLAY_STORE.md):
+  - The soak test (tests/soak.gd), at Low and at High:
+    - 5,000 random taps, drags, Back presses and trips to the background through every screen and the matches they
+      lead to;
+    - twelve AI matches over the four courts, paused and resumed and Backed out of during play;
+    - Back on every screen;
+    - a tournament match paused and resumed, with its save checked.
+
+    No crash, script error or lost save. One stall found and fixed: Licences laid out all the engine's licence texts
+    at once (over a second on opening). Now each is listed by name and opens on a tap.
+  - The bundle workflow prints the bundle's sizes and fails over Play's 200 MB base module (tools/aab_size.py). It
+    also checks the per-device APKs Play would serve with zipalign -P 16.
+  - The store kit:
+    - the listing in eleven languages, updated for the realistic players, the stone courts' serve and offering, the
+      replay and one-player mode;
+    - the first release's notes (store/RELEASE_NOTES.md);
+    - the 32-bit 512 icon;
+    - new screenshots on High;
+    - every Play Console answer with its reason (store/PLAY_CONSOLE_ANSWERS.md).
+- **0.5.4**: the ring replay is no longer hidden. The big "REPLAY" banner and the call's "Through the ring!" sat over
+  the ring just as the ball went through it. Now a small REPLAY tag sits in the corner, and the call clears when the
+  replay starts. The store drafts are regenerated from this build (tools/store/make_store_graphics.sh), and the media
+  kit's tools are in tools/media (make_media_kit.sh).
+
+- **0.5.4-pilot, the World Stage Games shared foundation** (branch `claude/pok-ta-pok-foundation-pilot`, the seventh
+  and last game; addons/wsg_foundation vendored at 1886c2e): on Medium and High the players and judges are drawn on
+  the shared rig (`game/foundation_link.gd`), Low exactly as the beta.
+  - **The bodies**: the same Meshy players (lean, tall, stocky) and judge, baked onto the rig
+    (`assets/foundation/`, tools/wsg/bake_character.sh: 9.4k triangles and a 4.7k light mesh, as High and Medium
+    drew them), in RiggedBody's own textured material with the player's skin tone; each player keeps the body Body
+    picks for him. The game's gear (faja, chimali, yoke, knee pad, wrist wrap, straw hat) is skinned to the drawn
+    bones.
+  - **Every pok ta pok move is the game's own** (WsgLegacyPose reads Body's 17 bones): the stance, the hip strike
+    (0.25 s to contact), the dive, the serve's toss, the celebrations, the offering's raised arms, the judges'
+    calls. The hips where the game's are, the legs rebuilt by IK to the game's feet (the rig's legs are 7% shorter
+    than the code skeleton's). Measured: the drawn hip within 3.6 cm of the game's at contact.
+  - **Motion capture only for running and walking** (MoCap Online's Mobility clips through WsgLocomotor: walk, jog,
+    run, their starts, stops, turns and cuts; ActorCore's sprint loop) and for **the judges at ease** (the standing
+    idle and its fidgets, the head on the ball). No celebration, dance or gesture clip is used: the game's own
+    celebration and dejection stay (docs/CULTURE.md). The server holding the ball stays on the game's pose (no
+    spin); the ball is drawn in his drawn hand.
+  - **Replays** (the owner's rules): the ring always, at every level, as before. On Medium and High at most three
+    others a match, only for big moments, in this order: the raya that wins the match; a raya that wipes a count in
+    urria; a raya won off a dive save or after a rally of 8 strikes. Never a plain dead ball, out or fault; at least
+    90 s of play between them (the ring exempt); none in the last raya before the result unless it wins the match;
+    watch mode the same. The drawn bodies as drawn (WsgReplay on the game's replay clock), the corner tag only, a tap
+    anywhere passes it. The call resumes where it stopped, so a match plays exactly as without its replays (tested).
+  - **The copal elder** stays the game's code body in white: he is a respected figure in a ceremony, and no Meshy
+    elder exists (no new generation); putting him on a player's or the judge's body would not be right.
+  - **Auto graphics**: the game's own first-seconds check kept exactly, then WsgAutoTier all match long on a phone;
+    a step applies at once (on Low the game's own bodies come back). Tested with slow frames fed by hand: Medium ->
+    Low at 6 s; High -> Medium at 6 s (the game's check) -> Low at 11 s (WsgAutoTier); Low untouched. The A16's Mali-G57 MC2 and Mali-G68 MP2 start on
+    Low (Game.graphics_for, tested).
+  - **Not used**: the foundation's 3D crowd (the game keeps its own cut-out crowd, out of the export), its baked venue
+    light (the courts are built in code; dusk reads through the bodies' rim light, as in the beta), WsgDirector.
+  - Proof of Low: `tests/foundation_view.tscn -- OUT 0 pixels` (with `--fixed-fps 30`) renders each court with the
+    wall-clock animations held and each body in the model its player's name picks: identical pixels to the beta's on
+    all four courts; perf_probe's draw calls identical at Low (village 61, festival 57, stone 70, night 72).
+  - Tools: `tests/foundation_view.tscn` (the same seeded moments in either build), `tests/foundation_cpu.tscn` (CPU a
+    frame by level, foundation on and off).
+
+- **0.6.0-beta: the foundation pilot merged** into the game's branch (the owner's playtest on a Galaxy A16): the pilot's
+  commits fast-forwarded, version 0.6.0-beta, code 12 (above the pilot's 11), the beta and its 32-bit APK published
+  from claude/pok-ta-pok-game as before. The Foundation session no longer pushes here; shared-code changes go through
+  it, and syncing uses tools/wsg/sync_foundation.sh (setting loco.rng in the same change, or seeded matches change).
+- **0.6.1-beta: the owner's A16 notes.**
+  - The crowd watches the play: every spectator turns toward the ball along the court (the side stands never face
+    away), each with his own pace, a weight-shift and a breath; on a raya they jump, some higher than others, and
+    settle over a second or so.
+  - The stone court's spectators stand on stepped terraces behind the wall's top, so none sinks into the stonework.
+  - The court-side camera frames the play: the ball, everyone near it and your own player, the court's whole width,
+    the angle of view worked out for the screen (20:9, 16:9, 4:3). On the earth court it stands back over the near
+    crowd; on the stone court it hangs just out from the near wall's top, in front of the terraces, so the wall
+    never hides the alley.
+  - The players' ready stance is an athlete's on every level: hips sat back, knees bent over the toes, heels just
+    up, the arms loose and in front, no longer held out like a mannequin's.
+  - The copal elder is a realistic older Maya man in plain white cotton (the judge's rig, retextured by Meshy for 10
+    credits; a new figure for him came back in a "costume Maya" fringed skirt and was not used: docs/CULTURE.md). He
+    walks upright and swings the censer in slower arcs, the copal smoke rising from it.
+  - **Watch AI** (the main menu): two towns played by the computer, on the broadcast camera, with the score, the
+    replays, pause and quit, and a 1x / 2x button (at 2x the match steps twice a frame, each step as at 1x).
+  - The MoCap Online and ActorCore credits stay in Licences.
+- **0.6.2-beta: the stick is the screen's on every camera** (the owner, in two games: "switching to a camera angle
+  that is not alongside the court, the joystick movement is all wrong"). The stick was turned by the camera's flat
+  forward, which is up the screen only at its middle: on the wide court-side view your player could run 40 degrees
+  off, and from the end camera sideways or backwards. Now the stick goes through the screen at your player (the point
+  a little way along it from him, back down onto the ground), so up is up the screen, right is right, on the
+  court-side, high and end cameras, and so does your aim as you strike. Off the screen he falls back to the camera's
+  forward; after a cut to another view his way turns over about 0.2 s. The end camera also stays 10 m behind your
+  player as well as 16 m behind the ball, so he is on the screen with it rather than under the lens. Tested: each
+  camera, both courts, up, right, down, left within 10 degrees, his aim and his run, and the cut.
+- **0.6.3-beta: the owner's notes on the A16** ("this does not seem like it has the shared foundation"; players
+  "floating around when they go to get the ball"; "the AI is dumb and barely hits the ball after the serve"; the
+  stance "too rigid"; "the ball is rubber and should have more bounce"; the AI "rolling the ball on the serve").
+  - The shared foundation synced (1886c2e to 79b346e, loco.rng set in FoundationLink as the sync asks) and now on
+    Low too, where the A16 plays: its WsgToonDriver drives the game's own bodies with the motion capture while a
+    player runs or walks somewhere, so he strides with planted feet and swinging arms instead of gliding; his
+    stance, strike, dive and serve stay the game's (at once on an action, so the match plays exactly the same with it
+    as without). Players more than 28 m from the camera are posed every other frame. A phone too slow for it turns
+    it off by itself (WsgAutoTier at Low), back to the beta's own run. Medium and High keep FoundationLink.
+  - The AI: on the earth the ball was nearly always rolling, so players dived for it over and over (88 dives to 10
+    hip strikes in a match), mostly in vain. Now the ball bounces, a dive scoops it up to hip height, drives skip up
+    off the earth, and players wait for the ball to come up rather than dive. Four bugs fixed in the planning: a
+    ball over the head was planned for the hip (41% of strikes missed), the time to get there ignored speeding up
+    from a standstill, a player already on his spot could wait forever for a slow ball, and the ring was tried as
+    often as before on four times the strikes (halved). Each level misjudges a share of balls outright (18%, 12%,
+    7%). AI matches now: hip strikes 98% met, about 4-14 touches a raya, 9-15 rayas a match.
+  - The serve: the low serve (male abajo) is thrown low to bounce up to the receivers, not rolled (docs/RULES.md, the
+    owner's call); the stone court's bounced serve is thrown higher so it comes up to the hip.
+  - The ball: the earth's bounce 0.42 to 0.6, the stone's 0.68 to 0.76, the walls' with them.
+  - The stance breathes, shifts its weight foot to foot, bounces now and then on the balls of the feet, shakes its
+    arms loose and looks about, each player on his own time; the feet stay planted (tested).
+  - The Web preset leaves out all the foundation's licensed data.
+  - Tests: the serve bounces and is never rolled, the AI meets the ball with the hip and rallies go on, the stance is
+    alive and planted, and at Low every player has the capture, runs on it, and the match plays exactly as without.
+- **0.6.4-beta: the crowd sits and stands properly** (the owner, for every game: "make sure the crowd is sitting
+  properly, watching the game properly, facing the right direction, standing properly. This should all be shared
+  foundation"). Every venue is declared to the shared foundation's crowd placement (WsgCrowdVenue, foundation
+  cd6c29f) and passes its audit (game/crowd_venues.gd, tools/wsg/crowd_audit.gd): the village's people sit on the
+  benches and stand behind them (no longer in them); the festival's stand is sat on as a bleacher, feet on the row
+  below; the stone courts' terraces are stood on; the crowds hidden at ground level behind the stone courts' end walls
+  are gone. The seated are the shared cards (the only seated figures), in local skin, hair and clothes, and only the
+  fans the shared sheet draws from the front (some of its fans are baked from behind: reported); the standing stay
+  this game's townspeople, turned to the play within 50 degrees of their place. Contact sheets: docs/playtest/crowd/.
+- **0.6.5-beta: the seated fans' faces.** The foundation's cards (ca57ce7) are now drawn from each fan's whole
+  textured model, faces and all, and take a spot's shirt colour exactly: all six fans sit again (0.6.4's cut-down
+  sheet of the three that read from the front is gone), in white, red, turquoise and the teams' colours.
+- **0.6.6-beta: feet flat on Medium and High.** The shared foundation synced to b073334 and its WsgFootFlat taken:
+  the stocky player's rig model stands 3.4 degrees toe-up and the judge's 6.3 (sole_tilt), and every move showed the
+  toes off the ground; now turned down, a planted heel kept on the ground. The lean and tall players stand flat.
+- **0.6.7-beta: a loading screen on Start** (the owner, for every game: "when you click start game there is a loading
+  delay ... long enough on the slow phone that users might think the game has frozen"). Every way into a match (a
+  quick match, Watch AI, the tournament, play again) goes through Game.start_match, which now puts the shared
+  foundation's loading overlay (WsgLoading, edebcd5) up in the frame of the tap, in the game's colours with its ring
+  icon and its own "Sweeping the court...", turns the screen's buttons off, loads the match's scripts on the loader's
+  thread and builds the match in steps (Venue, Players, Ready, Draw), a frame drawn between the parts so the bar
+  moves. Before, the whole build was one frozen frame (0.26-0.94 s on a desktop at Low, 1.3-6 s for the first match
+  after launch; tests/load_time.gd). The match's first draw (the GPU's first use of everything) happens under the
+  overlay. Tested (input_test): a real tap puts it up by the next frame with the button off, a second tap starts
+  nothing, the bar only goes forward to the end, the match comes up built.
+- **0.6.8-beta: the owner's notes on 0.6.7.**
+  - *"Ball is hitting too high on body."* In the strike the body's hip sinks to 0.54-0.61 m (measured on the
+    skeleton through the strike's window), but a ball was met anywhere within 0.62 m of a point 0.7 m up, so up to
+    the chest. Now a standing hip only meets a ball no higher than 0.82 m (Player.STRIKE_MAX_UP); a higher one must
+    come down. The computer plans its hip strikes in that band too. Rallies got no shorter (match_sim).
+  - *"Skip the copal on AI match watching."* Watch AI shows SKIP over the copal (and a tap passes a replay, as in a
+    match); no joystick and no other buttons.
+  - *"Toss the ball up higher on serve."* The low and stone serves are thrown at 42-50 and 50-58 degrees (were 24-32
+    and 36-46), the full serve at 52 (was 40): 2-5.5 m up; still landing short and bouncing to the receivers' hips.
+  - *"Get rid of the festival court flags."* The papel picado over the near side is gone.
+  - Also: the stone courts' judges stand on the wall's coping (they were sunk 0.5 m into it), and the village's
+    standing crowd at the ends is pulled back off the ground the players run on.
+- **0.6.9-beta: solid props, and a smoother way into a match.** The shared foundation synced to a24408b.
+  - *WsgSolidProps* (the owner: "There will NEVER be a time when a player or referee should walk through a table or
+    bench ... A ball should also bounce off these items"). Every venue declares its props where it builds them: the
+    village's benches, houses, trees, agaves and boulders; the festival's stand rows, posts and awnings; the stone
+    courts' structures, coping, terraces, end walls, stelae and pyramid, and the night court's torch posts (74-102 a
+    venue). The court's own talud, walls and rings stay Court.contact's; the props beside them stand back 3 cm so the
+    two never bounce the ball at once. The ball's every step is swept against them (Ball.simulate): at any speed it
+    bounces off, with a knock, in play or running on after the call; in play a knock is out (R10). The players, the
+    judges and the copal elder are pushed out of any prop. prop_audit (game/prop_runs.gd) runs in CI: a Watch-AI match
+    at each venue and then 120 balls struck at the props with the game's own ball; with the sweep turned off it finds
+    680-1,532 balls through props a venue, with it none. The contact sheet: docs/playtest/props/props_g0.jpg.
+  - *Loading, v2.* Every look is drawn once under the overlay, a few a frame (ld.warm), and the overlay stays until
+    the frames come in smooth (ld.done) before the match's clock starts; the menu loads the next match's files on the
+    loader's thread. Desktop software GL at Low: the longest frozen frame of a cold first match 291 ms (was 1.3-6 s
+    in one frame); warm, 83-200 ms.
+- **0.6.10-beta: the owner's notes kept as tests for good.** The shared foundation synced to 877bcd9 (WsgOwnerNote).
+  Every note the owner has given on this game is a test in tests/owner_notes/ with the owner's own words, the date
+  and the version (INDEX.json, 18 notes): the crowd facing the play, the stone court fans' legs, the court-side
+  camera, the A-pose and the rigid stance, the block-figure elder, the joystick on every camera, the shared
+  foundation on the A16, floating players, the AI barely returning, the rubber ball's bounce, the rolled serve, the
+  loading delay, the solid props, the hip height, the copal skip when watching, the higher serve toss and the
+  festival flags. Each measures the symptom over its whole range, mostly with the test suite's own measurements
+  (tests/note_run.gd: a match run once however many notes read it). CI runs them strictly (no skips) and fails if a
+  note ever listed is gone (owner_notes_guard.sh), and fails without a commit the foundation requires
+  (check_foundation.sh, no longer a warning only).
+- **0.6.11-beta: ready for the simulations** (the lead: thousands of headless matches on the real code, docs/SIM.md).
+  The sport's rules checked after every step (game/rule_checks.gd: the count replayed from its history, the clock,
+  the serve, the halves, the bounds, the ball never inside stone or a prop, the hip's cap, no play after a win, no
+  phase forever); match_sim runs them and fails on any. The foundation's locomotor fidgets seeded from each body (the
+  one unseeded roll in what is drawn). 8.5x real time headless today.
+- **0.6.12-beta: plugged into WsgSim** (the shared match simulator; foundation 7239d54). game/sim.gd is the adapter:
+  the real match from a seed at any venue, rules, side size, length, urria set, graphics level and per-side AI level
+  (Match config "levels"), the copal on or off, a person's side played through the game's own touch layer; the
+  sport's checks (RuleChecks) every frame. The cup's results simulator is now ResultSim (game/result_sim.gd). The
+  touch layer answers input actions too (pok_a, pok_b, pok_switch, pause: a gamepad's A, B, Y, Start), so the input
+  fuzzer, and a gamepad, play through it. First batch's finding fixed: a player who had just stopped turned at once
+  to face the ball while his stop's steps were still landing, his planted feet swinging round with him (53 cm); he
+  now settles 0.4 s first (Player.STOP_SETTLE) and the legs step the turn. rng_lint clean.
+- **0.6.13-beta: the world rules wired; planted feet measured as drawn.** The shared foundation synced to 0a3add8: its
+  planter now holds the ball of a planted foot, rolls the heel over it, steps a foot beyond the leg's reach and holds
+  its direction up to 40 degrees of twist. Our own test of the drawn feet now reads them as drawn (inside the
+  skeleton's update; after it the bones are back to the clip's) and counts the least the ankle or the ball moved (the
+  shared foot_slip's measure): 0.5 cm/s on average, at most 1 cm a frame (was 5.4 cm/s). game/world.gd wires every
+  world rule (docs/WORLD_RULES.md) to the game's own code: the quick match, Watch AI, the tournament and the night
+  court each started through Game.start_match, the judges as officials (FoundationLink puts the judge's drawn body in
+  wsg_official), a player as the walker, the match's own stick (Match.stick_to_world, the code screen_to_world runs)
+  on the court-side, high and end cameras, the props' and crowd's audits; it runs in CI (warnings till 12:00 UTC).
+  The simulator's pause hook (paused()) for its input fuzzer.
+- **0.6.14-beta: the shared foundation's rules for 12:00 UTC.** Synced to d4e3107 (running cadence fixed, feet measured
+  only where the planter drives them, graphics tiers enforced, the release gate). The world check found two real
+  things: the players were missing for the first frame after loading (the shared bodies are hidden until their first
+  pose, and since loading v2 the match poses them only once it starts: Match._first_pose now poses everyone at the end
+  of the build), and the copal offering's arms were held locked straight overhead (they read as a mannequin's: the
+  elbows are softly bent now). world.gd: set_tier as the Settings screen does, Medium at the start, three modes. The
+  world check runs as its own job beside the build. The release gate runs on both APKs before anything is published,
+  and the foundation's test-time scripts and our adapters are kept out of the export. The game's auto graphics stands
+  down when WsgAutoTier.off is set (the simulator and the world check).
+
+- **0.6.15-beta: what the simulator found.** WsgSim smoke (74 matches on d4e3107, x10 real time) found two bugs in
+  the game and one in its own rule checks:
+  - The stick moved the user's man in the walk-out, when the players may cross the analco to their places: held
+    toward the far end, he ran into the other half and the serve's own-half clamp snapped him back (8 m in one frame
+    in the new test; 1 m in the sim's seed 18). The stick now waits for the serve, as it already did in the serve's
+    set-up.
+  - The judges' planted feet slid 3-5 cm after every call: FoundationLink let the planter go when a body came back
+    from its arms-only pose ("upper"), and the feet slid to the capture's. Only a body coming back from the game's whole
+    pose is reset now (seed 13 replayed: gone).
+  - RuleChecks read a sudden-death win (time up, level: the next raya wins) as a count that was not its history.
+  The players' own foot slips in the sim (2.5-5.7 cm on hard stops and pivots at speed, in the planter's "move") went
+  to the foundation with replays; its planter fix (c4fdcd6: a let-go foot held across while it decides) clears all
+  three replayed. Shared foundation synced to 888e222 (that fix, WsgFootFlat keeping a planted toe in place, no doubled landings, the sim's no-progress check, pose
+  excuses, deferrals; the fetch hook, enforced from 2026-11-04 12:00 UTC, asked of the lead: our players never leave
+  the court, so none can fetch a ball from behind a prop).
+
+- **0.6.16-beta: the lead's decisions on the simulator's report.** The cup is seeded (the draw and the other games'
+  results from a seed saved with it) and runs in the sim (targeted:cup, with RuleChecks.cup on the whole cup after the
+  game). The sim's balance is split by who plays home: the harness's random input lost all 23 matches it played at
+  home, which is the harness, not the game; computer against computer the stronger side won 13 of 14, home or away
+  (tests/balance_sim for 200-seed cells). Feet deferred with the lead's word until 2026-11-06 12:00 UTC (the sim's foot
+  slip; the world check's feet rule once the world check reads deferrals).
+
+- **0.6.17-beta: shared foundation 1303a185.** The world check reads our deferral (feet until 2026-11-06 12:00 UTC,
+  the lead's word). The sim's fetch case wired: fetch_reach is the court, and the AI walks the nearest player of that
+  half round the court's own props (Match.fetch, the venue's path) to a dead ball behind them; on the stone and night
+  courts he gets round the end walls in about 2 s, never into them; the earth courts have no props on the court.
+  Earlier in it, e9c234c: The world check's props and crowd rules now fail on a failing audit
+  (they read PASS whatever the audit said); both pass here on the audits' own exit codes. The stands' front-row fans
+  stand back 0.6 m from a barrier.
+
+- **0.6.18-beta: shared foundation 56c5bef.** The crowd: no fan placed where its reach meets another section's
+  furniture (bce6f30; crowd audit PASS). world.gd turns the game's own graphics step-down off too (ADOPTING 5.18).
+  0.6.17's CI world check: PASS, 10 rules, feet DEFERRED until 2026-11-06 12:00 UTC with the lead's word.
+
+- **0.6.19-beta: shared foundation 284bef5.** WsgFootFlat pins a planted toe only as it reaches the floor (2 cm, not
+  4: a foot just landed slid at the heel); the sim no longer measures feet while a replay plays back. 0.6.18's CI:
+  build, release gate and world check all green.
+
+- **0.6.20-beta: the balance at 200 seeds a cell.** Computer against computer, 3-minute matches, the venue, rules,
+  teams and side size turned by the seed (tests/balance_sim; 95% Wilson): fair 1-1 home 107 / away 93 (53.5%, 47-60%);
+  home-strong 2-0 home 91.0% (86-94%); away-strong 0-2 home 7.5% (5-12%). No home/away lean and no balance flag. The
+  fair cell split by rules (ulama home 64% of 90, classic 45% of 110) is being tested against the first serve: config
+  first_serve (default home's, as before) and balance_sim's swap option, which alternates it by seed.
+
+- **0.6.21-beta: shared foundation 5aa5773, the new feet measure.** WsgNoteChecks.foot_slip adds up, each frame a
+  foot is down, the smaller of the heel's and the ball's move: a heel-to-toe roll reads about 0, a slide in full; the
+  planter's hard stop and WsgFootFlat's toe shift fixed (4cae13ae). Our walker on the world check: walk 0.3 cm (2.1
+  before), jog 0.7, turned 0.4, run 0.3, stop 0.0 - the feet rule passes outright, so world.gd's deferral is gone. The
+  sim's foot-slip deferral stays until a smoke batch on this measure says otherwise.
+
+- **0.6.22-beta: shared foundation 13f00e20.** The skid measure (a foot flat on the floor moving in one frame) and
+  the planter's fixes: our walker's turned jog skidded 13.8 cm and its run 9.2 on 0.6.21; now walk 0.3 cm slip / 0.2
+  skid, jog 0.7 / 0.1, turned 0.4 / 0.1, run 0.3 / 0.0, stop 0.0. The release gate checks the versions go up against
+  the APK on the tag (required from 2026-11-04 18:00 UTC); CI now hands the 32-bit APK its own published one too. The
+  balance closed: serving first is worth nothing measurable (first server 52.7%, 45-60%, 150 ulama matches with it
+  swapped), no home/away lean, no flag.
+
+- **0.6.23-beta: shared foundation 80420f64 (the stop-teleport fix).** A released foot closes an even share of the gap
+  to the clip's foot each frame (68a16daa; required from 2026-11-05 12:00 UTC); the low-foot jump measured and bounded
+  at 25 cm. Our walker: slips 0.0-0.7 cm, skids 0.0-0.1, jumps 3.7 (walk) to 11.2 (run): feet PASS. Our own tests'
+  bone reads audited (the lead): the drawn feet read inside skeleton_updated, heel and toe; the stance test's
+  20-second "feet stay where they stand" read the ankles only and now reads the balls of the feet too.
+
+- **0.6.24-beta: published safely; shared foundation 3b3563fd.** The beta is made whole under a tag of its own first
+  (both APKs checked on it), and only then is the old release deleted and the new one moved onto the tag (ADOPTING
+  5.19): a failed create no longer leaves the tag empty. The WsgSim workflow is in (.github/workflows/pok-ta-pok-sim.yml:
+  the smoke on every push in three shards, the 16-shard batch only by hand); simulation work stops here until the owner
+  calls the next round. The sim's foot-slip deferral goes when the foundation's 2026-11-06 batch lands.
+
+- **0.6.25-beta: store graphics with the realistic bodies; the foundation's 11-06 feet batch (1b6793c6).** The eight store screenshots remade on High from this build
+  (the shared rig's players, the crowds), and a new feature graphic: a real match on the stone court held at a hip
+  strike, the player seen low from across the court with the ball at his hip, the ring and the crowd behind him
+  (store_shots.gd "feature"; make_feature.py now crops the picture to its panel - the old one was squeezed 1.6 times,
+  the ring an oval). The store and trailer tools await Game.start_match (a coroutine since loading v2: they had held
+  the last match, freed, and crashed at the second shot).
+
+- **0.6.26-beta: the world check measures the Low players' feet; shared foundation d70ac7d1.** world.gd's walker_low
+  (ADOPTING 5.21) gives the world check the players as Low draws them - the game's own body posed from the capture by
+  WsgToonDriver - and their feet slide: 7-15 cm a step on the walk, the jog and the turn (the toon copies the clip's
+  feet; the shared rig's planter never reaches it). The rule is deferred until 2026-11-08 12:00 UTC; the fix (the
+  driver carrying the planted feet, or a planter on the toon) is asked of the foundation. The pelota maya revival
+  waits on its sources (the hosts are outside this environment's network) or the lead's word on the rally point.
+
+- **0.6.27-beta: the pelota maya revival's rules (step 1 of 3).** A third rule set in game/rules.gd, `Rules.MAYA`,
+  with Guatemala's numbers (the lead's call): the ball over the end line 4 points, the ring wins outright, the hip
+  only and one strike a side (a second strike in a row is a point to the other side), 4 a side, two 13-minute halves,
+  no target. The cases the sources do not cover (the ball dying in a half, out at the side, the serve, the fault's
+  value) use ulama's rules and are labelled *reconstructed* in docs/RULES.md (M1-M6) with the source. The numbers sit
+  together at the top of rules.gd so a better source can change them in one place; RuleChecks and nine new tests
+  cover them. Not yet playable: the match (step 2) and the menus and How to Play (step 3) come next.
+
+- **0.6.28-beta: the revival in the match (step 2 of 3); the first serve fixed.** `rules: "maya"` plays on the stone
+  courts (`Court.classic()` is now "the stone court"), four a side, with two halves on the clock (26 minutes when no
+  length is set). The end line scores 4. A second strike by the same side before the ball has crossed into the other
+  half is a fault, and the computer never tries it. At half time the side that received first serves. The scoreboard
+  shows points with the half (I or II) in place of a target, and the result screen shows the points. New texts in six languages: half time, the double
+  strike, "4 points to". The sim gains `targeted:maya` (6 matches, no failures), and RuleChecks knows the half-time
+  serve. Tests: `_maya_match` and the AI match on the stone court under maya. **Bug found:** `config.first_serve` was
+  overwritten when the intro ended (`Rules.server` of an empty count is home), so home always served first. The
+  0.6.22 balance study's "serving first is worth nothing" never swapped the serve and does not stand. What it did
+  measure is home (always serving first) winning 52.7%, 45-60%. Fixed; the study is not re-run (sim work is
+  stopped).
+
+- **0.6.29-beta: the pelota maya revival is playable (step 3 of 3).** On either stone court, match setup has "The
+  game": the classic court (reconstructed) or the pelota maya revival. The revival is four a side, with the length in
+  halves: 2 × 3, 2 × 5 (the default, as ulama's 10 minutes) or Guatemala's 2 × 13. It is in the town tournament
+  (the Maya towns, on the stone courts) and in Watch AI. How to Play has two new cards: the revival's rules, and
+  "Pelota maya: reconstructed", which lists the parts filled in from ulama. The court diagram draws the stone court for
+  it. Ten new texts in six languages, fitted on every screen shape (fit_audit now opens setup with the revival chosen
+  and the cup's three kinds). CI plays one AI revival match with RuleChecks.
+
+- **0.6.30-beta: shared foundation 70e571a8; the beta published in place.** The planter's 7def933a (required from
+  2026-11-06 12:00 UTC): a foot left far behind a fast steered run steps instead of being re-planted. The sim's worst
+  case (LLA_1, extreme #8, under the input fuzzer) went from 48.5 cm in a frame to 25.1, still just over the 25 cm line
+  and still deferred until 11-06. Since 2026-11-03 the workflow token is refused new tag names (403 "Resource not
+  accessible by integration"), so the beta is published in place: the new APKs uploaded to the existing release and
+  checked, the old ones removed, then the title and notes (0.6.29 was the first, at 20:16 UTC). The media kit's
+  release was lost to the same 403 (its old delete-then-create); its workflow now publishes safely, and a new one
+  waits on the owner (a new tag). Medium and High feet PASS; Low feet still DEFERRED until 11-08 (the foundation's
+  WsgToonDriver fix is next).
+
+- **0.6.31-beta: the markers court (Classic period); shared foundation 3b700012; owner notes on a fresh install.** A
+  fifth court, "Classic court with markers": the stone court at dusk with no rings and three round stone markers set
+  in the alley floor down its middle, as the Classic Maya courts had them (Copán). Their use in play is not known, so
+  they mark the court and score nothing; there is no ring shot (yours or the computer's), and the revival, whose ring
+  wins outright, is not offered there (its cup keeps to the ringed courts). Classic rules, points to eight; the copal
+  offering, the crowd on the terraces and the forest sounds as on the other stone courts. How to Play has a card for
+  it; docs/RULES.md R12 says what is known. Also: the foundation's planter fixes since 0.6.30 (2846235d, 5c2304e4,
+  a40a95e0, 3b700012; the sim's 25.1 cm jump on LLA_1 is unchanged and stays deferred until 11-06) and the owner notes run in CI on a fresh install's defaults (WSG_NOTES_FRESH).
+
+- **0.6.32-beta: polish for the new rules and court.** The first time you play the classic court or the pelota maya
+  revival, its first serve brings a tip on its rules (once for each, whatever the coach setting: the coach's tips go
+  off after a first match, which may well have been ulama). The match-setup court diagram draws the markers court's
+  three floor markers, not rings, and the main menu's background match visits it. Six languages.
+
+- **0.6.33-beta: shared foundation 31f60da3; points in the box score.** The foundation's fix for the four planter
+  regressions in 3b700012 (which 0.6.31 and 0.6.32 carried): the release rate limit no longer applies under a game's
+  contact_fn. On the classic court and in the revival the result screen's box score opens with Points won (the
+  revival's end line is 4), not rayas won.
+
+- **0.6.34-beta: a Low polish pass (the owner's A16).** Stills on Low at a 20:9 phone size of all five courts, the
+  menus, the loading screen and a result. Draw calls on Low are 64-69 a frame and triangles 32-37k on every court
+  (budget about 100 and 90k). Fixed: the main menu's line named two games, not three (now the revival too, six
+  languages); the markers court's scoreboard drew a ring between the points, and its result's box score had a
+  "Through the ring" row: both gone where there are no rings. Nothing else found against the world rules and the
+  owner's notes.
+
+- **0.6.35-beta: the Low players' feet stay planted.** The shared foundation's toon foot lock (f4fc2f04): on Low
+  (the owner's A16) the players are the game's own bodies posed from the capture by WsgToonDriver, and their feet
+  slid 7-15 cm a step; the driver now locks the ball of the foot to the ground (the game passes it, Player.TOE).
+  World check feet_low PASS even enforced (walk 1.3 cm, jog, turn, run and stop 0.0), ahead of its 11-08 date.
+  Also the foundation's planter fixes since 0.6.33 (scaled-down bodies, rigs not in metres).
+
+- **0.6.36-beta: the knees rule; shared foundation f080f277.** The world check's new "knees" rule (a knee more than
+  4 cm behind its hip-ankle line; enforced from 2026-11-06 12:00 UTC, after backwards knees were seen in another
+  game) reads the game's own Low bodies through world.gd's leg_bones (thigh, shin, foot, facing +Z) and excuses only
+  the dive (knee_excuse). Backward knees: 0 in every mode at Low, Medium and High (5.7-9.6k bent knee-frames a run);
+  knee_strays PASS. Also the foundation's planter knee pole (e04af650). Sim smoke: 83 matches, 0 failed; the
+  deferred foot jumps (28.5-45.7 cm, three AI-only matches) are with the foundation.
+- **0.6.37-beta: shared foundation 4a2df496.** Brings in e58d0051 and the planter's knee fix for bodies moving
+  1 m/s or faster (040a5df5, KNEE_FRONT_SPEED). Foot dumps traced the three deferred sim jumps to the foundation
+  locomotor's one-shot transitions (a walk→stand shot playing on while the body speeds up again; a stand→run shot
+  running past its end); the foundation owns the fix (due 2026-11-10), and the bounded deferrals stand until then.
+  The suite's check count varies by a few with cup results (fewer games after an early exit), not with skipped tests.
+
+## Next
+
+1. The revival's court: the sources say only "a hard surface" with a ring, so the stone courts stand in for it. A
+   court of its own if a better source or the owner gives its shape.
+2. Yucatec Maya touches: the judges' count on the stone court (*jun, ka', óox…*). It is listed for a native speaker
+   in docs/CULTURE.md.
+3. Field recordings the open sites do not have (docs/SOUNDS.md, "Not found").
+4. Meshy court pieces (docs/MESHY_BRIEF.md: the carved ring, the talud, the pyramid).
+5. A carved floor marker for the markers court (docs/MESHY_BRIEF.md §5); they are plain stones now.
+
+## Decisions and why
+
+- **Ulama de cadera is the main mode.** It is the living game with the most documentation (Aguilar-Moreno played
+  and filmed it). The stone court is labelled "Classic court (reconstructed)" everywhere it is offered.
+- **60 × 4 m taste:** Aguilar-Moreno's figure, in the middle of the 50–69 m range the sources give.
+- **The count:** a raya against the holder takes one off (Wikipedia's reading), not NPR's one-line "the lead passes
+  over". Urria defaults to 3 and 7, where Aguilar-Moreno (2–3, 6–7) and CONADE (3, 5, 7) overlap.
+- **Serve kind:** rolled from level, thrown once a side holds the count. The side that won the last raya serves.
+  Both are reconstructed, because the sources say the serve changes with the score but not how.
+- **4 or 5 a side in ulama:** the documented numbers. 2–4 on the stone court is the game's own choice.
+- **Time limit:** a 2022 national meet used 30 minutes. The game offers 6, 10, 15 or none; at time, the holder wins,
+  and if level the next raya wins.
+- **Each side stays in its own half.** It is implied by the sources (the analco divides the sides) though not stated.
+- **Meshy bodies over the game's skeleton** (0.2.0, the owner allowed credits): the realistic mesh follows the code
+  skeleton, so every pose, the recorded clips and the hit points stay the game's; the team colours stay code-built gear.
+  The prompts put the T-pose first and spell out "no headdress, no feathers": the first players came back flexing, in
+  fringed skirts and once with horns. A second hat-wearing judge kept coming back hatless and hands in pockets, so both
+  judges wear the one judge model, one with a code-built straw hat.
+- **Mocap: what was not used.** The CMU dives (subjects 127/128) are forward parkour rolls, not ulama's sideways drop
+  onto the hip; the soccer kicks (10, 11) would teach a foot touch, which is a fault; nothing in the library is a hip
+  strike; the judges' signals are the game's own and seen from afar. Those stay hand-made. Of the runs, 09_02 has the
+  smallest hip correction (±12 cm); the jogs (35_17, 35_22) ran at the same speed, so one clip serves.
+- **The ring stays rare** (the chroniclers' "very seldom"), but it is a skill now, not luck: a perfect strike from a
+  good spot goes in about one time in three, a good one about one in ten, an ordinary one hardly ever (tested).
+- **Crowd from the bodies:** the painted cut-outs looked cartoonish, so the sheet is rendered from the 3D bodies at
+  loading. Headless, a painted sheet stands in.
+- **No real place copied.** The stone court is generic and modelled on the smaller ringed courts. No site or tourist
+  park is named.
+- **Languages:** Spanish first. English, Brazilian Portuguese, French, German and Italian cover the diaspora,
+  Brazil's market and the visitors to the Maya sites. Yucatec Maya appears as touches only, because Play has no
+  listing locale for it and the translation needs a native speaker.
+- **armeabi-v7a kept** (a 32-bit APK beside the 64-bit one, and both in the bundle): older and Android Go phones in
+  Mexico and Central America still run 32-bit Android, as Hurling found for the Galaxy A0x.
+- **Assist on by default:** your player is moved to meet the ball and the timing is yours. Timing a hip strike is the
+  skill, and steering a player along a 60 m court with one thumb as well was too much on a phone.
+- **Android SDK in this container:** dl.google.com is blocked here, so local exports use stub SDK tools; CI uses the
+  runner's real SDK.
+
+## Needs the owner
+
+- **Play Console:** the upload-key secrets (`ANDROID_UPLOAD_KEYSTORE_BASE64`, `ANDROID_UPLOAD_KEY_ALIAS`,
+  `ANDROID_UPLOAD_KEY_PASSWORD`) for a signed bundle, and the store listing upload.
+- **Meshy credits:** docs/MESHY_BRIEF.md.
+- **A knowledgeable reviewer:** docs/CULTURE.md.

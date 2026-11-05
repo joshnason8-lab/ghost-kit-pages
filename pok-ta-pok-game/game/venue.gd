@@ -1,0 +1,708 @@
+class_name Venue
+extends Node3D
+## The court and all round it, built from the court's numbers (game/court.gd), the shared assets' photographed skies,
+## surfaces and plants, and simple shapes in code. Four places:
+##   village   a village court in southern Sinaloa at dusk: the taste of packed earth, a scratched analco and chivos,
+##             low painted houses with flat roofs, rain trees, coconut palms, agave and dry grass; people along the
+##             sides on benches and chairs.
+##   festival  the same earth court by day at a festival: stands down one side, shade awnings at the ends.
+##   stone     a restored stone court in the Yucatán forest (the classic court, reconstructed): the I-shaped alley,
+##             the sloped benches and walls, the rings, a pyramid over the trees and a stela at each end.
+##   night     that court by torchlight.
+## Static geometry is merged by material (one draw call each); every repeated thing is a MultiMesh; the crowd is one
+## draw call. Low graphics: cut-outs for every tree, no normal maps, per-vertex light, fewer people.
+
+var id := "village"
+var info := {}
+var court: Court
+var crowd: Crowd
+var scenery: Scenery
+var sun: DirectionalLight3D
+var env: Environment
+var torches: Array[Vector3] = []
+## Every prop round the court as a simple solid (the shared WsgSolidProps): the ball bounces off them (Court.solid,
+## Ball.simulate), the players, judges and the elder keep out of them, and prop_audit checks a match for anything
+## through one (game/prop_runs.gd). Declared where each is built. The court's own surfaces (the talud, the walls, the
+## rings) are Court.contact's, so the props beside them stand back 3 cm from their faces: never two bounces at once.
+var solid := WsgSolidProps.new()
+const INSET := 0.03
+var _flames: MultiMeshInstance3D
+var _lights: Array[OmniLight3D] = []
+var _rng := RandomNumberGenerator.new()
+
+static var _skies := {}
+
+
+func build(p_id: String, p_court: Court, home_colour := Color.WHITE, away_colour := Color.WHITE) -> void:
+	id = p_id
+	info = DB.venue(id)
+	court = p_court
+	court.solid = solid
+	court.ringed = bool(info.get("rings", true))   # the markers court has none (R12)
+	_rng.seed = hash(id)
+	# Under the loading overlay (WsgLoading, after Start), a frame is drawn between the parts so the bar moves; without
+	# it (the tests, the match behind the menus) it is built straight through.
+	var ld := WsgLoading.current()
+	scenery = Scenery.new(String(info.time))
+	add_child(scenery)
+	_environment()
+	if ld:
+		await ld.checkpoint()
+	match id:
+		"village":
+			_earth_court()
+			if ld:
+				await ld.checkpoint()
+			_village()
+		"festival":
+			_earth_court()
+			if ld:
+				await ld.checkpoint()
+			_festival()
+		_:
+			_stone_court()
+			if ld:
+				await ld.checkpoint()
+			_forest()
+			if id == "night":
+				_torches()
+	_solid_scenery()
+	if ld:
+		await ld.checkpoint()
+	scenery.commit()
+	if ld:
+		await ld.checkpoint()
+	_crowd(home_colour, away_colour)
+
+
+func time() -> String:
+	return String(info.time)
+
+
+# ---------------------------------------------------------------- sky and light
+
+static func sky_data() -> Dictionary:
+	if _skies.is_empty():
+		_skies = JSON.parse_string(FileAccess.get_file_as_string("res://assets/env/sky/skies.json"))
+	return _skies
+
+
+func _environment() -> void:
+	var g := int(Game.settings.graphics)
+	var sky_name := String(info.sky)
+	var d: Dictionary = sky_data().get(sky_name, {})
+	env = Environment.new()
+	var sky := Sky.new()
+	var pm := PanoramaSkyMaterial.new()
+	# High: the same Poly Haven sky at 4K (VRAM-compressed, tone-matched to the 2K one); Low and Medium the 2K as before.
+	var sky4 := "res://assets/env/sky/%s_sky_4k.jpg" % sky_name
+	pm.panorama = load(sky4 if int(Game.settings.graphics) >= Game.GFX_HIGH and ResourceLoader.exists(sky4) else "res://assets/env/sky/%s_sky_2k.jpg" % sky_name)
+	pm.energy_multiplier = {"day": 1.0, "dusk": 1.0, "night": 1.0}.get(time(), 1.0)
+	sky.sky_material = pm
+	sky.radiance_size = Sky.RADIANCE_SIZE_32 if g == Game.GFX_LOW else Sky.RADIANCE_SIZE_128
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	var amb: Array = d.get("ambient", [1, 1, 1])
+	var amb_c := Color(float(amb[0]), float(amb[1]), float(amb[2]))
+	if g == Game.GFX_LOW:
+		# Low: a flat ambient light the colour of the sky, read from its HDR once (tools/env/sky_light.py).
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env.ambient_light_color = amb_c
+		env.ambient_light_energy = {"day": 0.55, "dusk": 0.78, "night": 0.22}.get(time(), 0.5)
+	else:
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_energy = {"day": 0.6, "dusk": 0.85, "night": 0.14}.get(time(), 0.6)
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = {"day": 0.95, "dusk": 1.25, "night": 0.8}.get(time(), 1.0)
+	env.tonemap_white = 6.0
+	var hor: Array = d.get("horizon", [0.8, 0.8, 0.8])
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_light_color = Color(float(hor[0]), float(hor[1]), float(hor[2])).darkened(0.1 if time() != "night" else 0.6)
+	env.fog_depth_begin = 60.0
+	env.fog_depth_end = 320.0
+	env.fog_density = 0.0
+	env.fog_light_energy = 1.0
+	env.fog_sky_affect = 0.0
+	if g >= Game.GFX_HIGH:
+		env.glow_enabled = time() == "night"
+	var we := WorldEnvironment.new()
+	we.environment = env
+	add_child(we)
+	sun = DirectionalLight3D.new()
+	var elev := deg_to_rad(float(d.get("sun_elevation", 40.0)))
+	var az := TAU * float(d.get("sun_u", 0.6))
+	if time() == "night":
+		elev = deg_to_rad(38.0)   # the moon, high: not the far town's glow in the panorama
+	sun.rotation = Vector3(-elev, az, 0)
+	var sc: Array = d.get("sun_colour", [1, 1, 1])
+	sun.light_color = Color(float(sc[0]), float(sc[1]), float(sc[2]))
+	sun.light_energy = {"day": 1.25, "dusk": 1.3, "night": 0.12}.get(time(), 1.0)
+	sun.shadow_enabled = Game.shadows_enabled()
+	sun.directional_shadow_max_distance = 60.0
+	add_child(sun)
+
+
+# ---------------------------------------------------------------- the earth court (ulama)
+
+func _earth_court() -> void:
+	var hl := Court.ULAMA_HALF_L
+	var hw := Court.ULAMA_HALF_W
+	# The ground all round: dry, cracked earth and thin grass; the taste itself packed and swept.
+	var ground := Geo.new(3.0)
+	ground.tint = Color(0.92, 0.88, 0.82)
+	var big := 260.0
+	ground.quad(Vector3(-big, 0, big), Vector3(big, 0, big), Vector3(big, 0, -big), Vector3(-big, 0, -big))
+	_mesh(ground.commit(), Geo.surface("dry_ground_01", Color(0.95, 0.9, 0.85) if id == "village" else Color(0.88, 0.9, 0.82)), "ground")
+	var taste := Geo.new(2.0)
+	taste.tint = Color(1.0, 0.94, 0.88)
+	var m := 1.2
+	taste.quad(Vector3(-hl - m, 0.004, hw + m), Vector3(hl + m, 0.004, hw + m), Vector3(hl + m, 0.004, -hw - m), Vector3(-hl - m, 0.004, -hw - m))
+	_mesh(taste.commit(), Geo.surface("brown_mud_dry", Color(1.0, 0.95, 0.9), 0.95), "taste")
+	# The lines scratched and limed in the earth: the side lines, the analco across the middle, a chivo at each end.
+	var lines := Geo.new(1.0)
+	lines.tint = Color(0.86, 0.82, 0.74)
+	var w := 0.06
+	var y := 0.008
+	for s in [-1.0, 1.0]:
+		lines.quad(Vector3(-hl, y, s * hw + w), Vector3(hl, y, s * hw + w), Vector3(hl, y, s * hw - w), Vector3(-hl, y, s * hw - w))
+		lines.quad(Vector3(s * hl - w, y, hw), Vector3(s * hl + w, y, hw), Vector3(s * hl + w, y, -hw), Vector3(s * hl - w, y, -hw))
+	lines.quad(Vector3(-w * 1.6, y, hw + 0.5), Vector3(w * 1.6, y, hw + 0.5), Vector3(w * 1.6, y, -hw - 0.5), Vector3(-w * 1.6, y, -hw - 0.5))
+	var lm := StandardMaterial3D.new()
+	lm.vertex_color_use_as_albedo = true
+	lm.vertex_color_is_srgb = true
+	lm.roughness = 1.0
+	_mesh(lines.commit(), lm, "lines")
+
+
+func _village() -> void:
+	var houses := Geo.new(2.5)
+	var roofs := Geo.new(2.5)
+	var dark := Geo.new(2.5)
+	var paints := [Color("e9c9c0"), Color("cfe0cf"), Color("efdca4"), Color("d9e2ea"), Color("efe8dc"), Color("e7b98f"), Color("c9d6c0")]
+	# Low houses on both sides, a lane's width back from the people, and a few beyond the ends.
+	var spots := []
+	for s in [-1.0, 1.0]:
+		var x := -46.0
+		while x < 46.0:
+			var wdt := _rng.randf_range(6.0, 10.0)
+			spots.append([Vector3(x + wdt * 0.5, 0, s * _rng.randf_range(16.0, 19.0)), Vector3(wdt, _rng.randf_range(2.8, 3.6), _rng.randf_range(5.0, 7.0)), s])
+			x += wdt + _rng.randf_range(2.5, 9.0)
+	for sp in spots:
+		var c: Vector3 = sp[0]
+		var sz: Vector3 = sp[1]
+		var face: float = -signf(c.z)
+		var col: Color = paints[_rng.randi_range(0, paints.size() - 1)]
+		houses.box(c + Vector3(0, sz.y * 0.5, 0), sz, col)
+		solid.add({"name": "house", "kind": "box", "position": c, "size": Vector3(sz.x + 0.1, sz.y + 0.4, sz.z + 0.1), "material": "plaster"})
+		# The flat roof's parapet, a band of the same paint a shade darker.
+		roofs.box(c + Vector3(0, sz.y + 0.2, 0), Vector3(sz.x + 0.1, 0.4, sz.z + 0.1), Color(0.7, 0.68, 0.64))
+		# A door and a window on the court side.
+		var fz := c.z + face * (sz.z * 0.5 + 0.02)
+		var dx := _rng.randf_range(-sz.x * 0.3, sz.x * 0.3)
+		var wx := c.x + dx + (1.6 if dx < 0 else -1.6)
+		var sx := face   # the corners in the order that faces the court
+		dark.quad(Vector3(c.x + dx - 0.5 * sx, 0, fz), Vector3(c.x + dx + 0.5 * sx, 0, fz), Vector3(c.x + dx + 0.5 * sx, 2.1, fz), Vector3(c.x + dx - 0.5 * sx, 2.1, fz), Color("4a3a2e"))
+		dark.quad(Vector3(wx - 0.55 * sx, 1.0, fz), Vector3(wx + 0.55 * sx, 1.0, fz), Vector3(wx + 0.55 * sx, 2.0, fz), Vector3(wx - 0.55 * sx, 2.0, fz), Color("2e2a28"))
+	_mesh(houses.commit(), Geo.surface("plastered_wall", Color.WHITE, 0.95), "houses")
+	_mesh(roofs.commit(), Geo.surface("plastered_wall", Color(0.85, 0.82, 0.78), 0.95), "roofs")
+	var dm := StandardMaterial3D.new()
+	dm.vertex_color_use_as_albedo = true
+	dm.vertex_color_is_srgb = true
+	dm.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_mesh(dark.commit(), dm, "doors")
+	solid.skip("doors and windows", "painted on the houses' fronts (the houses are solid)")
+	# Benches for the people along the court, a little way back from the side lines.
+	var benches := Geo.new(1.0)
+	for bn in village_benches():
+		var x: float = bn[0]
+		var s: float = bn[1]
+		benches.box(Vector3(x + 1.5, BENCH_TOP - 0.04, s * BENCH_Z), Vector3(3.0, 0.08, BENCH_DEPTH), Color("6b5440"))
+		benches.box(Vector3(x + 0.3, 0.2, s * BENCH_Z), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
+		benches.box(Vector3(x + 2.7, 0.2, s * BENCH_Z), Vector3(0.12, 0.4, 0.3), Color("4e3d2e"))
+		# Solid down to the ground, legs and all: nobody walks through, no ball rolls under.
+		solid.add({"name": "bench", "kind": "box", "position": Vector3(x + 1.5, 0, s * BENCH_Z), "size": Vector3(3.0, BENCH_TOP, BENCH_DEPTH), "material": "wood"})
+	var bm := StandardMaterial3D.new()
+	bm.vertex_color_use_as_albedo = true
+	bm.vertex_color_is_srgb = true
+	bm.roughness = 0.9
+	_mesh(benches.commit(), bm, "benches")
+	# Trees and scrub.
+	var g := int(Game.settings.graphics)
+	for i in 26:
+		var p := _scatter(22.0, 80.0, 0.0)
+		var pick := _rng.randf()
+		if pick < 0.5:
+			scenery.add("rain_tree_card", p, _rng.randf() * TAU, _rng.randf_range(0.9, 1.3))
+		elif pick < 0.8:
+			scenery.add("coconut_palm_card", p, _rng.randf() * TAU, _rng.randf_range(0.9, 1.15))
+		else:
+			scenery.add("island_tree_b_card", p, _rng.randf() * TAU, _rng.randf_range(0.8, 1.1))
+	for i in (40 if g > Game.GFX_LOW else 18):
+		scenery.add("dry_grass_tall_card", _scatter(9.0, 60.0, 4.0), _rng.randf() * TAU, _rng.randf_range(0.6, 1.0))
+	for i in (30 if g > Game.GFX_LOW else 14):
+		scenery.add("agave", _scatter(10.0, 45.0, 6.0), _rng.randf() * TAU, _rng.randf_range(0.8, 1.4))
+	for i in 10:
+		scenery.add("boulder_low", _scatter(9.0, 40.0, 6.0), _rng.randf() * TAU, _rng.randf_range(0.3, 0.6))
+
+
+func _festival() -> void:
+	# Stands down the far side: stepped rows on a frame, and a shade awning at each end.
+	var stands := Geo.new(2.0)
+	var steel := Geo.new(2.0)
+	var rows := STAND_ROWS
+	for s in [-1.0]:
+		for r in rows:
+			var z: float = s * (STAND_Z0 + 0.4 + r * STAND_TREAD)
+			var y := STAND_RISE * (r + 1)
+			stands.box(Vector3(0, y - 0.05, z), Vector3(52.0, 0.1, STAND_TREAD), Color(0.78, 0.76, 0.72))
+			stands.box(Vector3(0, y * 0.5, z + s * 0.38), Vector3(52.0, y, 0.06), Color(0.62, 0.6, 0.58))
+			solid.add({"name": "stand row %d" % (r + 1), "kind": "box", "position": Vector3(0, 0, z), "size": Vector3(52.0, y, STAND_TREAD), "material": "plaster"})
+		for k in 14:
+			var x := -26.0 + k * 4.0
+			steel.box(Vector3(x, 1.6, s * 11.6), Vector3(0.12, 3.2, 0.12), Color(0.4, 0.42, 0.45))
+			solid.add({"name": "stand post", "kind": "cylinder", "position": Vector3(x, 0, s * 11.6), "radius": 0.06, "height": 3.2, "material": "metal"})
+	_mesh(stands.commit(), Geo.surface("plastered_wall", Color(0.82, 0.8, 0.78), 0.9), "stands")
+	var sm := StandardMaterial3D.new()
+	sm.vertex_color_use_as_albedo = true
+	sm.vertex_color_is_srgb = true
+	sm.metallic = 0.5
+	sm.roughness = 0.5
+	_mesh(steel.commit(), sm, "steel")
+	# Awnings at the ends (canvas on poles). (The papel picado strung along the near side is gone: it hung in the way of
+	# the play, the owner, 0.6.8.)
+	var cloth := Geo.new(2.0)
+	var cols := [Color("c8452c"), Color("e0a43a"), Color("3fae7a"), Color("4fa3b8"), Color("b04a8a"), Color("f2efe6")]
+	for s in [-1.0, 1.0]:
+		for k in 3:
+			var cx: float = s * (35.0 + k * 5.0)
+			var cz := (k - 1) * 5.5
+			cloth.box(Vector3(cx, 3.0, cz), Vector3(4.6, 0.06, 4.6), cols[(k + (2 if s > 0 else 0)) % cols.size()])
+			solid.add({"name": "awning", "kind": "box", "position": Vector3(cx, 2.97, cz), "size": Vector3(4.6, 0.06, 4.6), "material": "fabric", "walk": false})
+			for q in [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]]:
+				cloth.box(Vector3(cx + q[0], 1.5, cz + q[1]), Vector3(0.08, 3.0, 0.08), Color(0.55, 0.55, 0.56))
+				solid.add({"name": "awning pole", "kind": "cylinder", "position": Vector3(cx + q[0], 0, cz + q[1]), "radius": 0.04, "height": 3.0, "material": "metal"})
+	var cm := StandardMaterial3D.new()
+	cm.vertex_color_use_as_albedo = true
+	cm.vertex_color_is_srgb = true
+	cm.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cm.roughness = 0.95
+	_mesh(cloth.commit(), cm, "awnings")
+	var g := int(Game.settings.graphics)
+	for k in 22:
+		var p := _scatter(26.0, 85.0, 0.0)
+		scenery.add("rain_tree_card" if _rng.randf() < 0.6 else "coconut_palm_card", p, _rng.randf() * TAU, _rng.randf_range(0.9, 1.3))
+	for k in (20 if g > Game.GFX_LOW else 10):
+		scenery.add("agave", _scatter(14.0, 40.0, 8.0), _rng.randf() * TAU, _rng.randf_range(0.8, 1.3))
+
+
+# ---------------------------------------------------------------- the stone court (classic, reconstructed)
+
+func _stone_court() -> void:
+	var al := Court.ALLEY_HALF_L
+	var aw := Court.ALLEY_HALF_W
+	var tz := Court.TALUD_Z
+	var th := Court.TALUD_H
+	var wh := Court.WALL_H
+	var el := Court.END_HALF_L
+	var ew := Court.END_HALF_W
+	var deep := 13.0         # the structures' back
+	var stone := Geo.new(2.4)
+	stone.tint = Color(1.0, 0.97, 0.92)
+	var floor_g := Geo.new(3.0)
+	floor_g.tint = Color(0.96, 0.93, 0.87)
+	# The ground round the court: thin grass on limestone soil.
+	var ground := Geo.new(3.0)
+	var big := 260.0
+	ground.quad(Vector3(-big, -0.01, big), Vector3(big, -0.01, big), Vector3(big, -0.01, -big), Vector3(-big, -0.01, -big))
+	_mesh(ground.commit(), Geo.surface("sparse_grass", Color(0.78, 0.82, 0.72)), "ground")
+	# The plastered floor of the alley and the end courts.
+	floor_g.quad(Vector3(-al, 0.0, aw), Vector3(al, 0.0, aw), Vector3(al, 0.0, -aw), Vector3(-al, 0.0, -aw))
+	for s in [-1.0, 1.0]:
+		var x0: float = s * al
+		var x1: float = s * el
+		floor_g.quad(Vector3(minf(x0, x1), 0.0, ew), Vector3(maxf(x0, x1), 0.0, ew), Vector3(maxf(x0, x1), 0.0, -ew), Vector3(minf(x0, x1), 0.0, -ew))
+	for s in [-1.0, 1.0]:
+		var sz: float = s
+		# The talud: from the alley's edge up to the wall's foot.
+		var a := Vector3(-al, 0.0, sz * aw)
+		var b := Vector3(al, 0.0, sz * aw)
+		var c := Vector3(al, th, sz * tz)
+		var d := Vector3(-al, th, sz * tz)
+		if sz > 0:
+			stone.quad(a, b, c, d)
+		else:
+			stone.quad(b, a, d, c)
+		# The structure: its inner face is the wall above the talud; its top, where people watch; its back and ends.
+		stone.box(Vector3(0, wh * 0.5, sz * (tz + deep) * 0.5), Vector3(al * 2.0, wh, deep - tz), Color(-1, 0, 0))
+		stone.box(Vector3(0, wh + 0.25, sz * (tz + 0.6)), Vector3(al * 2.0, 0.5, 1.2))
+		# Solid: the structure behind its wall (its face and ends are Court.contact's: stood back from them), the
+		# coping along its top (where the judges stand) and the terraces.
+		solid.add({"name": "structure", "kind": "box", "position": Vector3(0, 0, sz * (tz + INSET + deep) * 0.5),
+			"size": Vector3((al - INSET) * 2.0, wh, deep - tz - INSET), "material": "stone"})
+		solid.add({"name": "coping", "kind": "box", "position": Vector3(0, wh, sz * (tz + 0.6)), "size": Vector3(al * 2.0, 0.5, 1.2), "material": "stone"})
+		# Stepped terraces behind the coping, a step a row of people: each row stands higher than the one in front, so
+		# the coping and the row before never hide their legs from the court.
+		for r in TERRACE_ROWS:
+			var z0: float = tz + 1.2 + r * TERRACE_D
+			var top: float = TERRACE_Y0 + r * TERRACE_RISE
+			stone.box(Vector3(0, (wh + top) * 0.5, sz * (z0 + deep) * 0.5), Vector3(al * 2.0, top - wh, deep - z0))
+			solid.add({"name": "terrace %d" % (r + 1), "kind": "box", "position": Vector3(0, wh, sz * (z0 + deep) * 0.5),
+				"size": Vector3(al * 2.0, top - wh, deep - z0), "material": "stone"})
+		# The talud's two end faces (triangles as thin quads).
+		for ex in [-al, al]:
+			var e1 := Vector3(ex, 0.0, sz * aw)
+			var e2 := Vector3(ex, 0.0, sz * tz)
+			var e3 := Vector3(ex, th, sz * tz)
+			if (ex > 0) == (sz > 0):
+				stone.quad(e1, e2, e3, e3)
+			else:
+				stone.quad(e2, e1, e3, e3)
+		# The end courts' walls.
+		stone.box(Vector3(s * (el + 0.5), Court.END_WALL_H * 0.5, 0), Vector3(1.0, Court.END_WALL_H, ew * 2.0 + 2.0))
+		solid.add({"name": "end wall", "kind": "box", "position": Vector3(s * (el + 0.5 + INSET * 0.5), 0, 0),
+			"size": Vector3(1.0 - INSET, Court.END_WALL_H, ew * 2.0 + 2.0), "material": "stone"})
+		for zs in [-1.0, 1.0]:
+			stone.box(Vector3(s * (al + el) * 0.5, Court.END_WALL_H * 0.5, zs * (ew + 0.5)), Vector3(el - al, Court.END_WALL_H, 1.0))
+			solid.add({"name": "end court side wall", "kind": "box", "position": Vector3(s * (al + el) * 0.5, 0, zs * (ew + 0.5 + INSET * 0.5)),
+				"size": Vector3(el - al, Court.END_WALL_H, 1.0 - INSET), "material": "stone"})
+	# The rings, out from each wall at the centre line, their holes along the alley: each cut from one stone, so a
+	# plain stone (not the walls' coursed blocks).
+	var rings := Geo.new(0.9)
+	rings.tint = Color(0.92, 0.88, 0.8)
+	# Medium and High: the carved ring made with Meshy (feathered serpents round the face), fitted to the ring's size
+	# exactly (tools/meshy/fit_ring.gd). Low: the plain stone washers as before.
+	var carved := int(Game.settings.graphics) >= Game.GFX_MEDIUM and ResourceLoader.exists("res://assets/people/court_ring.res")
+	for c in court.rings():
+		# The tenon into the wall, under either ring.
+		rings.box(Vector3(0, c.y, c.z + signf(c.z) * Court.RING_OFF * 0.5 + signf(c.z) * 0.12), Vector3(0.26, 0.4, Court.RING_OFF))
+		if carved:
+			var mi := MeshInstance3D.new()
+			mi.mesh = load("res://assets/people/court_ring.res")
+			var rm := StandardMaterial3D.new()
+			rm.albedo_texture = load("res://assets/people/court_ring.jpg")
+			rm.albedo_color = Color(0.93, 0.87, 0.77)
+			rm.roughness = 0.9
+			mi.material_override = rm
+			mi.position = c
+			mi.rotation = Vector3(0, PI * 0.5, 0)   # its hole along the alley
+			mi.name = "carved_ring"
+			add_child(mi)
+			continue
+		rings.washer(c, Court.RING_IN, Court.RING_OUT, Court.RING_DEPTH, 28)
+		# A raised rim round the hole and round the edge, as the carved rings have.
+		rings.washer(c, Court.RING_IN, Court.RING_IN + 0.06, Court.RING_DEPTH + 0.025, 28)
+		rings.washer(c, Court.RING_OUT - 0.05, Court.RING_OUT, Court.RING_DEPTH + 0.02, 28)
+	_mesh(rings.commit(), Geo.surface("broken_wall", Color(0.95, 0.92, 0.86), 0.9), "rings")
+	# The rings, for the audit to see; their bounce stays Court.contact's ("ball": false: never two at once).
+	for c in court.rings():
+		solid.add_ring({"name": "ring", "centre": c, "radius": (Court.RING_IN + Court.RING_OUT) * 0.5,
+			"tube": (Court.RING_OUT - Court.RING_IN) * 0.5, "axis": Vector3.RIGHT, "material": "stone", "ball": false})
+	solid.skip("ring tenons", "inside the wall, behind the ring (Court.contact)")
+	solid.skip("talud", "the court's own sloped bench (Court.contact)")
+	# A stela at each end, beyond the end court (plain: their carving would need a model, docs/MESHY_BRIEF.md).
+	for s in [-1.0, 1.0]:
+		stone.box(Vector3(s * (el + 5.0), 1.6, -3.0), Vector3(1.3, 3.2, 0.5))
+		stone.box(Vector3(s * (el + 5.0), 0.25, -3.0), Vector3(2.0, 0.5, 1.2))
+		solid.add({"name": "stela", "kind": "box", "position": Vector3(s * (el + 5.0), 0, -3.0), "size": Vector3(1.3, 3.2, 0.5), "material": "stone"})
+		solid.add({"name": "stela base", "kind": "box", "position": Vector3(s * (el + 5.0), 0, -3.0), "size": Vector3(2.0, 0.5, 1.2), "material": "stone"})
+	_mesh(stone.commit(), Geo.surface("sandstone_blocks", Color(0.98, 0.95, 0.88), 0.92), "stone")
+	_mesh(floor_g.commit(), Geo.surface("plastered_wall", Color(0.93, 0.9, 0.84), 0.95), "floor")
+	# The centre line marked on the floor.
+	var lines := Geo.new(1.0)
+	lines.tint = Color(0.62, 0.55, 0.46)
+	lines.quad(Vector3(-0.08, 0.006, aw), Vector3(0.08, 0.006, aw), Vector3(0.08, 0.006, -aw), Vector3(-0.08, 0.006, -aw))
+	for s in [-1.0, 1.0]:
+		var x: float = s * al
+		lines.quad(Vector3(x - 0.06, 0.006, aw), Vector3(x + 0.06, 0.006, aw), Vector3(x + 0.06, 0.006, -aw), Vector3(x - 0.06, 0.006, -aw))
+	var lm := StandardMaterial3D.new()
+	lm.vertex_color_use_as_albedo = true
+	lm.vertex_color_is_srgb = true
+	_mesh(lines.commit(), lm, "lines")
+	if not court.ringed:
+		_floor_markers(al)
+	_pyramid(Vector3(-20.0, 0, -85.0), 36.0)
+
+
+## The Classic-period court (docs/RULES.md R12): no rings, three round stone markers set flush in the alley floor down
+## its centre line, as at Copán - one at the analco and one in each half. Their use in play is not known: they are
+## drawn, not scored (the ball runs over them as over the floor).
+const MARKER_R := 0.62
+func _floor_markers(al: float) -> void:
+	var g := Geo.new(1.2)
+	for x in [-al * 0.55, 0.0, al * 0.55]:
+		var c := Vector3(x, 0.0, 0.0)
+		_disc_band(g, c, 0.0, MARKER_R * 0.18, 0.012, Color(0.78, 0.72, 0.62))          # the centre boss
+		_disc_band(g, c, MARKER_R * 0.18, MARKER_R * 0.72, 0.009, Color(0.86, 0.81, 0.71))   # the face
+		_disc_band(g, c, MARKER_R * 0.72, MARKER_R * 0.8, 0.011, Color(0.6, 0.53, 0.44))    # the carved band
+		_disc_band(g, c, MARKER_R * 0.8, MARKER_R, 0.009, Color(0.8, 0.74, 0.64))          # the rim
+	_mesh(g.commit(), Geo.surface("broken_wall", Color(1, 1, 1), 0.92), "markers")
+
+
+## A flat ring band on the floor (ri 0: a disc), h above it, facing up.
+func _disc_band(g: Geo, c: Vector3, ri: float, ro: float, h: float, col: Color, seg := 32) -> void:
+	for i in seg:
+		var t0 := TAU * float(i) / float(seg)
+		var t1 := TAU * float(i + 1) / float(seg)
+		var o0 := c + Vector3(cos(t0) * ro, h, sin(t0) * ro)
+		var o1 := c + Vector3(cos(t1) * ro, h, sin(t1) * ro)
+		var i0 := c + Vector3(cos(t0) * ri, h, sin(t0) * ri)
+		var i1 := c + Vector3(cos(t1) * ri, h, sin(t1) * ri)
+		# Wound to face up (Geo.quad: (b - a) x (c - a) along +y).
+		if (o1 - o0).cross(i1 - o0).y > 0.0:
+			g.quad(o0, o1, i1, i0, col)
+		else:
+			g.quad(o1, o0, i0, i1, col)
+
+
+## A stepped pyramid with a temple on top, on the skyline over the trees (built plain; a carved one is in
+## docs/MESHY_BRIEF.md).
+func _pyramid(at: Vector3, base: float) -> void:
+	var p := Geo.new(3.0)
+	var tiers := 7
+	var h := 3.4
+	for i in tiers:
+		var w := base * (1.0 - float(i) / (tiers + 1.5))
+		p.box(at + Vector3(0, h * (i + 0.5), 0), Vector3(w, h, w))
+		solid.add({"name": "pyramid", "kind": "box", "position": at + Vector3(0, h * i, 0), "size": Vector3(w, h, w), "material": "stone"})
+	var top := base * (1.0 - float(tiers) / (tiers + 1.5))
+	p.box(at + Vector3(0, h * tiers + 2.6, 0), Vector3(top * 0.7, 5.2, top * 0.6))
+	# The stairway up the front, toward the court.
+	p.box(at + Vector3(0, h * tiers * 0.5, base * 0.5 - 1.5), Vector3(7.0, h * tiers, 3.0))
+	solid.add({"name": "pyramid stair", "kind": "box", "position": at + Vector3(0, 0, base * 0.5 - 1.5), "size": Vector3(7.0, h * tiers, 3.0), "material": "stone"})
+	_mesh(p.commit(), Geo.surface("broken_wall", Color(0.95, 0.92, 0.86), 0.95), "pyramid")
+
+
+func _forest() -> void:
+	var g := int(Game.settings.graphics)
+	# A ring of forest round the cleared site; denser beyond.
+	var n := 70 if g > Game.GFX_LOW else 44
+	for i in n:
+		var p := _scatter(34.0, 95.0, 0.0)
+		var pick := _rng.randf()
+		var kind := "island_tree_a_card" if pick < 0.45 else ("island_tree_b_card" if pick < 0.7 else ("rain_tree_card" if pick < 0.9 else "coconut_palm_card"))
+		scenery.add(kind, p, _rng.randf() * TAU, _rng.randf_range(1.0, 1.5))
+	for i in (30 if g > Game.GFX_LOW else 12):
+		scenery.add("grass_clumps_card", _scatter(15.0, 40.0, 10.0), _rng.randf() * TAU, _rng.randf_range(0.7, 1.1))
+
+
+func _torches() -> void:
+	# Torches along the top of each structure and at the end courts' corners.
+	for s in [-1.0, 1.0]:
+		for k in 5:
+			torches.append(Vector3(-14.0 + k * 7.0, Court.WALL_H + 1.4, s * (Court.TALUD_Z + 0.5)))
+		for e in [-1.0, 1.0]:
+			torches.append(Vector3(e * (Court.END_HALF_L + 0.6), Court.END_WALL_H + 1.1, s * Court.END_HALF_W))
+	var posts := Geo.new(1.0)
+	for t in torches:
+		posts.box(t - Vector3(0, 0.75, 0), Vector3(0.1, 1.2, 0.1), Color("3a2a1e"))
+		posts.box(t - Vector3(0, 0.1, 0), Vector3(0.22, 0.22, 0.22), Color("2a1e16"))
+		# The post stands on the coping (or on the end wall's top), its cup on top.
+		var foot := Court.WALL_H + 0.5 if absf(t.x) < Court.ALLEY_HALF_L else Court.END_WALL_H
+		solid.add({"name": "torch post", "kind": "cylinder", "position": Vector3(t.x, foot, t.z), "radius": 0.05, "height": t.y - 0.21 - foot, "material": "wood"})
+		solid.add({"name": "torch cup", "kind": "box", "position": t - Vector3(0, 0.21, 0), "size": Vector3(0.22, 0.22, 0.22), "material": "metal"})
+	var pm := StandardMaterial3D.new()
+	pm.vertex_color_use_as_albedo = true
+	pm.vertex_color_is_srgb = true
+	_mesh(posts.commit(), pm, "torch_posts")
+	# The flames: one MultiMesh of glowing cards.
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var q := QuadMesh.new()
+	q.size = Vector2(0.45, 0.8)
+	q.center_offset = Vector3(0, 0.3, 0)
+	mm.mesh = q
+	mm.instance_count = torches.size()
+	for i in torches.size():
+		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, torches[i]))
+	_flames = MultiMeshInstance3D.new()
+	_flames.multimesh = mm
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+uniform float time_s = 0.0;
+void vertex() {
+	vec3 world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
+	world += right * VERTEX.x + vec3(0.0, VERTEX.y, 0.0);
+	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world, 1.0);
+}
+void fragment() {
+	vec2 uv = UV * 2.0 - 1.0;
+	float flick = 0.85 + 0.15 * sin(time_s * 13.0 + UV.y * 9.0);
+	float shape = 1.0 - length(vec2(uv.x * 1.6, (uv.y + 0.2) * 0.9));
+	shape = clamp(shape * 1.6, 0.0, 1.0) * flick;
+	ALBEDO = mix(vec3(1.0, 0.35, 0.05), vec3(1.0, 0.85, 0.45), shape) * shape * 2.0;
+}
+"""
+	var fm := ShaderMaterial.new()
+	fm.shader = sh
+	_flames.material_override = fm
+	_flames.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_flames)
+	# Real light from a few of them on Medium and High (each light costs every lit object a pass on phones).
+	var g := int(Game.settings.graphics)
+	var lit := 0 if g == Game.GFX_LOW else (4 if g == Game.GFX_MEDIUM else 8)
+	var pick := [1, 3, 6, 8, 0, 2, 5, 7]
+	for k in mini(lit, torches.size()):
+		var l := OmniLight3D.new()
+		l.position = torches[pick[k] % torches.size()] + Vector3(0, 0.3, 0)
+		l.light_color = Color(1.0, 0.62, 0.3)
+		l.light_energy = 3.2
+		l.omni_range = 18.0
+		l.shadow_enabled = false
+		add_child(l)
+		_lights.append(l)
+	if g == Game.GFX_LOW:
+		# No lights on Low: the torches' warmth in the ambient light instead.
+		env.ambient_light_color = env.ambient_light_color.lerp(Color(1.0, 0.65, 0.4), 0.5)
+		env.ambient_light_energy = 0.5
+
+
+func _process(_delta: float) -> void:
+	if _flames:
+		var t := Time.get_ticks_msec() / 1000.0
+		(_flames.material_override as ShaderMaterial).set_shader_parameter("time_s", t)
+		for i in _lights.size():
+			_lights[i].light_energy = 3.0 + 0.4 * sin(t * (11.0 + i) + i)
+
+
+# ---------------------------------------------------------------- the people
+
+## Where people watch from, and the crowd built there: one MultiMesh, everyone facing the middle of the court.
+## The stone courts' terraces on top of each structure: a step a row, the first level with the top of the coping.
+const TERRACE_ROWS := 4
+const TERRACE_D := 0.8                       # each step's depth (m)
+const TERRACE_RISE := 0.35                   # how much higher each row stands
+const TERRACE_Y0 := Court.WALL_H + 0.5       # the first row: the top of the coping
+
+
+## The village's benches along both sides: [x of the bench's start, side]. Fixed (its own dice), so the crowd that sits
+## on them (crowd_venue) and the benches drawn always agree.
+const BENCH_Z := 5.2             # the bench's middle, across (m)
+const BENCH_TOP := 0.46          # its seat (m)
+const BENCH_DEPTH := 0.35
+const BENCH_LEN := 3.0
+static func village_benches() -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5201
+	var out := []
+	for s in [-1.0, 1.0]:
+		var x := -28.0
+		while x < 28.0:
+			out.append([x, s])
+			x += rng.randf_range(5.0, 9.0)
+	return out
+
+
+## The festival's stand on the far side: rows of steps, sat on as bleachers (feet on the step below).
+const STAND_ROWS := 7
+const STAND_Z0 := 5.6            # the front of its first step (m, across)
+const STAND_TREAD := 0.8
+const STAND_RISE := 0.42
+
+
+## The venue's spectators as the shared foundation's crowd placement declares them (WsgCrowdVenue: every fan seated on
+## a seat or standing on a floor, facing the play; audited by tools/wsg/crowd_audit.gd through game/crowd_venues.gd):
+## the village's benches with people standing behind them, the festival's stand sat on as a bleacher, the stone courts'
+## terraces stood on; standing room at the ends of the earth courts. (The stone courts' ends had people standing at
+## ground level behind the 3 m end walls, where no one could see them or be seen: gone.)
+static func crowd_venue(venue_id: String) -> WsgCrowdVenue:
+	var classic := String(DB.venue(venue_id).rules) == "classic"
+	var hl := Court.END_HALF_L if classic else Court.ULAMA_HALF_L
+	var hw := Court.ALLEY_HALF_W if classic else Court.ULAMA_HALF_W
+	var v := WsgCrowdVenue.new(Vector3.ZERO, Vector2(hl * 2.0, hw * 2.0))
+	match venue_id:
+		"village":
+			for bn in village_benches():
+				var x: float = bn[0]
+				var s: float = bn[1]
+				# The row's front edge 0.45 m in front of the bench, so the seat stands at the back of a 0.8 m tread.
+				var zf := s * (BENCH_Z - BENCH_DEPTH * 0.5 - 0.45)
+				v.add({"name": "bench %.0f %s" % [x, "N" if s > 0 else "S"], "a": Vector3(x + 0.1, 0, zf), "b": Vector3(x + BENCH_LEN - 0.1, 0, zf),
+					"rows": 1, "tread": 0.8, "seat": "bench", "height": BENCH_TOP, "depth": BENCH_DEPTH, "pitch": 0.55, "stand": 0.1})
+			for s in [-1.0, 1.0]:
+				# Standing behind the benches (never in them).
+				v.add({"name": "standing " + ("N" if s > 0 else "S"), "a": Vector3(-29, 0, s * (BENCH_Z + 0.45)), "b": Vector3(29, 0, s * (BENCH_Z + 0.45)),
+					"rows": 2, "tread": 0.75, "seat": "floor", "pitch": 0.75})
+				# Beyond where a player can run (Court.bounds_at: 32.7 m), so no one stands in them.
+				v.add({"name": "end " + ("E" if s > 0 else "W"), "a": Vector3(s * 33.2, 0, -6), "b": Vector3(s * 33.2, 0, 6),
+					"rows": 3, "tread": 1.2, "seat": "floor", "pitch": 0.8})
+		"festival":
+			v.add({"name": "stand", "a": Vector3(-25.5, 0, -(STAND_Z0 - STAND_TREAD)), "b": Vector3(25.5, 0, -(STAND_Z0 - STAND_TREAD)),
+				"rows": STAND_ROWS, "tread": STAND_TREAD, "rise": STAND_RISE, "seat": "step", "pitch": 0.55, "stand": 0.08})
+			v.add({"name": "near side", "a": Vector3(-29, 0, 4.4), "b": Vector3(29, 0, 4.4), "rows": 2, "tread": 0.75, "seat": "floor", "pitch": 0.6})
+			for s in [-1.0, 1.0]:
+				v.add({"name": "shade " + ("E" if s > 0 else "W"), "a": Vector3(s * 33.0, 0, -7), "b": Vector3(s * 33.0, 0, 7),
+					"rows": 5, "tread": 1.6, "seat": "floor", "pitch": 0.8})
+		_:
+			for s in [-1.0, 1.0]:
+				var z: float = s * (Court.TALUD_Z + 1.2)
+				v.add({"name": "terraces " + ("N" if s > 0 else "S"), "a": Vector3(-17, TERRACE_Y0, z), "b": Vector3(17, TERRACE_Y0, z),
+					"rows": TERRACE_ROWS, "tread": TERRACE_D, "rise": TERRACE_RISE, "seat": "terrace", "pitch": 0.62})
+	return v
+
+
+## Where people are (the crowd's feet and seats), as placed.
+func spectator_spots() -> Array:
+	return crowd.spots if crowd else []
+
+
+func _crowd(home: Color, away: Color) -> void:
+	crowd = Crowd.new()
+	add_child(crowd)
+	var palette := [home, away, Color("f2efe6"), Color("2a2a2e")]
+	crowd.build_venue(crowd_venue(id), Game.crowd_density(), palette, hash(id) % 1000)
+	crowd.set_light({"day": 1.0, "dusk": 0.8, "night": 0.4}.get(time(), 1.0))
+	if sun:
+		WsgCrowd3D.set_sun(sun.global_basis.z if sun.is_inside_tree() else sun.basis.z)
+
+
+# ---------------------------------------------------------------- helpers
+
+func _mesh(mesh: Mesh, mat: Material, name_: String) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = name_
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if Game.shadows_enabled() and name_ in ["stone", "houses", "stands", "pyramid"] else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+	return mi
+
+
+## The plants and stones placed round the court as solids: tree trunks, agaves and boulders (cylinders scaled with
+## each); the grass cut-outs are not solid.
+const SOLID_PLANTS := {
+	"rain_tree_card": [0.35, 3.0, "wood"], "coconut_palm_card": [0.16, 6.0, "wood"], "island_tree_a_card": [0.22, 3.0, "wood"],
+	"island_tree_b_card": [0.22, 3.0, "wood"], "agave": [0.5, 0.75, "earth"], "boulder_low": [0.8, 0.9, "stone"],
+}
+
+
+func _solid_scenery() -> void:
+	for kind in scenery.names():
+		if not SOLID_PLANTS.has(kind):
+			solid.skip(String(kind), "grass: people and the ball go through it")
+			continue
+		var d: Array = SOLID_PLANTS[kind]
+		for xf: Transform3D in scenery.placed(kind):
+			var k := xf.basis.get_scale().x
+			solid.add({"name": String(kind).trim_suffix("_card"), "kind": "cylinder", "position": xf.origin, "radius": float(d[0]) * k,
+				"height": float(d[1]) * k, "material": String(d[2])})
+
+
+## A point round the court: between r0 and r1 metres from the court's long middle line, never on the court or where
+## people stand (clear metres beside the court's edges).
+func _scatter(r0: float, r1: float, clear: float) -> Vector3:
+	var hl := court.half_l() + clear
+	for i in 20:
+		var a := _rng.randf() * TAU
+		var r := _rng.randf_range(r0, r1)
+		var p := Vector3(cos(a) * r * 1.6, 0, sin(a) * r)
+		if absf(p.x) < hl + 6.0 and absf(p.z) < 9.0 + clear:
+			continue
+		if absf(p.z) < 20.0 and absf(p.x) < hl and r0 > 15.0 and id == "village":
+			continue
+		return p
+	return Vector3(r1 * 1.6, 0, r1)

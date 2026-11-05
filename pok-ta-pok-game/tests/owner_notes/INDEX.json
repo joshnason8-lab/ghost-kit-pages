@@ -1,0 +1,149 @@
+{
+ "about": "The owner's notes on Pok Ta Pok Rivals, each a test for good (tools/wsg/owner_notes.gd). Never remove one: tools/wsg/owner_notes_guard.sh fails CI if an id once here is gone.",
+ "notes": [
+  {
+   "id": "2026-11-02-a-pose",
+   "file": "2026-11-02_a_pose.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.0 on the A16",
+   "words": "base position is still like an A pose"
+  },
+  {
+   "id": "2026-11-02-block-figure",
+   "file": "2026-11-02_block_figure.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.0 on the A16",
+   "words": "the man doing the smoke ritual looks like a block figure"
+  },
+  {
+   "id": "2026-11-02-crowd-facing-away",
+   "file": "2026-11-02_crowd_facing_away.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.0 on the A16",
+   "words": "crowd moves poorly and is facing away from the game often"
+  },
+  {
+   "id": "2026-11-02-joystick-cameras",
+   "file": "2026-11-02_joystick_cameras.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.1 (every game)",
+   "words": "When switching to a camera angle that is not alongside the court the joystick movement is all wrong."
+  },
+  {
+   "id": "2026-11-02-sideways-camera",
+   "file": "2026-11-02_sideways_camera.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.0 on the A16",
+   "words": "Sideways camera... you can't see all of the game"
+  },
+  {
+   "id": "2026-11-02-stone-fans-legs",
+   "file": "2026-11-02_stone_fans_legs.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-02",
+   "version": "Pok Ta Pok 0.6.0 on the A16",
+   "words": "stone court some fans legs are hidden"
+  },
+  {
+   "id": "2026-11-03-ai-dumb",
+   "file": "2026-11-03_ai_dumb.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.2 on the A16",
+   "words": "The AI is dumb and barely hits the ball after the serve."
+  },
+  {
+   "id": "2026-11-03-copal-skip-watch",
+   "file": "2026-11-03_copal_skip_watch.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.7",
+   "words": "Should have ability to skip the copal on AI match watching too."
+  },
+  {
+   "id": "2026-11-03-festival-flags",
+   "file": "2026-11-03_festival_flags.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.7",
+   "words": "Get rid of the festival court Day flags they are in the way."
+  },
+  {
+   "id": "2026-11-03-floating",
+   "file": "2026-11-03_floating.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.2 on the A16",
+   "words": "Players are floating around when they goto get the ball."
+  },
+  {
+   "id": "2026-11-03-hip-height",
+   "file": "2026-11-03_hip_height.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.7",
+   "words": "Ball is hitting too high on body now sometimes, when it should be at the hip."
+  },
+  {
+   "id": "2026-11-03-loading-frozen",
+   "file": "2026-11-03_loading_frozen.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "every game",
+   "words": "On a lot of the games when you click start game there is a loading delay ... long enough on the slow phone that users might think the game has frozen."
+  },
+  {
+   "id": "2026-11-03-props-solid",
+   "file": "2026-11-03_props_solid.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "every game",
+   "words": "There will NEVER be a time when a player or referee should walk through a table or bench etc. A ball should also bounce off these items."
+  },
+  {
+   "id": "2026-11-03-rigid-stance",
+   "file": "2026-11-03_rigid_stance.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.2 on the A16",
+   "words": "Their pre play stance is too rigid."
+  },
+  {
+   "id": "2026-11-03-rubber-ball",
+   "file": "2026-11-03_rubber_ball.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.2 on the A16",
+   "words": "The ball is rubber and should have more bounce."
+  },
+  {
+   "id": "2026-11-03-serve-rolled",
+   "file": "2026-11-03_serve_rolled.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.2 on the A16",
+   "words": "The AI is rolling the ball on the serve it should set up for bouncing."
+  },
+  {
+   "id": "2026-11-03-serve-toss",
+   "file": "2026-11-03_serve_toss.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.7",
+   "words": "Toss the ball up higher on serve."
+  },
+  {
+   "id": "2026-11-03-shared-foundation",
+   "file": "2026-11-03_shared_foundation.gd",
+   "game": "pok-ta-pok",
+   "date": "2026-11-03",
+   "version": "Pok Ta Pok 0.6.2 on the A16",
+   "words": "This does not seem like it has the shared foundation."
+  }
+ ]
+}

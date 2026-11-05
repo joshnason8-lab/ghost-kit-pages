@@ -1,0 +1,54 @@
+# Página do Google Play, português (Brasil). Cole cada parte em Play Console > Grow users > Store presence
+# > Main store listing > Manage translations. Limites: nome do app 30 caracteres, descrição curta 80, descrição completa
+# 4000.
+
+== App name ==
+Pok Ta Pok Rivals
+
+== Short description ==
+Ulama, o jogo de bola de quadril do México: borracha pesada e contagem até oito.
+
+== Full description ==
+Pok Ta Pok Rivals é o jogo de bola mesoamericano no seu celular, jogado como ainda se joga hoje. Bata com o quadril numa pesada bola de borracha por cima do analco (a linha central) de uma longa quadra de terra, leia o quique baixo, mergulhe atrás dela quando ela desliza rente ao chão e leve-a além do fundo da cidade rival.
+
+O JOGO VIVO: ULAMA DE CADERA (ULAMA DE QUADRIL)
+• O jogo ainda praticado nos povoados do sul de Sinaloa, México: quatro ou cinco de cada lado no taste (a quadra), uma faixa de terra batida de 60 metros de comprimento e 4 de largura.
+• Só o quadril. Se a bola tocar em qualquer outra coisa, a raya (o ponto) vai para o outro lado.
+• Uma raya é ganha quando a bola morre na outra metade, passa da linha de fundo deles ou eles a mandam para fora.
+• A contagem de verdade: um lado a segura, as rayas sobem e descem, e na urria uma contagem inteira pode ser zerada. Vence quem chegar primeiro a oito.
+• O male é o saque: rolado pela terra (abajo) ou lançado alto (arriba).
+• Dois juízes, os veedores, marcam cada raya no analco.
+
+A QUADRA CLÁSSICA (RECONSTRUÍDA)
+Uma quadra de pedra em forma de I, com paredes inclinadas, reconstruída a partir das antigas crônicas: a bola bate na pedra, e um aro de pedra no alto de cada parede vence a partida na hora. Quase nunca acontece.
+
+MODOS DE JOGO
+• Jogue uma partida: escolha uma quadra e duas cidades.
+• Torneio de cidades: oito cidades, mata-mata, até a final.
+• Assista a uma partida entre duas cidades jogada pelo computador.
+
+QUATRO QUADRAS
+Uma quadra de povoado em Sinaloa ao entardecer, uma quadra de festa de dia, uma quadra de pedra na floresta do Yucatán sob uma pirâmide e a mesma quadra à luz de tochas.
+
+DEZESSEIS CIDADES
+De Sinaloa, Yucatán, Quintana Roo, Chiapas, Guatemala, Belize e Honduras, cada uma com seu apelido e suas cores.
+
+NA QUADRA
+• Jogadores e público realistas, com uma corrida e um saque tirados de captura de movimento.
+• Nas quadras de pedra o saque desce para quicar diante do outro lado, que joga a bola no quique, como a pelota maya é jogada hoje em Yucatán.
+• Antes desses jogos, um ancião passa entre os jogadores com copal fumegante enquanto soa um búzio, como esses jogos começam hoje. Um toque pula a cena.
+• Uma bola pelo anel ganha seu replay.
+• Jogue com o time todo, ou seja um só jogador a partida inteira.
+
+FEITO PARA O SEU CELULAR
+• Joystick flutuante e botões grandes, layout para canhotos, tamanho dos botões e botões que você pode mover.
+• Roda em celulares comuns: gráficos que se ajustam sozinhos e economia de bateria.
+• Em espanhol, inglês, português, francês, alemão e italiano.
+• Como Jogar explica as regras, a contagem e a história do jogo e das suas palavras.
+
+Sem anúncios, sem compras no app, sem conta, sem coleta de dados.
+
+Pok Ta Pok Rivals é um jogo independente, sem vínculo com nenhuma entidade esportiva, federação, torneio ou clube, nem endossado por eles. As cidades aparecem apenas pelo nome do lugar; todos os jogadores são inventados.
+
+== Release notes (first Google Play release) ==
+O primeiro lançamento no Google Play. O ulama de cadera de Sinaloa e as quadras de pedra de Yucatán: quatro quadras, dezesseis cidades e um torneio de cidades, em seis idiomas. Jogadores realistas, o saque no quique nas quadras de pedra, a oferenda de copal antes desses jogos e o replay de uma bola pelo anel. Sem anúncios, sem compras, sem coleta de dados.
