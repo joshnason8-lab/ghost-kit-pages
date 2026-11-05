@@ -86,6 +86,8 @@ const STEP_TIME := 0.2
 ## A knee the IK would put more than this behind its hip-ankle line as the body faces (m, on a grown leg) bends forward
 ## instead (WsgNoteChecks.KNEE_BACK reads 0.04 as backward).
 const KNEE_BACK_MAX := 0.03
+## ... on a leg the planter carries through the air, and on any leg of a body moving at least this fast (m/s).
+const KNEE_FRONT_SPEED := 1.0
 ## How far a step's toe stays over the floor until it lands (m, the body's scale 1): over the feet rule's 3 cm touch.
 const STEP_CLEAR := 0.035
 ## How far off where a let-go foot is held the clip may stand it down before it steps there instead (m, scale 1): the
@@ -640,7 +642,10 @@ func _process_modification_with_delta(_frame_delta: float) -> void:
 		target.y = maxf(target.y, floor_ankle)
 		if not target.is_equal_approx(ank):
 			# (Its own step, a hold easing off, or a catch-up: the planter carrying a foot in the air, not the clip.)
-			var carried: bool = not down and (stepping != Vector3.INF or float(_w[i]) > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i]))
+			# (Or any leg of a body on the move: a held foot trailing a body running on bent its knee 16.6 cm behind -
+			# Hurling's watch AI at High, 2.7 m/s. Standing, a leg under hips turned hard is the body's own twist.)
+			var carried: bool = (not down and (stepping != Vector3.INF or float(_w[i]) > 0.0 or float(_across[i]) > 0.0 or bool(_chasing[i]))) \
+				or body_speed >= KNEE_FRONT_SPEED
 			_leg_ik(sk, leg, inv * target, carried)
 		# A foot down with its ball on the ground keeps its ball where it touched: the foot turned about the ankle until its
 		# toe is there (the body turning, or the clip's foot creeping, swung it 1-2 cm about a held ankle).

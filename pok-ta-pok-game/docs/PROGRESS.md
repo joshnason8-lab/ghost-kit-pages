@@ -502,6 +502,11 @@ Pok Ta Pok Rivals is the seventh game in the family. Branch `claude/pok-ta-pok-g
   the dive (knee_excuse). Backward knees: 0 in every mode at Low, Medium and High (5.7-9.6k bent knee-frames a run);
   knee_strays PASS. Also the foundation's planter knee pole (e04af650). Sim smoke: 83 matches, 0 failed; the
   deferred foot jumps (28.5-45.7 cm, three AI-only matches) are with the foundation.
+- **0.6.37-beta: shared foundation 4a2df496.** Brings in e58d0051 and the planter's knee fix for bodies moving
+  1 m/s or faster (040a5df5, KNEE_FRONT_SPEED). Foot dumps traced the three deferred sim jumps to the foundation
+  locomotor's one-shot transitions (a walk→stand shot playing on while the body speeds up again; a stand→run shot
+  running past its end); the foundation owns the fix (due 2026-11-10), and the bounded deferrals stand until then.
+  The suite's check count varies by a few with cup results (fewer games after an early exit), not with skipped tests.
 
 ## Next
 
