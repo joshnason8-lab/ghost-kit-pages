@@ -1,0 +1,158 @@
+extends Control
+## Settings, grouped into cards: the game, the screen, sound and controls, and about (the version, the privacy
+## policy and help pages, the licences).
+
+var _fps_note: Label
+var _assist_note: Label
+
+
+func setup(_args: Dictionary) -> void:
+	pass
+
+
+func _ready() -> void:
+	UI.screen(self)
+	var v := UI.page(self, tr("MENU_SETTINGS"), func(): Game.goto_menu())
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 20)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 20)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 20)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cols.add_child(left)
+	cols.add_child(right)
+	v.add_child(UI.scroll(cols))
+
+	# The game.
+	var game: Array = UI.section(tr("SET_GAME"), "flag")
+	left.add_child(game[0])
+	var names := [tr("LANG_PHONE")]
+	var codes := [""]
+	for pair in Game.LANGUAGES:
+		codes.append(pair[0])
+		names.append(pair[1])
+	game[1].add_child(UI.field(tr("LANGUAGE"), UI.chips(names, codes.find(String(Game.settings.language)), func(i):
+		Game.set_language(codes[i])
+		Game.show_screen("res://ui/settings_screen.gd"))))
+	game[1].add_child(UI.difficulty_field(self))
+	var akeys := ["ASSIST_OFF", "ASSIST_SOLO", "ASSIST_FULL"]
+	_assist_note = UI.wrap(tr(akeys[int(Game.settings.assist)] + "_NOTE"), "MutedLabel", 17)
+	game[1].add_child(UI.field(tr("ASSIST"), UI.chips([tr("ASSIST_OFF"), tr("ASSIST_SOLO"), tr("ASSIST_FULL")], int(Game.settings.assist), func(i):
+		Game.settings.assist = i
+		Game.save_settings()
+		_assist_note.text = tr(akeys[i] + "_NOTE"))))
+	game[1].add_child(_assist_note)
+	var lens := []
+	for n in Game.LENGTHS:
+		lens.append(tr("MINUTES_N").format({"n": n}))
+	game[1].add_child(UI.field(tr("MATCH_LENGTH"), UI.chips(lens, int(Game.settings.length), func(i):
+		Game.settings.length = i
+		Game.save_settings())))
+	game[1].add_child(UI.wrap(tr("LENGTH_NOTE"), "MutedLabel", 17))
+	game[1].add_child(_toggle("coach", "SET_COACH"))
+	game[1].add_child(UI.wrap(tr("SET_COACH_NOTE"), "MutedLabel", 17))
+	game[1].add_child(UI.field(tr("GRADE"), UI.chips([tr("GRADE_SENIOR"), tr("GRADE_CLUB")], int(Game.settings.grade), func(i):
+		Game.settings.grade = i
+		Game.save_settings())))
+	game[1].add_child(UI.wrap(tr("GRADE_NOTE"), "MutedLabel", 17))
+
+	# The screen.
+	var disp: Array = UI.section(tr("SET_DISPLAY"), "display")
+	right.add_child(disp[0])
+	# A start on Vulkan that failed: said once (game/ultra.gd; the game draws with GL Compatibility from now on).
+	if Ultra.fell_back != "":
+		disp[1].add_child(UI.wrap(tr("VULKAN_BACK_" + Ultra.fell_back), "MutedLabel", 17))
+		Ultra.fell_back = ""
+	disp[1].add_child(UI.field(tr("GRAPHICS"), UI.chips([tr("GFX_LOW"), tr("GFX_MEDIUM"), tr("GFX_HIGH")],
+		int(Game.settings.graphics), func(i):
+			Game.settings.graphics = i
+			Game.settings.gfx_chosen = true
+			Game.save_settings())))
+	# The HD pack, on a phone that can use it: its line and its screen.
+	if Ultra.capable():
+		var hd := HBoxContainer.new()
+		hd.add_theme_constant_override("separation", 12)
+		var line := UI.wrap(tr("HD_LINE_IN") if Ultra.pack_ready() and not Ultra.removed else tr("HD_LINE_OUT"), "MutedLabel", 17)
+		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hd.add_child(line)
+		var open := UI.button(tr("HD_OPEN"), false, func(): Game.show_screen("res://ui/hd_pack_screen.gd"))
+		open.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hd.add_child(open)
+		disp[1].add_child(hd)
+	disp[1].add_child(UI.field(tr("GFX_AUTO"), UI.chips_row([tr("ON"), tr("OFF")], 0 if bool(Game.settings.auto_gfx) else 1, func(i):
+		Game.settings.auto_gfx = i == 0
+		Game.save_settings())))
+	disp[1].add_child(UI.wrap(tr("GFX_NOTE"), "MutedLabel", 17))
+	var hz := Game.screen_hz()
+	var smooth := Game.smooth_cap(hz)
+	var fps_opts := [Game.FPS_SAVER]
+	var fps_names := [tr("FPS_SAVER")]
+	if smooth > 0 and smooth < hz:
+		fps_opts.append(Game.FPS_SMOOTH)
+		fps_names.append(tr("FPS_N").format({"n": smooth}))
+	fps_opts.append(Game.FPS_MAX)
+	fps_names.append(tr("FPS_MAX_N").format({"n": hz}))
+	var shown := fps_opts.find(int(Game.settings.get("fps", Game.FPS_SMOOTH)))
+	if shown < 0:
+		shown = fps_opts.size() - 1
+	disp[1].add_child(UI.field(tr("FRAME_RATE"), UI.chips(fps_names, shown, func(i):
+		Game.settings.fps = fps_opts[i]
+		Game.save_settings()
+		Game.apply_frame_rate()
+		_fps_note.text = _fps_text(fps_opts[i], smooth, hz))))
+	_fps_note = UI.wrap(_fps_text(fps_opts[shown], smooth, hz), "MutedLabel", 17)
+	disp[1].add_child(_fps_note)
+	var cams := [Game.CAM_TV, Game.CAM_HIGH, Game.CAM_END]
+	disp[1].add_child(UI.field(tr("CAMERA"), UI.chips([tr("CAM_TV"), tr("CAM_HIGH"), tr("CAM_END")], maxi(0, cams.find(int(Game.settings.camera))), func(i):
+		Game.settings.camera = cams[i]
+		Game.save_settings())))
+
+	# Sound and controls.
+	var snd: Array = UI.section(tr("SET_SOUND_CONTROLS"), "sound")
+	left.add_child(snd[0])
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 36)
+	row.add_theme_constant_override("v_separation", 14)
+	for key in ["sound", "music", "vibration", "left_handed"]:
+		row.add_child(_toggle(key, {"sound": "SOUND", "music": "MUSIC", "vibration": "VIBRATION", "left_handed": "LEFT_HANDED"}[key]))
+	snd[1].add_child(row)
+	snd[1].add_child(UI.field(tr("BUTTON_SIZE"), UI.chips([tr("SIZE_NORMAL"), tr("SIZE_LARGE"), tr("SIZE_XL")], int(Game.settings.btn_size), func(i):
+		Game.settings.btn_size = i
+		Game.save_settings())))
+	var mv := UI.button(tr("MOVE_BUTTONS"), false, func(): Game.show_screen("res://ui/buttons_screen.gd"))
+	mv.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	snd[1].add_child(mv)
+
+	# About.
+	var about: Array = UI.section(tr("SET_ABOUT"), "book")
+	right.add_child(about[0])
+	about[1].add_child(UI.label(tr("VERSION_N").format({"v": String(ProjectSettings.get_setting("application/config/version"))}), "MutedLabel", 17))
+	about[1].add_child(UI.wrap(tr("ABOUT_DISCLAIMER"), "MutedLabel", 16))
+	var links := HFlowContainer.new()
+	links.add_theme_constant_override("h_separation", 10)
+	links.add_theme_constant_override("v_separation", 10)
+	links.add_child(UI.button(tr("PRIVACY_POLICY"), false, func(): Game.show_screen("res://ui/info_screen.gd", {"page": "privacy"})))
+	links.add_child(UI.button(tr("HELP_SUPPORT"), false, func(): Game.show_screen("res://ui/info_screen.gd", {"page": "help"})))
+	links.add_child(UI.button(tr("LICENCES"), false, func(): Game.show_screen("res://ui/licences_screen.gd")))
+	about[1].add_child(links)
+
+
+func _fps_text(opt: int, smooth: int, hz: int) -> String:
+	match opt:
+		Game.FPS_SAVER:
+			return tr("FPS_NOTE_SAVER").format({"n": Game.saver_cap(hz)})
+		Game.FPS_SMOOTH:
+			return tr("FPS_NOTE_SMOOTH").format({"n": smooth, "hz": hz})
+	return tr("FPS_NOTE_MAX").format({"hz": hz})
+
+
+func _toggle(key: String, title_key: String) -> VBoxContainer:
+	return UI.field(tr(title_key), UI.chips_row([tr("ON"), tr("OFF")], 0 if Game.settings[key] else 1, func(i):
+		Game.settings[key] = i == 0
+		Game.save_settings()
+		if key == "sound" and i == 1:
+			Sfx.stop_all()
+		if key in ["sound", "music"]:
+			Sfx.music(true)))

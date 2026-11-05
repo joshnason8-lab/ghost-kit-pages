@@ -1,0 +1,145 @@
+name: Hurling Heroes · Media kit
+
+# The website's media kit (screenshots, every menu screen, icons, the trailer and its vertical cut, the website's
+# copy): made from the current build by hurling-game/tools/media/make_media_kit.sh on a software Vulkan renderer (each
+# picture takes minutes, so the pictures are made in parallel jobs), then published as media-kit-hurling-heroes.zip
+# on the release "hurling-heroes-media" (titled "Media kit: Hurling Heroes", a prerelease, never "latest": Obtainium's
+# filter for the beta, "^Hurling Heroes ", passes it by). Made again when its tools change, or by hand (Run workflow,
+# once this file is on the default branch).
+
+on:
+  push:
+    paths:
+      - "hurling-game/tools/media/**"
+      - ".github/workflows/hurling-media-kit.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hurling-media-kit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: hurling-game
+  # Parts already made by an earlier run of this workflow (its artifacts are kept 3 days), taken from that run instead
+  # of made again: a run id, and the parts (as their artifacts are named, media-<part>). Empty: everything is made.
+  REUSE_RUN: "40552234675"
+  REUSE_PARTS: "shots footage_0_1 footage_2_3 footage_4_5"
+
+jobs:
+  pictures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    permissions:
+      contents: read
+      actions: read     # to take a part from an earlier run (REUSE_RUN)
+    strategy:
+      fail-fast: true
+      matrix:
+        part: ["shots", "menus", "footage 0,1", "footage 2,3", "footage 4,5"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Made already?
+        id: name
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          n=$(echo '${{ matrix.part }}' | tr ' ,' '__')
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+          if [ -n "$REUSE_RUN" ] && [[ " $REUSE_PARTS " == *" $n "* ]] && \
+              gh run download "$REUSE_RUN" -n "media-$n" -D "${PROJECT_DIR}/build/media"; then
+            echo "reused=true" >> "$GITHUB_OUTPUT"
+            find "${PROJECT_DIR}/build/media" -type f | wc -l
+          fi
+
+      - name: Cache Godot and export templates
+        if: steps.name.outputs.reused != 'true'
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.name.outputs.reused != 'true' && steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        if: steps.name.outputs.reused != 'true'
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: A display and software Vulkan (Mesa's lavapipe)
+        if: steps.name.outputs.reused != 'true'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb mesa-vulkan-drivers libvulkan1
+
+      - name: Build translations
+        if: steps.name.outputs.reused != 'true'
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Make ${{ matrix.part }}
+        if: steps.name.outputs.reused != 'true'
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: tools/media/make_media_kit.sh build/media ${{ matrix.part }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: media-${{ steps.name.outputs.n }}
+          path: ${{ env.PROJECT_DIR }}/build/media
+          if-no-files-found: error
+          retention-days: 3
+
+  kit:
+    needs: pictures
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # to publish the media kit's release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ffmpeg
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+          python3 -c "import PIL" || pip install Pillow
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: media-*
+          path: ${{ env.PROJECT_DIR }}/build/media
+          merge-multiple: true
+
+      - name: Cut the trailer, put the kit together
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: tools/media/make_media_kit.sh build/media assemble
+
+      - name: Publish it on its own release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=hurling-heroes-media
+          ZIP=${PROJECT_DIR}/build/media/media-kit-hurling-heroes.zip
+          LEN=$(ffprobe -v error -show_entries format=duration -of csv=p=0 ${PROJECT_DIR}/build/media/kit/trailer/hurling-heroes-trailer-1080p.mp4)
+          printf '%s\n' "The media kit for Hurling Heroes' website: screenshots and every menu screen (1920 x 1080 PNG), the icon" \
+            "and the feature graphic, the trailer (${LEN%.*} s, 1920 x 1080) and a 15 s vertical cut, the website's copy" \
+            "(text/), with CREDITS.txt. Made from \`${GITHUB_SHA::7}\`. Not a build of the game." > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --target "$GITHUB_SHA" --prerelease --latest=false --title "Media kit: Hurling Heroes" \
+            --notes-file notes.md "$ZIP"
+          gh release view "$TAG"
