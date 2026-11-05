@@ -1,0 +1,36 @@
+# Google Play store listing, Chinese (Simplified). Paste each part into Play Console > Grow > Store presence > Main
+# store listing (Manage translations). Limits: app name 30 characters, short description 80, full description 4000.
+
+== App name ==
+Sepak Takraw Unleashed
+
+== Short description ==
+在手机上玩藤球：倒钩扣球、后踢发球、网前拦网。
+
+== Full description ==
+Sepak Takraw Unleashed 让你在手机上玩藤球——东南亚的“脚踢排球”。一只脚踩在发球圈内发球，用脚内侧接球，在网前高高传起，再越过拦网来一记倒钩扣球。
+
+真正的藤球
+• 现行比赛规则：每局15分（须领先2分，最多17分），三局两胜，每分轮换发球，每方最多触球三次。
+• 三人赛、四人赛、双人赛和团体赛，男子与女子，场地和球网均为标准尺寸。
+• 球迷熟悉的技术：脚内侧踢球、脚背救球、头球、后踢发球、倒钩扣球、反身扣球、脚掌扣球、吊球和拦网。
+• 主裁判判罚犯规，司线员判定界内界外，还可以发起视频挑战推翻判罚。
+
+玩法
+• 快速比赛：任选两支球队、任选场馆。
+• 联赛赛季：按马来西亚、泰国和印度尼西亚的赛制打完一整个俱乐部赛季（俱乐部均为虚构）。马来西亚：七站大奖赛，每个名次都有积分，有升级和降级。泰国：主客场制，每场对决由两场三人赛组成。印度尼西亚：五个赛区，然后在雅加达进行全国决赛。
+• 国际赛：世界锦标赛、皇家杯、亚洲锦标赛和东南亚锦标赛，泰国、马来西亚、越南、印度尼西亚、缅甸、日本、韩国等队参赛。
+
+五座场馆
+国家体育馆、商场里的球场、地方体育馆、灯光下的公园球场、日落时的海滩。
+
+随心所欲
+• 13种语言：English、ไทย、Bahasa Melayu、Bahasa Indonesia、Tiếng Việt、ລາວ、မြန်မာ、ខ្មែរ、Filipino、日本語、한국어、中文、हिन्दी。
+• 不会替你自动比赛：用摇杆让球员跑到球下，在光环收拢到球上的瞬间踢球。可以选择跑位辅助的程度和比赛速度。
+• 专为入门级和中端手机流畅运行而打造。
+• 离线可玩。无广告、无内购、无需账号、不收集任何数据。
+
+Sepak Takraw Unleashed 是一款独立游戏，与任何藤球协会、联赛、俱乐部或球员无关，也未获得其认可。俱乐部的昵称为虚构，球员为虚构人物；国家、地点和规则均真实存在。
+
+== Release notes (first release) ==
+Sepak Takraw Unleashed 首次发布：快速比赛、联赛赛季和国际赛，支持13种语言。

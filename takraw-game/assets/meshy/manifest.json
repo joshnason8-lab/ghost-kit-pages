@@ -1,0 +1,166 @@
+{
+ "mall_escalator": {
+  "prompt": "A modern shopping mall escalator, one straight flight rising 4.5 metres over 9 metres, clear glass side balustrades with brushed stainless steel handrails and trim, grey metal steps, a short flat landing at the top and bottom. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c5-a680-72c8-a6a5-e57d08a46ce4",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c6-f0ad-70df-a1d2-4eed9b78acd5",
+  "textured": "mall_escalator.glb",
+  "remesh_id": "01a1751b-2002-729c-9b75-5e37d44db132"
+ },
+ "gym_scoreboard": {
+  "prompt": "A wall-mounted electronic school gymnasium scoreboard: a wide black rectangular box with two large red LED digit panels and small amber lights, a white border. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c5-b0a6-73cf-8d54-89b226b4acca",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c6-7954-7136-996a-ac45142eae99",
+  "textured": "gym_scoreboard.glb",
+  "remesh_id": "01a1751b-2ab6-74f9-a676-4ab7007dee5a"
+ },
+ "food_cart": {
+  "prompt": "A Thai street food cart: a small stainless steel cart on bicycle wheels with a glass display case on top, a cooking wok and gas burner, a big round faded red parasol over it. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c5-bb95-757b-87aa-2cbbaf7f855d",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c6-a7c7-735c-a680-2f8dd4dc741b",
+  "textured": "food_cart.glb",
+  "remesh_id": "01a1751b-226b-72a7-a317-025565702d6e"
+ },
+ "lifeguard_tower": {
+  "prompt": "A wooden lifeguard tower on a tropical beach: a small square hut with a sloped roof on four tall wooden stilts about 3 metres high, a wooden ramp up to it, a railing round its deck. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c6-e3c3-7415-9aa7-af8ede4a4f1c",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c7-ad9d-72db-9160-72b814a99809",
+  "textured": "lifeguard_tower.glb",
+  "remesh_id": "01a1751b-2771-708b-86c6-c604a3358368"
+ },
+ "scooter": {
+  "prompt": "A small Asian step-through motorbike scooter (underbone moped) parked on its side stand, with a basket on the front. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c7-51e6-750a-8bb4-6077573ceff4",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c8-98c6-7358-ae1f-7229c312160d",
+  "textured": "scooter.glb",
+  "remesh_id": "01a17519-8748-76cc-9a4c-721db3d0f645"
+ },
+ "mall_shopfront": {
+  "prompt": "The front of a modern shopping mall shop, 8 metres wide and 4 metres tall, one flat facade: floor-to-ceiling glass windows and a wide glass door, behind them a brightly lit shop interior with clothing racks, shelves and display tables, a plain backlit sign band across the top, a slim metal frame. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c7-7c71-764c-9dce-571353aefedc",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c8-2547-75b2-b938-35a8d2ab41d9",
+  "textured": "mall_shopfront.glb"
+ },
+ "longtail_boat": {
+  "prompt": "A traditional Thai longtail boat pulled up on the sand: a long narrow wooden hull about 9 metres long with a high curved bow wrapped in colourful ribbons and a flower garland, a long-shaft engine at the stern. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c8-3a87-721a-afe6-3a8a7e0dbf1e",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c8-e2d1-757c-9af7-b1e02eee5b45",
+  "textured": "longtail_boat.glb",
+  "remesh_id": "01a1751b-2345-715e-88e5-17528680da57"
+ },
+ "mall_planter": {
+  "prompt": "A large modern indoor planter: a square light grey stone planter box 1.2 metres wide, with a tall leafy indoor palm tree about 3 metres tall growing from it. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c8-b4b1-7645-8d7f-dcc4074ac57f",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174ca-7d15-7271-b499-2c7c8ed2a419",
+  "textured": "mall_planter.glb",
+  "remesh_id": "01a1751b-20cc-7536-8b85-3fceebe248a7"
+ },
+ "temple_chedi": {
+  "prompt": "A white Thai Buddhist chedi (stupa) about 9 metres tall: a bell-shaped dome on a square stepped base, a tall slender ringed spire on top tipped in gold. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c9-241c-7328-8a54-296f7bc186f4",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174c9-ac82-7020-b0b2-540f4d2a4849",
+  "textured": "temple_chedi.glb",
+  "remesh_id": "01a1751b-240e-772c-8744-387d6259e75c"
+ },
+ "beach_bar": {
+  "prompt": "A small tropical beach bar shack: an open wooden hut with a steep thatched palm-leaf roof on bamboo posts, a bamboo counter in front with four wooden bar stools, shelves of bottles behind. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174c9-6f70-719c-9fa3-cf8457d82666",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174cc-bb8a-751e-8ac3-2ec1c86fc235",
+  "textured": "beach_bar.glb",
+  "remesh_id": "01a1751b-2693-7289-9da9-376868d662fa"
+ },
+ "temple_sala": {
+  "prompt": "A Thai open-sided temple pavilion (sala): a raised floor on white columns, no walls, a two-tiered steep roof of orange and green glazed tiles with gold chofa finials at the gable ends, about 8 by 5 metres. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174ca-1829-7495-ab12-1683850e6409",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174cc-214f-7238-9ea3-0316d7c7079a",
+  "textured": "temple_sala.glb",
+  "remesh_id": "01a1751b-24d9-73b6-9ab6-343345c5e73b"
+ },
+ "mall_kiosk": {
+  "prompt": "A modern shopping mall retail kiosk: a rounded white and light wood counter about 3 metres long with glass display shelves, a slim canopy frame on four posts above it with warm lights. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174ca-e89a-72bb-a282-d3cc19b6a132",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174cb-d12b-71d5-a4d4-5ca5350cd79e",
+  "textured": "mall_kiosk.glb",
+  "remesh_id": "01a1751b-219b-76de-9980-2399ac3b2e8c"
+ },
+ "arena_scoreboard": {
+  "prompt": "A centre-hung four-sided arena video scoreboard: a black box frame with a large rectangular video screen on each of its four sides and a smaller ring of screens below, suspended from cables. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174cc-7dbf-7444-bc89-6a608f420f7a",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174cd-8ef6-712b-ba50-fb4e8ec26ec4",
+  "textured": "arena_scoreboard.glb",
+  "remesh_id": "01a1751b-29db-704d-b744-b82b2d779caa"
+ },
+ "spirit_house": {
+  "prompt": "A Thai spirit house: a small ornate gilded shrine like a tiny temple on a white pillar about 2 metres tall, with flower garlands and offerings on its platform. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174cc-ae02-7438-ac50-f9e47535cd73",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174cd-9613-712a-8692-53fcd955eff4",
+  "textured": "spirit_house.glb",
+  "remesh_id": "01a1751b-2845-7402-a71b-af80950e7f6c"
+ },
+ "sun_lounger": {
+  "prompt": "A wooden beach sun lounger with a raised back rest and a thin white cushion, about 2 metres long. Realistic game asset, clean geometry, real-world scale; no text, no letters, no logos, no brand names, no numbers.",
+  "preview_id": "01a174cd-670a-7658-a55a-6f7f7c112dad",
+  "credits": {
+   "model": 20,
+   "texture": 10
+  },
+  "refine_id": "01a174ce-0f8c-7651-8748-987099ad8902",
+  "textured": "sun_lounger.glb",
+  "remesh_id": "01a1751b-2918-75f8-bed2-cecd6e19ef72"
+ }
+}

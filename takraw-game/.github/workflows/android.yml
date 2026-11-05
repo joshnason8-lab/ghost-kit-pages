@@ -1,0 +1,196 @@
+name: Sepak Takraw Unleashed · Android build
+
+# For the game in its own repository (this folder at the root): builds the beta APK you can sideload,
+# after running the headless test suite.
+
+on:
+  push:
+    paths:
+      - "**"
+  pull_request:
+    paths:
+      - "**"
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: "."
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write   # to publish the beta release (below)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: Smoke test (screens in every language, season, tournament, AI matches)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
+
+      - name: Controls (nothing played for you; a good player wins points)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- idle 1 0 2>&1 | tee bot.log
+          timeout 900 godot --headless --path . --fixed-fps 60 res://tests/user_bot.tscn -- perfect 1 0 2>&1 | tee -a bot.log
+          if grep -q "SCRIPT ERROR" bot.log; then grep -A4 "SCRIPT ERROR" bot.log; exit 1; fi
+
+      - name: Touch input (scrolling from anywhere on a page, taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 300 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      # The beta's signing key: the owner's, from the BETA_KEYSTORE_B64 secret (a PKCS12 keystore, base64; password
+      # "android", alias "androiddebugkey"), so every build installs over the last and keeps the player's saves. Without
+      # the secret (a fork, a copy of the repository) a new key is made, and updates won't install over earlier builds.
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          KEYSTORE=$HOME/beta.keystore
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=secret" >> "$GITHUB_ENV"
+          else
+            echo "::warning::BETA_KEYSTORE_B64 is not set: signing with a new key, so this APK won't install over earlier builds."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storetype PKCS12 -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=new" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          mkdir -p build
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          ls -la build
+
+      # Signed with the beta key (above): zipalign, then apksigner from the SDK's build tools. The certificate's SHA-256 goes
+      # in the log; with the owner's key it must be the one below, or the job fails.
+      - name: Sign APK
+        env:
+          EXPECTED_SHA256: "6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+        run: |
+          BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
+          APK=${PROJECT_DIR}/build/sepak-takraw-unleashed-${VERSION}.apk
+          "$BT/zipalign" -p -f 4 ${PROJECT_DIR}/build/unsigned.apk ${PROJECT_DIR}/build/aligned.apk
+          "$BT/apksigner" sign --ks "$KEYSTORE" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android \
+            --out "$APK" ${PROJECT_DIR}/build/aligned.apk
+          "$BT/apksigner" verify --print-certs "$APK" | grep -i "SHA-256"
+          GOT=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1 | tr 'a-f' 'A-F')
+          WANT=$(echo "$EXPECTED_SHA256" | tr -d ':')
+          echo "Signing certificate SHA-256: $(echo "$GOT" | sed 's/../&:/g; s/:$//')"
+          if [ "$BETA_KEY" = "secret" ] && [ "$GOT" != "$WANT" ]; then
+            echo "::error::The APK is signed with $GOT, not the owner's beta key."
+            exit 1
+          fi
+          rm -f ${PROJECT_DIR}/build/aligned.apk
+          ls -la ${PROJECT_DIR}/build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sepak-takraw-unleashed-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/sepak-takraw-unleashed-${{ env.VERSION }}.apk
+          if-no-files-found: error
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "sepak-takraw-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests. Pull request runs build the same APK and leave the release alone.
+      - name: Publish the beta release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=sepak-takraw-unleashed-beta
+          APK=${PROJECT_DIR}/build/sepak-takraw-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          The latest beta of **Sepak Takraw Unleashed** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android** (64-bit phones): tap \`sepak-takraw-unleashed-${VERSION}.apk\` under Assets below. When it has
+          downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
+          any earlier beta signed with the owner's beta key (Takraw Smash, its old name, included) and keeps your saves.
+          If Android says the app wasn't installed, the one on the phone has another key (this page's builds of 0.6.0 to
+          0.9.0 did): uninstall it first.
+
+          What's new, and what to try: https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/docs/BETA.md
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release delete takraw-smash-beta --cleanup-tag --yes || true   # the beta under the game's old name
+          gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+            --title "Sepak Takraw Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          gh release view "$TAG"
