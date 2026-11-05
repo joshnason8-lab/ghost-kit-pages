@@ -781,3 +781,19 @@ a held foot left out of the leg's reach (extreme#16's OFFICIAL_2, 35 cm) is drag
   0.14.16 on every line; suite, owner notes (10), feet, props, officials, pose and tackle_check 19/19 pass.
 - CI: the world check split into two jobs side by side (--only: the knees rules alone, the rest) - with knees
   added, one job ran 74 of its 80 minutes (0.14.26's push run) and the pull-request run went past it.
+
+## 0.14.28: the AI raider's chances per second, not per frame
+
+- The lead (2026-11-05): does raider move choice depend on frame time? Two chances in Match._ai_raider were each
+  frame's with no dt: the try to escape a hold (0.35 x skill) and the sidestep of a dive close by (skill x 0.6) - at
+  30 frames a second half as often each second as at 60, at 15 a quarter. Every other AI chance was already dt-scaled
+  or taken once per decision. Match.per_frames(p, dt) = 1 - (1 - p)^(60 dt): 60 (the default Smooth cap) plays as
+  before; the battery saver's 30, a slow phone, and the tests' --fixed-fps 30 now match it each second.
+- The suite's flake was not load: seeded, the same match under three parallel jobs was move for move the run alone
+  (seed 9). Unseeded, each run was a different match (68750bb seeded it).
+- Before the fix, seeds 1-4 at 15/30/60 (tests/move_mix_probe): kinds landed 3.75/3.5/3.0 a match - no narrower at
+  a low rate. After, seed 9: 15 fps landed 5 kinds and tried 3, 30 landed 2 and tried 3, 60 landed 2 and tried 3.
+- Tests: the suite checks per_frames gives the same chance each second at 15, 30 and 60; CI plays the suite's AI match
+  at --fixed-fps 15 (move_mix_probe exits 1 below the suite's mix bar). Gates: suite, owner notes, feet, feet_low
+  (equal to 0.14.16), props, officials, pose and tackle_check 19/19 pass.
+- CI: the knees world-check job ran 77 of its step's 80 minutes on 0.14.27's push: 100 for the step, 115 the job.
