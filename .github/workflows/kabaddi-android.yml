@@ -1,0 +1,349 @@
+name: Kabaddi Raid · Android build
+
+# Builds the Godot project in kabaddi-game/ into the beta APK you can sideload,
+# after running the headless test suite.
+
+on:
+  push:
+    paths:
+      - "kabaddi-game/**"
+      - ".github/workflows/kabaddi-android.yml"
+  pull_request:
+    paths:
+      - "kabaddi-game/**"
+      - ".github/workflows/kabaddi-android.yml"
+  workflow_dispatch:
+
+# One run per branch: a newer push cancels an older run, so an older build can never publish over a newer one.
+concurrency:
+  group: kabaddi-android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: kabaddi-game
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write   # to publish the beta release (below)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shared foundation (fails if a required commit is missing; behind the latest only warns)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: Smoke test (screens, cup, career, full AI match)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 1500 godot --headless --path . --fixed-fps 30 res://tests/test_runner.tscn
+
+      # The suite's full AI match again at 15 frames a second (a slow phone): raiders still try and land a mix of moves
+      # (the AI's chances are each second's, Match.per_frames - the lead, 2026-11-05).
+      - name: Full AI match at 15 frames a second
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 900 godot --headless --path . --fixed-fps 15 res://tests/move_mix_probe.tscn -- 9
+
+      # The tackles, holds, escapes and get-ups, scenario by scenario (tests/tackle_check, docs/TACKLE_SYSTEM.md):
+      # 0fe9d2a broke Break free here on 29 Oct and nothing noticed until 4 Nov - it runs on every build now.
+      - name: Tackle check (19 scenarios)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 1800 godot --headless --path . --fixed-fps 30 res://tests/tackle_check.tscn
+
+      # The owner's notes, each a test for good (tests/owner_notes, ADOPTING 5.16): none may go, and every one passes.
+      - name: Owner notes (each a test for good)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sh tools/wsg/owner_notes_guard.sh
+          # (On a fresh install's defaults: an empty user dir - the foundation, 2846235d.)
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/owner_notes.gd
+
+      # The owner: nobody ever walks through a table, a bench, a chair or a board. A Watch-AI match at every ground,
+      # every body on its feet checked against the ground's solid props each frame (WsgSolidProps, ADOPTING 5.15).
+      - name: Props audit (no body inside a prop, every ground)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 1200 godot --headless --path . --fixed-fps 30 -s res://tools/wsg/prop_audit.gd -- res://game/prop_runs.gd "$RUNNER_TEMP/prop_audit" 1 90
+
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          KEYSTORE=$HOME/debug.keystore
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          # The beta key (repo secret BETA_KEYSTORE_B64: a PKCS12 keystore, store and key password "android", alias
+          # "androiddebugkey"), the same for every build, so each beta installs over the one before.
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+          else
+            echo "::warning::BETA_KEYSTORE_B64 is not set: this APK is signed with a throwaway key, and will not install over earlier builds (uninstall first)."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          mkdir -p build
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          ls -la build
+
+      # Signed with the beta key (above), so every beta installs over the last and keeps the player's saves. The job
+      # fails if the secret is set and the APK's certificate is not the beta key's.
+      - name: Sign APK
+        env:
+          HAS_BETA_KEY: ${{ secrets.BETA_KEYSTORE_B64 != '' }}
+          BETA_SHA256: "6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+        run: |
+          curl -sSL -o ~/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          java -jar ~/uber-apk-signer.jar --apks ${PROJECT_DIR}/build/unsigned.apk --out ${PROJECT_DIR}/build/signed \
+            --ks "$KEYSTORE" --ksAlias androiddebugkey --ksPass android --ksKeyPass android
+          mv ${PROJECT_DIR}/build/signed/*.apk ${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk
+          ls -la ${PROJECT_DIR}/build
+          SHA=$(keytool -printcert -jarfile ${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk | sed -n 's/^[[:space:]]*SHA256: //p' | head -1)
+          echo "APK signing certificate SHA-256: $SHA"
+          if [ "$HAS_BETA_KEY" = "true" ] && [ "$SHA" != "$BETA_SHA256" ]; then
+            echo "::error::The APK is not signed with the beta key (expected $BETA_SHA256)."
+            exit 1
+          fi
+
+      # The foundation's release gate (ADOPTING 5.19): the owner's key, the version, the licensed motion inside the APK,
+      # nothing that is not the game in it, no big uncompressed texture, no duplicate; the size against the last beta.
+      - name: Release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev"
+          # The published beta built from this very commit (the push run of it published before this pull_request
+          # run got here) is not a previous release: comparing the APK with itself fails "newer" on every push.
+          # (Published in place, the release keeps its first target: its build's commit is the notes' "Commit:" line.)
+          PUB=$(gh release view kabaddi-raid-beta --json body -q .body 2>/dev/null | sed -n 's/^Commit: \([0-9a-f]*\).*/\1/p' | tail -1)
+          [ -n "$PUB" ] || PUB=$(gh release view kabaddi-raid-beta --json targetCommitish -q .targetCommitish 2>/dev/null || true)
+          if [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            echo "a pull_request run publishes nothing: newness is judged on the push run that publishes"
+          elif [ "$PUB" = "$HEAD_SHA" ]; then
+            echo "the published beta is this commit's own build: no previous release to compare against"
+          else
+            gh release download kabaddi-raid-beta --pattern '*.apk' --dir "$RUNNER_TEMP/prev" || echo "no previous beta APK"
+          fi
+          PREV=$(ls "$RUNNER_TEMP"/prev/*.apk 2>/dev/null | head -1)
+          python3 ${PROJECT_DIR}/tools/wsg/release_gate.py --apk ${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk \
+            --version "$VERSION" ${PREV:+--previous "$PREV"} --out "$RUNNER_TEMP/gate"
+          cat "$RUNNER_TEMP/gate/RELEASE_GATE.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate
+          path: ${{ runner.temp }}/gate
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kabaddi-raid-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/kabaddi-raid-${{ env.VERSION }}.apk
+          if-no-files-found: error
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "kabaddi-raid-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests. Pull request runs build the same APK and leave the release alone.
+      - name: Publish the beta release
+        # Only the game's own branch publishes the beta: a push from any other branch (a pilot cut from it) would
+        # otherwise replace the testers' build.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kabaddi-game-concept-asnz07'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=kabaddi-raid-beta
+          APK=${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk
+          # What is new in this version (docs/RELEASE_NOTES.md), when there is something to say.
+          NEW=""
+          [ -f "${PROJECT_DIR}/docs/RELEASE_NOTES.md" ] && NEW=$(cat "${PROJECT_DIR}/docs/RELEASE_NOTES.md")
+          cat > notes.md <<EOF
+          The latest beta of **Kabaddi Raid** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android** (64-bit phones): tap \`kabaddi-raid-${VERSION}.apk\` under Assets below. When it has
+          downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
+          any earlier Kabaddi Raid beta and keeps your saves.
+
+          ${NEW}
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          # Publishing safely, in place (ADOPTING 5.19): no tag is made or deleted - since 2026-11-03 about 17:00 the
+          # workflow token is refused new tag names here (HTTP 403 on create: 0.14.11's delete-then-create left the
+          # testers' link empty). The new APK goes up beside the old, then the old comes off, then the title and notes.
+          printf '\n\nCommit: %s\n' "$GITHUB_SHA" >> notes.md   # (the release gate's guard reads it)
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "$APK" --prerelease --target "$GITHUB_SHA" \
+              --title "Kabaddi Raid ${VERSION} (latest beta)" --notes-file notes.md
+            exit 0
+          fi
+          OLD=$(gh release view "$TAG" --json assets -q '.assets[].name')
+          gh release upload "$TAG" "$APK" --clobber
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
+          for n in $OLD; do
+            [ "$n" = "$(basename "$APK")" ] || gh release delete-asset "$TAG" "$n" --yes || true
+          done
+          gh release edit "$TAG" --title "Kabaddi Raid ${VERSION} (latest beta)" --notes-file notes.md --prerelease
+
+      # The foundation pilot's own pre-release (never the beta's): for the owner to try before it is merged.
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/kabaddi-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=kabaddi-foundation-pilot
+          APK=${PROJECT_DIR}/build/kabaddi-raid-${VERSION}.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Kabaddi Raid (${VERSION}), built from \`${GITHUB_SHA::7}\`: the raiders, defenders and
+          officials on the World Stage Games shared rig with motion-capture running. Installs over the beta and keeps
+          your saves (the same game); reinstall the beta to go back.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Kabaddi Raid ${VERSION}" --notes-file notes.md
+          gh release view "$TAG"
+
+  # wsg_world_check (ADOPTING 5.18): the world rules every World Stage game keeps - props, crowd, feet, poses,
+  # officials, key sounds, loading, the joystick on every camera, no Web preset shipping licensed data, the graphics levels - on the game's
+  # own code (game/world.gd). Its own job: it draws (xvfb, the crowd's and the props' sheets) and takes a while, so
+  # the APK does not wait on it; from 2026-11-03 12:00 UTC a failed rule fails this job, and so the run.
+  # Two jobs side by side (--only): the knees rules alone take over half an hour (every mode at every level, each
+  # skeleton watched), and with the rest one job ran 74 minutes of its 80 (2026-11-04). On their own job the knees
+  # rules ran 61 and 77 minutes on foundation e58d005 (0.14.27): 100 minutes for the step, 115 for the job.
+  world-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    strategy:
+      fail-fast: false
+      matrix:
+        rules: ["props,crowd,feet,feet_low,pose,officials,sounds,loading,joystick,web,tiers", "knees,knee_strays"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH, and a display to draw on
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: World check (wsg_world_check)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          timeout 6000 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- \
+            --out "$RUNNER_TEMP/world" --only "${{ matrix.rules }}"
+          cat "$RUNNER_TEMP/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-check-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/world

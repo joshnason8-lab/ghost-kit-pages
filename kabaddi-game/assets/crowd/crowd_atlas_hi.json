@@ -1,0 +1,153 @@
+{
+ "cell": [
+  144,
+  245
+ ],
+ "cell_height_m": 2.312,
+ "frames": [
+  "sit",
+  "clap_open",
+  "clap",
+  "stand",
+  "stand_clap_open",
+  "stand_clap",
+  "stand_arms_up",
+  "stand_pump",
+  "sit_look_l",
+  "sit_look_r",
+  "stand_look_l",
+  "stand_look_r"
+ ],
+ "people": [
+  {
+   "file": "crowd_01_man_tshirt_rigged.glb",
+   "top_luminance": 0.536,
+   "top_luminance_back": 0.474,
+   "top_pixels": 1998,
+   "top_pixels_back": 2155,
+   "base": 0
+  },
+  {
+   "file": "crowd_02_man_fan_jersey_rigged.glb",
+   "top_luminance": 0.084,
+   "top_luminance_back": 0.063,
+   "top_pixels": 1844,
+   "top_pixels_back": 2371,
+   "base": 1
+  },
+  {
+   "file": "crowd_03_sikh_man_rigged.glb",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 1988,
+   "top_pixels_back": 2466,
+   "base": 2
+  },
+  {
+   "file": "crowd_04_old_man_rigged.glb",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 1668,
+   "top_pixels_back": 1394,
+   "base": 3
+  },
+  {
+   "file": "crowd_05_woman_salwar_rigged.glb",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 988,
+   "top_pixels_back": 1218,
+   "base": 4
+  },
+  {
+   "file": "crowd_06_woman_saree_rigged.glb",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 390,
+   "top_pixels_back": 552,
+   "base": 5
+  },
+  {
+   "file": "crowd_09_boy_rigged.glb",
+   "top_luminance": 0.358,
+   "top_luminance_back": 0.311,
+   "top_pixels": 532,
+   "top_pixels_back": 829,
+   "base": 6
+  },
+  {
+   "file": "crowd_10_girl_rigged.glb",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 494,
+   "top_pixels_back": 347,
+   "base": 7
+  },
+  {
+   "file": "crowd_03_sikh_man_saffron",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 1988,
+   "top_pixels_back": 2466,
+   "base": 2
+  },
+  {
+   "file": "crowd_03_sikh_man_maroon",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 1988,
+   "top_pixels_back": 2466,
+   "base": 2
+  },
+  {
+   "file": "crowd_05_woman_salwar_magenta",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 988,
+   "top_pixels_back": 1218,
+   "base": 4
+  },
+  {
+   "file": "crowd_05_woman_salwar_mustard",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 988,
+   "top_pixels_back": 1218,
+   "base": 4
+  },
+  {
+   "file": "crowd_06_woman_saree_green",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 390,
+   "top_pixels_back": 552,
+   "base": 5
+  },
+  {
+   "file": "crowd_06_woman_saree_royal_blue",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 390,
+   "top_pixels_back": 552,
+   "base": 5
+  },
+  {
+   "file": "crowd_10_girl_yellow",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 494,
+   "top_pixels_back": 347,
+   "base": 7
+  },
+  {
+   "file": "crowd_10_girl_sky_blue",
+   "top_luminance": 0.0,
+   "top_luminance_back": 0.0,
+   "top_pixels": 494,
+   "top_pixels_back": 347,
+   "base": 7
+  }
+ ],
+ "columns": 8,
+ "columns2": 8
+}

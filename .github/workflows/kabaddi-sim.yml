@@ -1,0 +1,131 @@
+name: Kabaddi Raid · match simulation
+
+# WsgSim (ADOPTING 5.17, the foundation's tools/wsg/sim_ci.yml): whole matches played by the game's own code
+# (game/sim.gd: Match, its AI, the grapple, the cant, the officials, every rule) from seeds, headless and faster than
+# real time, every frame checked - script errors, positions, the score and the clock, bodies stuck or inside props,
+# feet and poses, and kabaddi's own rules (revival order, raid timing, the lobby, do-or-die). A smoke batch on every
+# push (every seed's kind in turn and each targeted case, over four parallel jobs, one report); a batch of 1,200
+# matches over 16 jobs only when dispatched by hand (the owner, 2026-11-03: simulations run in rounds, when the owner
+# calls one - not nightly, it would eat up all the usage; the foundation's dispatcher is manual too). Reports are
+# artifacts (SIM_REPORT.md: the failures grouped and ranked, each with its replay command); it does not hold up the APK.
+
+on:
+  push:
+    # Game code only: a commit that changes just docs, store text or notes plays no matches (the owner, 2026-11-03:
+    # cut failed runs, each emails them; docs-only commits also carry [skip ci]).
+    paths:
+      - "kabaddi-game/**"
+      - "!kabaddi-game/docs/**"
+      - "!kabaddi-game/store/**"
+      - "!kabaddi-game/**/*.md"
+      - ".github/workflows/kabaddi-sim.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: kabaddi-sim-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  GAME_DIR: kabaddi-game
+
+jobs:
+  rng-and-determinism:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: "4.7.2", use-dotnet: false}
+      - name: Every random roll in gameplay from the match's seed
+        run: sh $GAME_DIR/tools/wsg/rng_lint.sh
+      - run: python3 $GAME_DIR/tools/build_i18n.py
+      - name: Licensed animation
+        run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
+        env: {ASSETS_REPO_TOKEN: "${{ secrets.ASSETS_REPO_TOKEN }}"}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - name: The same seed plays the same match (twice, the second at real time)
+        run: timeout 2700 godot --headless --fixed-fps 30 --path $GAME_DIR -s res://tools/wsg/sim.gd -- determinism --seeds 2
+
+  smoke:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: {shard: [0, 1, 2, 3]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: "4.7.2", use-dotnet: false}
+      - run: python3 $GAME_DIR/tools/build_i18n.py
+      - name: Licensed animation
+        run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
+        env: {ASSETS_REPO_TOKEN: "${{ secrets.ASSETS_REPO_TOKEN }}"}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - name: Smoke batch (shard ${{ matrix.shard }} of 4)
+        run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --smoke --input --shard ${{ matrix.shard }}/4
+        continue-on-error: true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: "sim-smoke-${{ matrix.shard }}", path: "${{ runner.temp }}/sim/${{ matrix.shard }}"}
+
+  smoke-report:
+    needs: smoke
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: "4.7.2", use-dotnet: false}
+      - uses: actions/download-artifact@v4
+        with: {path: "${{ runner.temp }}/shards", pattern: "sim-smoke-*"}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - name: One report (fails on any failure)
+        run: |
+          godot --headless --path $GAME_DIR -s res://tools/wsg/sim.gd -- merge --out "$RUNNER_TEMP/sim-smoke" "$RUNNER_TEMP"/shards/*
+          code=$?
+          cat "$RUNNER_TEMP/sim-smoke/SIM_REPORT.md" >> "$GITHUB_STEP_SUMMARY" || true
+          exit $code
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: sim-smoke, path: "${{ runner.temp }}/sim-smoke"}
+
+  nightly:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix: {shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: "4.7.2", use-dotnet: false}
+      - run: python3 $GAME_DIR/tools/build_i18n.py
+      - run: sh $GAME_DIR/tools/wsg/fetch_assets.sh
+        env: {ASSETS_REPO_TOKEN: "${{ secrets.ASSETS_REPO_TOKEN }}"}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - run: sh $GAME_DIR/tools/wsg/sim_shard.sh $GAME_DIR "$RUNNER_TEMP/sim/${{ matrix.shard }}" --from 1 --count 1200 --shard ${{ matrix.shard }}/16 --input
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with: {name: "sim-shard-${{ matrix.shard }}", path: "${{ runner.temp }}/sim/${{ matrix.shard }}"}
+
+  nightly-report:
+    needs: nightly
+    if: always() && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: {version: "4.7.2", use-dotnet: false}
+      - uses: actions/download-artifact@v4
+        with: {path: "${{ runner.temp }}/shards", pattern: "sim-shard-*"}
+      - run: godot --headless --path $GAME_DIR --import || true
+      - run: |
+          godot --headless --path $GAME_DIR -s res://tools/wsg/sim.gd -- merge --out "$RUNNER_TEMP/sim-nightly" "$RUNNER_TEMP"/shards/*
+          cat "$RUNNER_TEMP/sim-nightly/SIM_REPORT.md" >> "$GITHUB_STEP_SUMMARY" || true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: sim-nightly, path: "${{ runner.temp }}/sim-nightly"}

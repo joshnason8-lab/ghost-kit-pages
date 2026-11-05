@@ -1,0 +1,5 @@
+# Raw Meshy downloads: large, and re-downloadable from the task IDs in manifest.json
+# (tools/meshy/meshy_batch.py fetches them again without spending credits).
+*.glb
+*.png
+*.part

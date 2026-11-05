@@ -1,0 +1,58 @@
+{
+ "raider": [
+  "1",
+  "1.1",
+  "1.2"
+ ],
+ "from": 2.25,
+ "to": 14.5,
+ "outcome": "tackled",
+ "note": "India raider (#12) v two linked Pakistan pairs. Long probe between the pairs, hops over a dive, low hand reaches; caught at the ankle by a dive from the far pair, then piled on.",
+ "events": [
+  {
+   "t": 7.05,
+   "kind": "counter"
+  },
+  {
+   "t": 7.9,
+   "kind": "dive",
+   "who": "#4"
+  },
+  {
+   "t": 8.1,
+   "kind": "evade",
+   "how": "hop"
+  },
+  {
+   "t": 9.15,
+   "kind": "hand"
+  },
+  {
+   "t": 10.2,
+   "kind": "hand"
+  },
+  {
+   "t": 11.95,
+   "kind": "hand"
+  },
+  {
+   "t": 12.3,
+   "kind": "counter"
+  },
+  {
+   "t": 13.25,
+   "kind": "dive",
+   "who": "far pair",
+   "hold": "ankle"
+  },
+  {
+   "t": 14.05,
+   "kind": "assist",
+   "who": "#4"
+  },
+  {
+   "t": 14.4,
+   "kind": "swarm"
+  }
+ ]
+}

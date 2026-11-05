@@ -1,0 +1,45 @@
+{
+ "cols": 9,
+ "rows": 8,
+ "size": [
+  1.3589,
+  2.312
+ ],
+ "poses": [
+  "sit",
+  "stand",
+  "cheer",
+  "sit_clap",
+  "stand_clap",
+  "sit_look_l",
+  "sit_look_r",
+  "stand_look_l",
+  "stand_look_r"
+ ],
+ "fans": {
+  "crowd_01_man_tshirt": {
+   "seat": 0.42
+  },
+  "crowd_02_man_fan_jersey": {
+   "seat": 0.42
+  },
+  "crowd_03_sikh_man": {
+   "seat": 0.42
+  },
+  "crowd_04_old_man": {
+   "seat": 0.42
+  },
+  "crowd_05_woman_salwar": {
+   "seat": 0.42
+  },
+  "crowd_06_woman_saree": {
+   "seat": 0.42
+  },
+  "crowd_09_boy": {
+   "seat": 0.223
+  },
+  "crowd_10_girl": {
+   "seat": 0.276
+  }
+ }
+}
