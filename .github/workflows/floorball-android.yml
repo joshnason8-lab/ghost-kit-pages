@@ -1,0 +1,351 @@
+name: Floorball Unleashed · Android build
+
+# Builds the Godot project in floorball-game/ into the beta APK you can sideload,
+# after running the headless test suite. Push only (its checks show on the PR's head commit): a pull_request
+# trigger ran every build twice.
+
+on:
+  push:
+    paths:
+      - "floorball-game/**"
+      - ".github/workflows/floorball-android.yml"
+  workflow_dispatch:
+
+# One run per branch: a newer push cancels an older run, so an older build can never publish over a newer one.
+concurrency:
+  group: floorball-android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  PROJECT_DIR: floorball-game
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    outputs:
+      version: ${{ steps.export.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The shared foundation (addons/wsg_foundation) against claude/shared-foundation: a warning when this copy is
+      # behind, never a failure (tools/wsg/sync_foundation.sh brings it up to date).
+      # The owner's notes kept as tests (tests/owner_notes, WsgOwnerNote): none ever deleted from the index.
+      - name: Owner's notes guard (every note ever listed is still there)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/owner_notes_guard.sh
+
+      - name: Shared foundation (its required commits fail the build; only behind is a warning)
+        run: sh ${{ env.PROJECT_DIR }}/tools/wsg/check_foundation.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      # The licensed motion capture (the private assets repo; ASSETS_REPO_TOKEN), baked for this build only: never
+      # committed, never uploaded but inside the APK. Without the token the game draws as before (FoundationLink off).
+      - name: Licensed animation (the private assets, baked for this build)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Compile check
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: godot --headless --path . res://tests/compile_check.tscn
+
+      - name: Tests (every rule, every screen in every language, the World Finals, AI matches with the motion audit)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          # A script error does not stop Godot or fail a check, so the log is read for them too.
+          set -o pipefail
+          timeout 2400 godot --headless --path . --fixed-fps 60 res://tests/test_runner.tscn 2>&1 | tee test_runner.log
+          if grep -q "SCRIPT ERROR" test_runner.log; then grep -A4 "SCRIPT ERROR" test_runner.log; exit 1; fi
+
+      - name: Fit audit (every screen, every language, four screen shapes)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 2400 godot --headless --path . --fixed-fps 30 res://tests/fit_audit.tscn -- fit.jsonl all 1280x720,2340x1080,2400x1080,2048x1536 2>&1 | tee fit.log
+          if grep -q "SCRIPT ERROR" fit.log; then grep -A4 "SCRIPT ERROR" fit.log; exit 1; fi
+
+      - name: Touch input (scrolling from anywhere on a page, taps)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          timeout 600 xvfb-run -a godot --path . --rendering-driver opengl3 res://tests/input_test.tscn
+
+      - name: Crowd audit (every venue's fans on their seats, facing the play)
+        working-directory: ${{ env.PROJECT_DIR }}
+        # (Its contact sheets written outside the project: inside it, the export imported and packed them, 65 MB.)
+        run: timeout 900 xvfb-run -a godot --path . --rendering-driver opengl3 -s res://tools/wsg/crowd_audit.gd -- res://game/crowd_venues.gd "${{ runner.temp }}/crowd_audit"
+
+      # The shared world rules (docs/WORLD_RULES.md, ADOPTING 5.18) on the game's own code (game/world.gd): every mode
+      # started as its button does, its bodies, officials, feet, sounds, joystick and graphics tiers checked, the props
+      # and the crowd audited. A failing rule fails the build (from 12:00 UTC 2026-11-03). Report outside the project.
+      - name: World check (the shared world rules on the game's own code)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          timeout 4800 xvfb-run -a godot --path . --rendering-driver opengl3 --fixed-fps 30 -s res://tools/wsg/world_check.gd -- --out "${{ runner.temp }}/world" --reuse crowd="${{ runner.temp }}/crowd_audit" 2>&1 | tee "${{ runner.temp }}/world_check.log"
+          cat "${{ runner.temp }}/world/WORLD_CHECK.md" >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Configure Android export
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+        run: |
+          # The beta's signing key: the owner's (the BETA_KEYSTORE_B64 secret: a PKCS12 keystore, storepass and keypass
+          # "android", alias "androiddebugkey"), the same for every build so each installs over the last and keeps the
+          # saves. Without it (a fork), a key made here, and a warning.
+          KEYSTORE=$HOME/beta.keystore
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+          if [ -n "$BETA_KEYSTORE_B64" ]; then
+            echo "$BETA_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "BETA_KEY=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::BETA_KEYSTORE_B64 is not set: this APK is signed with a key made for this build, and will not install over earlier builds."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storetype PKCS12 -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+            echo "BETA_KEY=0" >> "$GITHUB_ENV"
+          fi
+          SETTINGS=~/.config/godot/editor_settings-${GODOT_VERSION%.*}.tres
+          mkdir -p ~/.config/godot
+          # Let the editor create its settings file, then point it at the runner's SDK and JDK.
+          godot --headless --editor --quit --path ${PROJECT_DIR} || true
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          sed -i '/export\/android\//d' "$SETTINGS"
+          {
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$KEYSTORE\""
+            echo "export/android/debug_keystore_user = \"androiddebugkey\""
+            echo "export/android/debug_keystore_pass = \"android\""
+          } >> "$SETTINGS"
+          grep android "$SETTINGS"
+
+      - name: Export APK
+        id: export
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # The same build as the beta APKs sent in the chat: release, 64-bit ARM only, signed in the next step.
+          sed -i 's/architectures\/armeabi-v7a=true/architectures\/armeabi-v7a=false/; s/package\/signed=true/package\/signed=false/' export_presets.cfg
+          mkdir -p build
+          godot --headless --path . --export-release "Android" build/unsigned.apk
+          ls -la build
+
+      # Signed with the beta key (above), aligned first; then the certificate's SHA-256 is checked against the owner's.
+      - name: Sign APK
+        run: |
+          BT=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)
+          cd ${PROJECT_DIR}/build
+          "$BT/zipalign" -f -p 4 unsigned.apk aligned.apk
+          "$BT/apksigner" sign --ks "$KEYSTORE" --ks-type PKCS12 --ks-key-alias androiddebugkey \
+            --ks-pass pass:android --key-pass pass:android --out floorball-unleashed-${VERSION}.apk aligned.apk
+          rm -f unsigned.apk aligned.apk
+          FP=$("$BT/apksigner" verify --print-certs floorball-unleashed-${VERSION}.apk | sed -n 's/.*certificate SHA-256 digest: //p' | head -1 \
+            | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          echo "APK signing certificate SHA-256: $FP"
+          WANT="6F:23:A9:36:9A:95:60:C5:57:1D:27:04:D2:01:5F:8D:58:3E:B2:65:2E:86:A5:F1:66:2B:E5:D6:C3:69:7B:A3"
+          if [ "$BETA_KEY" = "1" ] && [ "$FP" != "$WANT" ]; then
+            echo "::error::The APK is not signed with the owner's beta key (expected $WANT)."
+            exit 1
+          fi
+          ls -la
+
+      # The shared release gate (tools/wsg/release_gate.py) on the signed APK: its version and signature, no licensed
+      # data where it must not be, textures GPU-compressed, its size against the APK published now, and its version
+      # above that one (Obtainium offers only a newer version: every publish takes a new version name and code).
+      - name: Release gate
+        working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev"
+          # (Not this commit's own build: a push run and a re-run of one commit race, and the one that publishes first
+          # made the other's gate fail "newer" - ADOPTING 5.19. The publish step puts the commit in the notes.)
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          if gh release view floorball-unleashed-beta --json body -q .body 2>/dev/null | grep -q "Commit: $HEAD_SHA"; then
+            echo "The published beta is this commit's own build: no earlier one to compare with."
+          else
+            gh release download floorball-unleashed-beta --pattern '*.apk' --dir "$RUNNER_TEMP/prev" || true
+          fi
+          PREV=$(ls "$RUNNER_TEMP"/prev/*.apk 2>/dev/null | head -1)
+          python3 tools/wsg/release_gate.py --apk build/floorball-unleashed-${VERSION}.apk --version "$VERSION" \
+            --out "$RUNNER_TEMP/gate" ${PREV:+--previous "$PREV"}
+          cat "$RUNNER_TEMP/gate/RELEASE_GATE.md" >> "$GITHUB_STEP_SUMMARY" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: floorball-unleashed-${{ env.VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/floorball-unleashed-${{ env.VERSION }}.apk
+          if-no-files-found: error
+
+  # The owner's notes kept as tests (tests/owner_notes, WsgOwnerNote), every one in strict mode (with the licensed data
+  # nothing may skip): beside the build (about 30 minutes at a fixed 60 fps); red on any note that fails or skips - and the
+  # release (the publish job) waits for it.
+  owner-notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-templates
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          cd ~/godot
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Put Godot on PATH
+        run: |
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version --headless
+
+      - name: Build translations
+        run: python3 ${PROJECT_DIR}/tools/build_i18n.py
+
+      - name: Licensed animation (the private assets)
+        env:
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
+        run: sh ${PROJECT_DIR}/tools/wsg/fetch_assets.sh
+
+      - name: Import project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: timeout 900 godot --headless --path . --import > /dev/null 2>&1 || true
+
+      - name: The owner's notes (all of them, strict)
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          XDG_DATA_HOME=$(mktemp -d) WSG_NOTES_FRESH=1 WSG_NOTES_STRICT=1 timeout 8400 godot --headless --path . --fixed-fps 60 -s res://tools/wsg/owner_notes.gd 2>&1 | tee "${{ runner.temp }}/owner_notes.log"
+          grep -E "^(FAIL|SKIP)|OWNER NOTES" "${{ runner.temp }}/owner_notes.log" >> "$GITHUB_STEP_SUMMARY" || true
+
+  # The release, once the build AND every one of the owner's notes have passed (the lead, 2026-11-03: a red note blocks
+  # the release; 0.9.13 and 0.9.14 went out while holding-stick-up-close was red at the phone's default Steady pace).
+  publish:
+    needs: [test-and-build, owner-notes]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # to publish the beta release
+    env:
+      VERSION: ${{ needs.test-and-build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: floorball-unleashed-${{ needs.test-and-build.outputs.version }}-apk
+          path: ${{ env.PROJECT_DIR }}/build
+
+      # A release page with the APK, to download straight onto a phone (the repository is public, so no sign-in):
+      # "floorball-unleashed-beta", always the latest build of this branch, made afresh on every push that passes the
+      # tests. A manual run (workflow_dispatch) builds the same APK and leaves the release alone.
+      - name: Publish the beta release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/floorball-game'
+        env:
+          # (RELEASE_TOKEN, when the owner sets one: a fine-grained token with Contents and Workflows write - GitHub
+          # refuses github.token a tag on a commit whose workflow files differ, HTTP 403.)
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=floorball-unleashed-beta
+          APK=${PROJECT_DIR}/build/floorball-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          The latest beta of **Floorball Unleashed** (${VERSION}), built from \`${GITHUB_SHA::7}\` after the full test suite passed.
+
+          **Android** (64-bit phones): tap \`floorball-unleashed-${VERSION}.apk\` under Assets below. When it has
+          downloaded, open it; if Android asks, allow your browser or Files to install unknown apps. It installs over
+          any beta from 0.7.1 on and keeps your saves. Coming from 0.7.0 or earlier (signed with another key),
+          uninstall Floorball Unleashed once first.
+
+          This release is replaced by every new beta build: this page always has the newest one.
+          EOF
+          printf '\n\nCommit: %s\n' "$GITHUB_SHA" >> notes.md   # (the release gate's guard reads it)
+          # Published in place (ADOPTING 5.19, as Hurling's): no tag is made or removed - the token may be refused a new
+          # tag (0.9.11's create: HTTP 403). The new APK goes up beside the old one on the beta's own release, its title
+          # and notes are changed, and only then is the old APK taken down: the release always holds an APK.
+          try() { for i in 1 2 3; do "$@" && return 0; [ "$i" = 3 ] && return 1; echo "failed (try $i): $*"; sleep $((i * 20)); done; }
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            try gh release upload "$TAG" "$APK" --clobber
+            try gh release edit "$TAG" --prerelease --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+            for a in $(gh release view "$TAG" --json assets -q '.assets[].name'); do
+              case "$a" in "$(basename "$APK")") ;; *.apk) try gh release delete-asset "$TAG" "$a" --yes ;; esac
+            done
+          else
+            try gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Floorball Unleashed ${VERSION} (latest beta)" --notes-file notes.md
+          fi
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "$(basename "$APK")"
+
+      # The shared foundation's pilot (claude/floorball-foundation-pilot): a pre-release of its own, never the beta's.
+      - name: Publish the foundation pilot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/floorball-foundation-pilot'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=floorball-foundation-pilot
+          APK=${PROJECT_DIR}/build/floorball-unleashed-${VERSION}.apk
+          cat > notes.md <<EOF
+          **Foundation pilot** of Floorball Unleashed (${VERSION}), built from \`${GITHUB_SHA::7}\`: the players, keepers and
+          referees on the World Stage Games shared rig with motion-capture running, the stick in both fists, and a goal
+          replay. Installs over the beta and keeps your saves (the same game); reinstall the beta to go back.
+          EOF
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$APK" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Foundation pilot: Floorball Unleashed ${VERSION}" --notes-file notes.md
+          gh release view "$TAG"

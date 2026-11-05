@@ -1,0 +1,35 @@
+# Google Play -kauppasivu, suomi (Suomi). Liitä kukin osa Play Consoleen kohtaan Kasvata > Kaupan näkyvyys >
+# Pääkauppasivu. Rajat: sovelluksen nimi 30 merkkiä, lyhyt kuvaus 80, koko kuvaus 4000.
+
+== App name ==
+Floorball Unleashed
+
+== Short description ==
+Salibandya viisi vastaan viisi maalivahdeilla, oikeilla säännöillä. Laukaa!
+
+== Full description ==
+Floorball Unleashed on salibandya puhelimeesi: Ruotsin, Suomen, Sveitsin ja Tšekin nopea sisämailapeli, jota pelataan viidellä kenttäpelaajalla ja maalivahdilla laitojen ympäröimällä 40 × 20 metrin kentällä.
+
+AITOA SALIBANDYA
+• Salibandyn kansainväliset pelisäännöt, 1.7.2026 voimaan tullut versio: kolme erää tehokkaalla peliajalla, aloitukset, raja- ja vapaalyönnit 3 metrin etäisyydellä, maalialue ja maalivahdin alue, kahden ja viiden minuutin jäähyt, ylivoimat, jatkoaika ja rangaistuslaukaukset.
+• Myös vuoden 2026 uudet säännöt: kenttäpelaaja ei saa kulkea maalivahdin alueen läpi, maalivahdin heitosta voi syntyä maali, eivätkä yhtäaikaiset jäähyt enää vie pelaajia kentältä.
+• Kaksi erotuomaria, jotka viheltävät ja näyttävät jokaisen ratkaisun kuten oikeat tuomarit: vapaalyönti, etu, viivästetty jäähy, kaksi minuuttia, passiivinen peli, maali.
+• Ottelun lopussa tappiolla oleva joukkue vaihtaa maalivahdin kuudenteen kenttäpelaajaan; jäähyn saanut pelaaja menee jäähyaitioon ja istuu jäähynsä.
+• Joukkueet pelaavat kuten salibandya pelataan: 2-1-2-puolustus, lennokkaat kenttävaihdot noin viidenkymmenen sekunnin välein, laiturit leveällä ja sentteri maalinedustalla.
+
+PELIMUODOT
+• Pikaottelu: 22 maajoukkuetta, miehet ja naiset, kaupungin areenalla, urheiluhallissa tai koulun liikuntasalissa. Erän pituus 4–20 minuuttia, tehokas peliaika tai juokseva kello.
+• MM-turnaus: kuusitoista maata neljässä lohkossa, karsinnat, puolivälierät, välierät ja mitaliottelut.
+• Seurakausi: kymmenen seuraa, sarja 3-2-1-0-pistein (3 voitosta varsinaisella peliajalla, 2 voitosta jatkoajalla tai voittolaukauksin, 1 tappiosta jatkoajalla), sitten välierät ja finaali.
+• Ottelutilastot jokaisen ottelun jälkeen: laukaukset maalia kohti, torjunnat, jäähyminuutit, ylivoimamaalit sekä jokainen maali ja jäähy sääntönumeroineen.
+
+PELAA OMALLA TAVALLASI
+• Viisitoista kieltä: English, Svenska, Suomi, Deutsch, Français, Italiano, Čeština, Slovenčina, Norsk, Dansk, Latviešu, Eesti, Polski, 日本語 ja ไทย.
+• Valmentaja opastaa sinut ensimmäisen ottelusi läpi. Ohjain ja kolme painiketta, halutessasi vasenkätisille, kolmessa koossa ja siirrettävissä juuri sinne, minne peukalosi ne haluavat.
+• Tehty pyörimään sujuvasti edullisissa ja keskitason puhelimissa, mukana virransäästötila.
+• Toimii ilman verkkoyhteyttä. Ei mainoksia, ei ostoksia, ei tiliä eikä tietojen keräämistä.
+
+Floorball Unleashed on itsenäinen peli. Se ei ole yhteydessä mihinkään salibandyliittoon, -sarjaan, -seuraan tai -pelaajaan, eikä kukaan niistä ole sitä hyväksynyt. Pelaajat ovat keksittyjä; maat ja säännöt ovat oikeita.
+
+== Release notes (first release) ==
+Floorball Unleashed -pelin ensimmäinen versio: pikaottelu, MM-turnaus ja seurakausi sekä valmentaja ensimmäiseen otteluusi, viidellätoista kielellä.

@@ -1,0 +1,11 @@
+.godot/
+build/
+*.translation
+export_credentials.cfg
+*.keystore
+__pycache__/
+android/
+*.jks
+
+# Licensed animation data, baked at build time (tools/wsg/fetch_assets.sh): never committed.
+addons/wsg_foundation/data/
