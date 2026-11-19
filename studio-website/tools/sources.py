@@ -4,6 +4,7 @@ sections: a list of (heading, [html blocks]) where an html block is ("p", inner_
 
 import html
 import json
+import os
 import re
 import subprocess
 
@@ -63,15 +64,28 @@ def md_sections(text):
 
 
 def _md_blocks(text):
+    """Paragraphs and "- " lists. A list may follow its introducing line directly, with no blank line between."""
     out = []
     for block in re.split(r"\n\s*\n", text.strip()):
-        if not block.strip():
-            continue
-        if block.lstrip().startswith("- "):
-            items = [unwrap(x) for x in re.split(r"^\s*- ", block, flags=re.M) if x.strip()]
-            out.append(("ul", [_md_inline(x) for x in items]))
-        else:
-            out.append(("p", _md_inline(unwrap(block))))
+        para, items = [], []
+        for line in block.split("\n"):
+            if re.match(r"\s*- ", line):
+                if para:
+                    out.append(("p", _md_inline(unwrap(" ".join(para)))))
+                    para = []
+                items.append(re.sub(r"^\s*- ", "", line))
+            elif items and line.startswith("  "):
+                items[-1] += " " + line.strip()
+            else:
+                if items:
+                    out.append(("ul", [_md_inline(unwrap(x)) for x in items]))
+                    items = []
+                if line.strip():
+                    para.append(line)
+        if para:
+            out.append(("p", _md_inline(unwrap(" ".join(para)))))
+        if items:
+            out.append(("ul", [_md_inline(unwrap(x)) for x in items]))
     return out
 
 
@@ -96,6 +110,14 @@ def gd_str(src, name):
 
 def privacy(slug):
     """Returns {"title", "updated", "intro": [blocks], "sections": [(heading, [blocks])], "source"}."""
+    # A newer official policy, sent by the game's own session, overrides the one on the game branch.
+    local = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "content-src", "privacy", slug + ".md")
+    if os.path.exists(local):
+        title, intro, sections = md_sections(open(local, encoding="utf-8").read())
+        flat = json.dumps([intro, sections])
+        updated = re.search(r"Last updated (\d+ \w+ \d{4})", flat).group(1)
+        return {"title": title, "updated": updated, "intro": intro, "sections": sections,
+                "source": "studio-website/content-src/privacy/%s.md" % slug}
     if slug == "kabaddi-raid":
         ref = "origin/claude/kabaddi-game-concept-asnz07:kabaddi-game/ui/privacy_screen.gd"
         src = show(ref)

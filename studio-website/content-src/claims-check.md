@@ -63,7 +63,7 @@ are "no data collected" and the Play Console answers below. "No ads, no data col
 | Game | Quote |
 |---|---|
 | Kabaddi Raid | Listing: "No ads, no purchases, no account, and no data collected." PLAY_CONSOLE_ANSWERS.md: "No accounts, ads, analytics or crash reporting." |
-| Sepak Takraw Unleashed | Listing: "No ads, no purchases, no account, and no data collected." PLAY_STORE.md: Advertising ID "No" |
+| Sepak Takraw Unleashed | Listing: "No ads, no purchases, no account, and no data collected." PLAY_STORE.md: Advertising ID "No" **Superseded 18 November 2026:** the game now has AdMob adverts and Google Play purchases (its new privacy policy, `content-src/privacy/sepak-takraw-unleashed.md`). The site says "Free with adverts" for it and "no ads" only for the other six. |
 | Netball Unleashed | Listing: same sentence. PLAY_CONSOLE_ANSWERS.md: "no SDKs for ads, analytics, crash reporting or sign-in" |
 | Kho Kho Rush | Listing: same sentence. PLAY_STORE.md: Advertising ID "No" |
 | Hurling Heroes | Listing: same sentence. PLAY_CONSOLE_ANSWERS.md: "no analytics, no crash reporting, no advertising and no advertising ID" |

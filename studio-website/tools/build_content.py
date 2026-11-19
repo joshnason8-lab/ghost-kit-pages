@@ -42,7 +42,11 @@ RELEASE_SLUG = {
 # netball's biggest following and most of its languages are there), the card's three tags, and the beta notes.
 OVERRIDES = {
     "netball-unleashed": {"regions": ["Oceania", "Europe", "Africa", "Americas"], "region_label": "Oceania · UK · Africa"},
-    "sepak-takraw-unleashed": {"card_players": "3 v 3"},
+    # Adverts and purchases: the game's own privacy policy of 18 November 2026 (content-src/privacy/), sent by the
+    # game's session. The listing in games.json predates them.
+    "sepak-takraw-unleashed": {"card_players": "3 v 3", "ads": True,
+                               "permissions_text": "Internet, advertising ID, Google Play billing, vibration",
+                               "purchases": "Optional: Remove ads, coin packs"},
     "kho-kho-rush": {"card_players": "9 v 9 · 7 v 7"},
     "pok-ta-pok-rivals": {"card_players": "Hip ball"},
     "floorball-unleashed": {"card_players": "5 v 5", "region_label": "Nordics · Europe"},
@@ -182,8 +186,8 @@ def why_tiles():
                                "spike."),
         ("📱", "Made for every phone", "Low, Medium and High graphics, to suit a budget phone or the latest "
                                       "flagship."),
-        ("🔒", "No ads. No data collected.", "No ads, no purchases and no account. The games collect no personal "
-                                            "data, and they play offline."),
+        ("🔒", "No account. Plays offline.", "No account and no sign-in, and every game plays offline. Six have no "
+                                            "ads and no purchases; Sepak Takraw Unleashed is free with adverts."),
     ]
     return group([
         heading(2, "Why our games feel different"),
@@ -201,8 +205,8 @@ def page_home(games):
     stats = row([
         paragraph("<strong>7</strong> Games", cls="gk-stat"),
         paragraph("<strong>54</strong> Languages", cls="gk-stat"),
-        paragraph("<strong>0</strong> Ads", cls="gk-stat"),
-        paragraph("<strong>0</strong> Personal data collected", cls="gk-stat"),
+        paragraph("<strong>3</strong> Graphics levels", cls="gk-stat"),
+        paragraph("<strong>0</strong> Accounts needed", cls="gk-stat"),
     ], cls="gk-stats")
     hero = group([
         group([
@@ -221,7 +225,7 @@ def page_home(games):
 def page_games(games):
     intro = group([
         heading(1, "The games", cls="gk-page-title"),
-        paragraph("Seven sports, each made for phones and played to its own rules. Every game plays offline and has no "
+        paragraph("Seven sports, each made for phones and played to its own rules. Every game plays offline, six have no "
                   "ads, and all seven are coming to Google Play.", cls="gk-lead"),
     ], align="wide", layout={"type": "default"})
     policies = group([
@@ -237,9 +241,10 @@ def page_games(games):
 
 def page_game(g, kits=None):
     s = g["slug"]
-    pills = [g["card_players"], langs_label(g), "Offline", "No ads"] + (["HD pack"] if g["hd"] else [])
+    pills = [g["card_players"], langs_label(g), "Offline", "Free with adverts" if g.get("ads") else "No ads"] + (
+        ["HD pack"] if g["hd"] else [])
     offline = "Yes" if not g["hd"] else "Yes (the optional HD pack downloads over the internet)"
-    perms = "Vibration" if not g["hd"] else "Vibration; internet, only to download the HD pack"
+    perms = g.get("permissions_text") or ("Vibration" if not g["hd"] else "Vibration; internet, only to download the HD pack")
     facts = [
         ("Sport", esc(g["sport"])),
         ("Players", esc(g["players"])),
@@ -249,6 +254,7 @@ def page_game(g, kits=None):
         ("Plays offline", esc(offline)),
         ("Android", esc(g["min_android"].replace("+", " or later")) if g["min_android"] else "TBC"),
         ("Permissions", esc(perms)),
+    ] + ([("In-app purchases", esc(g["purchases"]))] if g.get("purchases") else []) + [
         ("Status", "In beta · Google Play coming soon"),
     ]
     # Site setup swaps the part between the markers for a video player once <game>-trailer.mp4 is in the Media Library.
@@ -362,10 +368,17 @@ def page_studio_privacy(games):
                   "(Settings &gt; About &gt; Privacy policy):"),
         lst(links),
         heading(2, "The games, in short"),
-        paragraph("None of the games collects personal data. They have no account, no advertising, no analytics and no "
-                  "in-app purchases. Six of them do not have Android's internet permission at all. Hurling Heroes uses the "
-                  "internet for one thing only, and only if you ask it to: downloading its optional HD pack from GitHub. "
-                  "The browser version of Kabaddi Raid is served by Netlify. Each game's policy has the details."),
+        paragraph("None of the games has an account or a sign-in, and we collect no personal data from any of them. "
+                  "Six of the games have no advertising, no analytics and no in-app purchases, and five of them do not "
+                  "have Android's internet permission at all. Hurling Heroes uses the internet for one thing only, and "
+                  "only if you ask it to: downloading its optional HD pack from GitHub. The browser version of Kabaddi "
+                  "Raid is served by Netlify."),
+        paragraph('Sepak Takraw Unleashed is the exception. It shows adverts from Google AdMob, and Google collects '
+                  'some information from your phone to show and measure them; in Europe, the UK and places with similar '
+                  'laws, the game asks for your choice first. It offers optional purchases through Google Play ("Remove '
+                  'ads" and coin packs). It uses the internet for the adverts and the purchases. '
+                  '<a href="/games/sepak-takraw-unleashed/privacy/">Its privacy policy</a> has the details, as each '
+                  "game's policy does."),
         heading(2, "This website"),
         paragraph("This website has no advertising, no analytics and no tracking. It has no accounts for visitors, no "
                   "comments and no forms, and it sets no cookies when you read it. Its fonts and images are served from "
@@ -391,7 +404,8 @@ def page_studio_privacy(games):
         heading(2, "E-mail"),
         paragraph("If you e-mail us, we use your message and address only to answer you."),
         heading(2, "Children"),
-        paragraph("The games and this website collect no personal information from anyone, children included."),
+        paragraph("We collect no personal information from anyone, children included, through the games or this "
+                  "website. Sepak Takraw Unleashed is not directed at children under 13; its policy explains its adverts."),
         heading(2, "Changes"),
         paragraph("If this policy changes, the new version will be posted on this page with a new date."),
         heading(2, "Contact"),
@@ -446,8 +460,8 @@ def page_about(games):
             "flagship.",
             "<strong>The players' own languages.</strong> 54 languages across the seven games, from Hindi and Tamil to "
             "Irish, isiZulu and Te Reo Māori.",
-            "<strong>Nothing about you.</strong> No ads, no purchases, no account and no personal data collected. The "
-            "games play offline.",
+            "<strong>Nothing to sign up for.</strong> No account, and we collect no personal data. Six of the games "
+            "have no ads and no purchases; Sepak Takraw Unleashed is free with adverts. The games play offline.",
         ]),
         heading(2, "Where the games are"),
         paragraph('All seven are in beta on Android, and they are coming to Google Play. Read about '
@@ -495,7 +509,8 @@ def page_press(games, kits):
             ("Made by", "Josh Nason, an independent developer"),
             ("Engine", "Godot Engine"),
             ("Platform", "Android (in beta now; Google Play coming soon)"),
-            ("Business model", "Free. No ads, no in-app purchases, no personal data collected."),
+            ("Business model", "Free. Six games have no ads and no in-app purchases. Sepak Takraw Unleashed is free "
+                               "with adverts (Google AdMob) and optional in-app purchases (Remove ads, coin packs)."),
             ("Languages", "54 across the seven games"),
             ("Contact", '<a href="mailto:%s">%s</a>' % (EMAIL, EMAIL)),
         ], cls="gk-facts"),
@@ -556,15 +571,17 @@ def build():
 
     add("home", "Home", page_home(games),
         "Mobile sports games of kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the Mesoamerican "
-        "ballgame. Real rules, every phone, no ads.", template="", order=0)
+        "ballgame. Real rules, every phone, no account.", template="", order=0)
     add("games", "Games", page_games(games),
         "All seven games: Kabaddi Raid, Hurling Heroes, Sepak Takraw Unleashed, Netball Unleashed, Kho Kho Rush, "
         "Floorball Unleashed and Pok Ta Pok Rivals. Coming soon to Google Play.", template="page-wide", order=1)
     for i, g in enumerate(games):
-        add("games/" + g["slug"], g["name"], page_game(g, kits), g["short_description"] + " No ads. Coming soon to Google Play.",
+        add("games/" + g["slug"], g["name"], page_game(g, kits), g["short_description"] + (" Free with adverts." if g.get("ads") else " No ads.") + " Coming soon to Google Play.",
             template="page-wide", og=g["slug"], order=i)
         content, p = page_privacy(g)
         add("games/%s/privacy" % g["slug"], "%s privacy policy" % g["name"], content,
+            ("%s privacy policy: no account; adverts from Google AdMob and optional Google Play purchases." % g["name"])
+            if g.get("ads") else
             "%s collects no personal data: no account, no ads, no analytics. The full privacy policy." % g["name"],
             og=g["slug"], order=1)
         content, sup = page_support(g)

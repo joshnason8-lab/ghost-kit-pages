@@ -17,6 +17,7 @@ require get_template_directory() . '/inc/seo.php';
 require get_template_directory() . '/inc/links.php';
 require get_template_directory() . '/inc/languages.php';
 require get_template_directory() . '/inc/trailers.php';
+require get_template_directory() . '/inc/app-ads.php';
 
 add_action(
 	'after_setup_theme',

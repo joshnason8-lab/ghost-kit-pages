@@ -402,3 +402,6 @@ code { font-size: .9em; overflow-wrap: anywhere; background: var(--gk-chip); pad
 	.gk-stat { font-size: 12px; max-width: none; }
 	.gk-stat strong { font-size: 30px; }
 }
+
+/* Long web addresses written out in the policies wrap instead of widening the page on a phone. */
+.wp-block-post-content :where(p, li) a { overflow-wrap: anywhere; }

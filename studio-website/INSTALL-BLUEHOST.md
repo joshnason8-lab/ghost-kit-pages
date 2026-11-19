@@ -218,6 +218,23 @@ The game pages' "About the sport" panels link to them, and **Sports** is in the 
   happy.
 - **Search engines**: under **Settings > Reading**, make sure "Discourage search engines" is **not** ticked.
 
+### app-ads.txt (for AdMob)
+
+Sepak Takraw Unleashed shows adverts from Google AdMob, and AdMob checks `https://worldstagegames.com/app-ads.txt`
+before it serves them at full rate. The theme answers that address itself, with this one line:
+
+```
+google.com, pub-1227543833347256, DIRECT, f08c47fec0942fa0
+```
+
+1. Open `https://worldstagegames.com/app-ads.txt` in a browser. You should see exactly that line as plain text.
+2. If you get "Page not found" instead (this happens when **Settings > Permalinks** is set to **Plain**), upload the
+   file yourself: in Bluehost, **Advanced > File Manager**, open `public_html`, press **Upload** and choose
+   `dist/app-ads.txt`. A real file in `public_html` always wins over the theme.
+3. Then, in AdMob, **Apps > View all apps**, open the app, and under **app-ads.txt** press **Check for updates**.
+   AdMob can take up to 24 hours to see it. The Play listing's **Website** must be `https://worldstagegames.com` (the
+   same domain) for AdMob to find the file.
+
 ## 8. Updating the theme later
 
 1. Go to **Appearance > Themes > Add New Theme > Upload Theme** and upload the new zip.
@@ -265,7 +282,10 @@ listing:
 | Floorball Unleashed | `com.floorballunleashed.game` | `https://worldstagegames.com/games/floorball-unleashed/privacy/` |
 | Pok Ta Pok Rivals | `com.poktapokrivals.game` | `https://worldstagegames.com/games/pok-ta-pok-rivals/privacy/` |
 
-Each policy page is copied word for word from the policy inside that game (dated 26 or 27 October 2026).
+Each policy page is copied word for word from the policy inside that game (dated 26 or 27 October 2026), except
+Sepak Takraw Unleashed's: its newer policy (18 November 2026), which covers its AdMob adverts and Google Play purchases,
+came from the game's own session and is kept in `content-src/privacy/sepak-takraw-unleashed.md`. The site describes
+that game as "Free with adverts", with optional purchases (Remove ads, coin packs); the other six have no ads.
 
 Kabaddi Raid's policy currently lives at `https://thekabaddipulse.com/kabaddi-raid/privacy/`, and the game links
 there. If Kabaddi Raid's Play listing should use the new site, use the address above. The words are the game's newest

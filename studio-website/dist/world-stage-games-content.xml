@@ -16,7 +16,7 @@
 <!-- 7. WordPress will then import each of the posts, pages, comments, categories, etc. -->
 <!--    contained in this file into your site. -->
 
-	<!-- generator="WordPress/7.1.3" created="2026-10-28 04:40" -->
+	<!-- generator="WordPress/7.1.3" created="2026-11-19 04:35" -->
 <rss version="2.0"
 	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
 	xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -29,7 +29,7 @@
 	<title>World Stage Games</title>
 	<link>https://worldstagegames.com</link>
 	<description>Every game deserves a stage.</description>
-	<pubDate>Wed, 28 Oct 2026 04:40:34 +0000</pubDate>
+	<pubDate>Thu, 19 Nov 2026 04:35:01 +0000</pubDate>
 	<language>en-US</language>
 	<wp:wxr_version>1.2</wp:wxr_version>
 	<wp:base_site_url>https://worldstagegames.com</wp:base_site_url>
@@ -2549,11 +2549,11 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-stat"} -->
-<p class="gk-stat"><strong>0</strong> Ads</p>
+<p class="gk-stat"><strong>3</strong> Graphics levels</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"className":"gk-stat"} -->
-<p class="gk-stat"><strong>0</strong> Personal data collected</p>
+<p class="gk-stat"><strong>0</strong> Accounts needed</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group --></div>
@@ -2942,11 +2942,11 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">No ads. No data collected.</h3>
+<h3 class="wp-block-heading">No account. Plays offline.</h3>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"className":"gk-muted"} -->
-<p class="gk-muted">No ads, no purchases and no account. The games collect no personal data, and they play offline.</p>
+<p class="gk-muted">No account and no sign-in, and every game plays offline. Six have no ads and no purchases; Sepak Takraw Unleashed is free with adverts.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group --></div>
@@ -2969,12 +2969,12 @@
 <!-- /wp:html --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Mobile sports games of kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the Mesoamerican ballgame. Real rules, every phone, no ads.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Mobile sports games of kabaddi, hurling, sepak takraw, kho kho, netball, floorball and the Mesoamerican ballgame. Real rules, every phone, no account.]]></excerpt:encoded>
 		<wp:post_id>67</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[home]]></wp:post_name>
@@ -2986,7 +2986,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[36fcf38e506f9839fd641b6931cda094]]></wp:meta_value>
+		<wp:meta_value><![CDATA[76586618461a57bc5aee156f518ca1f2]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -3006,7 +3006,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"className":"gk-lead"} -->
-<p class="gk-lead">Seven sports, each made for phones and played to its own rules. Every game plays offline and has no ads, and all seven are coming to Google Play.</p>
+<p class="gk-lead">Seven sports, each made for phones and played to its own rules. Every game plays offline, six have no ads, and all seven are coming to Google Play.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->
 
@@ -3400,8 +3400,8 @@
 		<wp:post_id>68</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[games]]></wp:post_name>
@@ -3413,7 +3413,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[0cccc5572c9fe5d7230725026004ed28]]></wp:meta_value>
+		<wp:meta_value><![CDATA[e901f0b57c343ec04f3c007506f1ae0f]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4367,7 +4367,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li>No ads</li>
+<li>Free with adverts</li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -4384,7 +4384,7 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"className":"gk-facts gk-facts--grid"} -->
-<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Sepak takraw</td></tr><tr><th>Players</th><td>3 v 3 (regu) · 4 v 4 (quadrant) · 2 v 2 (doubles)</td></tr><tr><th>Ways to play</th><td>Quick Match, League Season, International</td></tr><tr><th>Languages</th><td>13: English, Thai, Malay, Indonesian, Vietnamese, Lao, Burmese, Khmer, Filipino, Japanese, Korean, Chinese, Hindi</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Vibration</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts gk-facts--grid"><table class="has-fixed-layout"><tbody><tr><th>Sport</th><td>Sepak takraw</td></tr><tr><th>Players</th><td>3 v 3 (regu) · 4 v 4 (quadrant) · 2 v 2 (doubles)</td></tr><tr><th>Ways to play</th><td>Quick Match, League Season, International</td></tr><tr><th>Languages</th><td>13: English, Thai, Malay, Indonesian, Vietnamese, Lao, Burmese, Khmer, Filipino, Japanese, Korean, Chinese, Hindi</td></tr><tr><th>Graphics</th><td>Low · Medium · High</td></tr><tr><th>Plays offline</th><td>Yes</td></tr><tr><th>Android</th><td>Android 7.0 or later</td></tr><tr><th>Permissions</th><td>Internet, advertising ID, Google Play billing, vibration</td></tr><tr><th>In-app purchases</th><td>Optional: Remove ads, coin packs</td></tr><tr><th>Status</th><td>In beta · Google Play coming soon</td></tr></tbody></table></figure>
 <!-- /wp:table --></div>
 <!-- /wp:column --></div>
 <!-- /wp:columns -->
@@ -4490,12 +4490,12 @@
 <p class="gk-small gk-muted">Sepak Takraw Unleashed is an independent game. It is not affiliated with or endorsed by any sepak takraw federation, league, club or player. The clubs' nicknames are invented and the players are fictional; the countries, places and rules are real.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Sepak takraw: roll spikes, horse-kick serves and blocks at the net. Real rules. No ads. Coming soon to Google Play.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Sepak takraw: roll spikes, horse-kick serves and blocks at the net. Real rules. Free with adverts. Coming soon to Google Play.]]></excerpt:encoded>
 		<wp:post_id>75</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 04:40:23]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 04:40:23]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[sepak-takraw-unleashed]]></wp:post_name>
@@ -4507,7 +4507,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[91cee4e9e468fcf00714cd920db1dc95]]></wp:meta_value>
+		<wp:meta_value><![CDATA[abbdce9fca6f4a1a455b51ceb0a4a7d5]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -4530,20 +4530,34 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph -->
-<p><em>Last updated 26 October 2026.</em></p>
+<p>Last updated 18 November 2026.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph -->
-<p>Sepak Takraw Unleashed is a sepak takraw game for Android phones, published by Josh Nason. This policy explains what the game does with your information. It is short, because the game does very little with it. (The same policy is in the game, under Settings &gt; About &gt; Privacy policy.)</p>
+<p>Sepak Takraw Unleashed is a sepak takraw game for Android phones, made by Josh Nason (World Stage Games). This policy explains what happens to your information when you play it. The same policy is in the game, under Settings &gt; About &gt; Privacy policy, and at worldstagegames.com/games/sepak-takraw-unleashed/privacy/.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
 <h2 class="wp-block-heading">The summary</h2>
 <!-- /wp:heading -->
 
-<!-- wp:paragraph -->
-<p>Sepak Takraw Unleashed collects no personal data. There is no account, no sign-in, no server, no analytics, no advertising and no in-app purchases. The game does not ask for permission to use the internet, so it cannot send anything anywhere.</p>
-<!-- /wp:paragraph -->
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>The game is free to play and shows adverts. The adverts come from Google AdMob.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>There is no account and no sign-in. We do not run a server, and we do not collect, see or keep your personal data.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Google, which serves the adverts, collects some information from your phone to show and measure them. In Europe, the UK and places with similar laws, the game asks for your choice first, and you can change it at any time.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>You can pay once to remove the full-screen adverts, and you can buy coin packs. Payments go through Google Play. We never see your card or payment details.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
 
 <!-- wp:heading -->
 <h2 class="wp-block-heading">What the game keeps on your phone</h2>
@@ -4555,12 +4569,102 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li>Your progress: the league season or tournament you are playing, and your record book.</li>
+<li>Your progress: coins, the things you have unlocked in the shop, your league seasons and cups, daily goals and your record book.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Whether you have bought "Remove ads".</li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
 <!-- wp:paragraph -->
-<p>These are small files in the game's own private storage on your phone. Nobody else can read them, they are never sent anywhere, and uninstalling the game deletes them.</p>
+<p>These are small files in the game's own private storage on your phone. They are never sent to us. Uninstalling the game deletes them.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Adverts (Google AdMob)</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The game shows full-screen adverts at breaks, for example after a match, never during play. You can also choose to watch a video for coins.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The adverts are provided by Google AdMob, part of Google. To show adverts, measure them and prevent fraud, Google's advertising software in the game collects information such as:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>your phone's advertising ID;</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>your IP address, which can show your approximate location (city or country, not your exact position);</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>information about your phone and the app, such as its model, operating system, language and the game's version;</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>how you interact with the adverts, such as which were shown and whether you tapped one;</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>diagnostics, such as crash and performance information from the advert software.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Google may use this to show adverts that suit your interests (personalised adverts) where you have agreed to that or the law allows it, and otherwise shows non-personalised adverts. Google handles this information under its own privacy policy:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>How Google uses information from apps that use its services: <a href="https://policies.google.com/technologies/partner-sites">https://policies.google.com/technologies/partner-sites</a></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Google's privacy policy: <a href="https://policies.google.com/privacy">https://policies.google.com/privacy</a></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>We do not receive this information, and we do not sell any information about you.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Your choices about adverts</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Consent: in the European Economic Area, the UK, Switzerland and places with similar laws, the game shows Google's consent message the first time you play, before any advert is requested. Your choice is stored on your phone.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Changing your choice: where the law gives you this choice, Settings &gt; About &gt; Privacy choices opens the message again, and you can change your answer at any time.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>United States: where US state privacy laws apply, the same message lets you opt out of the sale or sharing of your information for advertising.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Your advertising ID: you can reset or delete your phone's advertising ID, or opt out of personalised adverts, in your phone's settings (on most phones: Settings &gt; Google &gt; Ads, or Settings &gt; Privacy &gt; Ads).</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Fewer adverts: "Remove ads" in the shop turns off the full-screen adverts for good. Videos for coins stay available, because you choose to watch them.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Purchases (Google Play)</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>"Remove ads" and the coin packs are bought through Google Play's own payment screen. Google Play handles the payment under its own terms and privacy policy. It tells the game only which item you bought, so the game can unlock it. We never see your name, e-mail address or payment details. "Remove ads" is restored automatically if you reinstall the game on a phone signed in to the same Google account.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -4568,7 +4672,33 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>The game asks for one permission: vibration, to buzz the phone when your player touches the ball (you can turn it off in Settings). It does not use your location, camera, microphone, contacts or files.</p>
+<p>The game asks Android for these permissions:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Internet and network state: to load adverts and to reach Google Play for purchases. The game itself does not need the internet to play.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Advertising ID: used by Google's advert software, as described above.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Google Play billing and licence check: for purchases, and to check the game was installed from Google Play.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Vibration: to buzz the phone when your player touches the ball. You can turn this off in Settings.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Keeping the screen awake: so the screen does not turn off during a match.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>The game does not use your camera, microphone, contacts, photos or files, or your exact location.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -4576,15 +4706,15 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>The game collects no information from anyone, children included.</p>
+<p>The game is not directed at children under 13, and we do not knowingly collect personal information from children. The game itself collects no personal information from anyone. If you are a parent and have questions, contact us below.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
-<h2 class="wp-block-heading">In the game</h2>
+<h2 class="wp-block-heading">Deleting your information</h2>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>Settings &gt; About shows this policy and the help in the game itself, in your language: they need no internet. The help's "Email us" button opens your phone's email app, and what that app does is covered by its own privacy policy.</p>
+<p>We hold no information about you, so there is nothing for us to delete. To delete what the game keeps on your phone, uninstall the game or clear its storage in your phone's settings. To manage information held by Google, use your phone's ad settings and Google's controls at <a href="https://myaccount.google.com">https://myaccount.google.com</a>.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -4592,7 +4722,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>If this ever changes, this page will say so before the game does, and the date at the top will change.</p>
+<p>If this policy changes, the new version will be posted at worldstagegames.com/games/sepak-takraw-unleashed/privacy/ and in the game, with a new date at the top.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -4600,14 +4730,14 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>Questions: <a href="mailto:joshnason8@gmail.com">joshnason8@gmail.com</a>.</p>
+<p>Questions about this policy or the game: <a href="mailto:joshnason8@gmail.com">joshnason8@gmail.com</a>.</p>
 <!-- /wp:paragraph -->]]></content:encoded>
-		<excerpt:encoded><![CDATA[Sepak Takraw Unleashed collects no personal data: no account, no ads, no analytics. The full privacy policy.]]></excerpt:encoded>
+		<excerpt:encoded><![CDATA[Sepak Takraw Unleashed privacy policy: no account; adverts from Google AdMob and optional Google Play purchases.]]></excerpt:encoded>
 		<wp:post_id>76</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[privacy]]></wp:post_name>
@@ -4619,7 +4749,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[a647660d745b974a6897fb6cbdf43e8c]]></wp:meta_value>
+		<wp:meta_value><![CDATA[03b8ee6fa2b9e319ca3261be5667511d]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10105,7 +10235,7 @@
 <!-- /wp:list-item -->
 
 <!-- wp:list-item -->
-<li><strong>Nothing about you.</strong> No ads, no purchases, no account and no personal data collected. The games play offline.</li>
+<li><strong>Nothing to sign up for.</strong> No account, and we collect no personal data. Six of the games have no ads and no purchases; Sepak Takraw Unleashed is free with adverts. The games play offline.</li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list -->
 
@@ -10128,8 +10258,8 @@
 		<wp:post_id>98</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[about]]></wp:post_name>
@@ -10141,7 +10271,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[38e945aba71d477f3fe7ca2d7acfd705]]></wp:meta_value>
+		<wp:meta_value><![CDATA[6a866d58048a9a696a2219be40cd8719]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10168,7 +10298,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:table {"className":"gk-facts"} -->
-<figure class="wp-block-table gk-facts"><table class="has-fixed-layout"><tbody><tr><th>Games</th><td>7 mobile sports games</td></tr><tr><th>Made by</th><td>Josh Nason, an independent developer</td></tr><tr><th>Engine</th><td>Godot Engine</td></tr><tr><th>Platform</th><td>Android (in beta now; Google Play coming soon)</td></tr><tr><th>Business model</th><td>Free. No ads, no in-app purchases, no personal data collected.</td></tr><tr><th>Languages</th><td>54 across the seven games</td></tr><tr><th>Contact</th><td><a href="mailto:joshnason8@gmail.com">joshnason8@gmail.com</a></td></tr></tbody></table></figure>
+<figure class="wp-block-table gk-facts"><table class="has-fixed-layout"><tbody><tr><th>Games</th><td>7 mobile sports games</td></tr><tr><th>Made by</th><td>Josh Nason, an independent developer</td></tr><tr><th>Engine</th><td>Godot Engine</td></tr><tr><th>Platform</th><td>Android (in beta now; Google Play coming soon)</td></tr><tr><th>Business model</th><td>Free. Six games have no ads and no in-app purchases. Sepak Takraw Unleashed is free with adverts (Google AdMob) and optional in-app purchases (Remove ads, coin packs).</td></tr><tr><th>Languages</th><td>54 across the seven games</td></tr><tr><th>Contact</th><td><a href="mailto:joshnason8@gmail.com">joshnason8@gmail.com</a></td></tr></tbody></table></figure>
 <!-- /wp:table -->
 
 <!-- wp:separator -->
@@ -10468,8 +10598,8 @@
 		<wp:post_id>99</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-28 04:27:21]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-28 04:27:21]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[press-kit]]></wp:post_name>
@@ -10481,7 +10611,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[cccbdf2b361e8dfc1280d130c58575a5]]></wp:meta_value>
+		<wp:meta_value><![CDATA[8173623d7abd2c47fa65d3ef88e42228]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
@@ -10648,7 +10778,11 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>None of the games collects personal data. They have no account, no advertising, no analytics and no in-app purchases. Six of them do not have Android's internet permission at all. Hurling Heroes uses the internet for one thing only, and only if you ask it to: downloading its optional HD pack from GitHub. The browser version of Kabaddi Raid is served by Netlify. Each game's policy has the details.</p>
+<p>None of the games has an account or a sign-in, and we collect no personal data from any of them. Six of the games have no advertising, no analytics and no in-app purchases, and five of them do not have Android's internet permission at all. Hurling Heroes uses the internet for one thing only, and only if you ask it to: downloading its optional HD pack from GitHub. The browser version of Kabaddi Raid is served by Netlify.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Sepak Takraw Unleashed is the exception. It shows adverts from Google AdMob, and Google collects some information from your phone to show and measure them; in Europe, the UK and places with similar laws, the game asks for your choice first. It offers optional purchases through Google Play ("Remove ads" and coin packs). It uses the internet for the adverts and the purchases. <a href="/games/sepak-takraw-unleashed/privacy/">Its privacy policy</a> has the details, as each game's policy does.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -10704,7 +10838,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>The games and this website collect no personal information from anyone, children included.</p>
+<p>We collect no personal information from anyone, children included, through the games or this website. Sepak Takraw Unleashed is not directed at children under 13; its policy explains its adverts.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading -->
@@ -10726,8 +10860,8 @@
 		<wp:post_id>101</wp:post_id>
 		<wp:post_date><![CDATA[2026-10-27 20:16:00]]></wp:post_date>
 		<wp:post_date_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_date_gmt>
-		<wp:post_modified><![CDATA[2026-10-27 20:16:00]]></wp:post_modified>
-		<wp:post_modified_gmt><![CDATA[2026-10-27 20:16:00]]></wp:post_modified_gmt>
+		<wp:post_modified><![CDATA[2026-11-19 04:27:50]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-11-19 04:27:50]]></wp:post_modified_gmt>
 		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
 		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
 		<wp:post_name><![CDATA[privacy]]></wp:post_name>
@@ -10739,7 +10873,7 @@
 		<wp:is_sticky>0</wp:is_sticky>
 														<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_hash]]></wp:meta_key>
-		<wp:meta_value><![CDATA[ce1f7e1d477c876659852a6eb04cce5c]]></wp:meta_value>
+		<wp:meta_value><![CDATA[3da2a20c7dcaa0498e2dc74dbef7c2d7]]></wp:meta_value>
 		</wp:postmeta>
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_ghostkit_path]]></wp:meta_key>
