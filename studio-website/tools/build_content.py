@@ -52,6 +52,13 @@ OVERRIDES = {
     "floorball-unleashed": {"card_players": "5 v 5", "region_label": "Nordics · Europe"},
 }
 
+# Corrections that must reach the live site even on a page Site setup counts as edited: setup replaces the page once
+# per label (WordPress keeps the old text as a revision). Sepak Takraw Unleashed gained AdMob adverts and Google Play
+# purchases on 18 November 2026, so every page that said none of the games has ads, and its privacy policy, must change.
+REQUIRED_UPDATES = {path: "2026-11-18-takraw-adverts" for path in (
+    "home", "games", "games/sepak-takraw-unleashed", "games/sepak-takraw-unleashed/privacy", "about", "press-kit",
+    "privacy")}
+
 # The order of the design's home page.
 ORDER = ["kabaddi-raid", "hurling-heroes", "sepak-takraw-unleashed", "netball-unleashed", "kho-kho-rush",
          "floorball-unleashed", "pok-ta-pok-rivals"]
@@ -562,8 +569,11 @@ def build():
     pages = []
 
     def add(path, title, content, excerpt_text, template="", og=None, order=0, featured=None):
-        pages.append({"path": path, "title": title, "content": content, "excerpt": excerpt(excerpt_text),
-                      "template": template, "og": og, "menu_order": order, "featured": featured})
+        page = {"path": path, "title": title, "content": content, "excerpt": excerpt(excerpt_text),
+                "template": template, "og": og, "menu_order": order, "featured": featured}
+        if path in REQUIRED_UPDATES:
+            page["required_update"] = REQUIRED_UPDATES[path]
+        pages.append(page)
 
     by_slug = {g["slug"]: g for g in games}
     sports._SHOT_ALTS.update({g["slug"]: SHOTS[g["slug"]][0] for g in games})

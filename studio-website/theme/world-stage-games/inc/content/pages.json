@@ -9,7 +9,8 @@
    "template": "",
    "og": null,
    "menu_order": 0,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "games",
@@ -19,7 +20,8 @@
    "template": "page-wide",
    "og": null,
    "menu_order": 1,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "games/kabaddi-raid",
@@ -89,7 +91,8 @@
    "template": "page-wide",
    "og": "sepak-takraw-unleashed",
    "menu_order": 2,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "games/sepak-takraw-unleashed/privacy",
@@ -99,7 +102,8 @@
    "template": "",
    "og": "sepak-takraw-unleashed",
    "menu_order": 1,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "games/sepak-takraw-unleashed/support",
@@ -319,7 +323,8 @@
    "template": "",
    "og": null,
    "menu_order": 2,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "press-kit",
@@ -329,7 +334,8 @@
    "template": "",
    "og": null,
    "menu_order": 3,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "support",
@@ -349,7 +355,8 @@
    "template": "",
    "og": null,
    "menu_order": 5,
-   "featured": null
+   "featured": null,
+   "required_update": "2026-11-18-takraw-adverts"
   },
   {
    "path": "licences",

@@ -241,6 +241,10 @@ google.com, pub-1227543833347256, DIRECT, f08c47fec0942fa0
 2. Choose **Replace active with uploaded**.
 3. Press **Appearance > Site setup > Set up the site**. It updates only the pages you have not edited, and adds any
    new ones.
+   - The exception is a **required update**: a correction that has to reach the site, such as a changed privacy
+     policy. Setup replaces that page once even if it was edited, and the log says "Required update: …". The old
+     text stays under the page's **Revisions**. Version 1.1.7 does this for Sepak Takraw Unleashed's new policy and
+     the six pages that used to say no game has ads.
 
 ## Moving from Ghost Kit
 

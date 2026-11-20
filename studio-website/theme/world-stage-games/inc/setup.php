@@ -313,8 +313,15 @@ function ghostkit_run_setup() {
 		} else {
 			$id   = $existing->ID;
 			$hash = get_post_meta( $id, '_ghostkit_hash', true );
-			// Refresh only a page this setup made and nobody has changed since; leave everything else alone.
-			if ( $hash && md5( $existing->post_content ) === $hash && md5( $body ) !== $hash ) {
+			// A required correction (a policy or a claim that is no longer true) replaces the page once, edited or not;
+			// WordPress keeps the old text as a revision.
+			$required = ! empty( $page['required_update'] ) && get_post_meta( $id, '_ghostkit_required', true ) !== $page['required_update'];
+			// Otherwise refresh only a page this setup made and nobody has changed since; leave everything else alone.
+			if ( $required || ( $hash && md5( $existing->post_content ) === $hash && md5( $body ) !== $hash ) ) {
+				if ( $required ) {
+					update_post_meta( $id, '_ghostkit_required', $page['required_update'] );
+					$log[] = 'Required update: /' . $page['path'] . '/ replaced with the theme\'s version (the old text is under Revisions).';
+				}
 				$postarr['ID'] = $id;
 				unset( $postarr['post_status'], $postarr['post_name'], $postarr['post_parent'] );
 				wp_update_post( $postarr );
@@ -445,6 +452,9 @@ function ghostkit_reset_page( $page ) {
 	);
 	update_post_meta( $existing->ID, '_ghostkit_hash', md5( get_post_field( 'post_content', $existing->ID, 'raw' ) ) );
 	update_post_meta( $existing->ID, '_ghostkit_path', $page['path'] );
+	if ( ! empty( $page['required_update'] ) ) {
+		update_post_meta( $existing->ID, '_ghostkit_required', $page['required_update'] );
+	}
 	if ( $page['template'] ) {
 		update_post_meta( $existing->ID, '_wp_page_template', $page['template'] );
 	}
