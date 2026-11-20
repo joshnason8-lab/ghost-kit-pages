@@ -1,0 +1,100 @@
+# World Stage Games website
+
+The WordPress site for **World Stage Games** ("Every game deserves a stage.") at https://worldstagegames.com: a block
+theme in the approved design (`shared-assets/website-mockup/`), and every page's content. For putting it on Bluehost, read **[INSTALL-BLUEHOST.md](INSTALL-BLUEHOST.md)**.
+
+| Path | What it is |
+|---|---|
+| `dist/world-stage-games-website.zip` | The theme, ready for Appearance > Themes > Upload. Includes the content and the pictures. |
+| `dist/world-stage-games-content.xml` | The same pages as a WordPress import file (the back-up route). |
+| `screenshots/` | The site at 360, 390, 768, 1024 and 1440 px, taken from a local WordPress 7.1.3. |
+| `theme/world-stage-games/` | The theme's source. |
+| `content-src/games.json` | Each game's facts, with the file each one came from on the game's branch. |
+| `content-src/claims-check.md` | Each claim on the home page, with its evidence from the games. |
+| `content-src/sports/<sport>.md` | The seven sport pages: text, photos (with licences), videos and sources. See `FORMAT.md`. |
+| `content-src/media-kits.json` | The media kits published so far (linked from the Press kit and game pages). |
+| `dist/trailers/` | Web-sized (720p) trailers from the media kits, for the Media Library. |
+| `MEDIA_CREDITS.md` | Every photo on the sport pages, with its author, licence and source. |
+| `tools/` | The scripts that build the pages and the package. |
+
+## How it fits together
+
+- **The studio's name** is WordPress's Site Title, set to "World Stage Games" by Site setup (`GHOSTKIT_STUDIO_NAME`
+  and `GHOSTKIT_STUDIO_TAGLINE` in `inc/setup.php`). The page text never names the studio. The logo
+  (`assets/images/logo.png`) and the site icon (`assets/images/icon.png`) are the studio's own artwork, trimmed of
+  empty space.
+- **Links**: the pages and menus link by path (`/games/…`). `inc/links.php` turns each path into the page's real
+  address as it is shown, so links work with any permalink setting and in any install folder.
+- **Languages**: the footer's language menu and a one-tap suggestion for browsers set to another language open the
+  page in Google Translate, in any of the 54 languages the games use (`inc/languages.php`, `assets/js/language.js`).
+  Nothing goes to Google until the visitor chooses a language.
+- **The pages** are in `theme/world-stage-games/inc/content/pages.json`. `tools/build_content.py` builds them from:
+  - `content-src/games.json`;
+  - each game's privacy policy and help page, read straight from its branch with `git show` (read-only). The
+    policies are copied word for word. Only line wraps are joined, and web addresses are made into links. One
+    clause is dropped: Sepak Takraw's policy mentions "privacy.html next to this file", which means nothing on the
+    web.
+- **Appearance > Site setup** (`theme/world-stage-games/inc/setup.php`) turns that file into pages:
+  - It adds the pictures to the Media Library, so WordPress makes the WebP sizes and `srcset`.
+  - It makes the pages at fixed addresses and sets the front page and links.
+  - Pressing it again is safe: it fills gaps and refreshes only the pages nobody has edited.
+  - It works in rounds of about 15 seconds, so a shared host's 30-second limit doesn't stop it.
+- **The look** is `theme.json` (colours, the self-hosted Oswald and Inter fonts, sizes), plus `assets/css/site.css`
+  (about 15 KB) for the cards, the hero and the game page.
+  - The region filter on the home page is `assets/js/filter.js` (1 KB). Without it, all the games show.
+  - The mobile menu and the screenshot lightbox are WordPress's own.
+- **SEO** (`inc/seo.php`):
+  - The meta description is the page's excerpt.
+  - The Open Graph and Twitter previews use each game's 1200 × 630 picture (`assets/images/og/`).
+  - WordPress writes the titles and canonical links.
+  - If an SEO plugin is active, the theme writes none of these.
+
+## Rebuilding
+
+From the repository root, with the game branches fetched (`git fetch origin <branch>` for each game):
+
+```
+sh studio-website/tools/package.sh      # rebuild pages.json from the game branches, then zip the theme
+```
+
+To rebuild the import file, run Site setup in a local WordPress with the theme, then:
+
+1. Export the site with `tools/export_wxr.php`.
+2. Run `tools/fix_wxr.py exported.xml dist/world-stage-games-content.xml <commit>`. This keeps only the pages and pictures,
+   and points each picture at its file on GitHub at `<commit>`, so the import can download it.
+
+When a game's media kit release (`<release>-media`) is published:
+
+1. Add it to `content-src/media-kits.json` as `{"<release>-media": "<zip download URL>"}`.
+2. Rebuild. The Press kit page then links the zip.
+
+## What was tested
+
+Everything below ran in WordPress 7.1.3 on PHP 8.3 with SQLite, on 27 October 2026.
+
+- **The owner's route, on a new WordPress:**
+  1. Uploaded the zip in the browser and activated it.
+  2. Pressed Site setup: 36 pages and 60 pictures, the front page, links and logo, in about 18 seconds.
+  3. Repeated with a 1-second round limit: it carried on by itself over 9 rounds and finished.
+- **The import route, on another new WordPress:**
+  1. Imported with WordPress Importer, which downloaded the pictures from GitHub.
+  2. Ran Site setup afterwards: nothing was duplicated.
+- **Links**: crawled every internal link and asset on a fresh site with the sport pages: 58 pages and 237 files, all `200`.
+- **The block editor**: opened every page; there were no invalid blocks.
+- **Widths** (360, 390, 768, 1024 and 1440 px, on 16 kinds of page, including four sport pages):
+  - no horizontal scrolling;
+  - every image has alt text;
+  - every button and menu link is at least 44 px tall.
+- **Accessibility**: axe-core 4.10 (WCAG 2.2 AA and best practices) on 11 kinds of page, sport pages included, at 390 and 1440 px: no
+  violations.
+  - The mobile menu opens and closes with Escape.
+  - "Skip to content" is the first Tab stop.
+  - Focus shows as a teal ring.
+- **Third parties**: none on any page; fonts and pictures come from the site itself.
+- **Page weight**:
+  - Home: about 650 KB on a first visit at 390 px.
+  - A privacy page: about 200 KB.
+- **Videos**: every video on the sport pages was checked with YouTube's oEmbed (it exists, allows embedding and comes from the named channel). A page makes no request to YouTube until play is pressed; then the player loads from youtube-nocookie.com.
+- **Trailers**: with `netball-unleashed-trailer.mp4` in the Media Library, Site setup swapped the game page's "Trailer coming soon" for a video player; the other games kept the placeholder.
+- **Links with plain permalinks**: switched a site to plain permalinks and crawled it. Every link became a `?page_id=` address, and all of them opened.
+- **Languages**: a browser set to Hindi got the "हिन्दी →" suggestion; closing it kept it closed; an English browser got none. The footer menu lists all 53 other languages. Neither sends anything anywhere until a language is chosen.
